@@ -63,7 +63,6 @@ pub(crate) mod feature {
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
     pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
-
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
     pub const HQ_SHA256: &str = "HQ_SHA256";
     pub const HQ_VERIFY_KZG_PROOF: &str = "HQ_VERIFY_KZG_PROOF";
@@ -148,6 +147,10 @@ impl Config {
             .feature(feature::FEATURE_DISABLE_3RD_PARTY)
             .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
+        let phoenix_refund_check = self
+            .feature(feature::FEATURE_HARDFORK_AEGIS)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or_default();
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -158,6 +161,7 @@ impl Config {
             disable_wasm64,
             disable_wasm32,
             disable_3rd_party,
+            phoenix_refund_check,
         }
     }
 

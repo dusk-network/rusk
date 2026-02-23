@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! PoC for P1.6-2: Phoenix Fee Overflow — Supply Corruption / Node DoS
+//! PoC: Phoenix Fee Refund Overflow — Supply Corruption / Node DoS
 //!
 //! The Fee struct is excluded from the payload hash / ZK proof, so an
 //! attacker can replace it with arbitrary values. When `gas_price` is set
-//! large enough that `(gas_limit - gas_consumed) * gas_price` overflows
-//! u64, one of two things happens depending on build configuration:
+//! large enough that the refund `(gas_limit - gas_consumed) * gas_price`
+//! overflows u64, one of two things happens depending on build configuration:
 //!
 //! 1. **With `overflow-checks = true` for all deps**: the WASM contract traps
 //!    inside `Fee::gen_remainder_note()`, and the host code in
@@ -23,7 +23,7 @@
 //!    the supply — the sender receives a refund note with a wrapped value that
 //!    bears no relation to the actual gas spent.
 //!
-//! In either case, the root cause is the same as P1.5-1: the Fee is not
+//! In either case, the root cause is the same: the Fee is not
 //! covered by the ZK proof, allowing arbitrary post-proof manipulation.
 //!
 //! ## Overflow chain
@@ -52,7 +52,7 @@ use crate::common::state::generator_procedure;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 
 /// Verifies that a Phoenix transaction with an overflow-inducing Fee is
-/// rejected and does NOT corrupt the supply.
+/// rejected and the refund does NOT corrupt the supply.
 ///
 /// - FAILS while the vulnerability is active: the malicious tx executes and the
 ///   sender's balance changes due to the corrupted refund note (wrapping
@@ -65,7 +65,7 @@ const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 /// trap in `gen_remainder_note()` followed by `.expect("Refunding must
 /// succeed")` in `vm/src/execute.rs`.
 #[tokio::test(flavor = "multi_thread")]
-pub async fn fee_overflow_node_panic_poc() -> Result<()> {
+pub async fn fee_refund_overflow_poc() -> Result<()> {
     logger();
 
     let state_toml = include_str!("../config/transfer.toml");
@@ -79,7 +79,7 @@ pub async fn fee_overflow_node_panic_poc() -> Result<()> {
     // Record the sender's initial balance
     let initial_balance =
         wallet.get_balance(0).expect("Failed to get balance").value;
-    info!("=== Phoenix Fee Overflow PoC ===");
+    info!("=== Phoenix Fee Refund Overflow PoC ===");
     info!("Initial balance: {} LUX", initial_balance);
 
     let receiver_pk = wallet
@@ -164,7 +164,7 @@ pub async fn fee_overflow_node_panic_poc() -> Result<()> {
     //
     // While vulnerable, this succeeds and the refund produces a note with
     // a corrupted (wrapped) value. After the fix, the tx should be rejected.
-    let result = generator_procedure(
+    generator_procedure(
         rusk,
         &[malicious_tx],
         2, // block_height
@@ -174,15 +174,10 @@ pub async fn fee_overflow_node_panic_poc() -> Result<()> {
             executed: 0,
             discarded: 1,
         }),
+    )
+    .expect(
+        "Block generation should succeed (with the malicious tx discarded)",
     );
-
-    // if let Ok(spent_txs) = &result {
-    //     let spent_tx = &spent_txs[0];
-    //     info!("Gas spent: {}", spent_tx.gas_spent);
-    //     info!("Tx error: {:?}", spent_tx.err);
-    // } else {
-    //     info!("Transaction correctly rejected: {:?}", result.err());
-    // }
 
     // Step 5: Check the sender's balance after the attack
     let final_balance =
