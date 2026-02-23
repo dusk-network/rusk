@@ -6,7 +6,9 @@
 
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
-use http_body_util::{BodyExt, Either, Full, StreamBody};
+use http_body_util::{
+    BodyExt, Either, Full, LengthLimitError, Limited, StreamBody,
+};
 use hyper::body::{Body, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::{Request, Response};
@@ -636,10 +638,19 @@ impl RuesDispatchEvent {
                 .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
                 .unwrap_or_default();
 
-        let bytes = body
+        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
+        let bytes = Limited::new(body, max_body_bytes)
             .collect()
             .await
-            .map_err(|e| super::HttpError::internal(e.to_string()))?
+            .map_err(|e| {
+                if e.downcast_ref::<LengthLimitError>().is_some() {
+                    super::HttpError::payload_too_large(format!(
+                        "Request body exceeds {max_body_bytes} bytes"
+                    ))
+                } else {
+                    super::HttpError::internal(e.to_string())
+                }
+            })?
             .to_bytes()
             .to_vec();
         let data = match binary_request {

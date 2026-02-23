@@ -15,6 +15,9 @@ pub enum Error {
     /// Invalid UTF-8 in request body
     #[error("Invalid request encoding: {0}")]
     InvalidEncoding(String),
+    /// Request payload too large
+    #[error("Payload too large: {0}")]
+    PayloadTooLarge(String),
     /// Requested resource was not found
     #[error("Not found: {0}")]
     NotFound(String),
@@ -53,6 +56,7 @@ impl Error {
             Error::InvalidInput(_)
             | Error::VersionMismatch(_)
             | Error::InvalidEncoding(_) => 400,
+            Error::PayloadTooLarge(_) => 413,
             Error::NotFound(_) => 404,
             Error::Unsupported => 501,
             Error::Serialization(_)
@@ -96,6 +100,10 @@ impl Error {
 
     pub fn internal<T: AsRef<str>>(msg: T) -> Self {
         Error::Internal(msg.as_ref().to_string())
+    }
+
+    pub fn payload_too_large<T: AsRef<str>>(msg: T) -> Self {
+        Error::PayloadTooLarge(msg.as_ref().to_string())
     }
 }
 

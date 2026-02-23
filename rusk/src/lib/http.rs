@@ -54,9 +54,9 @@ use tokio_stream::wrappers::BroadcastStream;
 
 #[cfg(feature = "chain")]
 use futures_util::io::Cursor;
-#[cfg(feature = "chain")]
-use http_body_util::BodyExt;
 use http_body_util::Full;
+#[cfg(feature = "chain")]
+use http_body_util::{BodyExt, LengthLimitError, Limited};
 #[cfg(feature = "chain")]
 use hyper::header::{ALLOW, CONTENT_TYPE};
 use hyper::http::{HeaderName, HeaderValue};
@@ -88,6 +88,24 @@ pub type HttpResult<T> = std::result::Result<T, HttpError>;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
+/// Default cap for most RUES POST request bodies.
+pub(crate) const MAX_RUES_REQUEST_BODY_BYTES: usize = 3 * 1024 * 1024;
+/// Cap for `POST /on/contract:<id>/upload_driver` request bodies.
+pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
+/// Cap for `POST /graphql` request bodies.
+#[cfg(feature = "chain")]
+pub(crate) const MAX_GRAPHQL_REQUEST_BODY_BYTES: usize = 256 * 1024;
+/// Cap for a single inbound WebSocket message on the RUES subscription socket.
+pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
+/// Cap for a single inbound WebSocket frame payload on the RUES subscription socket.
+pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
+
+pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
+    match uri.inner() {
+        ("contract", Some(_), "upload_driver") => MAX_DRIVER_UPLOAD_BODY_BYTES,
+        _ => MAX_RUES_REQUEST_BODY_BYTES,
+    }
+}
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -553,7 +571,13 @@ async fn handle_request_rues<H: HandleRequest>(
         let (subscription_sender, subscriptions) =
             mpsc::channel(ws_event_channel_cap);
 
-        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+        let ws_config = tungstenite::protocol::WebSocketConfig {
+            max_message_size: Some(MAX_WS_INBOUND_MESSAGE_BYTES),
+            max_frame_size: Some(MAX_WS_INBOUND_FRAME_BYTES),
+            ..Default::default()
+        };
+        let (response, websocket) =
+            hyper_tungstenite::upgrade(&mut req, Some(ws_config))?;
 
         let mut sockets = sockets_map.write().await;
 
@@ -581,7 +605,14 @@ async fn handle_request_rues<H: HandleRequest>(
         }
 
         let (event, binary_request) =
-            RuesDispatchEvent::from_request(req).await?;
+            match RuesDispatchEvent::from_request(req).await {
+                Ok(event) => event,
+                Err(err) => {
+                    let status = StatusCode::from_u16(err.http_code())
+                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                    return response(status, err.to_string());
+                }
+            };
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
@@ -841,7 +872,27 @@ async fn handle_graphql_http(
                 .headers
                 .get(CONTENT_TYPE)
                 .and_then(|v| v.to_str().ok());
-            let body = body.collect().await?.to_bytes().to_vec();
+            let body = match Limited::new(body, MAX_GRAPHQL_REQUEST_BODY_BYTES)
+                .collect()
+                .await
+            {
+                Ok(collected) => collected.to_bytes().to_vec(),
+                Err(err) => {
+                    if err.downcast_ref::<LengthLimitError>().is_some() {
+                        return graphql_error_response(
+                            StatusCode::PAYLOAD_TOO_LARGE,
+                            format!(
+                                "Request body exceeds {MAX_GRAPHQL_REQUEST_BODY_BYTES} bytes"
+                            ),
+                        );
+                    }
+
+                    return graphql_error_response(
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        err.to_string(),
+                    );
+                }
+            };
             let reader = Cursor::new(body);
 
             let batch_request = receive_batch_body(
@@ -1127,6 +1178,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn post_rues_oversized_body_returns_payload_too_large() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let oversized = vec![b'a'; MAX_RUES_REQUEST_BODY_BYTES + 1];
+
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body(oversized)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    #[tokio::test]
+    async fn post_rues_upload_driver_oversized_body_returns_payload_too_large()
+    {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        const CONTRACT_ID: ContractId = ContractId::from_bytes([1; 32]);
+        let contract_id_hex = hex::encode(CONTRACT_ID);
+
+        let client = reqwest::Client::new();
+        let oversized = vec![0u8; MAX_DRIVER_UPLOAD_BODY_BYTES + 1];
+        let response = client
+            .post(format!(
+                "http://{local_addr}/on/contract:{contract_id_hex}/upload_driver"
+            ))
+            .body(oversized)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    #[tokio::test]
     async fn post_rues_strict_without_version_returns_bad_request() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
@@ -1387,6 +1479,38 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_oversized_message_closes_connection() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (mut stream, _sid) = connect_ws(local_addr);
+
+        stream
+            .get_mut()
+            .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+            .expect("setting TCP read timeout should succeed");
+
+        let oversized = vec![0u8; MAX_WS_INBOUND_FRAME_BYTES + 1];
+        let _ = stream.send(Message::Binary(oversized));
+
+        match stream.read() {
+            Ok(Message::Close(_)) => {}
+            Ok(msg) => {
+                panic!("Expected close after oversized message, got {msg:?}")
+            }
+            Err(tungstenite::Error::Io(e))
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::TimedOut
+                ) =>
+            {
+                panic!("Timed out waiting for close after oversized message");
+            }
+            Err(_) => {}
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
     async fn websocket_rues_missing_topic() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
@@ -1529,6 +1653,28 @@ mod tests {
         let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
             .expect("Response should be JSON");
         assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_post_oversized_body_returns_payload_too_large() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let oversized = vec![b'a'; MAX_GRAPHQL_REQUEST_BODY_BYTES + 1];
+        let response = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(oversized)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
     }
 
     #[tokio::test]
