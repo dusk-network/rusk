@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to edition 2024
 - Replace `serde_as` with stable `serde(with)` attributes
 - Gate driver module behind `chain` feature
+- Cap incoming HTTP request bodies and WebSocket frames/messages to mitigate memory DoS.
 - Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
 - Update MSRV to 1.85
 

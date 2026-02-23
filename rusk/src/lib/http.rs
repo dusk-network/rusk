@@ -95,6 +95,10 @@ pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
 /// Cap for `POST /graphql` request bodies.
 #[cfg(feature = "chain")]
 pub(crate) const MAX_GRAPHQL_REQUEST_BODY_BYTES: usize = 256 * 1024;
+/// Cap for a single inbound WebSocket message on the RUES subscription socket.
+pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
+/// Cap for a single inbound WebSocket frame payload on the RUES subscription socket.
+pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
 
 pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
     match uri.inner() {
@@ -567,7 +571,13 @@ async fn handle_request_rues<H: HandleRequest>(
         let (subscription_sender, subscriptions) =
             mpsc::channel(ws_event_channel_cap);
 
-        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+        let ws_config = tungstenite::protocol::WebSocketConfig {
+            max_message_size: Some(MAX_WS_INBOUND_MESSAGE_BYTES),
+            max_frame_size: Some(MAX_WS_INBOUND_FRAME_BYTES),
+            ..Default::default()
+        };
+        let (response, websocket) =
+            hyper_tungstenite::upgrade(&mut req, Some(ws_config))?;
 
         let mut sockets = sockets_map.write().await;
 
@@ -1466,6 +1476,38 @@ mod tests {
         let event = from_bytes(&event_bytes).expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_oversized_message_closes_connection() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (mut stream, _sid) = connect_ws(local_addr);
+
+        stream
+            .get_mut()
+            .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+            .expect("setting TCP read timeout should succeed");
+
+        let oversized = vec![0u8; MAX_WS_INBOUND_FRAME_BYTES + 1];
+        let _ = stream.send(Message::Binary(oversized));
+
+        match stream.read() {
+            Ok(Message::Close(_)) => {}
+            Ok(msg) => {
+                panic!("Expected close after oversized message, got {msg:?}")
+            }
+            Err(tungstenite::Error::Io(e))
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::TimedOut
+                ) =>
+            {
+                panic!("Timed out waiting for close after oversized message");
+            }
+            Err(_) => {}
+        }
     }
 
     #[tokio::test(flavor = "multi_thread")]
