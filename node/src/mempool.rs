@@ -118,6 +118,11 @@ impl From<TxPreconditionError> for TxAcceptanceError {
                     "phoenix fee tampered".into(),
                 )
             }
+            TxPreconditionError::PhoenixFeeRefundMismatch => {
+                TxAcceptanceError::VerificationFailed(
+                    "phoenix fee refund stealth address mismatch".into(),
+                )
+            }
         }
     }
 }
@@ -335,6 +340,10 @@ impl MempoolSrv {
             }
 
             tx.inner.phoenix_fee_check()?;
+
+            if vm.phoenix_refund_check_active(tip_height) {
+                tx.inner.phoenix_refund_check()?;
+            }
 
             // Check deployment tx
             if tx.inner.deploy().is_some() {

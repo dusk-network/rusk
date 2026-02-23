@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add phoenix fee check
+- Add phoenix refund check to mempool validation
 
 ### Changed
 
