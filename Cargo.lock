@@ -1802,7 +1802,7 @@ dependencies = [
 [[package]]
 name = "dusk-plonk"
 version = "0.22.0-rc.0"
-source = "git+https://github.com/dusk-network/plonk-private.git?branch=fix-unbound-selector-evals#3fdbca22cea092d7e9e4b7a843c1ad550a084cf8"
+source = "git+https://github.com/dusk-network/plonk-private.git?branch=master#39983aa3eb3f4cb77d4783610717d08e9a0a57a5"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
