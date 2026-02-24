@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix mismatched lifetime syntax in `Cluster::iter`
 - Broadcast the computed Quorum in open consensus mode instead of rebroadcasting the inbound message
+- Validate `collect_from_past` ratification vote consistency against attached `ValidationResult`
 
 ## [1.4.0] - 2025-11-06
 
