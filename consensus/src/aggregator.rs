@@ -26,7 +26,9 @@ use crate::user::committee::Committee;
 /// mapping step numbers and [StepVote] to both an aggregated signature and a
 /// cluster of voters.
 ///
-/// It ensures that no multiple votes for same voter are collected.
+/// In normal iterations, it ensures that conflicting votes from the same voter
+/// are rejected. In emergency iterations, conflicting-vote checks are relaxed
+/// to prioritize liveness, while per-(step, vote) deduplication still applies.
 pub struct Aggregator<V> {
     // Map between (step, vote) and (signature, voters)
     votes: BTreeMap<(u8, Vote), (AggrSignature, Cluster<PublicKey>)>,
@@ -123,6 +125,9 @@ impl<V: StepVote> Aggregator<V> {
             return Err(AggregatorError::DuplicatedVote);
         }
 
+        // Emergency mode intentionally skips cross-vote uniqueness checks
+        // for liveness. Duplicate votes for the same target are still
+        // rejected by the per-(step, vote) `cluster` check above.
         if !emergency {
             // Check if the provisioner voted for a different result
             let voters_list = self.uniqueness.entry(msg_step).or_default();
