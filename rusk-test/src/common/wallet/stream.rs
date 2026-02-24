@@ -7,6 +7,7 @@
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey};
 use futures_util::Stream;
+use rkyv::Deserialize;
 use rusk::{Error, Result, Rusk};
 use tracing::info;
 
@@ -56,8 +57,10 @@ pub async fn get_notes(
     // expected output
     let stream =
         tokio_stream::iter(receiver.into_iter().filter_map(move |bytes| {
-            let leaf = rkyv::from_bytes::<NoteLeaf>(&bytes)
-                .expect("The contract should always return valid leaves");
+            let leaf: NoteLeaf = rkyv::check_archived_root::<NoteLeaf>(&bytes)
+                .expect("The contract should always return valid leaves")
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap();
             match &vk {
                 Some(vk) => vk
                     .owns(leaf.note.stealth_address())
