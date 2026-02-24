@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use futures::StreamExt;
+use rkyv::Deserialize;
 
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
@@ -89,9 +90,12 @@ pub(crate) async fn sync_db(
         let mut leaf_chunk = buffer.chunks_exact(TREE_LEAF);
 
         for leaf_bytes in leaf_chunk.by_ref() {
-            let NoteLeaf { block_height, note } = rkyv::from_bytes(leaf_bytes)
-                .map_err(|_| Error::Rkyv)
-                .inspect_err(|_| zeroize_secret_keys(&mut keys))?;
+            let NoteLeaf { block_height, note } =
+                rkyv::check_archived_root::<NoteLeaf>(leaf_bytes)
+                    .map_err(|_| Error::Rkyv)
+                    .inspect_err(|_| zeroize_secret_keys(&mut keys))?
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
 
             last_pos = std::cmp::max(last_pos, *note.pos());
 
@@ -182,7 +186,10 @@ pub(crate) async fn fetch_existing_nullifiers_remote(
         )
         .await?;
 
-    let nullifiers = rkyv::from_bytes(&data).map_err(|_| Error::Rkyv)?;
+    let nullifiers = rkyv::check_archived_root::<Vec<BlsScalar>>(&data)
+        .map_err(|_| Error::Rkyv)?
+        .deserialize(&mut rkyv::Infallible)
+        .unwrap();
 
     Ok(nullifiers)
 }
