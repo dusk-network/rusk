@@ -12,6 +12,7 @@ pub mod fee_inflation;
 pub mod fee_tampered;
 pub mod finalization;
 pub mod gas_behavior;
+pub mod http_propagate;
 pub mod init;
 pub mod mainnet;
 pub mod moonlight_stake;

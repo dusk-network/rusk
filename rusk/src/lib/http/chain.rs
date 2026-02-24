@@ -38,6 +38,26 @@ use crate::{VERSION, VERSION_BUILD};
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 type GraphqlSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
+async fn preverify_tx(node: &RuskNode, data: &[u8]) -> HttpResult<Transaction> {
+    let tx: Transaction = ProtocolTransaction::from_slice(data)
+        .map_err(|e| HttpError::invalid_input(format!("Data: {e:?}")))?
+        .into();
+
+    let db = node.inner().database();
+    let vm = node.inner().vm_handler();
+
+    MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
+        .await
+        .map_err(|e| {
+            let err_msg =
+                format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
+            error!("{err_msg}");
+            HttpError::internal(err_msg)
+        })?;
+
+    Ok(tx)
+}
+
 fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
     let mut var = Variables::default();
     headers
@@ -184,28 +204,13 @@ impl RuskNode {
     }
 
     async fn handle_preverify(&self, data: &[u8]) -> HttpResult<ResponseData> {
-        let tx = dusk_core::transfer::Transaction::from_slice(data)
-            .map_err(|e| HttpError::invalid_input(format!("Data: {e:?}")))?;
-        let db = self.inner().database();
-        let vm = self.inner().vm_handler();
-        let tx = tx.into();
-
-        MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
-            .await
-            .map_err(|e| {
-                let err_msg =
-                    format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
-                error!("{err_msg}");
-                HttpError::internal(err_msg)
-            })?;
-
+        preverify_tx(self, data).await?;
         Ok(ResponseData::new(DataType::None))
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> HttpResult<ResponseData> {
-        let tx: Transaction = ProtocolTransaction::from_slice(tx)
-            .map_err(|e| HttpError::invalid_input(format!("Data: {e:?}")))?
-            .into();
+        let tx = preverify_tx(self, tx).await?;
+
         let tx_message = tx.into();
 
         let network = self.network();
