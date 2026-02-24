@@ -14,8 +14,8 @@ use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
 
 use super::feature::{
     FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
-    FEATURE_PLONK_V2, HQ_KECCAK256, HQ_SECP256K1_RECOVER, HQ_SHA256,
-    HQ_VERIFY_KZG_PROOF,
+    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, HQ_KECCAK256,
+    HQ_SECP256K1_RECOVER, HQ_SHA256, HQ_VERIFY_KZG_PROOF,
 };
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
@@ -37,7 +37,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 11],
+    pub features: [(&'static str, FeatureActivation); 12],
 }
 
 impl WellKnownConfig {
@@ -90,6 +90,8 @@ const MAINNET_BLOB_ACTIVATION: FeatureActivation =
 const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_470_360);
 
+const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation = NEVER;
+
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
     WellKnownConfig {
@@ -106,6 +108,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
             (HQ_SECP256K1_RECOVER, NEVER),
             (FEATURE_BLOB, MAINNET_BLOB_ACTIVATION),
             (FEATURE_PLONK_V2, MAINNET_PLONK_V2_ACTIVATION),
+            (FEATURE_HARDFORK_AEGIS, MAINNET_HARDFORK_AEGIS_ACTIVATION),
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
@@ -132,6 +135,8 @@ const TESTNET_AT_04_02_2026_AT_09_00_UTC: FeatureActivation =
 const TESTNET_PLONK_V2_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(2_653_175);
 
+const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation = NEVER;
+
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     gas_per_blob: DEFAULT_GAS_PER_BLOB,
@@ -147,6 +152,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_SECP256K1_RECOVER, NEVER),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
+        (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
@@ -169,6 +175,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_SECP256K1_RECOVER, GENESIS),
         (FEATURE_BLOB, GENESIS),
         (FEATURE_PLONK_V2, NEVER),
+        (FEATURE_HARDFORK_AEGIS, GENESIS),
         (FEATURE_DISABLE_WASM64, GENESIS),
         FILLER_FEATURE,
         FILLER_FEATURE,
@@ -191,6 +198,7 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_SECP256K1_RECOVER, GENESIS),
         (FEATURE_BLOB, GENESIS),
         (FEATURE_PLONK_V2, GENESIS),
+        (FEATURE_HARDFORK_AEGIS, GENESIS),
         (FEATURE_DISABLE_WASM64, GENESIS),
         FILLER_FEATURE,
         FILLER_FEATURE,

@@ -9,6 +9,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use dusk_bytes::Serializable;
+use dusk_core::signatures::bls as core_bls;
+use node_data::hard_fork::bls_version_at;
 use node_data::ledger::{Block, Fault, IterationsInfo, Seed, Slash, to_str};
 use node_data::message::payload::Candidate;
 use node_data::message::{BLOCK_HEADER_VERSION, Message, SignedStepMessage};
@@ -58,10 +60,13 @@ impl<T: Operations> Generator<T> {
         let start = Instant::now();
 
         // Sign seed
-        let seed_sig: [u8; 48] = ru
-            .secret_key
-            .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
-            .to_bytes();
+        let seed_sig: [u8; 48] = core_bls::sign_multisig(
+            &ru.secret_key,
+            ru.pubkey_bls.inner(),
+            &ru.seed().inner()[..],
+            bls_version_at(ru.round),
+        )
+        .to_bytes();
         let seed = Seed::from(seed_sig);
 
         // Limit number of faults in the block

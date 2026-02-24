@@ -7,7 +7,10 @@
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::signatures::bls;
 use node_data::ledger::Transaction;
-use rusk::node::{DriverStore, FEATURE_ABI_PUBLIC_SENDER, RuskVmConfig};
+use rusk::node::{
+    DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
+    RuskVmConfig,
+};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -69,6 +72,8 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let mut vm_config =
         RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
     vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
+    // Historical snapshot test: keep BLS behavior on pre-fork rules.
+    vm_config.with_feature(FEATURE_HARDFORK_AEGIS, u64::MAX);
 
     let rusk = Rusk::new(
         dir,

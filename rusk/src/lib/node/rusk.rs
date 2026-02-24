@@ -44,9 +44,22 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
-    FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip, get_block_rewards,
+    FEATURE_HARDFORK_AEGIS, RuesEvent, Rusk, RuskTip, get_block_rewards,
+    set_vm_host_context,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
+
+fn hard_fork_aegis_activation(vm_config: &RuskVmConfig) -> u64 {
+    match vm_config.feature(FEATURE_HARDFORK_AEGIS) {
+        Some(dusk_vm::FeatureActivation::Height(height)) => *height,
+        Some(dusk_vm::FeatureActivation::Ranges(ranges)) => ranges
+            .iter()
+            .map(|(start, _)| *start)
+            .min()
+            .unwrap_or(u64::MAX),
+        None => u64::MAX,
+    }
+}
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -62,6 +75,11 @@ impl Rusk {
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
+
+        let hard_fork_aegis_activation = hard_fork_aegis_activation(&vm_config);
+        node_data::hard_fork::set_aegis_activation_height(
+            hard_fork_aegis_activation,
+        );
 
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -129,17 +147,8 @@ impl Rusk {
 
         let cert_voters = &transition_data.cert_voters[..];
 
-        let plonk_v2_active = self
-            .vm_config
-            .feature(FEATURE_PLONK_V2)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false);
-        let _plonk_version_guard =
-            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
-                dusk_core::plonk::PlonkVersion::V2
-            } else {
-                dusk_core::plonk::PlonkVersion::V1
-            });
+        let (_plonk_version_guard, _hard_fork_guard) =
+            set_vm_host_context(&self.vm_config, block_height);
 
         info!(
             event = "Creating state transition",
@@ -629,17 +638,8 @@ impl Rusk {
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
 
-        let plonk_v2_active = self
-            .vm_config
-            .feature(FEATURE_PLONK_V2)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false);
-        let _plonk_version_guard =
-            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
-                dusk_core::plonk::PlonkVersion::V2
-            } else {
-                dusk_core::plonk::PlonkVersion::V1
-            });
+        let (_plonk_version_guard, _hard_fork_guard) =
+            set_vm_host_context(&self.vm_config, block_height);
 
         let generator_bytes = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator_bytes.0)

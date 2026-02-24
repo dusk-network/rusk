@@ -16,10 +16,13 @@ use std::sync::Arc;
 use dusk_core::{Dusk, dusk};
 
 use dusk_core::abi::ContractId;
+use dusk_core::plonk::PlonkVersion;
 use dusk_vm::VM;
+use dusk_vm::host_queries;
 use node::LongLivedService;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
@@ -61,6 +64,28 @@ pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
     #[cfg(feature = "archive")]
     archive: Archive,
+}
+
+pub(crate) fn set_vm_host_context(
+    vm_config: &RuskVmConfig,
+    block_height: u64,
+) -> (host_queries::PlonkVersionGuard, host_queries::HardForkGuard) {
+    let plonk_v2_active = vm_config
+        .feature(FEATURE_PLONK_V2)
+        .map(|activation| activation.is_active_at(block_height))
+        .unwrap_or(false);
+    let plonk = host_queries::set_plonk_version(if plonk_v2_active {
+        PlonkVersion::V2
+    } else {
+        PlonkVersion::V1
+    });
+    let hard_fork = match hard_fork_at(block_height) {
+        HardFork::PreFork => host_queries::HardFork::PreFork,
+        HardFork::Aegis => host_queries::HardFork::Aegis,
+    };
+    let hard_fork = host_queries::set_hard_fork(hard_fork);
+
+    (plonk, hard_fork)
 }
 
 impl RuskNode {

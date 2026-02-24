@@ -32,7 +32,7 @@ use tracing::error;
 
 use super::event::RequestData;
 use super::*;
-use crate::node::RuskNode;
+use crate::node::{RuskNode, set_vm_host_context};
 use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
@@ -312,7 +312,7 @@ impl RuskNode {
         let tx = ProtocolTransaction::from_slice(tx).map_err(|e| {
             HttpError::invalid_input(format!("Invalid transaction: {e:?}"))
         })?;
-        let (config, mut session) = {
+        let (config, mut session, _plonk_version_guard, _hard_fork_guard) = {
             let vm_handler = self.inner().vm_handler();
             let vm_handler = vm_handler.read().await;
             if tx.gas_limit() > vm_handler.get_block_gas_limit() {
@@ -324,8 +324,10 @@ impl RuskNode {
                     HttpError::database(format!("Failed to load the tip: {e}"))
                 })?
                 .ok_or_else(|| HttpError::database("Could not find the tip"))?;
-            let height = tip.header.height;
+            let height = tip.header.height.saturating_add(1);
             let config = vm_handler.vm_config.to_execution_config(height);
+            let (plonk_version_guard, hard_fork_guard) =
+                set_vm_host_context(&vm_handler.vm_config, height);
             let session = vm_handler
                 .new_block_session(height, vm_handler.tip.read().current)
                 .map_err(|e| {
@@ -333,7 +335,7 @@ impl RuskNode {
                         "Failed to initialize a session: {e}"
                     ))
                 })?;
-            (config, session)
+            (config, session, plonk_version_guard, hard_fork_guard)
         };
         let receipt = execute(&mut session, &tx, &config);
         let resp = match receipt {

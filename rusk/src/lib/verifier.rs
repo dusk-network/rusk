@@ -102,9 +102,8 @@ fn vd_for_phoenix(tx: &PhoenixTransaction) -> Result<&[u8]> {
 
 /// Verifies the signature of the incoming transaction.
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
-    Ok(host_queries::verify_bls(
-        tx.signature_message(),
-        *tx.sender(),
-        *tx.signature(),
-    ))
+    Ok(tx
+        .sender()
+        .verify(tx.signature(), &tx.signature_message())
+        .is_ok())
 }

@@ -21,11 +21,13 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_core::signatures::bls::{
-    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+    self as core_bls, MultisigPublicKey, MultisigSignature,
+    PublicKey as BlsPublicKey,
 };
 use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
+use node_data::hard_fork::bls_version_at;
 use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{BLOCK_HEADER_VERSION, ConsensusHeader};
@@ -123,8 +125,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 "invalid pk bytes: {err:?}"
             ))
         })?;
-        let generator =
-            MultisigPublicKey::aggregate(&[generator]).map_err(|err| {
+        let bls_version = bls_version_at(header.height);
+        let generator = core_bls::aggregate(&[generator], bls_version)
+            .map_err(|err| {
                 HeaderError::InvalidBlockSignature(format!(
                     "failed aggregating single key: {err:?}"
                 ))
@@ -137,7 +140,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     "invalid block signature bytes: {err:?}"
                 ))
             })?;
-        generator.verify(&block_sig, &header.hash).map_err(|err| {
+        core_bls::verify_multisig(
+            &generator,
+            &block_sig,
+            &header.hash,
+            bls_version,
+        )
+        .map_err(|err| {
             HeaderError::InvalidBlockSignature(format!(
                 "invalid block signature: {err:?}"
             ))
@@ -218,7 +227,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         // Verify seed field
-        self.verify_seed_field(header.seed.inner(), &generator)?;
+        self.verify_seed_field(header.seed.inner(), &generator, header.height)?;
 
         Ok(())
     }
@@ -227,6 +236,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         seed: &[u8; 48],
         pk: &MultisigPublicKey,
+        block_height: u64,
     ) -> Result<(), HeaderError> {
         let signature = MultisigSignature::from_bytes(seed).map_err(|err| {
             HeaderError::InvalidSeed(format!(
@@ -234,10 +244,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             ))
         })?;
 
-        pk.verify(&signature, self.prev_header.seed.inner())
-            .map_err(|err| {
-                HeaderError::InvalidSeed(format!("invalid seed: {err:?}"))
-            })?;
+        core_bls::verify_multisig(
+            pk,
+            &signature,
+            self.prev_header.seed.inner(),
+            bls_version_at(block_height),
+        )
+        .map_err(|err| {
+            HeaderError::InvalidSeed(format!("invalid seed: {err:?}"))
+        })?;
 
         Ok(())
     }

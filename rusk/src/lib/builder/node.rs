@@ -248,7 +248,6 @@ impl RuskNodeBuilder {
         self.vm_config.inject_network_conf(known_conf);
 
         let vm_config = RuskVmConfig::try_from(self.vm_config)?;
-
         #[cfg(feature = "archive")]
         let archive = Archive::create_or_open_with_conf(
             self.db_path.clone(),

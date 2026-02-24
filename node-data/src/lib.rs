@@ -10,6 +10,7 @@
 pub mod bls;
 pub mod encoding;
 pub mod events;
+pub mod hard_fork;
 pub mod ledger;
 pub mod message;
 

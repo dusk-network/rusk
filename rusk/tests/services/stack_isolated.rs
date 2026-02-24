@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use dusk_bytes::Serializable;
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls;
@@ -16,10 +17,14 @@ use dusk_core::stake::{
     StakeKeys,
 };
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::data::ContractCall;
 use dusk_vm::ContractData;
 use node_data::ledger::Transaction as NodeTransaction;
-use rusk::node::{DriverStore, FEATURE_ABI_PUBLIC_SENDER, RuskVmConfig};
+use rusk::node::{
+    DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
+    RuskVmConfig,
+};
 use rusk::{DUSK_CONSENSUS_KEY, Error, Result, Rusk};
 use rusk_recovery_tools::state::restore_state;
 use tempfile::TempDir;
@@ -42,6 +47,27 @@ const CHARLIE_ID: ContractId = ContractId::from_bytes([4; 32]);
 
 const CHAIN_ID: u8 = 0x01;
 
+fn resign_moonlight_insecure(
+    tx: ProtocolTransaction,
+    signer: &bls::SecretKey,
+) -> ProtocolTransaction {
+    let ProtocolTransaction::Moonlight(tx) = tx else {
+        panic!("expected moonlight transaction");
+    };
+    let mut bytes = tx.to_var_bytes();
+    let sig = signer.sign_insecure(&tx.signature_message()).to_bytes();
+    let sig_start = bytes
+        .len()
+        .checked_sub(sig.len())
+        .expect("moonlight tx must include signature bytes");
+    bytes[sig_start..].copy_from_slice(&sig);
+
+    ProtocolTransaction::Moonlight(
+        dusk_core::transfer::moonlight::Transaction::from_slice(&bytes)
+            .expect("re-signed moonlight transaction must deserialize"),
+    )
+}
+
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
@@ -59,6 +85,8 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let mut vm_config =
         RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
     vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
+    // Historical snapshot test: keep BLS behavior on pre-fork rules.
+    vm_config.with_feature(FEATURE_HARDFORK_AEGIS, u64::MAX);
 
     let rusk = Rusk::new(
         dir,
@@ -273,6 +301,7 @@ pub async fn test_isolated() -> Result<(), Error> {
         Some(stake_activate_call),
     )
     .expect("creating the stake activate tx should succeed");
+    let stake_activate_tx = resign_moonlight_insecure(stake_activate_tx, &sk_1);
 
     // create reward withdrawal tx
     nonce_2 += 1;
@@ -288,6 +317,7 @@ pub async fn test_isolated() -> Result<(), Error> {
         CHAIN_ID,
     )
     .expect("creating an unstake tx should succeed");
+    let withdraw_tx = resign_moonlight_insecure(withdraw_tx, &sk_2);
 
     //
     // Execute the transactions

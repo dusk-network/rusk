@@ -103,6 +103,8 @@ jobs:
     runs-on: core
     env:
       RUSK_PROFILE_PATH: "/var/opt/build-cache"
+      RUSTC_WRAPPER: ""
+      RUSTC_WORKSPACE_WRAPPER: ""
     steps:
       - name: Prepare sources
         shell: bash
@@ -167,6 +169,8 @@ jobs:
     runs-on: core
     env:
       RUSK_MINIMUM_BLOCK_TIME: 1
+      RUSTC_WRAPPER: ""
+      RUSTC_WORKSPACE_WRAPPER: ""
     steps:
       - name: Prepare sources
         shell: bash

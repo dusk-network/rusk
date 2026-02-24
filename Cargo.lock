@@ -750,9 +750,8 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bls12_381-bls"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4e6b7c24701ff5167f336478ec29dc176455f5396f62b8f0951cc1fdddf249b"
+version = "0.6.0-rc.0"
+source = "git+https://github.com/dusk-network/bls12_381-bls-private.git?branch=fix%2Fbls-v2-h2c#e24797a943d56a3f1d8d0a2bb7590ba30bf2c02d"
 dependencies = [
  "bs58",
  "bytecheck",
@@ -763,6 +762,7 @@ dependencies = [
  "rayon",
  "rkyv",
  "serde",
+ "sha2 0.9.9",
  "zeroize",
 ]
 
@@ -1601,6 +1601,7 @@ dependencies = [
  "blake2b_simd",
  "bytecheck",
  "byteorder",
+ "digest 0.9.0",
  "dusk-bytes",
  "ff",
  "group",
