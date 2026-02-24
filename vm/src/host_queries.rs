@@ -229,7 +229,8 @@ fn plonk_cache_key(
     let cache_tag = match version {
         PlonkVersion::V1 => 0,
         PlonkVersion::V2 => 1,
-        _ => 2,
+        PlonkVersion::V3 => 2,
+        _ => u8::MAX,
     };
     state.update(&[cache_tag]);
     state.update(arg_buf);
