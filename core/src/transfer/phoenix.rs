@@ -559,6 +559,9 @@ impl Transaction {
 
         let proof_len = usize::try_from(u64::from_reader(&mut buf)?)
             .map_err(|_| BytesError::InvalidData)?;
+        if buf.len() < proof_len {
+            return Err(BytesError::InvalidData);
+        }
         let proof = buf[..proof_len].into();
 
         Ok(Self { payload, proof })
