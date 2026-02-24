@@ -35,6 +35,18 @@ static TX_CIRCUIT_3_2_PROVER: Lazy<PlonkProver> =
 static TX_CIRCUIT_4_2_PROVER: Lazy<PlonkProver> =
     Lazy::new(|| fetch_prover("TxCircuitFourTwo"));
 
+fn plonk_prove_version_from_mode(mode: Option<&str>) -> PlonkVersion {
+    match mode {
+        Some(mode)
+            if mode.eq_ignore_ascii_case("v2")
+                || mode.eq_ignore_ascii_case("legacy") =>
+        {
+            PlonkVersion::V2
+        }
+        _ => PlonkVersion::V3,
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct LocalProver;
 
@@ -42,21 +54,14 @@ impl Prove for LocalProver {
     fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
         let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)?;
 
-        // Proving mode is chosen by the prover service. This is useful for
-        // fork rollouts where pre-activation blocks need legacy proofs, while
-        // post-activation blocks require fixed proofs.
+        // Proving mode is chosen by the prover service. Default is V3 and can
+        // be switched to V2 explicitly for legacy proving.
         #[cfg(feature = "std")]
-        let prove_legacy = std::env::var("RUSK_PLONK_PROVE_MODE")
-            .map(|v| v.eq_ignore_ascii_case("legacy"))
-            .unwrap_or(false);
+        let plonk_version = plonk_prove_version_from_mode(
+            std::env::var("RUSK_PLONK_PROVE_MODE").ok().as_deref(),
+        );
         #[cfg(not(feature = "std"))]
-        let prove_legacy = false;
-
-        let plonk_version = if prove_legacy {
-            PlonkVersion::V1
-        } else {
-            PlonkVersion::V2
-        };
+        let plonk_version = plonk_prove_version_from_mode(None);
 
         #[cfg(not(feature = "no_random"))]
         let rng = &mut rand::rngs::OsRng;
@@ -140,6 +145,21 @@ fn create_circuit<const I: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn prove_mode_mapping() {
+        let cases = [
+            (None, PlonkVersion::V3),
+            (Some("current"), PlonkVersion::V3),
+            (Some("random"), PlonkVersion::V3),
+            (Some("v2"), PlonkVersion::V2),
+            (Some("legacy"), PlonkVersion::V2),
+        ];
+
+        for (mode, expected) in cases {
+            assert_eq!(plonk_prove_version_from_mode(mode), expected);
+        }
+    }
 
     #[test]
     fn test_prove_tx_circuit() {
