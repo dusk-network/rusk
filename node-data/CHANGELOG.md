@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace `serde_as` with stable `serde(with)` attributes
 - Update MSRV to 1.85
 - Reject double-candidate and double-vote faults signed by different validators
+- Bound deserialization lengths for `Transaction`, `Block`, and `Inv` payloads
+- Reject malformed UTF-8 in `SpentTransaction` error-string deserialization
+- Bound `SpentTransaction` error-string size during deserialization
+- Canonicalize `SpentTransaction.err = None` encoding to a 4-byte `u32` length field (legacy values written with an 8-byte `u64` length may contain 4 trailing zero bytes)
 
 ## [1.4.0] - 2025-11-06
 

@@ -16,6 +16,18 @@ pub mod message;
 use std::io::{self, Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Maximum number of transactions allowed in a block.
+pub const MAX_NUMBER_OF_TRANSACTIONS: usize = 1_000;
+
+/// Maximum number of faults allowed in a block.
+pub const MAX_NUMBER_OF_FAULTS: usize = 100;
+
+/// Covers mempool inventory exchanges while preventing unbounded allocation.
+pub(crate) const MAX_INV_ITEMS: u32 = 10_000;
+
+/// Maximum serialized error-string length in `SpentTransaction`.
+pub(crate) const MAX_SPENT_TX_ERROR_BYTES: usize = 2 * 1024 * 1024;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
     Proposal = 0,
@@ -69,9 +81,18 @@ pub trait Serializable {
         Ok(())
     }
 
-    /// Reads length-prefixed fields
-    fn read_var_le_bytes32<R: Read>(r: &mut R) -> io::Result<Vec<u8>> {
+    /// Reads length-prefixed fields with a caller-provided size cap.
+    fn read_var_le_bytes32<R: Read>(
+        r: &mut R,
+        max_size: usize,
+    ) -> io::Result<Vec<u8>> {
         let len = Self::read_u32_le(r)? as usize;
+        if len > max_size {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("length-prefixed field too large: {len} > {max_size}"),
+            ));
+        }
 
         let mut buf = vec![0u8; len];
         r.read_exact(&mut buf)?;

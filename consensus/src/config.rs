@@ -9,6 +9,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use node_data::message::MESSAGE_MAX_FAILED_ITERATIONS;
+pub use node_data::{MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS};
 
 /// Maximum number of iterations Consensus runs per a single round.
 pub const CONSENSUS_MAX_ITER: u8 = 50;
@@ -21,8 +22,6 @@ pub const TOTAL_COMMITTEES_CREDITS: usize =
     VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS;
 
 pub const RELAX_ITERATION_THRESHOLD: u8 = MESSAGE_MAX_FAILED_ITERATIONS;
-pub const MAX_NUMBER_OF_TRANSACTIONS: usize = 1_000;
-pub const MAX_NUMBER_OF_FAULTS: usize = 100;
 
 pub const MAX_BLOCK_SIZE: usize = 1_024 * 1_024;
 
