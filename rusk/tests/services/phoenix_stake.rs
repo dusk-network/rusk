@@ -303,23 +303,13 @@ pub async fn slash() -> Result<()> {
     assert_eq!(new_balance, contract_balance);
 
     tc.slash(9001, vec![wallet.account_public_key(1).unwrap()])
-        .expect_err("Slashing a public key that never staked must fail");
+        .expect("Slashing a public key that never staked must be ignored");
 
-    // Ensure we still have previous changes, because generator procedure failed
+    // Missing-stake slashes are skipped and must not produce changes.
     let last_changes = rusk.last_provisioners_change(None).unwrap();
-    let (_, prev) = last_changes.first().expect("Something changed");
-    let prev = prev.expect("to have something");
-    assert_eq!(prev.reward, dusk(3.0));
-    assert_eq!(
-        prev.amount,
-        Some(StakeAmount {
-            value: dusk(14.4),
-            eligibility: 6480,
-            locked: dusk(20.0) - dusk(14.4)
-        })
-    );
+    assert_eq!(0, last_changes.len(), "No changes expected");
 
-    tc.slash(9001, vec![]).expect("To work properly");
+    tc.slash(9002, vec![]).expect("To work properly");
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     assert_eq!(0, last_changes.len(), "No changes expected");
 
