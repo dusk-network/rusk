@@ -97,11 +97,18 @@ jobs:
         env:
           DUSK_CONSENSUS_KEYS_PASS: password
           RUSK_MINIMUM_BLOCK_TIME: 1
+          RUSK_ALLOW_CFG_OVERRIDE: true
         run: |
           set -euo pipefail
           rm -rf /tmp/w3sper.state
 
           cd "${WORKDIR}/repo"
+
+          RUSK_W3SPER_CFG="${WORKDIR}/rusk.w3sper.config.toml"
+          cat > "${RUSK_W3SPER_CFG}" <<'EOF'
+          [vm.features]
+          HARDFORK_AEGIS = 9223372036854775807
+          EOF
 
           cargo build --release -p dusk-rusk --features archive
 
@@ -110,6 +117,7 @@ jobs:
             -o /tmp/w3sper.state
 
           ./target/release/rusk \
+            --config "${RUSK_W3SPER_CFG}" \
             -s /tmp/w3sper.state \
             --consensus-keys-path ./examples/consensus.keys \
             --http-listen-addr 0.0.0.0:8080 \
