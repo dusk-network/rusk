@@ -154,3 +154,72 @@ pub async fn reward() -> Result<()> {
 
     Ok(())
 }
+
+/// Reproduces the following pattern:
+/// 1) validator fully unstakes,
+/// 2) validator withdraws all rewards,
+/// 3) slash is applied afterward.
+///
+/// The slash path must not panic/fail block execution.
+fn wallet_unstake_withdraw_then_slash(tc: &TestContext) {
+    let wallet = tc.wallet();
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    // In stake.toml, index 1 has both stake amount and reward.
+    let staker_pk = wallet
+        .account_public_key(1)
+        .expect("staker pubkey to be available");
+
+    let stake = wallet.get_stake(1).expect("stake to exist");
+    assert!(
+        stake.amount.is_some(),
+        "stake amount must be present before unstake"
+    );
+    assert!(
+        stake.reward > 0,
+        "stake reward must be present before withdraw"
+    );
+
+    // Unstake
+    // Sender index 0 has a moonlight account and pays gas; staker is index 1.
+    let unstake_tx = wallet
+        .moonlight_unstake(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
+        .expect("Failed to create unstake tx");
+    let _ = tc.execute_transaction(unstake_tx, BLOCK_HEIGHT, None);
+
+    let stake_after_unstake =
+        wallet.get_stake(1).expect("stake to be readable");
+    assert!(
+        stake_after_unstake.amount.is_none(),
+        "stake amount should be fully unstaked"
+    );
+
+    // Withdraw rewards
+    let withdraw_tx = wallet
+        .moonlight_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
+        .expect("Failed to create reward withdraw tx");
+    let _ = tc.execute_transaction(withdraw_tx, BLOCK_HEIGHT, None);
+
+    let stake_after_withdraw =
+        wallet.get_stake(1).expect("stake to be readable");
+    assert_eq!(
+        stake_after_withdraw,
+        StakeData::default(),
+        "stake should be empty after full unstake + reward withdraw"
+    );
+
+    // Slash
+    tc.slash(BLOCK_HEIGHT, vec![staker_pk])
+        .expect("slash after complete unstake+withdraw must not fail");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn slash_after_unstake_and_withdraw() -> Result<()> {
+    logger();
+
+    let tc = stake_state().await?;
+
+    wallet_unstake_withdraw_then_slash(&tc);
+
+    Ok(())
+}
