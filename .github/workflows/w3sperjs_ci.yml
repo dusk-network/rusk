@@ -40,19 +40,95 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     name: "Run w3sper tests"
-    runs-on: ubuntu-latest
+    runs-on: core
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run Docker container
+      - name: Prepare sources
+        shell: bash
         run: |
-          mkdir -p /opt/rusk
-          docker run --name rusk -d -e RUSK_MINIMUM_BLOCK_TIME=1 -p 9000:9000/udp -p 8080:8080/tcp -v ./w3sper.js/tests/assets/genesis.toml:/opt/rusk/state.toml dusknode/rusk
+          set -euo pipefail
+
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup component add rust-src rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+
+      - name: Configure git auth for private dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GIT_CONFIG_GLOBAL="${WORKDIR}/.gitconfig"
+          echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build and start local Rusk node
+        shell: bash
+        env:
+          DUSK_CONSENSUS_KEYS_PASS: password
+          RUSK_MINIMUM_BLOCK_TIME: 1
+          RUSK_ALLOW_CFG_OVERRIDE: true
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/w3sper.state
+
+          cd "${WORKDIR}/repo"
+
+          RUSK_W3SPER_CFG="${WORKDIR}/rusk.w3sper.config.toml"
+          cat > "${RUSK_W3SPER_CFG}" <<'EOF'
+          [vm.features]
+          HARDFORK_AEGIS = 9223372036854775807
+          EOF
+
+          cargo build --release -p dusk-rusk --features archive
+
+          ./target/release/rusk recovery state \
+            --init ./w3sper.js/tests/assets/genesis.toml \
+            -o /tmp/w3sper.state
+
+          ./target/release/rusk \
+            --config "${RUSK_W3SPER_CFG}" \
+            -s /tmp/w3sper.state \
+            --consensus-keys-path ./examples/consensus.keys \
+            --http-listen-addr 0.0.0.0:8080 \
+            > /tmp/rusk-w3sper.log 2>&1 &
+
+          echo "RUSK_PID=$!" >> "$GITHUB_ENV"
 
       - name: Wait for Rusk node
+        shell: bash
         run: |
+          set -euo pipefail
           for i in $(seq 1 30); do
             if curl -sf -X POST -H 'Content-Type: application/json' -d '{"query":"{ block(height: 0) { header { height } } }"}' http://localhost:8080/graphql > /dev/null 2>&1; then
               echo "Rusk node ready"
@@ -62,19 +138,33 @@ jobs:
             sleep 2
           done
           echo "Rusk node failed to start"
-          docker logs rusk
+          tail -n 200 /tmp/rusk-w3sper.log || true
           exit 1
 
-      - name: Setup Rust
-        uses: dsherret/rust-toolchain-file@v1
-
-      - name: Setup deno
-        uses: denoland/setup-deno@v2
-        with: 
-          deno-version: v2.x
-        
       - name: Run deno
         run: |
-          cd w3sper.js
+          cd "${WORKDIR}/repo/w3sper.js"
           deno task wasm
+          curl -sfL \
+            http://localhost:8080/static/drivers/wallet-core-1.3.0.wasm \
+            -o ../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm
           deno task test
+
+      - name: Stop local Rusk node
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -n "${RUSK_PID:-}" ] && kill -0 "${RUSK_PID}" 2>/dev/null; then
+            kill "${RUSK_PID}" 2>/dev/null || true
+            for _ in $(seq 1 10); do
+              kill -0 "${RUSK_PID}" 2>/dev/null || break
+              sleep 1
+            done
+            kill -9 "${RUSK_PID}" 2>/dev/null || true
+          fi
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true
