@@ -156,8 +156,12 @@ jobs:
         run: |
           set +e
           if [ -n "${RUSK_PID:-}" ] && kill -0 "${RUSK_PID}" 2>/dev/null; then
-            kill "${RUSK_PID}"
-            wait "${RUSK_PID}" 2>/dev/null
+            kill "${RUSK_PID}" 2>/dev/null || true
+            for _ in $(seq 1 10); do
+              kill -0 "${RUSK_PID}" 2>/dev/null || break
+              sleep 1
+            done
+            kill -9 "${RUSK_PID}" 2>/dev/null || true
           fi
 
       - name: Cleanup
