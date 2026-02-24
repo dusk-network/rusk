@@ -13,6 +13,7 @@ use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_rusk_test::TestContext;
+use rkyv::Deserialize;
 use rusk::node::RuskVmConfig;
 
 use crate::common::logger;
@@ -35,10 +36,13 @@ pub async fn mainnet_genesis() -> Result<()> {
     rusk.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, None)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
-        let (_, data) = rkyv::from_bytes::<(StakeKeys, StakeData)>(&bytes)
-            .expect(
-                "The contract should only return (StakeKeys, StakeData) tuples",
-            );
+        let (_, data): (StakeKeys, StakeData) = rkyv::check_archived_root::<(
+            StakeKeys,
+            StakeData,
+        )>(&bytes)
+        .expect("The contract should only return (StakeKeys, StakeData) tuples")
+        .deserialize(&mut rkyv::Infallible)
+        .unwrap();
         total_amount += data.amount.unwrap_or_default().total_funds();
     }
 
@@ -62,10 +66,15 @@ pub async fn mainnet_genesis() -> Result<()> {
     )
     .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
-        let (data, _) = rkyv::from_bytes::<(AccountData, [u8; 193])>(&bytes)
-            .expect(
+        let (data, _): (AccountData, [u8; 193]) = rkyv::check_archived_root::<(
+            AccountData,
+            [u8; 193],
+        )>(&bytes)
+        .expect(
             "The contract should only return (AccountData, [u8; 193]) tuples",
-        );
+        )
+        .deserialize(&mut rkyv::Infallible)
+        .unwrap();
         total_amount += data.balance;
     }
 
@@ -74,8 +83,10 @@ pub async fn mainnet_genesis() -> Result<()> {
     rusk.feeder_query(TRANSFER_CONTRACT, "sync", &sync_range, sender, None)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
-        let leaf: NoteLeaf = rkyv::from_bytes(&bytes)
-            .expect("The contract should only return NoteLeaf");
+        let leaf: NoteLeaf = rkyv::check_archived_root::<NoteLeaf>(&bytes)
+            .expect("The contract should only return NoteLeaf")
+            .deserialize(&mut rkyv::Infallible)
+            .unwrap();
 
         total_amount += leaf.note.value(None).expect("Transparent note");
     }

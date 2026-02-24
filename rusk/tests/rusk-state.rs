@@ -25,6 +25,7 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rkyv::Deserialize;
 use rusk::node::{Rusk, RuskTip};
 use tempfile::tempdir;
 use tracing::info;
@@ -56,7 +57,12 @@ fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     .map_err(|err| anyhow::anyhow!("Feeder query failed: {err}"))?;
     Ok(receiver
         .into_iter()
-        .map(|bytes| rkyv::from_bytes(&bytes).unwrap())
+        .map(|bytes| {
+            rkyv::check_archived_root::<NoteLeaf>(&bytes)
+                .unwrap()
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap()
+        })
         .collect())
 }
 

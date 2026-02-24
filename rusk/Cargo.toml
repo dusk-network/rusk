@@ -46,7 +46,7 @@ base64 = { workspace = true }
 bs58 = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
-rkyv = { workspace = true, features = ["size_32"] }
+rkyv = { workspace = true, features = ["size_32", "validation"] }
 bytecheck = { workspace = true }
 dirs = { workspace = true }
 blake3 = { workspace = true }

@@ -36,6 +36,7 @@ use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
+use rkyv::Deserialize;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::{info, warn};
@@ -422,9 +423,13 @@ impl Rusk {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(StakeKeys, StakeData)>(&bytes).expect(
-                "The contract should only return (StakeKeys, StakeData) tuples",
+            let root = rkyv::check_archived_root::<(StakeKeys, StakeData)>(
+                &bytes,
             )
+            .expect(
+                "The contract should only return (StakeKeys, StakeData) tuples",
+            );
+            root.deserialize(&mut rkyv::Infallible).unwrap()
         }))
     }
 
@@ -444,9 +449,11 @@ impl Rusk {
         )?;
 
         Ok(receiver.into_iter().map(|bytes| {
-            let from_bytes = rkyv::from_bytes::<(AccountData, [u8; 193])>(&bytes).expect(
-                "The contract should only return (AccountData, [u8; 193]) tuples",
-            );
+            let root =
+                rkyv::check_archived_root::<(AccountData, [u8; 193])>(&bytes)
+                    .expect("The contract should only return (AccountData, [u8; 193]) tuples");
+            let from_bytes: (AccountData, [u8; 193]) =
+                root.deserialize(&mut rkyv::Infallible).unwrap();
             unsafe {
             (from_bytes.0, BlsPublicKey::from_slice_unchecked(&from_bytes.1))
             }
@@ -505,9 +512,10 @@ impl Rusk {
             base_commit,
         )?;
         Ok(receiver.into_iter().map(|bytes| {
-            rkyv::from_bytes::<(BlsPublicKey, Option<StakeData>)>(&bytes).expect(
-                "The contract should only return (pk, Option<stake_data>) tuples",
-            )
+            let root =
+                rkyv::check_archived_root::<(BlsPublicKey, Option<StakeData>)>(&bytes)
+                    .expect("The contract should only return (pk, Option<stake_data>) tuples");
+            root.deserialize(&mut rkyv::Infallible).unwrap()
         }).collect())
     }
 
