@@ -36,6 +36,9 @@ pub type DBContext = (Arc<RwLock<Backend>>, ());
 
 pub type OptResult<T> = FieldResult<Option<T>>;
 
+const MAX_GRAPHQL_BLOCKS_PER_QUERY: u64 = 200;
+const MAX_GRAPHQL_TXS_PER_QUERY: u64 = 200;
+
 pub struct Query;
 
 #[Object]
@@ -67,6 +70,11 @@ impl Query {
         ctx: &Context<'_>,
         last: u64,
     ) -> FieldResult<Vec<SpentTransaction>> {
+        if last > MAX_GRAPHQL_TXS_PER_QUERY {
+            return Err(FieldError::new(format!(
+                "last too large (max {MAX_GRAPHQL_TXS_PER_QUERY})"
+            )));
+        }
         last_transactions(ctx, last as usize).await
     }
 
@@ -299,5 +307,61 @@ impl Query {
         let next_height = archive.next_phoenix(height).await?;
 
         Ok(next_height)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+
+    type TestSchema = Schema<Query, EmptyMutation, EmptySubscription>;
+
+    fn schema() -> TestSchema {
+        Schema::build(Query, EmptyMutation, EmptySubscription).finish()
+    }
+
+    #[tokio::test]
+    async fn over_limit_queries_return_error() {
+        let cases = vec![
+            (
+                "transactions(last)",
+                format!(
+                    "{{ transactions(last: {}) {{ tx {{ id }} }} }}",
+                    MAX_GRAPHQL_TXS_PER_QUERY + 1
+                ),
+                MAX_GRAPHQL_TXS_PER_QUERY.to_string(),
+            ),
+            (
+                "blocks(last)",
+                format!(
+                    "{{ blocks(last: {}) {{ header {{ height }} }} }}",
+                    MAX_GRAPHQL_BLOCKS_PER_QUERY + 1
+                ),
+                MAX_GRAPHQL_BLOCKS_PER_QUERY.to_string(),
+            ),
+            (
+                "blocks(range)",
+                format!(
+                    "{{ blocks(range: [0, {}]) {{ header {{ height }} }} }}",
+                    MAX_GRAPHQL_BLOCKS_PER_QUERY
+                ),
+                MAX_GRAPHQL_BLOCKS_PER_QUERY.to_string(),
+            ),
+        ];
+
+        let schema = schema();
+        for (case_name, query, max) in cases {
+            let res = schema.execute(query).await;
+
+            assert!(
+                !res.errors.is_empty(),
+                "{case_name}: expected errors, got: {res:?}"
+            );
+            assert!(
+                res.errors[0].message.contains(&max),
+                "{case_name}: expected error message to mention max {max}, got: {res:?}"
+            );
+        }
     }
 }
