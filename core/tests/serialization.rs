@@ -360,6 +360,19 @@ fn moonlight_with_memo() -> Result<(), Error> {
 }
 
 #[test]
+fn phoenix_truncated_proof_fails() {
+    let mut rng = StdRng::seed_from_u64(42);
+    let transaction = new_phoenix_tx(&mut rng, None);
+
+    let mut bytes = transaction.to_var_bytes();
+    // Truncate: remove the last byte so proof_len exceeds remaining buffer
+    bytes.pop();
+
+    Transaction::from_slice(&bytes)
+        .expect_err("truncated proof should fail, not panic");
+}
+
+#[test]
 fn nonsense_bytes_fails() -> Result<(), Error> {
     let mut data = [0u8; 2 ^ 16];
     for exp in 3..16 {
