@@ -22,9 +22,10 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::hard_fork::bls_version_at;
+use node_data::hard_fork::{bls_version_at, hard_fork_at};
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
+use super::rusk::plonk_version_at;
 use super::{RuesEvent, Rusk};
 pub use config::Config as RuskVmConfig;
 pub use config::feature::*;
@@ -168,19 +169,11 @@ impl VMExecution for Rusk {
                 }
 
                 let next_block_height = tip_height.saturating_add(1);
-                let plonk_v2_active = self
-                    .vm_config
-                    .feature(FEATURE_PLONK_V2)
-                    .map(|activation| {
-                        activation.is_active_at(next_block_height)
-                    })
-                    .unwrap_or(false);
-
-                let version = if plonk_v2_active {
-                    dusk_core::plonk::PlonkVersion::V2
-                } else {
-                    dusk_core::plonk::PlonkVersion::V1
-                };
+                let version = plonk_version_at(
+                    &self.vm_config,
+                    next_block_height,
+                    hard_fork_at(next_block_height),
+                );
 
                 match crate::verifier::verify_proof_with_version(tx, version) {
                     Ok(true) => Ok(PreverificationResult::Valid),
