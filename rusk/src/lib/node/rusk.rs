@@ -34,7 +34,6 @@ use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
@@ -45,8 +44,8 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
-    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip,
-    get_block_rewards,
+    FEATURE_HARDFORK_AEGIS, RuesEvent, Rusk, RuskTip, get_block_rewards,
+    set_vm_host_context,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
 
@@ -148,23 +147,8 @@ impl Rusk {
 
         let cert_voters = &transition_data.cert_voters[..];
 
-        let plonk_v2_active = self
-            .vm_config
-            .feature(FEATURE_PLONK_V2)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false);
-        let _plonk_version_guard =
-            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
-                dusk_core::plonk::PlonkVersion::V2
-            } else {
-                dusk_core::plonk::PlonkVersion::V1
-            });
-        let vm_hard_fork = match hard_fork_at(block_height) {
-            HardFork::PreFork => dusk_vm::host_queries::HardFork::PreFork,
-            HardFork::Aegis => dusk_vm::host_queries::HardFork::Aegis,
-        };
-        let _hard_fork_guard =
-            dusk_vm::host_queries::set_hard_fork(vm_hard_fork);
+        let (_plonk_version_guard, _hard_fork_guard) =
+            set_vm_host_context(&self.vm_config, block_height);
 
         info!(
             event = "Creating state transition",
@@ -654,23 +638,8 @@ impl Rusk {
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
 
-        let plonk_v2_active = self
-            .vm_config
-            .feature(FEATURE_PLONK_V2)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false);
-        let _plonk_version_guard =
-            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
-                dusk_core::plonk::PlonkVersion::V2
-            } else {
-                dusk_core::plonk::PlonkVersion::V1
-            });
-        let vm_hard_fork = match hard_fork_at(block_height) {
-            HardFork::PreFork => dusk_vm::host_queries::HardFork::PreFork,
-            HardFork::Aegis => dusk_vm::host_queries::HardFork::Aegis,
-        };
-        let _hard_fork_guard =
-            dusk_vm::host_queries::set_hard_fork(vm_hard_fork);
+        let (_plonk_version_guard, _hard_fork_guard) =
+            set_vm_host_context(&self.vm_config, block_height);
 
         let generator_bytes = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator_bytes.0)
