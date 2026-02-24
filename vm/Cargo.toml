@@ -11,6 +11,7 @@ rust-version.workspace = true
 edition.workspace = true
 
 [dependencies]
+bytecheck = { workspace = true }
 dusk-core = { workspace = true, features = ["zk", "kzg"] }
 dusk-bytes = { workspace = true }
 piecrust = { workspace = true }
@@ -18,7 +19,7 @@ lru = { workspace = true }
 blake2b_simd = { workspace = true }
 blake3 = { workspace = true }
 dusk-poseidon = { workspace = true }
-rkyv = { workspace = true, features = ["size_32"] }
+rkyv = { workspace = true, features = ["size_32", "validation"] }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
 wasmparser = { workspace = true }
