@@ -181,8 +181,7 @@ pub unsafe fn display_scalar(
     scalar_ptr: &[u8; 32],
     output: &mut [u8; 64],
 ) -> ErrorCode {
-    let scalar: BlsScalar =
-        rkyv::from_bytes(scalar_ptr).or(Err(ErrorCode::UnarchivingError))?;
+    let scalar: BlsScalar = mem::parse_buffer(scalar_ptr)?;
     let displayed = alloc::format!("{}", scalar);
     let bytes = displayed.as_bytes();
 
@@ -370,8 +369,7 @@ pub unsafe fn phoenix(
     let receiver_pk = PhoenixPublicKey::from_bytes(receiver)
         .or(Err(ErrorCode::DeserializationError))?;
 
-    let root: BlsScalar =
-        rkyv::from_bytes(root).or(Err(ErrorCode::UnarchivingError))?;
+    let root: BlsScalar = mem::parse_buffer(root)?;
 
     let openings: Vec<Option<NoteOpening>> = mem::from_buffer(openings)?;
 
@@ -388,9 +386,7 @@ pub unsafe fn phoenix(
         None
     } else {
         let buffer = mem::read_buffer(data);
-        let transaction_data: TransactionData =
-            rkyv::from_bytes(buffer.to_vec().as_slice())
-                .or(Err(ErrorCode::DeserializationError))?;
+        let transaction_data: TransactionData = mem::parse_buffer(buffer)?;
         Some(transaction_data)
     };
 
@@ -469,9 +465,7 @@ pub unsafe fn moonlight(
         None
     } else {
         let buffer = mem::read_buffer(data);
-        let transaction_data: TransactionData =
-            rkyv::from_bytes(buffer.to_vec().as_slice())
-                .or(Err(ErrorCode::DeserializationError))?;
+        let transaction_data: TransactionData = mem::parse_buffer(buffer)?;
         Some(transaction_data)
     };
 
@@ -528,8 +522,7 @@ pub unsafe fn phoenix_to_moonlight(
     let phoenix_sender_sk = derive_phoenix_sk(&seed, profile_index);
     let moonlight_receiver_sk = derive_bls_sk(&seed, profile_index);
 
-    let root: BlsScalar =
-        rkyv::from_bytes(root).or(Err(ErrorCode::UnarchivingError))?;
+    let root: BlsScalar = mem::parse_buffer(root)?;
 
     let openings: Vec<Option<NoteOpening>> = mem::from_buffer(openings)?;
     let nullifiers: Vec<BlsScalar> = mem::from_buffer(nullifiers)?;
