@@ -524,15 +524,15 @@ where
 ///
 /// The argument bytes are validated with [`rkyv::check_archived_root`] before
 /// deserialization. If validation fails (e.g. malformed or malicious archive
-/// data), the function returns `None` **without** invoking `closure`. Each
-/// `host_*` caller is expected to handle the `None` by writing a safe default
-/// value to the argument buffer (e.g. `false` for verifiers,
-/// `BlsScalar::default()` for hashes).
+/// data), the function logs a warning and writes the `fallback` value to the
+/// argument buffer **without** invoking `closure`.
 fn wrap_host_query<A, R, F>(
     arg_buf: &mut [u8],
     arg_len: u32,
+    name: &str,
+    fallback: &R,
     closure: F,
-) -> Option<u32>
+) -> u32
 where
     F: FnOnce(A) -> R,
     A: Archive,
@@ -540,26 +540,30 @@ where
         + Deserialize<A, rkyv::Infallible>,
     R: Serialize<AllocSerializer<1024>>,
 {
-    let root =
-        rkyv::check_archived_root::<A>(&arg_buf[..arg_len as usize]).ok()?;
+    let Some(root) =
+        rkyv::check_archived_root::<A>(&arg_buf[..arg_len as usize]).ok()
+    else {
+        warn!("vm: invalid archived data in {name}");
+        return write_to_arg_buf(arg_buf, fallback);
+    };
     let arg: A = root.deserialize(&mut rkyv::Infallible).unwrap();
 
     let result = closure(arg);
-    Some(write_to_arg_buf(arg_buf, &result))
+    write_to_arg_buf(arg_buf, &result)
 }
 
 pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, hash).unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_hash");
-        write_to_arg_buf(arg_buf, &BlsScalar::default())
-    })
+    wrap_host_query(arg_buf, arg_len, "host_hash", &BlsScalar::default(), hash)
 }
 
 pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, poseidon_hash).unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_poseidon_hash");
-        write_to_arg_buf(arg_buf, &BlsScalar::default())
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_poseidon_hash",
+        &BlsScalar::default(),
+        poseidon_hash,
+    )
 }
 
 pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -567,17 +571,19 @@ pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = plonk_cache_key(version, &arg_buf[..arg_len as usize]);
     let cached = cache::get_plonk_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid = cached.unwrap_or_else(|| {
-            verify_plonk_with_version(version, vd, proof, pis)
-        });
-        cache::put_plonk_verification(hash, is_valid);
-        is_valid
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_plonk");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_plonk",
+        &false,
+        |(vd, proof, pis)| {
+            let is_valid = cached.unwrap_or_else(|| {
+                verify_plonk_with_version(version, vd, proof, pis)
+            });
+            cache::put_plonk_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_groth16_bn254(
@@ -587,26 +593,28 @@ pub(crate) fn host_verify_groth16_bn254(
     let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
     let cached = cache::get_groth16_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(pvk, proof, inputs)| {
-        let is_valid =
-            cached.unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
-        cache::put_groth16_verification(hash, is_valid);
-        is_valid
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_groth16_bn254");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_groth16_bn254",
+        &false,
+        |(pvk, proof, inputs)| {
+            let is_valid = cached
+                .unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
+            cache::put_groth16_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        verify_schnorr(msg, pk, sig)
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_schnorr");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_schnorr",
+        &false,
+        |(msg, pk, sig)| verify_schnorr(msg, pk, sig),
+    )
 }
 
 pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -614,60 +622,56 @@ pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = bls_cache_key(current_hard_fork, &arg_buf[..arg_len as usize]);
     let cached = cache::get_bls_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
-        cache::put_bls_verification(hash, is_valid);
-        is_valid
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_bls");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_bls",
+        &false,
+        |(msg, pk, sig)| {
+            let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
+            cache::put_bls_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_bls_multisig(
     arg_buf: &mut [u8],
     arg_len: u32,
 ) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
-        verify_bls_multisig(msg, keys, sig)
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_bls_multisig");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_bls_multisig",
+        &false,
+        |(msg, keys, sig)| verify_bls_multisig(msg, keys, sig),
+    )
 }
 
 pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, keccak256).unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_keccak256");
-        write_to_arg_buf(arg_buf, &[0u8; 32])
-    })
+    wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], keccak256)
 }
 
 pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, sha256).unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_sha256");
-        write_to_arg_buf(arg_buf, &[0u8; 32])
-    })
+    wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], sha256)
 }
 
 pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(commitment, z, y, proof)| {
-        verify_kzg_proof(commitment, z, y, proof)
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_verify_kzg_proof");
-        write_to_arg_buf(arg_buf, &false)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_kzg_proof",
+        &false,
+        |(commitment, z, y, proof)| verify_kzg_proof(commitment, z, y, proof),
+    )
 }
 
 pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg_hash, sig)| {
-        secp256k1_recover(msg_hash, sig)
-    })
-    .unwrap_or_else(|| {
-        warn!("vm: invalid archived data in host_secp256k1_recover");
-        write_to_arg_buf(arg_buf, &Option::<[u8; 65]>::None)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_secp256k1_recover",
+        &Option::<[u8; 65]>::None,
+        |(msg_hash, sig)| secp256k1_recover(msg_hash, sig),
+    )
 }
