@@ -22,7 +22,7 @@ hkdf = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
 dusk-core = { workspace = true }
-rkyv = { workspace = true, features = ["alloc"] }
+rkyv = { workspace = true, features = ["alloc", "validation"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 dlmalloc = { workspace = true, features = ["global"] }

@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use core::cell::Cell;
 
+use bytecheck::CheckBytes;
 use c_kzg::{Bytes32 as KzgBytes32, Bytes48};
 use dusk_bytes::DeserializableSlice;
 use dusk_core::BlsScalar;
@@ -29,6 +30,7 @@ use dusk_core::signatures::schnorr::{
 use dusk_core::transfer::data::BlobData;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
+use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Serialize};
 use secp256k1::{Message, Secp256k1, ecdsa::RecoverableSignature};
 use sha2::{Digest as Sha2Digest, Sha256};
@@ -133,6 +135,7 @@ pub fn set_hard_fork(hard_fork: HardFork) -> HardForkGuard {
 ///
 /// # Returns
 /// A [`BlsScalar`] representing the cryptographic hash of the input bytes.
+/// If argument deserialization fails, returns `BlsScalar::default()`.
 ///
 /// # References
 /// For more details about BLS12-381 and its scalar operations, refer to:
@@ -154,6 +157,7 @@ pub fn hash(bytes: Vec<u8>) -> BlsScalar {
 ///
 /// # Returns
 /// A [`BlsScalar`] representing the Poseidon hash of the input values.
+/// If argument deserialization fails, returns `BlsScalar::default()`.
 ///
 /// # References
 /// For more details about Poseidon and its implementation, refer to:
@@ -178,7 +182,7 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 ///
 /// # Returns
 /// A boolean indicating whether the proof is valid (`true`) or invalid
-/// (`false`).
+/// (`false`). If argument deserialization fails, returns `false`.
 ///
 /// # References
 /// <https://github.com/dusk-network/plonk>.
@@ -266,7 +270,7 @@ fn bls_cache_key(
 ///
 /// # Returns
 /// A boolean indicating whether the proof is valid (`true`) or invalid
-/// (`false`).
+/// (`false`). If argument deserialization fails, returns `false`.
 ///
 /// # References
 /// For more details about Groth16 and its implementation, refer to:
@@ -324,7 +328,7 @@ pub fn verify_groth16_bn254(
 ///
 /// # Returns
 /// A boolean indicating whether the signature is valid (`true`) or invalid
-/// (`false`).
+/// (`false`). If argument deserialization fails, returns `false`.
 ///
 /// # References
 /// For more details about Schnorr signatures and their implementation, refer
@@ -350,7 +354,7 @@ pub fn verify_schnorr(
 ///
 /// # Returns
 /// A boolean indicating whether the signature is valid (`true`) or invalid
-/// (`false`).
+/// (`false`). If argument deserialization fails, returns `false`.
 ///
 /// # References
 /// For more details about BLS signatures and their implementation, refer to:
@@ -374,7 +378,7 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
 ///
 /// # Returns
 /// A boolean indicating whether the multi-signature is valid (`true`) or
-/// invalid (`false`).
+/// invalid (`false`). If argument deserialization fails, returns `false`.
 ///
 /// # References
 /// For more details about BLS multi-signatures and their implementation, refer
@@ -407,6 +411,7 @@ pub fn verify_bls_multisig(
 ///
 /// # Returns
 /// An array (`[u8; 32]`) representing the keccak256 hash.
+/// If argument deserialization fails, returns `[0u8; 32]`.
 pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
     let mut hasher = Keccak256::new();
     hasher.update(bytes.as_slice());
@@ -420,6 +425,7 @@ pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
 ///
 /// # Returns
 /// An array (`[u8; 32]`) representing the sha256 hash.
+/// If argument deserialization fails, returns `[0u8; 32]`.
 pub fn sha256(bytes: Vec<u8>) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(bytes.as_slice());
@@ -436,6 +442,7 @@ pub fn sha256(bytes: Vec<u8>) -> [u8; 32] {
 ///
 /// # Returns
 /// `true` if the proof is valid, `false` otherwise.
+/// If argument deserialization fails, returns `false`.
 pub fn verify_kzg_proof(
     commitment: [u8; 48],
     z: [u8; 32],
@@ -459,6 +466,8 @@ pub fn verify_kzg_proof(
 /// Recover a secp256k1 public key from a message hash and signature.
 ///
 /// Signature format: r(32) || s(32) || v(1), with v in {0,1,27,28}.
+///
+/// If argument deserialization fails, returns `None`.
 pub fn secp256k1_recover(
     msg_hash: [u8; 32],
     sig: [u8; 65],
@@ -501,31 +510,60 @@ pub fn secp256k1_recover(
     Some(pk.serialize_uncompressed())
 }
 
-fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
+fn write_to_arg_buf<R>(arg_buf: &mut [u8], result: &R) -> u32
 where
-    F: FnOnce(A) -> R,
-    A: Archive,
-    A::Archived: Deserialize<A, rkyv::Infallible>,
     R: Serialize<AllocSerializer<1024>>,
 {
-    let root =
-        unsafe { rkyv::archived_root::<A>(&arg_buf[..arg_len as usize]) };
-    let arg: A = root.deserialize(&mut rkyv::Infallible).unwrap();
-
-    let result = closure(arg);
-
-    let bytes = rkyv::to_bytes::<_, 1024>(&result).unwrap();
-
+    let bytes = rkyv::to_bytes::<_, 1024>(result).unwrap();
     arg_buf[..bytes.len()].copy_from_slice(&bytes);
     bytes.len() as u32
 }
 
+/// Deserializes the argument buffer, applies `closure`, and writes the result
+/// back.
+///
+/// The argument bytes are validated with [`rkyv::check_archived_root`] before
+/// deserialization. If validation fails (e.g. malformed or malicious archive
+/// data), the function logs a warning and writes the `fallback` value to the
+/// argument buffer **without** invoking `closure`.
+fn wrap_host_query<A, R, F>(
+    arg_buf: &mut [u8],
+    arg_len: u32,
+    name: &str,
+    fallback: &R,
+    closure: F,
+) -> u32
+where
+    F: FnOnce(A) -> R,
+    A: Archive,
+    A::Archived: for<'a> CheckBytes<DefaultValidator<'a>>
+        + Deserialize<A, rkyv::Infallible>,
+    R: Serialize<AllocSerializer<1024>>,
+{
+    let Some(root) =
+        rkyv::check_archived_root::<A>(&arg_buf[..arg_len as usize]).ok()
+    else {
+        warn!("vm: invalid archived data in {name}");
+        return write_to_arg_buf(arg_buf, fallback);
+    };
+    let arg: A = root.deserialize(&mut rkyv::Infallible).unwrap();
+
+    let result = closure(arg);
+    write_to_arg_buf(arg_buf, &result)
+}
+
 pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, hash)
+    wrap_host_query(arg_buf, arg_len, "host_hash", &BlsScalar::default(), hash)
 }
 
 pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, poseidon_hash)
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_poseidon_hash",
+        &BlsScalar::default(),
+        poseidon_hash,
+    )
 }
 
 pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -533,13 +571,19 @@ pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = plonk_cache_key(version, &arg_buf[..arg_len as usize]);
     let cached = cache::get_plonk_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid = cached.unwrap_or_else(|| {
-            verify_plonk_with_version(version, vd, proof, pis)
-        });
-        cache::put_plonk_verification(hash, is_valid);
-        is_valid
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_plonk",
+        &false,
+        |(vd, proof, pis)| {
+            let is_valid = cached.unwrap_or_else(|| {
+                verify_plonk_with_version(version, vd, proof, pis)
+            });
+            cache::put_plonk_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_groth16_bn254(
@@ -549,18 +593,28 @@ pub(crate) fn host_verify_groth16_bn254(
     let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
     let cached = cache::get_groth16_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(pvk, proof, inputs)| {
-        let is_valid =
-            cached.unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
-        cache::put_groth16_verification(hash, is_valid);
-        is_valid
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_groth16_bn254",
+        &false,
+        |(pvk, proof, inputs)| {
+            let is_valid = cached
+                .unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
+            cache::put_groth16_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        verify_schnorr(msg, pk, sig)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_schnorr",
+        &false,
+        |(msg, pk, sig)| verify_schnorr(msg, pk, sig),
+    )
 }
 
 pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
@@ -568,38 +622,56 @@ pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let hash = bls_cache_key(current_hard_fork, &arg_buf[..arg_len as usize]);
     let cached = cache::get_bls_verification(hash);
 
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
-        cache::put_bls_verification(hash, is_valid);
-        is_valid
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_bls",
+        &false,
+        |(msg, pk, sig)| {
+            let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
+            cache::put_bls_verification(hash, is_valid);
+            is_valid
+        },
+    )
 }
 
 pub(crate) fn host_verify_bls_multisig(
     arg_buf: &mut [u8],
     arg_len: u32,
 ) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
-        verify_bls_multisig(msg, keys, sig)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_bls_multisig",
+        &false,
+        |(msg, keys, sig)| verify_bls_multisig(msg, keys, sig),
+    )
 }
 
 pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, keccak256)
+    wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], keccak256)
 }
 
 pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, sha256)
+    wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], sha256)
 }
 
 pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(commitment, z, y, proof)| {
-        verify_kzg_proof(commitment, z, y, proof)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_verify_kzg_proof",
+        &false,
+        |(commitment, z, y, proof)| verify_kzg_proof(commitment, z, y, proof),
+    )
 }
 
 pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg_hash, sig)| {
-        secp256k1_recover(msg_hash, sig)
-    })
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_secp256k1_recover",
+        &Option::<[u8; 65]>::None,
+        |(msg_hash, sig)| secp256k1_recover(msg_hash, sig),
+    )
 }

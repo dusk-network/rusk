@@ -24,7 +24,7 @@ time-util = { workspace = true, features = ["chrono"] }
 native-tls = { workspace = true }                       # 0.2.14 requires rustc 1.80.0
 indexmap = { workspace = true }                         # 2.12 requires rustc edition 2024
 
-rkyv = { workspace = true }
+rkyv = { workspace = true, features = ["validation"] }
 
 rocksdb = { workspace = true }
 dusk-bytes = { workspace = true }

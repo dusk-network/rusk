@@ -9,6 +9,8 @@ mod sync;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
+use rkyv::Deserialize;
+
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
 use dusk_core::Error as ExecutionCoreError;
@@ -271,13 +273,15 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let account: AccountData = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
+            .await?;
+        let account: AccountData =
+            rkyv::check_archived_root::<AccountData>(&bytes)
+                .map_err(|_| Error::Rkyv)?
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap();
 
         status("account-data received!");
 
@@ -298,13 +302,14 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let root: BlsScalar = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
+            .await?;
+        let root: BlsScalar = rkyv::check_archived_root::<BlsScalar>(&bytes)
+            .map_err(|_| Error::Rkyv)?
+            .deserialize(&mut rkyv::Infallible)
+            .unwrap();
 
         status("root received!");
 
@@ -321,13 +326,15 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let stake_data: Option<StakeData> = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
+            .await?;
+        let stake_data: Option<StakeData> =
+            rkyv::check_archived_root::<Option<StakeData>>(&bytes)
+                .map_err(|_| Error::Rkyv)?
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap();
 
         status("Stake received!");
 
@@ -346,17 +353,15 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let stake_keys: Option<StakeKeys> = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, 1024>(
-                    STAKE_CONTRACT,
-                    "get_stake_keys",
-                    pk,
-                )
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake_keys", pk)
+            .await?;
+        let stake_keys: Option<StakeKeys> =
+            rkyv::check_archived_root::<Option<StakeKeys>>(&bytes)
+                .map_err(|_| Error::Rkyv)?
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap();
 
         let stake_owner = stake_keys.map(|keys| keys.owner);
 
@@ -373,17 +378,18 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let chain_id: u8 = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, { u8::SIZE }>(
-                    TRANSFER_CONTRACT,
-                    "chain_id",
-                    &(),
-                )
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, { u8::SIZE }>(
+                TRANSFER_CONTRACT,
+                "chain_id",
+                &(),
+            )
+            .await?;
+        let chain_id: u8 = rkyv::check_archived_root::<u8>(&bytes)
+            .map_err(|_| Error::Rkyv)?
+            .deserialize(&mut rkyv::Infallible)
+            .unwrap();
 
         status("Chain id received!");
 
@@ -397,17 +403,19 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let opening: Option<NoteOpening> = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, 1024>(
-                    TRANSFER_CONTRACT,
-                    "opening",
-                    note.pos(),
-                )
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, 1024>(
+                TRANSFER_CONTRACT,
+                "opening",
+                note.pos(),
+            )
+            .await?;
+        let opening: Option<NoteOpening> =
+            rkyv::check_archived_root::<Option<NoteOpening>>(&bytes)
+                .map_err(|_| Error::Rkyv)?
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap();
 
         // return an error here if the note opening couldn't be fetched
         let opening = opening.ok_or(Error::NoteNotFound)?;
@@ -424,17 +432,18 @@ impl State {
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
-        let note_count: u64 = rkyv::from_bytes(
-            &self
-                .client
-                .contract_query::<_, _, { u64::SIZE }>(
-                    TRANSFER_CONTRACT,
-                    "num_notes",
-                    &(),
-                )
-                .await?,
-        )
-        .map_err(|_| Error::Rkyv)?;
+        let bytes = self
+            .client
+            .contract_query::<_, _, { u64::SIZE }>(
+                TRANSFER_CONTRACT,
+                "num_notes",
+                &(),
+            )
+            .await?;
+        let note_count: u64 = rkyv::check_archived_root::<u64>(&bytes)
+            .map_err(|_| Error::Rkyv)?
+            .deserialize(&mut rkyv::Infallible)
+            .unwrap();
 
         status("Latest note count received!");
 

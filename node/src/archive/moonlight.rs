@@ -793,6 +793,7 @@ mod tests {
     use rand::distributions::Alphanumeric;
     use rand::rngs::StdRng;
     use rand::{CryptoRng, Rng, RngCore, SeedableRng};
+    use rkyv::Deserialize;
 
     use super::transformer::{self, TransormerResult, filter_and_convert};
     use super::{
@@ -1125,10 +1126,13 @@ mod tests {
                     assert_eq!(moonlight_events.events().len(), 1);
                     assert_eq!(moonlight_events.events()[0].topic, "moonlight");
 
-                    let data = rkyv::from_bytes::<MoonlightTransactionEvent>(
-                        &moonlight_events.events()[0].data,
-                    )
-                    .unwrap();
+                    let data: MoonlightTransactionEvent =
+                        rkyv::check_archived_root::<MoonlightTransactionEvent>(
+                            &moonlight_events.events()[0].data,
+                        )
+                        .unwrap()
+                        .deserialize(&mut rkyv::Infallible)
+                        .unwrap();
 
                     assert_eq!(
                         data.refund_info.unwrap(),
@@ -1216,8 +1220,11 @@ mod tests {
             assert_eq!(e.topic, "moonlight");
             assert_eq!(e.target, dusk_core::transfer::TRANSFER_CONTRACT);
 
-            let moonlight_event =
-                rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data).unwrap();
+            let moonlight_event: MoonlightTransactionEvent =
+                rkyv::check_archived_root::<MoonlightTransactionEvent>(&e.data)
+                    .unwrap()
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
             assert_eq!(moonlight_event.memo, vec![1, 1, 1, 1]);
             assert!(moonlight_event.receiver.is_none());
             assert_eq!(moonlight_event.sender, AccountPublicKey::default());
@@ -1235,9 +1242,13 @@ mod tests {
                 assert_eq!(e.topic, "moonlight");
                 assert_eq!(e.target, dusk_core::transfer::TRANSFER_CONTRACT);
 
-                let moonlight_event =
-                    rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data)
-                        .unwrap();
+                let moonlight_event: MoonlightTransactionEvent =
+                    rkyv::check_archived_root::<MoonlightTransactionEvent>(
+                        &e.data,
+                    )
+                    .unwrap()
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
                 assert_eq!(moonlight_event.memo, vec![0, 1, 1, 0]);
                 assert!(moonlight_event.receiver.is_none());
                 assert_eq!(moonlight_event.sender, AccountPublicKey::default());

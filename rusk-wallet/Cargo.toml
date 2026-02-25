@@ -57,7 +57,7 @@ tracing-subscriber = { workspace = true, features = [
     "json",
 ] }
 
-rkyv = { workspace = true }
+rkyv = { workspace = true, features = ["validation"] }
 inquire = { workspace = true }
 konst = { workspace = true }
 pbkdf2 = { workspace = true }

@@ -13,6 +13,7 @@ use dusk_core::{
     BlsScalar, transfer::phoenix::Note,
     transfer::phoenix::PublicKey as PhoenixPublicKey,
 };
+use rkyv::Deserialize;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
 use crate::clients::TREE_LEAF;
@@ -203,8 +204,10 @@ impl Cache {
             for i in iterator {
                 let (_, note_data) = i?;
 
-                let note = rkyv::from_bytes(&note_data)
-                    .map_err(|_| Error::CacheDatabaseCorrupted)?;
+                let note = rkyv::check_archived_root::<NoteLeaf>(&note_data)
+                    .map_err(|_| Error::CacheDatabaseCorrupted)?
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
 
                 notes.insert(note);
             }
@@ -230,8 +233,10 @@ impl Cache {
             for i in iterator {
                 let (key, note_data) = i?;
 
-                let note = rkyv::from_bytes(&note_data)
-                    .map_err(|_| Error::CacheDatabaseCorrupted)?;
+                let note = rkyv::check_archived_root::<NoteLeaf>(&note_data)
+                    .map_err(|_| Error::CacheDatabaseCorrupted)?
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
 
                 let key = BlsScalar::from_slice(&key)?;
 

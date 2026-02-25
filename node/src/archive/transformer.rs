@@ -14,6 +14,7 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT, WITHDRAW_TOPIC, WithdrawEvent,
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
+use rkyv::Deserialize as RkyvDeserialize;
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::hex::Hex;
@@ -211,11 +212,13 @@ fn record_flows(
                     // The DepositEvent or ConvertEvent will have a sender
                     // Some(pk) equal to the sender field of
                     // this MoonlightTransactionEvent
-                    let Ok(moonlight_event) = rkyv::from_bytes::<
+                    let Ok(root) = rkyv::check_archived_root::<
                         MoonlightTransactionEvent,
                     >(&event.data) else {
                         return false;
                     };
+                    let moonlight_event: MoonlightTransactionEvent =
+                        root.deserialize(&mut rkyv::Infallible).unwrap();
 
                     // An outflow from the sender pk is always the
                     // case
@@ -268,11 +271,13 @@ fn record_flows(
                     true
                 }
                 CONVERT_TOPIC => {
-                    let Ok(convert_event) =
-                        rkyv::from_bytes::<ConvertEvent>(&event.data)
+                    let Ok(root) =
+                        rkyv::check_archived_root::<ConvertEvent>(&event.data)
                     else {
                         return false;
                     };
+                    let convert_event: ConvertEvent =
+                        root.deserialize(&mut rkyv::Infallible).unwrap();
 
                     let WithdrawReceiver::Moonlight(key) =
                         convert_event.receiver
@@ -285,11 +290,13 @@ fn record_flows(
                     true
                 }
                 WITHDRAW_TOPIC | MINT_TOPIC => {
-                    let Ok(withdraw_event) =
-                        rkyv::from_bytes::<WithdrawEvent>(&event.data)
+                    let Ok(root) =
+                        rkyv::check_archived_root::<WithdrawEvent>(&event.data)
                     else {
                         return false;
                     };
+                    let withdraw_event: WithdrawEvent =
+                        root.deserialize(&mut rkyv::Infallible).unwrap();
 
                     let WithdrawReceiver::Moonlight(key) =
                         withdraw_event.receiver
@@ -302,11 +309,13 @@ fn record_flows(
                     true
                 }
                 CONTRACT_TO_ACCOUNT_TOPIC => {
-                    let Ok(contract_to_account_event) =
-                        rkyv::from_bytes::<ContractToAccountEvent>(&event.data)
-                    else {
+                    let Ok(root) = rkyv::check_archived_root::<
+                        ContractToAccountEvent,
+                    >(&event.data) else {
                         return false;
                     };
+                    let contract_to_account_event: ContractToAccountEvent =
+                        root.deserialize(&mut rkyv::Infallible).unwrap();
 
                     handle_inflow(contract_to_account_event.receiver);
 

@@ -33,7 +33,7 @@ zeroize = { workspace = true, features = ["derive"] }
 ff = { workspace = true }
 criterion = { workspace = true }
 rand = { workspace = true }
-rkyv = { workspace = true, features = ["size_32"] }
+rkyv = { workspace = true, features = ["size_32", "validation"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
 tokio-stream = { workspace = true, features = ["sync"] }
 tempfile = { workspace = true }

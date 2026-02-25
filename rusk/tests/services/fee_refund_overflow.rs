@@ -174,10 +174,7 @@ pub async fn fee_refund_overflow_poc() -> Result<()> {
             executed: 0,
             discarded: 1,
         }),
-    )
-    .expect(
-        "Block generation should succeed (with the malicious tx discarded)",
-    );
+    )?;
 
     // Step 5: Check the sender's balance after the attack
     let final_balance =
