@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix clippy `io_other_error` warning
+- Retry CRS downloads on transient HTTP failures (`429`, `408`, `5xx`)
+  with `Retry-After` support and exponential backoff
 
 ## [1.4.1] - 2026-02-11
 
