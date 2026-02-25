@@ -5,16 +5,24 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::sync::{LazyLock, Mutex, mpsc};
+use std::{cmp, time::Duration};
 use std::{io, thread};
 
 use dusk_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use dusk_plonk::prelude::{Compiler, PublicParameters};
+use reqwest::StatusCode;
+use reqwest::header::RETRY_AFTER;
 use rusk_profile::Circuit as CircuitProfile;
+use tokio::time::sleep;
 use tracing::{info, warn};
 
 use crate::Theme;
 
 mod circuits;
+
+const MAX_CRS_DOWNLOAD_ATTEMPTS: usize = 8;
+const BASE_RETRY_DELAY_MS: u64 = 500;
+const MAX_RETRY_DELAY_SECS: u64 = 30;
 
 static CRS_URL: LazyLock<Mutex<String>> =
     LazyLock::new(|| Mutex::new(String::new()));
@@ -62,10 +70,93 @@ static PUB_PARAMS: LazyLock<PublicParameters> = LazyLock::new(|| {
 #[tokio::main]
 async fn fetch_pp() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let crs_url = CRS_URL.lock().expect("Unlocking failed.").to_string();
+    let client = reqwest::Client::new();
+    let mut last_failure = String::new();
 
-    let response = reqwest::get(crs_url).await?.bytes().await?;
+    for attempt in 1..=MAX_CRS_DOWNLOAD_ATTEMPTS {
+        match client.get(&crs_url).send().await {
+            Ok(response) => {
+                let status = response.status();
+                if status.is_success() {
+                    let bytes = response.bytes().await?;
+                    return Ok(bytes.to_vec());
+                }
 
-    Ok(response.to_vec())
+                let retry_after = parse_retry_after_header(
+                    response.headers().get(RETRY_AFTER),
+                );
+                let body = response.text().await.unwrap_or_else(|_| {
+                    String::from("<response body unavailable>")
+                });
+                last_failure = format!("status: {status}; body: {body}");
+
+                if should_retry_status(status)
+                    && attempt < MAX_CRS_DOWNLOAD_ATTEMPTS
+                {
+                    let delay = retry_after
+                        .unwrap_or_else(|| exponential_backoff_delay(attempt));
+                    warn!(
+                        "CRS download failed ({status}), retrying in {:?} (attempt {attempt}/{MAX_CRS_DOWNLOAD_ATTEMPTS})",
+                        delay
+                    );
+                    sleep(delay).await;
+                    continue;
+                }
+
+                return Err(io::Error::other(format!(
+                    "failed to download CRS, {last_failure}"
+                ))
+                .into());
+            }
+            Err(err) => {
+                last_failure = err.to_string();
+                if attempt < MAX_CRS_DOWNLOAD_ATTEMPTS {
+                    let delay = exponential_backoff_delay(attempt);
+                    warn!(
+                        "CRS download request error, retrying in {:?} (attempt {attempt}/{MAX_CRS_DOWNLOAD_ATTEMPTS}): {err}",
+                        delay
+                    );
+                    sleep(delay).await;
+                    continue;
+                }
+
+                return Err(io::Error::other(format!(
+                    "failed to download CRS: {err}"
+                ))
+                .into());
+            }
+        }
+    }
+
+    Err(io::Error::other(format!(
+        "exceeded retry limit while downloading CRS, last failure: {last_failure}"
+    ))
+    .into())
+}
+
+fn should_retry_status(status: StatusCode) -> bool {
+    status == StatusCode::TOO_MANY_REQUESTS
+        || status == StatusCode::REQUEST_TIMEOUT
+        || status.is_server_error()
+}
+fn parse_retry_after_header(
+    value: Option<&reqwest::header::HeaderValue>,
+) -> Option<Duration> {
+    let value = value?;
+    let value = value.to_str().ok()?;
+    let seconds = value.parse::<u64>().ok()?;
+    Some(Duration::from_secs(seconds))
+}
+
+fn exponential_backoff_delay(attempt: usize) -> Duration {
+    let exponent = (attempt.saturating_sub(1)).min(8) as u32;
+    let multiplier = 1u64 << exponent;
+    let delay_ms = BASE_RETRY_DELAY_MS.saturating_mul(multiplier);
+
+    cmp::min(
+        Duration::from_millis(delay_ms),
+        Duration::from_secs(MAX_RETRY_DELAY_SECS),
+    )
 }
 
 fn check_circuits_cache(
