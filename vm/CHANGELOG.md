@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change `lru` dependency to `0.16.3`
 - Update MSRV to 1.85
+- Extend PLONK cache key version tagging to include V3.
 
 ## [1.4.3] - 2026-01-07
 

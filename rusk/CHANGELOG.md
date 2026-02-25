@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cap GraphQL `blocks(last/range)` and `transactions(last)` query sizes to bound expensive requests.
 - Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
 - Update MSRV to 1.85
+- Wire PLONK proof verification to use V3 after Aegis hard fork activation.
 
 ### Fixed
 
