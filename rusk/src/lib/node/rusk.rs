@@ -179,6 +179,14 @@ impl Rusk {
                 Ok(session)
             };
 
+        // Apply slashes before transaction execution so in-block stake
+        // operations cannot bypass slash accounting.
+        let slash_events =
+            slash(&mut session, slashes.clone()).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+        event_bloom.add_events(&slash_events);
+
         // We always write the faults len in a u32
         let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
 
@@ -247,7 +255,28 @@ impl Rusk {
                             gas_left
                         );
 
-                        session = replay_spent_txs(&spent_txs)?;
+                        session =
+                            self.new_block_session(block_height, prev_state)?;
+
+                        // Re-apply slashes in the reset session before
+                        // replaying already spent transactions.
+                        slash(&mut session, slashes.clone()).map_err(
+                            |err| {
+                                StateTransitionError::ExecutionError(format!(
+                                    "{err}"
+                                ))
+                            },
+                        )?;
+
+                        for spent_tx in &spent_txs {
+                            // We know these transactions were correctly
+                            // executed before, so we don't bother checking.
+                            let _ = execute(
+                                &mut session,
+                                &spent_tx.inner.inner,
+                                &execution_config,
+                            );
+                        }
                         continue;
                     }
 
@@ -346,19 +375,18 @@ impl Rusk {
             }
         }
 
-        let coinbase_events = reward_and_slash(
+        let reward_events = apply_rewards(
             &mut session,
             block_height,
             generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
 
         let state_root = session.root();
 
@@ -682,6 +710,21 @@ impl Rusk {
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
 
+        // Apply slashes before transaction execution so in-block stake
+        // operations cannot bypass slash accounting.
+        let slash_events = slash(&mut session, slashes).map_err(|err| {
+            StateTransitionError::ExecutionError(format!("{err}"))
+        })?;
+        event_bloom.add_events(&slash_events);
+        let slash_events: Vec<_> = slash_events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event: event.into(),
+                origin: block_hash,
+            })
+            .collect();
+        events.extend(slash_events);
+
         // Execute transactions
         for unspent_tx in txs {
             let tx = &unspent_tx.inner;
@@ -729,29 +772,28 @@ impl Rusk {
             spent_txs.push(spent);
         }
 
-        // Apply rewards and slashes
-        let coinbase_events = reward_and_slash(
+        // Apply rewards
+        let reward_events = apply_rewards(
             &mut session,
             block_height,
             &generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
 
-        let coinbase_events: Vec<_> = coinbase_events
+        let reward_events: Vec<_> = reward_events
             .into_iter()
             .map(|event| ContractTxEvent {
                 event: event.into(),
                 origin: block_hash,
             })
             .collect();
-        events.extend(coinbase_events);
+        events.extend(reward_events);
 
         // Get new state root
         let state_root = session.root();
@@ -768,16 +810,15 @@ impl Rusk {
     }
 }
 
-/// Execute rewards and slashes in a VM session.
+/// Execute rewards in a VM session.
 ///
-/// The Trasnfer contract's note tree root is updated accordingly.
-fn reward_and_slash(
+/// The Transfer contract's note tree root is updated accordingly.
+fn apply_rewards(
     session: &mut Session,
     block_height: u64,
     generator: &BlsPublicKey,
     voters: &[Voter],
     spent_amount: Dusk,
-    slashes: Vec<Slash>,
 ) -> Result<Vec<Event>> {
     let mut events = vec![];
 
@@ -789,9 +830,6 @@ fn reward_and_slash(
         voters,
         spent_amount,
     )?);
-
-    // Apply slashes
-    events.extend(slash(session, slashes)?);
 
     // Update the note tree root in the Transfer contract
     let r = session.call::<_, ()>(

@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Skip slashes for missing stake entries to avoid block failure and log a warning
+- Apply slashes before transaction execution in state transitions so same-block
+  unstake flows cannot bypass slash accounting
 
 ### Added
 
