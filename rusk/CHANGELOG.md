@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
 - Update MSRV to 1.85
 
+### Fixed
+
+- Skip slashes for missing stake entries to avoid block failure and log a warning
+
 ### Added
 
 - Add feature activation flags for `sha256` and `verify_kzg_proof` host queries [#3993]
