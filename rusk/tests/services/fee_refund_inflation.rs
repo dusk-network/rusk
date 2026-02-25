@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! PoC for P1.5-1: Phoenix Fee Inflation
+//! PoC: Phoenix Fee Refund Inflation
 //!
 //! The Fee struct (gas_limit, gas_price) is excluded from the payload hash
 //! that feeds into the ZK proof. An attacker creates a valid Phoenix
 //! transaction with a normal fee, then replaces the Fee with an inflated
-//! gas_limit. The refund creates a note worth
+//! gas_limit. The refund note is worth
 //! `(inflated_gas_limit - gas_spent) * gas_price` DUSK — minting tokens
 //! from thin air.
 
@@ -29,14 +29,14 @@ use crate::common::state::generator_procedure;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 
 /// Verifies that a Phoenix transaction with a replaced (inflated) Fee is
-/// rejected and does NOT inflate the supply.
+/// rejected and the refund does NOT inflate the supply.
 ///
 /// - FAILS while the vulnerability is active: the malicious tx executes and the
 ///   sender ends up with more balance than they started with.
 /// - PASSES once the fix is applied: the malicious tx is rejected during
 ///   preverify or execution, and no inflation occurs.
 #[tokio::test(flavor = "multi_thread")]
-pub async fn fee_inflation_poc() -> Result<()> {
+pub async fn fee_refund_inflation_poc() -> Result<()> {
     logger();
 
     let state_toml = include_str!("../config/transfer.toml");
@@ -50,7 +50,7 @@ pub async fn fee_inflation_poc() -> Result<()> {
     // Record the sender's initial balance
     let initial_balance =
         wallet.get_balance(0).expect("Failed to get balance").value;
-    info!("=== Phoenix Fee Inflation PoC ===");
+    info!("=== Phoenix Fee Refund Inflation PoC ===");
     info!("Initial balance: {} LUX", initial_balance);
 
     // Generate a receiver pk (we send to ourselves for simplicity)

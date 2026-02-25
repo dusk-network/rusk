@@ -32,6 +32,9 @@ pub struct Config {
 
     /// Disable calls to 3rd party contracts
     pub disable_3rd_party: bool,
+
+    /// Enforce phoenix fee refund stealth address matches change note
+    pub phoenix_refund_check: bool,
 }
 
 impl Default for Config {
@@ -52,5 +55,6 @@ impl Config {
         disable_wasm64: false,
         disable_wasm32: false,
         disable_3rd_party: false,
+        phoenix_refund_check: false,
     };
 }

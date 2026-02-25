@@ -345,6 +345,13 @@ impl VMExecution for Rusk {
             .unwrap_or(false)
     }
 
+    fn phoenix_refund_check_active(&self, block_height: u64) -> bool {
+        self.vm_config
+            .feature(FEATURE_HARDFORK_AEGIS)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
+    }
+
     fn shade_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()> {
         self.shade_3rd_party(contract_id).map_err(|inner| {
             anyhow::anyhow!("Cannot remove 3rd party: {inner}")

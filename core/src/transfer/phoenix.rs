@@ -156,9 +156,11 @@ impl Transaction {
 
         // --- Create the transaction payload
 
-        // Set the fee.
-        let fee = Fee::new(rng, refund_pk, gas_limit, gas_price);
-        let max_fee = fee.max_fee();
+        // Compute max_fee directly so the change note can be created
+        // before the Fee. This lets us derive Fee.stealth_address from
+        // the ZK-proven change note, binding the refund destination to
+        // the proof and preventing stealth-address redirection.
+        let max_fee = gas_limit * gas_price;
 
         if input_value < transfer_value + max_fee + deposit {
             return Err(Error::InsufficientBalance);
@@ -208,6 +210,25 @@ impl Transaction {
             change_value_blinder,
             change_sender_blinder,
         );
+
+        // Derive Fee.stealth_address from the change note so the gas
+        // refund destination is bound to the ZK-proven output.
+        let refund_sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+        let refund_sa = *change_note.stealth_address();
+        let fee = Fee {
+            gas_limit,
+            gas_price,
+            stealth_address: refund_sa,
+            sender: Sender::encrypt(
+                refund_sa.note_pk(),
+                refund_pk,
+                &refund_sender_blinder,
+            ),
+        };
+
         let outputs = [transfer_note.clone(), change_note.clone()];
 
         // Now we can set the tx-skeleton, payload and get the payload-hash

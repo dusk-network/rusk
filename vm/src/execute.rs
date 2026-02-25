@@ -72,6 +72,11 @@ pub fn execute(
     tx.phoenix_fee_check()
         .map_err(|e| Error::Panic(e.legacy_to_string()))?;
 
+    if config.phoenix_refund_check {
+        tx.phoenix_refund_check()
+            .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    }
+
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     tx.deploy_check(

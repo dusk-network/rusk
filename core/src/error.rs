@@ -97,6 +97,9 @@ pub enum TxPreconditionError {
     PhoenixFeeOverflow,
     /// Phoenix fee tampered.
     PhoenixFeeTampered,
+    /// Phoenix fee refund stealth address does not match the proven change
+    /// note.
+    PhoenixFeeRefundMismatch,
 }
 
 impl TxPreconditionError {
@@ -122,6 +125,9 @@ impl TxPreconditionError {
             }
             TxPreconditionError::PhoenixFeeOverflow => "phoenix fee overflow",
             TxPreconditionError::PhoenixFeeTampered => "phoenix fee tampered",
+            TxPreconditionError::PhoenixFeeRefundMismatch => {
+                "phoenix fee refund stealth address mismatch"
+            }
         }
         .to_string()
     }

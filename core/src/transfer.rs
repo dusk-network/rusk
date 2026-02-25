@@ -471,6 +471,24 @@ impl Transaction {
         Ok(())
     }
 
+    /// Check that the phoenix fee's refund address matches the ZK-proven
+    /// change note (`outputs[1]`).
+    ///
+    /// This prevents a malicious block producer from redirecting the gas
+    /// refund to a different stealth address.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is a Phoenix transaction and
+    /// the fee's stealth address does not match `outputs[1]`.
+    pub fn phoenix_refund_check(&self) -> Result<(), TxPreconditionError> {
+        if let Transaction::Phoenix(tx) = self {
+            if tx.fee().stealth_address != *tx.outputs()[1].stealth_address() {
+                return Err(TxPreconditionError::PhoenixFeeRefundMismatch);
+            }
+        }
+        Ok(())
+    }
+
     /// Check if the transaction is a deployment transaction and if it
     /// meets the minimum requirements for gas price and gas limit.
     ///

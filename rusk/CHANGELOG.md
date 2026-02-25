@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add feature activation flags for `sha256` and `verify_kzg_proof` host queries [#3993]
 - Add feature activation flag for `secp256k1_recover` host query [#4012]
+- Fold phoenix refund check into `HARDFORK_AEGIS` feature flag
 
 ## [1.4.4] - 2026-01-30
 
