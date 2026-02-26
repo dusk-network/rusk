@@ -42,8 +42,8 @@ use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::{info, warn};
 
-use super::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
 use super::fork_policy::set_hard_fork_activations;
+use super::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
