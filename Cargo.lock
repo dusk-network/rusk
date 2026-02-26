@@ -607,7 +607,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -627,7 +627,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -751,7 +751,7 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 [[package]]
 name = "bls12_381-bls"
 version = "0.6.0-rc.0"
-source = "git+https://github.com/dusk-network/bls12_381-bls-private.git?branch=fix%2Fbls-v2-h2c#e24797a943d56a3f1d8d0a2bb7590ba30bf2c02d"
+source = "git+https://github.com/dusk-network/bls12_381-bls-private.git?tag=AEGIS#2bbf457d31d83df92f3afeca8e9fc72c3d33545b"
 dependencies = [
  "bs58",
  "bytecheck",
@@ -1327,8 +1327,7 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.4.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa36f7c3da98787ecf897b22f4bc2f77c9f0f2c47d4bdc9630870b4eba8a7724"
+source = "git+https://github.com/dusk-network/piecrust-private.git?tag=AEGIS#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
 dependencies = [
  "libc",
  "rangemap",
@@ -1692,8 +1691,7 @@ dependencies = [
 [[package]]
 name = "dusk-jubjub"
 version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "128c27bc829702d8e418eda75908234783db295ba19de45cf9b5133aa2e0f0b6"
+source = "git+https://github.com/dusk-network/jubjub-private.git?tag=AEGIS#6e2b63f59edac8afa4f81a28b12d88529af37cdb"
 dependencies = [
  "bitvec",
  "blake2b_simd",
@@ -1706,7 +1704,6 @@ dependencies = [
  "rand_core 0.6.4",
  "rkyv",
  "serde",
- "serde_json",
  "subtle",
  "zeroize",
 ]
@@ -1802,7 +1799,7 @@ dependencies = [
 [[package]]
 name = "dusk-plonk"
 version = "0.22.0-rc.0"
-source = "git+https://github.com/dusk-network/plonk-private.git?branch=master#39983aa3eb3f4cb77d4783610717d08e9a0a57a5"
+source = "git+https://github.com/dusk-network/plonk-private.git?tag=AEGIS#55083f925935b67b116c089e186ee1b261e0fdf0"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -1956,6 +1953,7 @@ version = "1.4.4-alpha.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
+ "bytecheck",
  "c-kzg",
  "dusk-bytes",
  "dusk-core",
@@ -3042,7 +3040,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b0f83760fb341a774ed326568e19f5a863af4a952def8c39f9ab92fd95b88e5"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.0",
+ "hashbrown 0.15.5",
  "serde",
  "serde_core",
 ]
@@ -3161,8 +3159,7 @@ dependencies = [
 [[package]]
 name = "jubjub-elgamal"
 version = "0.5.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f67cc40c4ca93d8059fb399afd0a250d6c1f5980fbbb9762ee62019fd0ddd2"
+source = "git+https://github.com/dusk-network/jubjub-elgamal-private.git?tag=AEGIS#1f0d481fb29282c69fdc0063a0404cb89a53bd10"
 dependencies = [
  "dusk-bytes",
  "dusk-jubjub",
@@ -3939,8 +3936,7 @@ dependencies = [
 [[package]]
 name = "phoenix-circuits"
 version = "0.8.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4af1a5e8e584c55c1656e5c5bb85fcf28c6b475217e775b84040235946306ccb"
+source = "git+https://github.com/dusk-network/phoenix-private.git?tag=AEGIS#3d5b9838d7e824b441c93de9aaa38737263b97bd"
 dependencies = [
  "dusk-bls12_381",
  "dusk-bytes",
@@ -3956,8 +3952,7 @@ dependencies = [
 [[package]]
 name = "phoenix-core"
 version = "0.35.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "111d0214d771e7fb7ea1ca806be7fb37208fb3712d34e07ba8a36e688a194699"
+source = "git+https://github.com/dusk-network/phoenix-private.git?tag=AEGIS#3d5b9838d7e824b441c93de9aaa38737263b97bd"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -3984,8 +3979,7 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.30.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ed7d0263733babd45afa1f36f0ed6dc697f0ba9a5152ded2ed24f97988f7e15"
+source = "git+https://github.com/dusk-network/piecrust-private.git?tag=AEGIS#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4007,8 +4001,7 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.20.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e0d33327abf097fb1cd6defa82117204d2629e962e7d588272e0b8afc7a8c1c"
+source = "git+https://github.com/dusk-network/piecrust-private.git?tag=AEGIS#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
 dependencies = [
  "bytecheck",
  "dlmalloc",
@@ -6277,7 +6270,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
