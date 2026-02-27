@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
 - Update MSRV to 1.85
 - Wire PLONK proof verification to use V3 after Aegis hard fork activation.
+- Set Aegis activation defaults to mainnet `3_590_904` and testnet `2_773_727`.
+- Pin private Aegis dependencies by immutable git `rev` in workspace patches.
 
 ### Fixed
 
