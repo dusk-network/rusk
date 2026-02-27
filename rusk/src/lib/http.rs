@@ -623,6 +623,50 @@ fn api_error_response(
     Ok(response)
 }
 
+fn http_error_response(
+    error: &HttpError,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let (status, message) = map_http_error_for_response(error);
+    let status = StatusCode::from_u16(status)
+        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    api_error_response(status, message)
+}
+
+fn invalid_rues_path_response()
+-> Result<Response<FullOrStreamBody>, ExecutionError> {
+    api_error_response(StatusCode::NOT_FOUND, "Invalid URL path")
+}
+
+fn invalid_session_id_response()
+-> Result<Response<FullOrStreamBody>, ExecutionError> {
+    // TODO: Keep 424 for current RUES compatibility; revisit whether malformed
+    // or missing session identifiers should be normalized to 400.
+    api_error_response(
+        StatusCode::FAILED_DEPENDENCY,
+        "Session ID not provided or invalid",
+    )
+}
+
+fn failed_consuming_request_response()
+-> Result<Response<FullOrStreamBody>, ExecutionError> {
+    api_error_response(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed consuming request",
+    )
+}
+
+fn method_not_allowed_response(
+    allow: &'static str,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let mut resp = api_error_response(
+        StatusCode::METHOD_NOT_ALLOWED,
+        "Method not allowed",
+    )?;
+    resp.headers_mut()
+        .insert(ALLOW, HeaderValue::from_static(allow));
+    Ok(resp)
+}
+
 fn request_parse_error_response(
     error: RequestParseError,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
@@ -730,10 +774,7 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
         if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return api_error_response(
-                StatusCode::BAD_REQUEST,
-                err.to_string(),
-            );
+            return http_error_response(&err);
         }
 
         let (event, binary_request) =
@@ -777,40 +818,22 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(resp)
     } else {
         if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return api_error_response(
-                StatusCode::BAD_REQUEST,
-                err.to_string(),
-            );
+            return http_error_response(&err);
         }
 
         let sid = match SessionId::parse_from_req(&req) {
-            None => {
-                return api_error_response(
-                    StatusCode::FAILED_DEPENDENCY,
-                    "Session ID not provided or invalid",
-                );
-            }
+            None => return invalid_session_id_response(),
             Some(sid) => sid,
         };
 
         let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
-            None => {
-                return api_error_response(
-                    StatusCode::NOT_FOUND,
-                    "Invalid URL path",
-                );
-            }
+            None => return invalid_rues_path_response(),
             Some(s) => s,
         };
 
         let action_sender = match sockets_map.read().await.get(&sid) {
             Some(sender) => sender.clone(),
-            None => {
-                return api_error_response(
-                    StatusCode::FAILED_DEPENDENCY,
-                    "Session ID not provided or invalid",
-                );
-            }
+            None => return invalid_session_id_response(),
         };
 
         let (action, reply) = match *req.method() {
@@ -822,22 +845,11 @@ async fn handle_request_rues<H: HandleRequest>(
                 let (reply, receiver) = oneshot::channel();
                 (SubscriptionAction::Unsubscribe { uri, reply }, receiver)
             }
-            _ => {
-                let mut resp = api_error_response(
-                    StatusCode::METHOD_NOT_ALLOWED,
-                    "Method not allowed",
-                )?;
-                resp.headers_mut()
-                    .insert(ALLOW, HeaderValue::from_static("GET, DELETE"));
-                return Ok(resp);
-            }
+            _ => return method_not_allowed_response("GET, DELETE"),
         };
 
         if action_sender.send(action).await.is_err() {
-            return api_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed consuming request",
-            );
+            return failed_consuming_request_response();
         }
 
         match reply.await {
@@ -846,12 +858,9 @@ async fn handle_request_rues<H: HandleRequest>(
                 StatusCode::NOT_FOUND,
                 "Subscription not found",
             ),
-            // TODO: consider returning 424 instead of 500 for reply channel
-            // closure during session teardown
-            Err(_) => api_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed consuming request",
-            ),
+            // TODO: Keep 500 for now to preserve existing behavior; consider
+            // 424 once reply-channel closure semantics are formalized.
+            Err(_) => failed_consuming_request_response(),
         }
     }
 }
@@ -1832,6 +1841,45 @@ mod tests {
 
         assert_status_contains(
             response,
+            StatusCode::FAILED_DEPENDENCY,
+            "Session ID not provided or invalid",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn get_delete_rues_invalid_session_id_returns_failed_dependency() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([9; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+
+        let get_response = client
+            .get(path.clone())
+            .header("Rusk-Session-Id", "invalid-session-id")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            get_response,
+            StatusCode::FAILED_DEPENDENCY,
+            "Session ID not provided or invalid",
+        )
+        .await;
+
+        let delete_response = client
+            .delete(path)
+            .header("Rusk-Session-Id", "invalid-session-id")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            delete_response,
             StatusCode::FAILED_DEPENDENCY,
             "Session ID not provided or invalid",
         )

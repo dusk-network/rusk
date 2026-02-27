@@ -66,6 +66,8 @@ impl Error {
             Error::NotFound(_) => 404,
             Error::Forbidden(_) => 403,
             Error::TooManyRequests(_) => 429,
+            // TODO: Keep 501 for current compatibility; revisit whether
+            // unsupported routes/operations should be normalized to 404.
             Error::Unsupported => 501,
             Error::Serialization(_)
             | Error::Vm(_)
