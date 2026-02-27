@@ -37,10 +37,65 @@ use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 type GraphqlSchema = Schema<Query, EmptyMutation, EmptySubscription>;
+type ChainResult<T> = Result<T, ChainError>;
 
-async fn preverify_tx(node: &RuskNode, data: &[u8]) -> HttpResult<Transaction> {
+#[derive(Debug, thiserror::Error)]
+enum ChainError {
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
+    #[error("Unsupported operation")]
+    Unsupported,
+    #[error("Database error: {0}")]
+    Database(String),
+    #[error("VM error: {0}")]
+    Vm(String),
+    #[error("{0}")]
+    Internal(String),
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+}
+
+impl ChainError {
+    fn invalid_input<T: AsRef<str>>(msg: T) -> Self {
+        Self::InvalidInput(msg.as_ref().to_string())
+    }
+
+    fn not_found<T: AsRef<str>>(msg: T) -> Self {
+        Self::NotFound(msg.as_ref().to_string())
+    }
+
+    fn database<T: AsRef<str>>(msg: T) -> Self {
+        Self::Database(msg.as_ref().to_string())
+    }
+
+    fn vm<T: AsRef<str>>(msg: T) -> Self {
+        Self::Vm(msg.as_ref().to_string())
+    }
+
+    fn internal<T: AsRef<str>>(msg: T) -> Self {
+        Self::Internal(msg.as_ref().to_string())
+    }
+}
+
+impl From<ChainError> for HttpError {
+    fn from(value: ChainError) -> Self {
+        match value {
+            ChainError::InvalidInput(msg) => HttpError::invalid_input(msg),
+            ChainError::NotFound(msg) => HttpError::not_found(msg),
+            ChainError::Unsupported => HttpError::Unsupported,
+            ChainError::Database(msg) => HttpError::database(msg),
+            ChainError::Vm(msg) => HttpError::vm(msg),
+            ChainError::Internal(msg) => HttpError::internal(msg),
+            ChainError::Serialization(err) => HttpError::Serialization(err),
+        }
+    }
+}
+
+async fn preverify_tx(node: &RuskNode, data: &[u8]) -> ChainResult<Transaction> {
     let tx: Transaction = ProtocolTransaction::from_slice(data)
-        .map_err(|e| HttpError::invalid_input(format!("Data: {e:?}")))?
+        .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?
         .into();
 
     let db = node.inner().database();
@@ -52,7 +107,7 @@ async fn preverify_tx(node: &RuskNode, data: &[u8]) -> HttpResult<Transaction> {
             let err_msg =
                 format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
             error!("{err_msg}");
-            HttpError::internal(err_msg)
+            ChainError::internal(err_msg)
         })?;
 
     Ok(tx)
@@ -102,7 +157,7 @@ impl HandleRequest for RuskNode {
         &self,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData> {
-        match request.uri.inner() {
+        let response = match request.uri.inner() {
             ("graphql", _, "query") => {
                 self.handle_gql(&request.data, &request.headers).await
             }
@@ -118,7 +173,7 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers") => {
                 let amount =
                     request.data.as_string().trim().parse().map_err(|_| {
-                        HttpError::invalid_input("invalid amount")
+                        ChainError::invalid_input("invalid amount")
                     })?;
                 self.alive_nodes(amount).await
             }
@@ -141,24 +196,26 @@ impl HandleRequest for RuskNode {
 
             ("blobs", Some(commitment), "commitment") => {
                 let commitment = hex::decode(commitment).map_err(|_| {
-                    HttpError::invalid_input("commitment not hex")
+                    ChainError::invalid_input("commitment not hex")
                 })?;
                 let hash = BlobData::hash_from_commitment(&commitment);
                 self.blob_by_hash(&hash, request.is_json()).await
             }
             ("blobs", Some(hash), "hash") => {
                 let hash = hex::decode(hash)
-                    .map_err(|_| HttpError::invalid_input("hash not hex"))?
+                    .map_err(|_| ChainError::invalid_input("hash not hex"))?
                     .try_into()
-                    .map_err(|_| HttpError::invalid_input("hash length"))?;
+                    .map_err(|_| ChainError::invalid_input("hash length"))?;
                 self.blob_by_hash(&hash, request.is_json()).await
             }
 
             ("stats", _, "account_count") => self.get_account_count().await,
             ("stats", _, "tx_count") => self.get_tx_count().await,
 
-            _ => Err(HttpError::Unsupported),
-        }
+            _ => Err(ChainError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
     }
 }
 
@@ -179,7 +236,7 @@ impl RuskNode {
         &self,
         data: &RequestData,
         headers: &serde_json::Map<String, Value>,
-    ) -> HttpResult<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let gql_query = data.as_string();
 
         let schema = self.graphql_schema();
@@ -195,7 +252,7 @@ impl RuskNode {
         let gql_res = schema.execute(gql_query).await;
         let async_graphql::Response { data, errors, .. } = gql_res;
         if !errors.is_empty() {
-            return Err(HttpError::internal(
+            return Err(ChainError::internal(
                 serde_json::to_value(&errors)?.to_string(),
             ));
         }
@@ -203,14 +260,13 @@ impl RuskNode {
         Ok(ResponseData::new(data))
     }
 
-    async fn handle_preverify(&self, data: &[u8]) -> HttpResult<ResponseData> {
+    async fn handle_preverify(&self, data: &[u8]) -> ChainResult<ResponseData> {
         preverify_tx(self, data).await?;
         Ok(ResponseData::new(DataType::None))
     }
 
-    async fn propagate_tx(&self, tx: &[u8]) -> HttpResult<ResponseData> {
+    async fn propagate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
         let tx = preverify_tx(self, tx).await?;
-
         let tx_message = tx.into();
 
         let network = self.network();
@@ -219,13 +275,13 @@ impl RuskNode {
         Ok(ResponseData::new(DataType::None))
     }
 
-    async fn alive_nodes(&self, amount: usize) -> HttpResult<ResponseData> {
+    async fn alive_nodes(&self, amount: usize) -> ChainResult<ResponseData> {
         let nodes = self.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
         Ok(ResponseData::new(serde_json::to_value(nodes)?))
     }
 
-    async fn get_info(&self) -> HttpResult<ResponseData> {
+    async fn get_info(&self) -> ChainResult<ResponseData> {
         let mut info: HashMap<&str, serde_json::Value> = HashMap::new();
 
         info.insert("version", VERSION.as_str().into());
@@ -260,7 +316,7 @@ impl RuskNode {
     async fn get_gas_price(
         &self,
         max_transactions: usize,
-    ) -> HttpResult<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let gas_prices: Vec<u64> = self
             .db()
             .read()
@@ -271,7 +327,7 @@ impl RuskNode {
                     .map(|(gas_price, _)| gas_price)
                     .collect())
             })
-            .map_err(|e| HttpError::database(e.to_string()))?;
+            .map_err(|e| ChainError::database(e.to_string()))?;
 
         if gas_prices.is_empty() {
             let stats = serde_json::json!({ "average": 1, "max": 1, "median": 1, "min": 1 });
@@ -308,22 +364,26 @@ impl RuskNode {
         Ok(ResponseData::new(serde_json::to_value(stats)?))
     }
 
-    async fn simulate_tx(&self, tx: &[u8]) -> HttpResult<ResponseData> {
+    async fn simulate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
         let tx = ProtocolTransaction::from_slice(tx).map_err(|e| {
-            HttpError::invalid_input(format!("Invalid transaction: {e:?}"))
+            ChainError::invalid_input(format!("Invalid transaction: {e:?}"))
         })?;
         let (config, mut session, _plonk_version_guard, _hard_fork_guard) = {
             let vm_handler = self.inner().vm_handler();
             let vm_handler = vm_handler.read().await;
             if tx.gas_limit() > vm_handler.get_block_gas_limit() {
-                return Err(HttpError::invalid_input("Gas limit is too high."));
+                return Err(ChainError::invalid_input(
+                    "Gas limit is too high.",
+                ));
             }
             let tip = load_tip(&self.db())
                 .await
                 .map_err(|e| {
-                    HttpError::database(format!("Failed to load the tip: {e}"))
+                    ChainError::database(format!("Failed to load the tip: {e}"))
                 })?
-                .ok_or_else(|| HttpError::database("Could not find the tip"))?;
+                .ok_or_else(|| {
+                    ChainError::database("Could not find the tip")
+                })?;
             let height = tip.header.height.saturating_add(1);
             let config = vm_handler.vm_config.to_execution_config(height);
             let (plonk_version_guard, hard_fork_guard) =
@@ -331,7 +391,7 @@ impl RuskNode {
             let session = vm_handler
                 .new_block_session(height, vm_handler.tip.read().current)
                 .map_err(|e| {
-                    HttpError::vm(format!(
+                    ChainError::vm(format!(
                         "Failed to initialize a session: {e}"
                     ))
                 })?;
@@ -355,21 +415,21 @@ impl RuskNode {
         &self,
         hash: &[u8; 32],
         as_json: bool,
-    ) -> HttpResult<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let blob = self
             .db()
             .read()
             .await
             .view(|t| t.blob_data_by_hash(hash))
-            .map_err(|e| HttpError::database(e.to_string()))?
-            .ok_or(HttpError::not_found(format!(
+            .map_err(|e| ChainError::database(e.to_string()))?
+            .ok_or(ChainError::not_found(format!(
                 "Blob with versioned hash {} not found",
                 hex::encode(hash)
             )))?;
         let response = if as_json {
             let sidecar =
                 BlobSidecar::from_buf(&mut &blob[..]).map_err(|e| {
-                    HttpError::internal(format!(
+                    ChainError::internal(format!(
                         "Failed to parse blob sidecar: {e:?}"
                     ))
                 })?;
@@ -381,18 +441,18 @@ impl RuskNode {
         Ok(response)
     }
 
-    async fn get_account(&self, pk_str: &str) -> HttpResult<ResponseData> {
+    async fn get_account(&self, pk_str: &str) -> ChainResult<ResponseData> {
         let pk = bs58::decode(pk_str)
             .into_vec()
-            .map_err(|_| HttpError::invalid_input("Invalid bs58 account"))?;
+            .map_err(|_| ChainError::invalid_input("Invalid bs58 account"))?;
         let pk = BlsPublicKey::from_slice(&pk)
-            .map_err(|_| HttpError::invalid_input("Invalid bls account"))?;
+            .map_err(|_| ChainError::invalid_input("Invalid bls account"))?;
 
         let db = self.inner().database();
         let vm = self.inner().vm_handler();
 
         let account = vm.read().await.account(&pk).map_err(|e| {
-            HttpError::vm(format!("Cannot query the state: {e:?}"))
+            ChainError::vm(format!("Cannot query the state: {e:?}"))
         })?;
 
         // Determine the next available nonce not already used in the mempool.
@@ -443,10 +503,10 @@ impl RuskNode {
     async fn get_contract_balance(
         &self,
         contract_id_hex: &str,
-    ) -> HttpResult<ResponseData> {
+    ) -> ChainResult<ResponseData> {
         let contract_id = ContractId::try_from(contract_id_hex.to_owned())
             .map_err(|e| {
-                HttpError::invalid_input(format!("Invalid contract ID: {e}"))
+                ChainError::invalid_input(format!("Invalid contract ID: {e}"))
             })?;
 
         // Query the VM via the Transfer contract
@@ -456,7 +516,7 @@ impl RuskNode {
                 .await
                 .contract_balance(&contract_id)
                 .map_err(|e| {
-                    HttpError::vm(format!(
+                    ChainError::vm(format!(
                         "Failed to query contract balance: {e:?}"
                     ))
                 })?;
@@ -474,20 +534,20 @@ impl RuskNode {
     ///
     /// # Errors
     /// Returns an error if the archive feature is not enabled.
-    async fn get_account_count(&self) -> HttpResult<ResponseData> {
+    async fn get_account_count(&self) -> ChainResult<ResponseData> {
         #[cfg(feature = "archive")]
         {
             let count = self
                 .archive()
                 .fetch_active_accounts()
                 .await
-                .map_err(|e| HttpError::database(e.to_string()))?;
+                .map_err(|e| ChainError::database(e.to_string()))?;
             let body = serde_json::json!({ "public_accounts": count });
             Ok(ResponseData::new(body))
         }
 
         #[cfg(not(feature = "archive"))]
-        Err(HttpError::Unsupported)
+        Err(ChainError::Unsupported)
     }
 
     /// Returns the total number of finalized transactions observed in the
@@ -499,14 +559,14 @@ impl RuskNode {
     ///
     /// # Errors
     /// Returns an error if the archive feature is not enabled.
-    async fn get_tx_count(&self) -> HttpResult<ResponseData> {
+    async fn get_tx_count(&self) -> ChainResult<ResponseData> {
         #[cfg(feature = "archive")]
         {
             let (moonlight, phoenix) = self
                 .archive()
                 .fetch_tx_count()
                 .await
-                .map_err(|e| HttpError::database(e.to_string()))?;
+                .map_err(|e| ChainError::database(e.to_string()))?;
             let total = moonlight + phoenix;
             let body = serde_json::json!({
                 "public": moonlight,
@@ -517,7 +577,7 @@ impl RuskNode {
         }
 
         #[cfg(not(feature = "archive"))]
-        Err(HttpError::Unsupported)
+        Err(ChainError::Unsupported)
     }
 }
 
@@ -538,4 +598,39 @@ async fn load_tip<DB: database::DB>(
         };
         anyhow::Ok(tip)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ChainError, HttpError};
+
+    #[test]
+    fn chain_error_invalid_input_maps_to_http_invalid_input() {
+        let http = HttpError::from(ChainError::invalid_input("bad request"));
+        assert!(matches!(http, HttpError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn chain_error_unsupported_maps_to_http_unsupported() {
+        let http = HttpError::from(ChainError::Unsupported);
+        assert!(matches!(http, HttpError::Unsupported));
+    }
+
+    #[test]
+    fn chain_error_database_maps_to_http_database() {
+        let http = HttpError::from(ChainError::database("db failure"));
+        assert!(matches!(http, HttpError::Database(_)));
+    }
+
+    #[test]
+    fn chain_error_vm_maps_to_http_vm() {
+        let http = HttpError::from(ChainError::vm("vm failure"));
+        assert!(matches!(http, HttpError::Vm(_)));
+    }
+
+    #[test]
+    fn chain_error_internal_maps_to_http_internal() {
+        let http = HttpError::from(ChainError::internal("internal failure"));
+        assert!(matches!(http, HttpError::Internal(_)));
+    }
 }

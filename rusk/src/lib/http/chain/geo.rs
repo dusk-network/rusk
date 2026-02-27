@@ -6,12 +6,13 @@
 
 use super::*;
 use std::time::{Duration, Instant};
+use tracing::{debug, warn};
 
 static CACHE: RwLock<(Option<Instant>, Vec<Value>)> =
     RwLock::const_new((None, Vec::new()));
 
 impl RuskNode {
-    pub async fn peers_location(&self) -> HttpResult<ResponseData> {
+    pub(super) async fn peers_location(&self) -> ChainResult<ResponseData> {
         let locations = match from_cache().await {
             Some(locations) => locations,
             None => self.update_cache().await?,
@@ -20,7 +21,7 @@ impl RuskNode {
         Ok(ResponseData::new(serde_json::to_value(locations)?))
     }
 
-    async fn update_cache(&self) -> HttpResult<Vec<Value>> {
+    async fn update_cache(&self) -> ChainResult<Vec<Value>> {
         let mut cache = CACHE.write().await;
         if !cache_expired(cache.0) {
             return Ok(cache.1.clone());
@@ -36,6 +37,7 @@ impl RuskNode {
             Err(_) => 45,
         };
 
+        let mut lookup_failures = 0usize;
         for n in nodes.iter().take(max_query) {
             let ip = n.ip();
 
@@ -49,7 +51,7 @@ impl RuskNode {
                 let resp = v
                     .bytes()
                     .await
-                    .map_err(|e| HttpError::internal(e.to_string()))?
+                    .map_err(|e| ChainError::internal(e.to_string()))?
                     .to_vec();
                 let resp: Value = serde_json::from_slice(&resp)?;
                 let mut object = Value::Object(Map::new());
@@ -59,7 +61,23 @@ impl RuskNode {
                 object["country"] = resp["country"].clone();
                 object["countryCode"] = resp["countryCode"].clone();
                 locations.push(object);
+            } else {
+                // External geo lookup failures are best-effort and do not fail
+                // the whole endpoint. We keep partial results instead.
+                lookup_failures += 1;
             }
+        }
+        if lookup_failures > 0 {
+            warn!(
+                lookup_failures,
+                resolved_locations = locations.len(),
+                "Failed resolving some peer geo locations; returning partial results"
+            );
+        } else {
+            debug!(
+                resolved_locations = locations.len(),
+                "Resolved peer geo locations"
+            );
         }
         cache.0 = Some(Instant::now());
         cache.1 = locations;
