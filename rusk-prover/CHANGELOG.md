@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ### Changed
 
 - Default prover mode to PLONK V3 and keep explicit V2/legacy mode override.
@@ -46,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.3.0...rusk-prover-1.6.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.1.0...rusk-prover-1.3.0
 [1.1.0]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.0.1...rusk-prover-1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-prover-1.0.0...rusk-prover-1.0.1
