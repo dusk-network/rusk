@@ -771,6 +771,9 @@ where
             "/static/drivers/wallet-core-1.3.0.wasm" => Some(
                 include_bytes!("../assets/wallet_core-1.3.0.wasm").to_vec(),
             ),
+            "/static/drivers/wallet-core-1.6.0.wasm" => Some(
+                include_bytes!("../assets/wallet_core-1.6.0.wasm").to_vec(),
+            ),
             _ => None,
         } {
             let mut response = Response::new(Full::from(wallet_wasm).into());

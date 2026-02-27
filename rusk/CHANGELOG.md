@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wire PLONK proof verification to use V3 after Aegis hard fork activation.
 - Set Aegis activation defaults to mainnet `3_590_904` and testnet `2_773_727`.
 - Pin private Aegis dependencies by immutable git `rev` in workspace patches.
+- Add static wallet-core driver endpoint `/static/drivers/wallet-core-1.6.0.wasm`.
 
 ### Fixed
 
