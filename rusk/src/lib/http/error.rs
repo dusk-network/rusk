@@ -4,6 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use hyper::{Method, StatusCode};
+
+use tracing::{debug, error};
+
+use super::event::ExecutionError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Client provided invalid input (malformed hex, bad contract ID, etc.)
@@ -134,5 +140,107 @@ impl From<dusk_data_driver::Error> for Error {
 impl From<semver::Error> for Error {
     fn from(e: semver::Error) -> Self {
         Self::VersionMismatch(e.to_string())
+    }
+}
+
+pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
+    let status = error.http_code();
+    let message = match error {
+        Error::InvalidInput(_)
+        | Error::VersionMismatch(_)
+        | Error::InvalidEncoding(_)
+        | Error::PayloadTooLarge(_)
+        | Error::NotFound(_)
+        | Error::Forbidden(_)
+        | Error::TooManyRequests(_)
+        | Error::Unsupported => error.to_string(),
+        Error::Serialization(_)
+        | Error::Vm(_)
+        | Error::Database(_)
+        | Error::DataDriver(_)
+        | Error::Io(_)
+        | Error::Prover(_)
+        | Error::Verification(_)
+        | Error::Internal(_) => "Internal server error".to_string(),
+    };
+    (status, message)
+}
+
+pub(super) fn map_execution_error(
+    error: &ExecutionError,
+) -> (StatusCode, String, &'static str) {
+    match error {
+        ExecutionError::Http(_)
+        | ExecutionError::Hyper(_)
+        | ExecutionError::Json(_)
+        | ExecutionError::Protocol(_)
+        | ExecutionError::Tungstenite(_)
+        | ExecutionError::Other(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error".to_string(),
+            "internal",
+        ),
+        ExecutionError::NotFound(message) => {
+            (StatusCode::NOT_FOUND, message.clone(), "not_found")
+        }
+        ExecutionError::InvalidHeader(_) => (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid header".to_string(),
+            "invalid_header",
+        ),
+    }
+}
+
+pub(super) fn http_error_category(error: &Error) -> &'static str {
+    match error {
+        Error::InvalidInput(_) => "invalid_input",
+        Error::VersionMismatch(_) => "version_mismatch",
+        Error::InvalidEncoding(_) => "invalid_encoding",
+        Error::PayloadTooLarge(_) => "payload_too_large",
+        Error::NotFound(_) => "not_found",
+        Error::Forbidden(_) => "forbidden",
+        Error::TooManyRequests(_) => "too_many_requests",
+        Error::Unsupported => "unsupported",
+        Error::Serialization(_) => "serialization",
+        Error::Vm(_) => "vm",
+        Error::Database(_) => "database",
+        Error::DataDriver(_) => "data_driver",
+        Error::Io(_) => "io",
+        Error::Prover(_) => "prover",
+        Error::Verification(_) => "verification",
+        Error::Internal(_) => "internal",
+    }
+}
+
+pub(super) fn log_execution_service_error(
+    request_id: u64,
+    method: &Method,
+    path: &str,
+    error: &ExecutionError,
+) {
+    let (status, _message, category) = map_execution_error(error);
+    match error {
+        ExecutionError::NotFound(_) => {
+            debug!(
+                request_id,
+                %method,
+                %path,
+                %status,
+                error_category = category,
+                error = %error,
+                "HTTP request path not found"
+            );
+        }
+        _ => {
+            error!(
+                request_id,
+                %method,
+                %path,
+                %status,
+                error_category = category,
+                error = %error,
+                "HTTP request handling failed"
+            );
+        }
     }
 }

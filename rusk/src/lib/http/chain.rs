@@ -18,7 +18,7 @@ use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_vm::execute;
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, DB, Ledger, LightBlock, Mempool, Metadata};
-use node::mempool::MempoolSrv;
+use node::mempool::{MempoolSrv, TxAcceptanceError};
 use node::vm::VMExecution;
 use node_data::ledger::{SpendingId, Transaction};
 
@@ -28,7 +28,7 @@ use async_graphql::{
 };
 use graphql::Query;
 use serde_json::{Map, Value, json};
-use tracing::error;
+use tracing::{error, warn};
 
 use super::event::RequestData;
 use super::*;
@@ -93,7 +93,10 @@ impl From<ChainError> for HttpError {
     }
 }
 
-async fn preverify_tx(node: &RuskNode, data: &[u8]) -> ChainResult<Transaction> {
+async fn preverify_tx(
+    node: &RuskNode,
+    data: &[u8],
+) -> ChainResult<Transaction> {
     let tx: Transaction = ProtocolTransaction::from_slice(data)
         .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?
         .into();
@@ -103,14 +106,35 @@ async fn preverify_tx(node: &RuskNode, data: &[u8]) -> ChainResult<Transaction> 
 
     MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
         .await
-        .map_err(|e| {
-            let err_msg =
-                format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
-            error!("{err_msg}");
-            ChainError::internal(err_msg)
-        })?;
+        .map_err(|e| map_check_tx_error(hex::encode(tx.id()), e))?;
 
     Ok(tx)
+}
+
+fn map_check_tx_error(tx_id: String, error: TxAcceptanceError) -> ChainError {
+    let err_msg = format!("Tx {tx_id} not accepted: {error}");
+    match error {
+        TxAcceptanceError::MaxTxnCountExceeded(_)
+        | TxAcceptanceError::Generic(_) => {
+            error!("{err_msg}");
+            ChainError::internal(err_msg)
+        }
+        TxAcceptanceError::AlreadyExistsInMempool
+        | TxAcceptanceError::AlreadyExistsInLedger
+        | TxAcceptanceError::BlobMissingSidecar(_)
+        | TxAcceptanceError::BlobEmpty
+        | TxAcceptanceError::BlobTooMany(_)
+        | TxAcceptanceError::BlobInvalid(_)
+        | TxAcceptanceError::SpendIdExistsInMempool
+        | TxAcceptanceError::VerificationFailed(_)
+        | TxAcceptanceError::GasPriceTooLow(_)
+        | TxAcceptanceError::GasLimitTooLow(_)
+        | TxAcceptanceError::TooLarge
+        | TxAcceptanceError::MaxSizeExceeded(_) => {
+            warn!("{err_msg}");
+            ChainError::invalid_input(err_msg)
+        }
+    }
 }
 
 fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
@@ -602,35 +626,48 @@ async fn load_tip<DB: database::DB>(
 
 #[cfg(test)]
 mod tests {
-    use super::{ChainError, HttpError};
+    use super::{ChainError, HttpError, map_check_tx_error};
+    use node::mempool::TxAcceptanceError;
 
     #[test]
-    fn chain_error_invalid_input_maps_to_http_invalid_input() {
-        let http = HttpError::from(ChainError::invalid_input("bad request"));
-        assert!(matches!(http, HttpError::InvalidInput(_)));
+    fn chain_error_variant_mapping_is_stable() {
+        assert!(matches!(
+            HttpError::from(ChainError::invalid_input("bad request")),
+            HttpError::InvalidInput(_)
+        ));
+        assert!(matches!(
+            HttpError::from(ChainError::Unsupported),
+            HttpError::Unsupported
+        ));
+        assert!(matches!(
+            HttpError::from(ChainError::database("db failure")),
+            HttpError::Database(_)
+        ));
+        assert!(matches!(
+            HttpError::from(ChainError::vm("vm failure")),
+            HttpError::Vm(_)
+        ));
+        assert!(matches!(
+            HttpError::from(ChainError::internal("internal failure")),
+            HttpError::Internal(_)
+        ));
     }
 
     #[test]
-    fn chain_error_unsupported_maps_to_http_unsupported() {
-        let http = HttpError::from(ChainError::Unsupported);
-        assert!(matches!(http, HttpError::Unsupported));
+    fn preverify_generic_check_tx_error_maps_to_internal() {
+        let err = map_check_tx_error(
+            "deadbeef".to_string(),
+            TxAcceptanceError::Generic(anyhow::anyhow!("boom")),
+        );
+        assert!(matches!(err, ChainError::Internal(_)));
     }
 
     #[test]
-    fn chain_error_database_maps_to_http_database() {
-        let http = HttpError::from(ChainError::database("db failure"));
-        assert!(matches!(http, HttpError::Database(_)));
-    }
-
-    #[test]
-    fn chain_error_vm_maps_to_http_vm() {
-        let http = HttpError::from(ChainError::vm("vm failure"));
-        assert!(matches!(http, HttpError::Vm(_)));
-    }
-
-    #[test]
-    fn chain_error_internal_maps_to_http_internal() {
-        let http = HttpError::from(ChainError::internal("internal failure"));
-        assert!(matches!(http, HttpError::Internal(_)));
+    fn preverify_validation_check_tx_error_maps_to_invalid_input() {
+        let err = map_check_tx_error(
+            "deadbeef".to_string(),
+            TxAcceptanceError::GasPriceTooLow(1),
+        );
+        assert!(matches!(err, ChainError::InvalidInput(_)));
     }
 }

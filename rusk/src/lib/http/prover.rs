@@ -84,32 +84,30 @@ mod tests {
     use dusk_core::Error as CoreError;
 
     #[test]
-    fn prover_api_error_invalid_input_maps_to_http_invalid_input() {
-        let http = HttpError::from(ProverApiError::invalid_input("bad input"));
-        assert!(matches!(http, HttpError::InvalidInput(_)));
+    fn prover_api_error_variant_mapping_is_stable() {
+        assert!(matches!(
+            HttpError::from(ProverApiError::invalid_input("bad input")),
+            HttpError::InvalidInput(_)
+        ));
+        assert!(matches!(
+            HttpError::from(ProverApiError::prover("prove failed")),
+            HttpError::Prover(_)
+        ));
+        assert!(matches!(
+            HttpError::from(ProverApiError::Unsupported),
+            HttpError::Unsupported
+        ));
     }
 
     #[test]
-    fn prover_api_error_prover_maps_to_http_prover() {
-        let http = HttpError::from(ProverApiError::prover("prove failed"));
-        assert!(matches!(http, HttpError::Prover(_)));
-    }
-
-    #[test]
-    fn prover_api_error_unsupported_maps_to_http_unsupported() {
-        let http = HttpError::from(ProverApiError::Unsupported);
-        assert!(matches!(http, HttpError::Unsupported));
-    }
-
-    #[test]
-    fn map_prove_error_invalid_data_maps_to_invalid_input() {
-        let error = map_prove_error(CoreError::InvalidData);
-        assert!(matches!(error, ProverApiError::InvalidInput(_)));
-    }
-
-    #[test]
-    fn map_prove_error_prover_fault_maps_to_prover_error() {
-        let error = map_prove_error(CoreError::PhoenixProver("x".into()));
-        assert!(matches!(error, ProverApiError::Prover(_)));
+    fn map_prove_error_classification_is_stable() {
+        assert!(matches!(
+            map_prove_error(CoreError::InvalidData),
+            ProverApiError::InvalidInput(_)
+        ));
+        assert!(matches!(
+            map_prove_error(CoreError::PhoenixProver("x".into())),
+            ProverApiError::Prover(_)
+        ));
     }
 }

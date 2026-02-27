@@ -525,38 +525,30 @@ mod tests {
     use super::{HttpError, RuskApiError};
 
     #[test]
-    fn rusk_api_error_invalid_input_maps_to_http_invalid_input() {
-        let http = HttpError::from(RuskApiError::invalid_input("invalid"));
-        assert!(matches!(http, HttpError::InvalidInput(_)));
-    }
-
-    #[test]
-    fn rusk_api_error_unsupported_maps_to_http_unsupported() {
-        let http = HttpError::from(RuskApiError::Unsupported);
-        assert!(matches!(http, HttpError::Unsupported));
-    }
-
-    #[test]
-    fn rusk_api_error_database_maps_to_http_database() {
-        let http = HttpError::from(RuskApiError::database("db"));
-        assert!(matches!(http, HttpError::Database(_)));
-    }
-
-    #[test]
-    fn rusk_api_error_vm_maps_to_http_vm() {
-        let http = HttpError::from(RuskApiError::vm("vm"));
-        assert!(matches!(http, HttpError::Vm(_)));
-    }
-
-    #[test]
-    fn rusk_api_error_verification_maps_to_http_verification() {
-        let http = HttpError::from(RuskApiError::verification("sig"));
-        assert!(matches!(http, HttpError::Verification(_)));
-    }
-
-    #[test]
-    fn rusk_api_error_data_driver_maps_to_http_data_driver() {
-        let http = HttpError::from(RuskApiError::data_driver("driver"));
-        assert!(matches!(http, HttpError::DataDriver(_)));
+    fn rusk_api_error_variant_mapping_is_stable() {
+        assert!(matches!(
+            HttpError::from(RuskApiError::invalid_input("invalid")),
+            HttpError::InvalidInput(_)
+        ));
+        assert!(matches!(
+            HttpError::from(RuskApiError::Unsupported),
+            HttpError::Unsupported
+        ));
+        assert!(matches!(
+            HttpError::from(RuskApiError::database("db")),
+            HttpError::Database(_)
+        ));
+        assert!(matches!(
+            HttpError::from(RuskApiError::vm("vm")),
+            HttpError::Vm(_)
+        ));
+        assert!(matches!(
+            HttpError::from(RuskApiError::verification("sig")),
+            HttpError::Verification(_)
+        ));
+        assert!(matches!(
+            HttpError::from(RuskApiError::data_driver("driver")),
+            HttpError::DataDriver(_)
+        ));
     }
 }

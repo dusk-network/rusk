@@ -152,7 +152,7 @@ async fn propagate_rejects_tx_that_fails_preverify() {
 
     assert_eq!(
         response.status(),
-        reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+        reqwest::StatusCode::BAD_REQUEST,
         "invalid tx should be rejected by preverify"
     );
 

@@ -83,6 +83,10 @@ pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
 pub use policy::HttpPolicyConfig;
 
+use self::error::{
+    http_error_category, log_execution_service_error, map_execution_error,
+    map_http_error_for_response,
+};
 use self::event::{
     RequestParseError, ResponseData, RuesEventUri, SessionId,
     check_rusk_version,
@@ -365,6 +369,7 @@ where
     fn call(&self, req: Request<Incoming>) -> Self::Future {
         let method = req.method().clone();
         let path = req.uri().path().to_string();
+        let request_id = rand::random::<u64>();
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
         let events = self.events.resubscribe();
@@ -411,24 +416,7 @@ where
                 rsp
             })
             .or_else(|error| {
-                match &error {
-                    ExecutionError::NotFound(_) => {
-                        debug!(
-                            %method,
-                            %path,
-                            error = %error,
-                            "HTTP request path not found"
-                        );
-                    }
-                    _ => {
-                        error!(
-                            %method,
-                            %path,
-                            error = %error,
-                            "HTTP request handling failed"
-                        );
-                    }
-                }
+                log_execution_service_error(request_id, &method, &path, &error);
 
                 Ok(execution_error_response(&error)
                     .expect("Failed to build response"))
@@ -670,26 +658,35 @@ fn method_not_allowed_response(
 fn request_parse_error_response(
     error: RequestParseError,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    let (status, message) = match error {
-        RequestParseError::InvalidPath => {
-            (StatusCode::NOT_FOUND, "Invalid URL path".to_string())
-        }
+    let (status, message, category) = match error {
+        RequestParseError::InvalidPath => (
+            StatusCode::NOT_FOUND,
+            "Invalid URL path".to_string(),
+            "invalid_path",
+        ),
         RequestParseError::InvalidPayload(msg) => {
-            (StatusCode::UNPROCESSABLE_ENTITY, msg)
+            (StatusCode::UNPROCESSABLE_ENTITY, msg, "invalid_payload")
         }
         RequestParseError::Other(err) => {
             if let Some(http_err) = err.downcast_ref::<HttpError>() {
-                let status = StatusCode::from_u16(http_err.http_code())
+                let (status, message) = map_http_error_for_response(http_err);
+                let status = StatusCode::from_u16(status)
                     .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-                return api_error_response(status, http_err.to_string());
+                return api_error_response(status, message);
             }
             error!(error = %err, "Failed parsing RUES dispatch request");
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed parsing request".to_string(),
+                "internal",
             )
         }
     };
+    debug!(
+        status = %status,
+        error_category = category,
+        "RUES request parse failed"
+    );
 
     api_error_response(status, message)
 }
@@ -697,39 +694,9 @@ fn request_parse_error_response(
 fn execution_error_response(
     error: &ExecutionError,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    let (status, message) = match error {
-        ExecutionError::NotFound(message) => {
-            (StatusCode::NOT_FOUND, message.clone())
-        }
-        ExecutionError::InvalidHeader(_) => (
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "Invalid header".to_string(),
-        ),
-        _ => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Internal server error".to_string(),
-        ),
-    };
-
+    let (status, message, _category) = map_execution_error(error);
     api_error_response(status, message)
 }
-
-fn map_http_error_for_response(error: &HttpError) -> (u16, String) {
-    let status = error.http_code();
-    let message = match error {
-        HttpError::Serialization(_)
-        | HttpError::Vm(_)
-        | HttpError::Database(_)
-        | HttpError::DataDriver(_)
-        | HttpError::Io(_)
-        | HttpError::Prover(_)
-        | HttpError::Verification(_)
-        | HttpError::Internal(_) => "Internal server error".to_string(),
-        _ => error.to_string(),
-    };
-    (status, message)
-}
-
 async fn handle_request_rues<H: HandleRequest>(
     mut req: Request<Incoming>,
     handler: Arc<H>,
@@ -1101,8 +1068,21 @@ async fn handle_execution_rues<H>(
         })
         .unwrap_or_else(|e| {
             let (status, message) = map_http_error_for_response(&e);
+            let category = http_error_category(&e);
             if status >= 500 {
-                error!(error = %e, "RUES handler failed");
+                error!(
+                    status,
+                    error_category = category,
+                    error = %e,
+                    "RUES handler failed"
+                );
+            } else {
+                debug!(
+                    status,
+                    error_category = category,
+                    error = %e,
+                    "RUES handler rejected request"
+                );
             }
             EventResponse {
                 headers: event.x_headers(),
@@ -1545,7 +1525,7 @@ mod tests {
             .send()
             .await
             .expect("First request should complete");
-        assert_eq!(first.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(first.status(), StatusCode::NOT_FOUND);
 
         let second = client
             .get(format!("http://{local_addr}/unknown"))
@@ -1724,6 +1704,28 @@ mod tests {
             "Invalid utf8",
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn request_parse_other_http_internal_is_sanitized() {
+        let response = request_parse_error_response(RequestParseError::Other(
+            HttpError::internal("sensitive details").into(),
+        ))
+        .expect("response should be built");
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body should be readable")
+            .to_bytes();
+        let body = String::from_utf8(body.to_vec())
+            .expect("response body should be utf-8 json");
+
+        assert!(body.contains("Internal server error"));
+        assert!(!body.contains("sensitive details"));
     }
 
     #[tokio::test]

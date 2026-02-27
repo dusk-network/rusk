@@ -669,12 +669,12 @@ impl RuesDispatchEvent {
                 if e.downcast_ref::<LengthLimitError>().is_some() {
                     RequestParseError::Other(
                         super::HttpError::payload_too_large(format!(
-                        "Request body exceeds {max_body_bytes} bytes"
+                            "Request body exceeds {max_body_bytes} bytes"
                         ))
                         .into(),
                     )
                 } else {
-                    RequestParseError::Other(e.into())
+                    RequestParseError::Other(anyhow::Error::msg(e.to_string()))
                 }
             })?
             .to_bytes()
