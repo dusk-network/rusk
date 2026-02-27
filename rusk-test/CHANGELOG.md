@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ## [1.4.4-rc.0] - 2026-02-11
 
 ### Added
 
 - Add rusk test utilities for `dusk-rusk-1.4.4`
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-test-1.4.4-rc.0...HEAD
-[1.4.4-rc.0]: https://github.com/dusk-network/rusk/tree/dusk-rusk-tesst-1.4.4-rc.0
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-test-1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-test-1.4.4-rc.0...dusk-rusk-test-1.6.0
+[1.4.4-rc.0]: https://github.com/dusk-network/rusk/tree/dusk-rusk-test-1.4.4-rc.0
