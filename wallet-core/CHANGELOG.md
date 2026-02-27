@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ### Changed
 
 - Update to edition 2024
@@ -55,7 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3438]: https://github.com/dusk-network/rusk/issues/3438
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.4.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.4.0...dusk-wallet-core-1.6.0
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.3.0...dusk-wallet-core-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.1.0...dusk-wallet-core-1.3.0
 [1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.0.1...dusk-wallet-core-1.1.0
