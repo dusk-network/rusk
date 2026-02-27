@@ -107,7 +107,7 @@ jobs:
           RUSK_W3SPER_CFG="${WORKDIR}/rusk.w3sper.config.toml"
           cat > "${RUSK_W3SPER_CFG}" <<'EOF'
           [vm.features]
-          HARDFORK_AEGIS = 9223372036854775807
+          HARDFORK_AEGIS = 0
           EOF
 
           cargo build --release -p dusk-rusk --features archive
@@ -146,7 +146,7 @@ jobs:
           cd "${WORKDIR}/repo/w3sper.js"
           deno task wasm
           curl -sfL \
-            http://localhost:8080/static/drivers/wallet-core-1.3.0.wasm \
+            http://localhost:8080/static/drivers/wallet-core-1.6.0.wasm \
             -o ../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm
           deno task test
 

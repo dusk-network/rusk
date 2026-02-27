@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ### Added
 
 - Add phoenix fee check
@@ -108,7 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.2...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.2...dusk-node-1.6.0
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.1...dusk-node-1.4.2
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.0...dusk-node-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-node-1.3.0...dusk-node-1.4.0

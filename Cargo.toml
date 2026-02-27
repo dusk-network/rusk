@@ -30,24 +30,15 @@ edition = "2024"
 
 [workspace.dependencies]
 # Workspace internal dependencies
-# dusk-consensus = "1.4.0"
-dusk-consensus = { version = "1.4.1-alpha.1", path = "./consensus/" }
-# dusk-core = "1.4.1"
-dusk-core = { version = "1.4.2-alpha.1", path = "./core/" }
-# dusk-vm = "1.4.3"
-dusk-vm = { version = "1.4.4-alpha.1", path = "./vm/" }
-# node = { version = "1.4.2", package = "dusk-node" }
-node = { version = "1.4.3-alpha.1", path = "./node/", package = "dusk-node" }
-# node-data = { version = "1.4.0", package = "dusk-node-data" }
-node-data = { version = "1.4.1-alpha.1", path = "./node-data/", package = "dusk-node-data" }
-# rusk-profile = "1.4.0"
-rusk-profile = { version = "1.4.1-alpha.1", path = "./rusk-profile/" }
-# rusk-prover = "1.3.0"
-rusk-prover = { version = "1.4.1-alpha.1", path = "./rusk-prover/" }
-# rusk-recovery = "1.4.1"
-rusk-recovery = { version = "1.4.2-alpha.1", path = "./rusk-recovery/" }
-# wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
-wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
+dusk-consensus = { version = "1.6.0", path = "./consensus/" }
+dusk-core = { version = "1.6.0", path = "./core/" }
+dusk-vm = { version = "1.6.0", path = "./vm/" }
+node = { version = "1.6.0", path = "./node/", package = "dusk-node" }
+node-data = { version = "1.6.0", path = "./node-data/", package = "dusk-node-data" }
+rusk-profile = { version = "1.6.0", path = "./rusk-profile/" }
+rusk-prover = { version = "1.6.0", path = "./rusk-prover/" }
+rusk-recovery = { version = "1.6.0", path = "./rusk-recovery/" }
+wallet-core = { version = "1.6.0", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 dusk-data-driver = { version = "0.3.2-alpha.1", path = "./data-drivers/data-driver" }
 # dusk-data-driver = "0.3.1"
@@ -191,11 +182,11 @@ overflow-checks = true
 [patch.crates-io]
 # Pin AEGIS cryptography/runtime dependencies to private mirrors carrying the
 # merged remediation set.
-dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", tag = "AEGIS" }
-bls12_381-bls = { git = "https://github.com/dusk-network/bls12_381-bls-private.git", tag = "AEGIS" }
-dusk-jubjub = { git = "https://github.com/dusk-network/jubjub-private.git", tag = "AEGIS" }
-jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", tag = "AEGIS" }
-piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", tag = "AEGIS" }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", tag = "AEGIS" }
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", tag = "AEGIS" }
-phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", tag = "AEGIS" }
+dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = "55083f925935b67b116c089e186ee1b261e0fdf0" }
+bls12_381-bls = { git = "https://github.com/dusk-network/bls12_381-bls-private.git", rev = "2bbf457d31d83df92f3afeca8e9fc72c3d33545b" }
+dusk-jubjub = { git = "https://github.com/dusk-network/jubjub-private.git", rev = "6e2b63f59edac8afa4f81a28b12d88529af37cdb" }
+jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", rev = "1f0d481fb29282c69fdc0063a0404cb89a53bd10" }
+piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "66ddb31693ffb0fd5a4faac3c80930e6228e0836" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "66ddb31693ffb0fd5a4faac3c80930e6228e0836" }
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "3d5b9838d7e824b441c93de9aaa38737263b97bd" }
+phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "3d5b9838d7e824b441c93de9aaa38737263b97bd" }

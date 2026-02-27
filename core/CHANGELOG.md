@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ### Added
 
 - Add `sha256` and `verify_kzg_proof` ABI host queries [#3993]
@@ -88,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.1...dusk-core-1.6.0
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.0...dusk-core-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.3.0...dusk-core-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.2.1...dusk-core-1.3.0

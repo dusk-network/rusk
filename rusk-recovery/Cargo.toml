@@ -1,6 +1,6 @@
 [package]
 name = "rusk-recovery"
-version = "1.4.2-alpha.1"
+version = "1.6.0"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
 repository = "https://github.com/dusk-network/rusk"

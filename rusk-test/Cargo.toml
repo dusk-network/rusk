@@ -1,6 +1,6 @@
 [package]
 name = "dusk-rusk-test"
-version = "1.4.5-alpha.1"
+version = "1.6.0"
 
 description = "Test utilities for Rusk"
 repository = "https://github.com/dusk-network/rusk"
