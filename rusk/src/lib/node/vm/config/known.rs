@@ -90,7 +90,8 @@ const MAINNET_BLOB_ACTIVATION: FeatureActivation =
 const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_470_360);
 
-const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation = FeatureActivation::Height(3_590_904);
+const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(3_590_904);
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
@@ -135,7 +136,8 @@ const TESTNET_AT_04_02_2026_AT_09_00_UTC: FeatureActivation =
 const TESTNET_PLONK_V2_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(2_653_175);
 
-const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation = FeatureActivation::Height(2_773_727);
+const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(2_773_727);
 
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
