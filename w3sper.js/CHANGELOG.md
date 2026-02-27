@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-27
+
 ### Added
 
 - Validate required WASM exports on data-driver load, rejecting invalid modules early with an actionable error message [#3990]
@@ -109,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- VERSIONS -->
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/w3sper-v.0.4.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/w3sper-v.1.6.0...HEAD
+[1.6.0]: https://github.com/dusk-network/rusk/compare/w3sper-v.1.4.0...w3sper-v.1.6.0
 [1.4.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.1.2.0
