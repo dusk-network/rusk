@@ -22,10 +22,9 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::hard_fork::{bls_version_at, hard_fork_at};
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
-use super::rusk::plonk_version_at;
+use super::fork_policy::policy_at;
 use super::{RuesEvent, Rusk};
 pub use config::Config as RuskVmConfig;
 pub use config::feature::*;
@@ -169,13 +168,12 @@ impl VMExecution for Rusk {
                 }
 
                 let next_block_height = tip_height.saturating_add(1);
-                let version = plonk_version_at(
-                    &self.vm_config,
-                    next_block_height,
-                    hard_fork_at(next_block_height),
-                );
+                let policy = policy_at(&self.vm_config, next_block_height);
 
-                match crate::verifier::verify_proof_with_version(tx, version) {
+                match crate::verifier::verify_proof_with_version(
+                    tx,
+                    policy.plonk_version,
+                ) {
                     Ok(true) => Ok(PreverificationResult::Valid),
                     Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
                     Err(e) => {
@@ -185,6 +183,7 @@ impl VMExecution for Rusk {
             }
             ProtocolTransaction::Moonlight(tx) => {
                 let next_block_height = tip_height.saturating_add(1);
+                let policy = policy_at(&self.vm_config, next_block_height);
                 let account_data = self.account(tx.sender()).map_err(|e| {
                     anyhow::anyhow!("Cannot check account: {e}")
                 })?;
@@ -226,7 +225,7 @@ impl VMExecution for Rusk {
                     verify_tx.sender(),
                     verify_tx.signature(),
                     &verify_tx.signature_message(),
-                    bls_version_at(next_block_height),
+                    policy.bls_version,
                 );
 
                 match verify_result {
@@ -311,38 +310,27 @@ impl VMExecution for Rusk {
     }
 
     fn blob_active(&self, block_height: u64) -> bool {
-        self.vm_config
-            .feature(FEATURE_BLOB)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+        self.vm_config.feature_active_at(FEATURE_BLOB, block_height)
     }
 
     fn wasm64_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_WASM64)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_WASM64, block_height)
     }
 
     fn wasm32_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_WASM32)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_WASM32, block_height)
     }
 
     fn third_party_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_3RD_PARTY)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_3RD_PARTY, block_height)
     }
 
     fn phoenix_refund_check_active(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_HARDFORK_AEGIS)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_HARDFORK_AEGIS, block_height)
     }
 
     fn shade_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()> {

@@ -37,7 +37,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 12],
+    pub features: Vec<(&'static str, FeatureActivation)>,
 }
 
 impl WellKnownConfig {
@@ -47,15 +47,12 @@ impl WellKnownConfig {
     pub fn from_chain_id(chain_id: u8) -> Self {
         match chain_id {
             MAINNET_ID => MAINNET_CONFIG.clone(),
-            TESTNET_ID => TESTNET_CONFIG,
-            DEVNET_ID => DEVNET_CONFIG,
-            _ => LOCALNET_CONFIG,
+            TESTNET_ID => TESTNET_CONFIG.clone(),
+            DEVNET_ID => DEVNET_CONFIG.clone(),
+            _ => LOCALNET_CONFIG.clone(),
         }
     }
 }
-
-pub const FILLER: &str = "FILLER_FEATURE";
-const FILLER_FEATURE: (&str, FeatureActivation) = (FILLER, NEVER);
 
 /// Estimated mainnet block height for 10th December 2025, 09:00 UTC.
 const MAINNET_AT_10_12_2025_AT_09_00_UTC: u64 = 2_873_420;
@@ -101,7 +98,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
         min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-        features: [
+        features: vec![
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
             (HQ_KECCAK256, NEVER),
             (HQ_SHA256, NEVER),
@@ -140,70 +137,66 @@ const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(2_773_727);
 
 /// Testnet VM configuration.
-const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
-        (HQ_SHA256, NEVER),
-        (HQ_VERIFY_KZG_PROOF, NEVER),
-        (HQ_SECP256K1_RECOVER, NEVER),
-        (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
-        (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
-        (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_DISABLE_WASM32, NEVER),
-        (FEATURE_DISABLE_3RD_PARTY, NEVER),
-        FILLER_FEATURE,
-    ],
-};
+static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
+            (HQ_SHA256, NEVER),
+            (HQ_VERIFY_KZG_PROOF, NEVER),
+            (HQ_SECP256K1_RECOVER, NEVER),
+            (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+            (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
+            (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
+            (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+            (FEATURE_DISABLE_WASM32, NEVER),
+            (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        ],
+    });
 
 /// Devnet VM configuration.
-const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, GENESIS),
-        (HQ_SHA256, GENESIS),
-        (HQ_VERIFY_KZG_PROOF, GENESIS),
-        (HQ_SECP256K1_RECOVER, GENESIS),
-        (FEATURE_BLOB, GENESIS),
-        (FEATURE_PLONK_V2, NEVER),
-        (FEATURE_HARDFORK_AEGIS, GENESIS),
-        (FEATURE_DISABLE_WASM64, GENESIS),
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-    ],
-};
+static DEVNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, GENESIS),
+            (HQ_SHA256, GENESIS),
+            (HQ_VERIFY_KZG_PROOF, GENESIS),
+            (HQ_SECP256K1_RECOVER, GENESIS),
+            (FEATURE_BLOB, GENESIS),
+            (FEATURE_PLONK_V2, NEVER),
+            (FEATURE_HARDFORK_AEGIS, GENESIS),
+            (FEATURE_DISABLE_WASM64, GENESIS),
+        ],
+    });
 
 /// Localnet VM configuration.
-const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, GENESIS),
-        (HQ_SHA256, GENESIS),
-        (HQ_VERIFY_KZG_PROOF, GENESIS),
-        (HQ_SECP256K1_RECOVER, GENESIS),
-        (FEATURE_BLOB, GENESIS),
-        (FEATURE_PLONK_V2, GENESIS),
-        (FEATURE_HARDFORK_AEGIS, GENESIS),
-        (FEATURE_DISABLE_WASM64, GENESIS),
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-    ],
-};
+static LOCALNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, GENESIS),
+            (HQ_SHA256, GENESIS),
+            (HQ_VERIFY_KZG_PROOF, GENESIS),
+            (HQ_SECP256K1_RECOVER, GENESIS),
+            (FEATURE_BLOB, GENESIS),
+            (FEATURE_PLONK_V2, GENESIS),
+            (FEATURE_HARDFORK_AEGIS, GENESIS),
+            (FEATURE_DISABLE_WASM64, GENESIS),
+        ],
+    });

@@ -20,7 +20,6 @@ use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_core::abi::{ContractId, Event};
-use dusk_core::plonk::PlonkVersion;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
     Reward, RewardReason, STAKE_CONTRACT, StakeData, StakeKeys,
@@ -35,7 +34,6 @@ use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::hard_fork::HardFork;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
 use rkyv::Deserialize;
@@ -44,47 +42,13 @@ use tokio::sync::broadcast;
 use tracing::{info, warn};
 
 use super::RuskVmConfig;
+use super::fork_policy::set_hard_fork_activations;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
-    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip,
-    get_block_rewards, set_vm_host_context,
+    RuesEvent, Rusk, RuskTip, get_block_rewards, set_vm_host_context,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
-
-fn hard_fork_aegis_activation(vm_config: &RuskVmConfig) -> u64 {
-    match vm_config.feature(FEATURE_HARDFORK_AEGIS) {
-        Some(dusk_vm::FeatureActivation::Height(height)) => *height,
-        Some(dusk_vm::FeatureActivation::Ranges(ranges)) => ranges
-            .iter()
-            .map(|(start, _)| *start)
-            .min()
-            .unwrap_or(u64::MAX),
-        None => u64::MAX,
-    }
-}
-
-pub(super) fn plonk_version_at(
-    vm_config: &RuskVmConfig,
-    block_height: u64,
-    hard_fork: HardFork,
-) -> PlonkVersion {
-    match hard_fork {
-        HardFork::PreFork => {
-            let plonk_v2_active = vm_config
-                .feature(FEATURE_PLONK_V2)
-                .map(|activation| activation.is_active_at(block_height))
-                .unwrap_or(false);
-
-            if plonk_v2_active {
-                PlonkVersion::V2
-            } else {
-                PlonkVersion::V1
-            }
-        }
-        HardFork::Aegis => PlonkVersion::V3,
-    }
-}
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -101,10 +65,7 @@ impl Rusk {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
 
-        let hard_fork_aegis_activation = hard_fork_aegis_activation(&vm_config);
-        node_data::hard_fork::set_aegis_activation_height(
-            hard_fork_aegis_activation,
-        );
+        set_hard_fork_activations(&vm_config);
 
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -982,30 +943,4 @@ fn slash(session: &mut Session, slashes: Vec<Slash>) -> Result<Vec<Event>> {
 fn is_missing_stake_slash_panic(msg: &str) -> bool {
     msg.contains("The stake to slash should exist")
         || msg.contains("The stake to hard slash should exist")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use dusk_vm::FeatureActivation;
-
-    #[test]
-    fn plonk_version_tracks_prefork_and_aegis() {
-        let mut vm_config = RuskVmConfig::new();
-        vm_config
-            .with_feature(FEATURE_PLONK_V2, FeatureActivation::Height(100));
-
-        assert_eq!(
-            plonk_version_at(&vm_config, 99, HardFork::PreFork),
-            PlonkVersion::V1
-        );
-        assert_eq!(
-            plonk_version_at(&vm_config, 100, HardFork::PreFork),
-            PlonkVersion::V2
-        );
-        assert_eq!(
-            plonk_version_at(&vm_config, 200, HardFork::Aegis),
-            PlonkVersion::V3
-        );
-    }
 }

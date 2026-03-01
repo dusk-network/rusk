@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Formatter;
 
 #[derive(Serialize, Deserialize, Copy, Debug, Clone)]
+#[serde(default)]
 pub struct Params {
     /// Max write buffer size for moonlight event CF.
     pub events_cf_max_write_buffer_size: usize,

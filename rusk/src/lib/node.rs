@@ -6,6 +6,7 @@
 
 pub mod driverstore;
 mod events;
+mod fork_policy;
 mod rusk;
 mod vm;
 
@@ -15,14 +16,12 @@ use std::sync::Arc;
 
 use dusk_core::{Dusk, dusk};
 
-use self::rusk::plonk_version_at;
 use dusk_core::abi::ContractId;
 use dusk_vm::VM;
 use dusk_vm::host_queries;
 use node::LongLivedService;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
-use node_data::hard_fork::{HardFork, hard_fork_at};
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
@@ -70,17 +69,11 @@ pub(crate) fn set_vm_host_context(
     vm_config: &RuskVmConfig,
     block_height: u64,
 ) -> (host_queries::PlonkVersionGuard, host_queries::HardForkGuard) {
-    let hard_fork = hard_fork_at(block_height);
-    let plonk = host_queries::set_plonk_version(plonk_version_at(
-        vm_config,
-        block_height,
-        hard_fork,
+    let policy = fork_policy::policy_at(vm_config, block_height);
+    let plonk = host_queries::set_plonk_version(policy.plonk_version);
+    let hard_fork = host_queries::set_hard_fork(fork_policy::host_hard_fork(
+        policy.hard_fork,
     ));
-    let hard_fork = match hard_fork {
-        HardFork::PreFork => host_queries::HardFork::PreFork,
-        HardFork::Aegis => host_queries::HardFork::Aegis,
-    };
-    let hard_fork = host_queries::set_hard_fork(hard_fork);
 
     (plonk, hard_fork)
 }

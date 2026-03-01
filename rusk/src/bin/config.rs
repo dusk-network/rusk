@@ -22,6 +22,7 @@ pub mod telemetry;
 pub mod http;
 
 use std::env;
+use std::path::Path;
 use std::str::FromStr;
 
 #[cfg(feature = "archive")]
@@ -91,25 +92,37 @@ const DEFAULT_LOG_TYPE: &str = "coloured";
 
 impl From<&Args> for Config {
     fn from(args: &Args) -> Self {
-        let mut rusk_config =
-            args.config.as_ref().map_or(Config::default(), |conf_path| {
-                let toml = std::fs::read_to_string(conf_path).unwrap();
-                toml::from_str(&toml).unwrap()
+        let mut rusk_config = args
+            .config
+            .as_ref()
+            .map_or_else(Config::default, |conf_path| {
+                Self::from_path(conf_path)
             });
+        rusk_config.apply_args_overrides(args);
+        rusk_config
+    }
+}
 
+impl Config {
+    fn from_path(path: &Path) -> Self {
+        let toml = std::fs::read_to_string(path).unwrap();
+        toml::from_str(&toml).unwrap()
+    }
+
+    fn apply_args_overrides(&mut self, args: &Args) {
         // Overwrite config log-level
         if let Some(log_level) = args.log_level {
-            rusk_config.log_level = Some(log_level.to_string());
+            self.log_level = Some(log_level.to_string());
         }
 
         // Overwrite config log-type
         if let Some(log_type) = &args.log_type {
-            rusk_config.log_type = Some(log_type.into());
+            self.log_type = Some(log_type.into());
         }
 
         // Overwrite config log-filter
         if let Some(log_filter) = &args.log_filter {
-            rusk_config.log_filter = Some(log_filter.into());
+            self.log_filter = Some(log_filter.into());
         }
 
         // Set profile path if specified
@@ -121,21 +134,17 @@ impl From<&Args> for Config {
             unsafe { env::set_var("RUSK_PROFILE_PATH", profile) };
         }
 
-        rusk_config.http.merge(args);
+        self.http.merge(args);
 
         #[cfg(feature = "chain")]
         {
-            rusk_config.kadcast.merge(args);
-            rusk_config.chain.merge(args);
-            rusk_config.databroker.merge(args);
-            rusk_config.telemetry.merge(args);
+            self.kadcast.merge(args);
+            self.chain.merge(args);
+            self.databroker.merge(args);
+            self.telemetry.merge(args);
         }
-
-        rusk_config
     }
-}
 
-impl Config {
     pub(crate) fn log_type(&self) -> String {
         match &self.log_type {
             None => DEFAULT_LOG_TYPE.into(),
@@ -155,5 +164,27 @@ impl Config {
 
     pub(crate) fn log_filter(&self) -> String {
         self.log_filter.clone().unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+
+    #[test]
+    fn parses_default_config_template() {
+        let config: Config =
+            toml::from_str(include_str!("../../default.config.toml"))
+                .expect("default config template should parse");
+        assert_eq!(config.log_level, None);
+        assert_eq!(config.log_filter, None);
+    }
+
+    #[test]
+    fn parses_mainnet_config_template() {
+        let config: Config =
+            toml::from_str(include_str!("../../mainnet.config.toml"))
+                .expect("mainnet config template should parse");
+        assert_eq!(config.log_type, None);
     }
 }
