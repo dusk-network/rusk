@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
+- Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
 
 ## [1.6.0] - 2026-02-27
 

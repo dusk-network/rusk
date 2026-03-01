@@ -6,7 +6,6 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
 #[cfg(feature = "archive")]
@@ -133,62 +132,8 @@ impl RuskNodeBuilder {
         self
     }
 
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_generation_timeout<O: Into<Option<Duration>>>(
-        mut self,
-        generation_timeout: O,
-    ) -> Self {
-        self.vm_config.generation_timeout = generation_timeout.into();
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_gas_per_deploy_byte<O: Into<Option<u64>>>(
-        mut self,
-        gas_per_deploy_byte: O,
-    ) -> Self {
-        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
-            self.vm_config.gas_per_deploy_byte = Some(gas_per_deploy_byte);
-        }
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_min_deployment_gas_price<O: Into<Option<u64>>>(
-        mut self,
-        min_deployment_gas_price: O,
-    ) -> Self {
-        if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
-            self.vm_config.min_deployment_gas_price =
-                Some(min_deploy_gas_price);
-        }
-        self
-    }
-
     pub fn with_min_gas_limit(mut self, min_gas_limit: Option<u64>) -> Self {
         self.min_gas_limit = min_gas_limit;
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_min_deploy_points<O: Into<Option<u64>>>(
-        mut self,
-        min_deploy_points: O,
-    ) -> Self {
-        if let Some(min_deploy_points) = min_deploy_points.into() {
-            self.vm_config.min_deploy_points = Some(min_deploy_points);
-        }
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_block_gas_limit<O: Into<Option<u64>>>(
-        mut self,
-        block_gas_limit: O,
-    ) -> Self {
-        if let Some(block_gas_limit) = block_gas_limit.into() {
-            self.vm_config.block_gas_limit = Some(block_gas_limit);
-        }
         self
     }
 
