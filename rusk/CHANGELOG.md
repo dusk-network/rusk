@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
