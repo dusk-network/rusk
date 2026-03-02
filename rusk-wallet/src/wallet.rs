@@ -282,19 +282,36 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let http_prover = RuesHttpClient::new(prov_addr)?;
         let http_archiver = RuesHttpClient::new(archiver_addr)?;
 
-        let state_status = http_state.check_connection().await;
-        let prover_status = http_prover.check_connection().await;
-        let archiver_status = http_archiver.check_connection().await;
+        // Probe endpoints in parallel with a short timeout so startup remains
+        // responsive even on slow links.
+        let probe_timeout = std::time::Duration::from_secs(5);
+        let (state_status, prover_status, archiver_status) = tokio::join!(
+            tokio::time::timeout(probe_timeout, http_state.check_connection()),
+            tokio::time::timeout(probe_timeout, http_prover.check_connection()),
+            tokio::time::timeout(
+                probe_timeout,
+                http_archiver.check_connection()
+            ),
+        );
 
-        match (&state_status, prover_status, archiver_status) {
-            (Err(e), _, _) => println!(
-                "Connection to Rusk Failed, some operations won't be available: {e}"
+        match (state_status, prover_status, archiver_status) {
+            (Ok(Err(e)), _, _) => status(&format!(
+                "Connection to Rusk failed, some operations won't be available: {e}"
+            )),
+            (Err(_), _, _) => status(
+                "Connection to Rusk timed out, some operations won't be available",
             ),
-            (_, Err(e), _) => println!(
-                "Connection to Prover Failed, some operations won't be available: {e}"
+            (_, Ok(Err(e)), _) => status(&format!(
+                "Connection to Prover failed, some operations won't be available: {e}"
+            )),
+            (_, Err(_), _) => status(
+                "Connection to Prover timed out, some operations won't be available",
             ),
-            (_, _, Err(e)) => println!(
-                "Connection to Archiver Failed, some operations won't be available: {e}"
+            (_, _, Ok(Err(e))) => status(&format!(
+                "Connection to Archiver failed, some operations won't be available: {e}"
+            )),
+            (_, _, Err(_)) => status(
+                "Connection to Archiver timed out, some operations won't be available",
             ),
             _ => {}
         }
@@ -311,6 +328,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         )?);
 
         Ok(())
+    }
+
+    /// Get the Phoenix balance from the local cache only.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if there is no profile stored for the given `profile_idx`.
+    pub fn get_phoenix_balance_cached(
+        &self,
+        profile_idx: u8,
+    ) -> Result<BalanceInfo, Error> {
+        let notes =
+            self.state()?.fetch_notes(self.shielded_key(profile_idx)?)?;
+        Ok(phoenix_balance(
+            &self.derive_phoenix_vk(profile_idx),
+            notes.iter(),
+        ))
     }
 
     /// Sync wallet state

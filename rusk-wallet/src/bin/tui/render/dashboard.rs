@@ -9,7 +9,7 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, BorderType, Borders, List, ListItem, Padding, Paragraph,
+    Block, BorderType, Borders, Clear, List, ListItem, Padding, Paragraph,
 };
 use rusk_wallet::currency::Dusk;
 use wallet_core::BalanceInfo;
@@ -20,6 +20,7 @@ use crate::tui::theme;
 
 pub fn render_dashboard(frame: &mut Frame, app: &App) {
     let area = frame.area();
+    frame.render_widget(Clear, area);
 
     let num_profiles = app.wallet.profiles().len();
     let profile_label =

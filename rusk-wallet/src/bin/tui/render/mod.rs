@@ -12,7 +12,7 @@ mod modals;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
 
 use super::app::{App, AppScreen};
 use super::theme;
@@ -25,6 +25,8 @@ const MIN_HEIGHT: u16 = 20;
 /// Render the standard outer wallet frame and return the inner area.
 fn wallet_frame(frame: &mut Frame, right_title: Option<&str>) -> Rect {
     let area = frame.area();
+    frame.render_widget(Clear, area);
+
     let mut block = Block::bordered()
         .border_type(BorderType::Rounded)
         .title(Line::from(vec![
@@ -330,6 +332,109 @@ pub fn render_new_password_screen(
             ("Esc", "Back"),
         ],
     );
+}
+
+pub fn render_startup_sync_screen(
+    frame: &mut Frame,
+    latest_status: &str,
+    block_height: Option<u64>,
+    recent_messages: &[String],
+    stage_label: &str,
+    stage_progress: (usize, usize),
+    spinner_frame: usize,
+) {
+    let inner = wallet_frame(frame, Some("Syncing"));
+    let content = center_content(inner, 16, 80);
+    let (stage_index, stage_total) = stage_progress;
+
+    let rows = Layout::vertical([
+        Constraint::Length(1), // title
+        Constraint::Length(1), // spacer
+        Constraint::Length(1), // stage
+        Constraint::Length(1), // progress bar
+        Constraint::Length(1), // spacer
+        Constraint::Length(1), // height
+        Constraint::Length(1), // spacer
+        Constraint::Length(1), // latest status
+        Constraint::Length(1), // spacer
+        Constraint::Min(4),    // recent messages
+    ])
+    .split(content);
+
+    frame.render_widget(
+        Paragraph::new(Span::styled(
+            "Synchronizing chain state before opening the wallet UI...",
+            theme::heading(),
+        )),
+        rows[0],
+    );
+
+    let stage_line = Line::from(vec![
+        Span::styled("Stage: ", theme::label()),
+        Span::styled(stage_label, theme::value()),
+        Span::styled("  ", theme::dim()),
+        Span::styled(format!("{stage_index}/{stage_total}"), theme::heading()),
+    ]);
+    frame.render_widget(Paragraph::new(stage_line), rows[2]);
+
+    let bar_width = 28usize;
+    let filled = if stage_total == 0 {
+        0
+    } else {
+        (stage_index.min(stage_total) * bar_width) / stage_total
+    };
+    let spinner = ['|', '/', '-', '\\'][spinner_frame % 4];
+    let progress_line = Line::from(vec![
+        Span::styled("[", theme::dim()),
+        Span::styled("=".repeat(filled), theme::success()),
+        Span::styled(
+            "-".repeat(bar_width.saturating_sub(filled)),
+            theme::dim(),
+        ),
+        Span::styled("]", theme::dim()),
+        Span::styled(format!("  {spinner}"), theme::hotkey()),
+    ]);
+    frame.render_widget(Paragraph::new(progress_line), rows[3]);
+
+    let height_line = match block_height {
+        Some(height) => Line::from(vec![
+            Span::styled("Current block height: ", theme::label()),
+            Span::styled(height.to_string(), theme::value()),
+        ]),
+        None => Line::from(vec![
+            Span::styled("Current block height: ", theme::label()),
+            Span::styled("pending...", theme::dim()),
+        ]),
+    };
+    frame.render_widget(Paragraph::new(height_line), rows[5]);
+
+    let latest_line = if latest_status.is_empty() {
+        Line::from(vec![
+            Span::styled("Status: ", theme::label()),
+            Span::styled("initializing...", theme::dim()),
+        ])
+    } else {
+        Line::from(vec![
+            Span::styled("Status: ", theme::label()),
+            Span::styled(latest_status, theme::value()),
+        ])
+    };
+    frame.render_widget(Paragraph::new(latest_line), rows[7]);
+
+    let mut lines = Vec::new();
+    lines.push(Line::from(Span::styled(
+        "Recent sync events:",
+        theme::label(),
+    )));
+
+    for msg in recent_messages.iter().rev().take(4).rev() {
+        lines.push(Line::from(vec![
+            Span::styled("  - ", theme::dim()),
+            Span::styled(msg.as_str(), theme::dim()),
+        ]));
+    }
+
+    frame.render_widget(Paragraph::new(lines), rows[9]);
 }
 
 // ── Utilities ───────────────────────────────────────────────────────

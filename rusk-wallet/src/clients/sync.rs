@@ -10,8 +10,8 @@ use rkyv::Deserialize;
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
 use dusk_core::transfer::phoenix::{
-    NoteLeaf, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-    ViewKey as PhoenixViewKey,
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
 use wallet_core::keys::{
     derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
@@ -23,6 +23,8 @@ use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
 use crate::Error;
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
+
+const SYNC_PROGRESS_BLOCK_STEP: u64 = 100;
 
 pub(crate) async fn sync_db(
     client: &RuesHttpClient,
@@ -53,57 +55,15 @@ pub(crate) async fn sync_db(
         zeroize_secret_keys(&mut keys);
     })?;
     let pos_to_search = last_pos.map(|p| p + 1).unwrap_or_default();
-    let mut last_pos = last_pos.unwrap_or_default();
 
-    status("Fetching fresh notes...");
-
-    let req = rkyv::to_bytes::<_, 8>(&(pos_to_search))
-        .map_err(|_| Error::Rkyv)?
-        .to_vec();
-
-    let mut stream = client
-        .call_raw(
-            CONTRACTS_TARGET,
-            TRANSFER_CONTRACT,
-            "leaves_from_pos",
-            &req,
-            true,
-        )
-        .await
-        .inspect_err(|_| zeroize_secret_keys(&mut keys))?
-        .bytes_stream();
-
-    status("Connection established...");
-
-    status("Streaming notes...");
-
-    // This buffer is needed because `.bytes_stream();` introduce additional
-    // spliting of chunks according to it's own buffer
-    let mut buffer = vec![];
-    let mut note_data = Vec::new();
-
-    while let Some(http_chunk) = stream.next().await {
-        buffer.extend_from_slice(
-            &http_chunk.inspect_err(|_| zeroize_secret_keys(&mut keys))?,
-        );
-
-        let mut leaf_chunk = buffer.chunks_exact(TREE_LEAF);
-
-        for leaf_bytes in leaf_chunk.by_ref() {
-            let NoteLeaf { block_height, note } =
-                rkyv::check_archived_root::<NoteLeaf>(leaf_bytes)
-                    .map_err(|_| Error::Rkyv)
-                    .inspect_err(|_| zeroize_secret_keys(&mut keys))?
-                    .deserialize(&mut rkyv::Infallible)
-                    .unwrap();
-
-            last_pos = std::cmp::max(last_pos, *note.pos());
-
-            note_data.push((block_height, note));
-        }
-
-        buffer = leaf_chunk.remainder().to_vec();
+    if pos_to_search > 0 {
+        status(&format!(
+            "Resuming sync from cached note position {pos_to_search}"
+        ));
     }
+
+    let (last_pos, max_block_height, note_data) =
+        collect_fresh_notes(client, pos_to_search, &mut keys, status).await?;
 
     let mut err = Ok(());
     'outer: for (sk, vk, pk) in &keys {
@@ -156,8 +116,81 @@ pub(crate) async fn sync_db(
     // insert last post after the notes has been inserted
     // to prevent false reporting of sync completion
     cache.insert_last_pos(last_pos)?;
+    status(&format!(
+        "Syncing Complete at block {max_block_height} (note position {last_pos})"
+    ));
 
     Ok(())
+}
+
+async fn collect_fresh_notes(
+    client: &RuesHttpClient,
+    pos_to_search: u64,
+    keys: &mut [(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+    status: fn(&str),
+) -> Result<(u64, u64, Vec<(u64, Note)>), Error> {
+    status("Fetching fresh notes...");
+
+    let req = rkyv::to_bytes::<_, 8>(&(pos_to_search))
+        .map_err(|_| Error::Rkyv)?
+        .to_vec();
+
+    let mut stream = client
+        .call_raw(
+            CONTRACTS_TARGET,
+            TRANSFER_CONTRACT,
+            "leaves_from_pos",
+            &req,
+            true,
+        )
+        .await
+        .inspect_err(|_| zeroize_secret_keys(keys))?
+        .bytes_stream();
+
+    status("Connection established...");
+    status("Streaming notes...");
+
+    let mut last_pos = pos_to_search.saturating_sub(1);
+    let mut max_block_height = 0_u64;
+    let mut last_reported_block = 0_u64;
+
+    // This buffer is needed because `.bytes_stream();` introduces additional
+    // splitting of chunks according to its own buffer.
+    let mut buffer = vec![];
+    let mut note_data = Vec::new();
+
+    while let Some(http_chunk) = stream.next().await {
+        buffer.extend_from_slice(
+            &http_chunk.inspect_err(|_| zeroize_secret_keys(keys))?,
+        );
+
+        let mut leaf_chunk = buffer.chunks_exact(TREE_LEAF);
+        for leaf_bytes in leaf_chunk.by_ref() {
+            let NoteLeaf { block_height, note } =
+                rkyv::check_archived_root::<NoteLeaf>(leaf_bytes)
+                    .map_err(|_| Error::Rkyv)
+                    .inspect_err(|_| zeroize_secret_keys(keys))?
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
+
+            last_pos = std::cmp::max(last_pos, *note.pos());
+            max_block_height = std::cmp::max(max_block_height, block_height);
+            note_data.push((block_height, note));
+
+            if max_block_height
+                >= last_reported_block + SYNC_PROGRESS_BLOCK_STEP
+            {
+                status(&format!(
+                    "Syncing chain state at block {max_block_height}"
+                ));
+                last_reported_block = max_block_height;
+            }
+        }
+
+        buffer = leaf_chunk.remainder().to_vec();
+    }
+
+    Ok((last_pos, max_block_height, note_data))
 }
 
 fn zeroize_secret_keys(

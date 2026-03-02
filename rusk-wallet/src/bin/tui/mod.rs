@@ -51,6 +51,121 @@ enum ScreenFlow<R> {
     Cancel,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum SyncStage {
+    #[default]
+    Starting,
+    CachedPosition,
+    FetchingFreshNotes,
+    StreamingNotes,
+    Complete,
+    Error,
+}
+
+impl SyncStage {
+    const TOTAL_STEPS: usize = 5;
+
+    fn index(self) -> usize {
+        match self {
+            Self::Starting => 1,
+            Self::CachedPosition => 2,
+            Self::FetchingFreshNotes => 3,
+            Self::StreamingNotes => 4,
+            Self::Complete => 5,
+            Self::Error => 5,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Starting => "Initializing sync session",
+            Self::CachedPosition => "Reading cached note position",
+            Self::FetchingFreshNotes => "Requesting note stream from node",
+            Self::StreamingNotes => "Streaming and decoding notes",
+            Self::Complete => "Initial sync complete",
+            Self::Error => "Sync error",
+        }
+    }
+
+    fn from_status(message: &str) -> Option<Self> {
+        let lower = message.to_ascii_lowercase();
+        if lower.contains("error") {
+            return Some(Self::Error);
+        }
+        if lower.contains("syncing complete")
+            || lower.contains("initial chain sync complete")
+        {
+            return Some(Self::Complete);
+        }
+        if lower.contains("getting cached note position") {
+            return Some(Self::CachedPosition);
+        }
+        if lower.contains("fetching fresh notes") {
+            return Some(Self::FetchingFreshNotes);
+        }
+        if lower.contains("streaming notes")
+            || lower.contains("syncing chain state at block")
+        {
+            return Some(Self::StreamingNotes);
+        }
+        if lower.contains("connection established")
+            || lower.contains("resuming sync from cached note position")
+        {
+            return Some(Self::FetchingFreshNotes);
+        }
+        None
+    }
+
+    fn is_terminal(self) -> bool {
+        matches!(self, Self::Complete | Self::Error)
+    }
+}
+
+#[derive(Default)]
+struct StartupSyncProgress {
+    latest_status: String,
+    recent_messages: Vec<String>,
+    block_height: Option<u64>,
+    stage: SyncStage,
+    spinner_frame: usize,
+}
+
+impl StartupSyncProgress {
+    fn push_status(&mut self, message: String) {
+        if let Some(height) = parse_block_height(&message) {
+            self.block_height = Some(height);
+        }
+
+        if let Some(next_stage) = SyncStage::from_status(&message) {
+            self.advance_stage(next_stage);
+        }
+
+        self.latest_status = message.clone();
+        self.recent_messages.push(message);
+        if self.recent_messages.len() > 8 {
+            self.recent_messages.remove(0);
+        }
+    }
+
+    fn advance_stage(&mut self, next_stage: SyncStage) {
+        if self.stage.is_terminal() {
+            return;
+        }
+
+        match next_stage {
+            SyncStage::Complete | SyncStage::Error => self.stage = next_stage,
+            _ if next_stage.index() > self.stage.index() => {
+                self.stage = next_stage;
+            }
+            _ => {}
+        }
+    }
+
+    fn tick(&mut self) {
+        self.spinner_frame = (self.spinner_frame + 1) % 4;
+    }
+}
+
 /// Run the TUI interactive mode.
 ///
 /// Handles the full lifecycle: password entry, wallet loading, connection,
@@ -171,29 +286,29 @@ async fn run_inner(
         wallet
     };
 
-    // Phase 3: Connect with a short timeout
+    // Phase 3: Connect
     let (tx, mut rx) = mpsc::unbounded_channel::<AsyncResult>();
     init_status_channel(tx.clone());
 
-    let con = tokio::time::timeout(
-        Duration::from_secs(5),
-        wallet.connect_with_status(
+    if let Err(e) = wallet
+        .connect_with_status(
             settings.state.as_str(),
             settings.prover.as_str(),
             settings.archiver.as_str(),
             tui_status,
-        ),
-    )
-    .await;
+        )
+        .await
+    {
+        warn!("[OFFLINE MODE]: Unable to connect: {e}");
+    }
 
-    match con {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => {
-            warn!("[OFFLINE MODE]: Unable to connect: {e}");
-        }
-        Err(_) => {
-            warn!("[OFFLINE MODE]: Connection timed out");
-        }
+    let connected: bool =
+        tokio::time::timeout(Duration::from_secs(5), wallet.is_online())
+            .await
+            .unwrap_or_default();
+
+    if connected && !run_startup_sync_gate(terminal, &wallet, &mut rx).await? {
+        return Ok(ExitReason::Quit);
     }
 
     let _ = wallet.register_sync();
@@ -212,11 +327,20 @@ async fn run_inner(
         if needs_initial_fetch {
             needs_initial_fetch = false;
 
-            let connected = app.wallet.state().is_ok();
+            let connected: bool = tokio::time::timeout(
+                Duration::from_secs(5),
+                app.wallet.is_online(),
+            )
+            .await
+            .unwrap_or_default();
             app.connection = ConnectionStatus { state: connected };
 
             if connected {
                 fetch_balances(&mut app).await;
+            } else {
+                app.handle_async_result(AsyncResult::StatusMessage(
+                    "Offline mode: unable to reach node services".into(),
+                ));
             }
         }
 
@@ -276,6 +400,106 @@ async fn run_inner(
     }
 
     Ok(ExitReason::Quit)
+}
+
+async fn run_startup_sync_gate(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    wallet: &Wallet<WalletFile>,
+    rx: &mut mpsc::UnboundedReceiver<AsyncResult>,
+) -> anyhow::Result<bool> {
+    let mut progress = StartupSyncProgress::default();
+    progress.push_status("Starting initial chain sync...".into());
+
+    let sync_future = wallet.sync();
+    tokio::pin!(sync_future);
+    let tick_rate = Duration::from_millis(120);
+
+    loop {
+        while let Ok(result) = rx.try_recv() {
+            ingest_startup_result(&mut progress, result);
+        }
+
+        terminal.draw(|frame| {
+            render::render_startup_sync_screen(
+                frame,
+                &progress.latest_status,
+                progress.block_height,
+                &progress.recent_messages,
+                progress.stage.label(),
+                (progress.stage.index(), SyncStage::TOTAL_STEPS),
+                progress.spinner_frame,
+            )
+        })?;
+
+        if let Some(key) = event::poll_event(Duration::from_millis(1))? {
+            if key.modifiers.contains(KeyModifiers::CONTROL)
+                && key.code == KeyCode::Char('c')
+            {
+                return Ok(false);
+            }
+
+            if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
+                return Ok(false);
+            }
+        }
+
+        tokio::select! {
+            result = &mut sync_future => {
+                match result {
+                    Ok(()) => {
+                        progress.push_status("Initial chain sync complete".into());
+                        progress.advance_stage(SyncStage::Complete);
+                        return Ok(true);
+                    }
+                    Err(err) => {
+                        progress.push_status(format!(
+                            "Initial sync failed, continuing in offline mode: {err}"
+                        ));
+                        progress.advance_stage(SyncStage::Error);
+                        warn!("[OFFLINE MODE]: Initial sync failed: {err}");
+                        return Ok(true);
+                    }
+                }
+            }
+            _ = tokio::time::sleep(tick_rate) => {
+                progress.tick();
+            }
+        }
+    }
+}
+
+fn ingest_startup_result(
+    progress: &mut StartupSyncProgress,
+    result: AsyncResult,
+) {
+    match result {
+        AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
+            progress.push_status(msg);
+        }
+        AsyncResult::Error(msg) => {
+            progress.push_status(format!("Error: {msg}"));
+        }
+        AsyncResult::BalanceUpdate { .. }
+        | AsyncResult::StakeUpdate { .. }
+        | AsyncResult::TxComplete(_)
+        | AsyncResult::DeployTxComplete(_, _)
+        | AsyncResult::HistoryFetched(_)
+        | AsyncResult::ExportedKeys(_, _) => {}
+    }
+}
+
+fn parse_block_height(message: &str) -> Option<u64> {
+    let mut parts = message.split_whitespace();
+    while let Some(part) = parts.next() {
+        if part.eq_ignore_ascii_case("block") {
+            let raw = parts.next()?;
+            let digits = raw.trim_matches(|c: char| !c.is_ascii_digit());
+            if !digits.is_empty() {
+                return digits.parse::<u64>().ok();
+            }
+        }
+    }
+    None
 }
 
 /// Common key-driven screen loop: draw, poll for key presses, handle Ctrl+C.
@@ -593,18 +817,33 @@ async fn fetch_balances(app: &mut App<'_>) {
     let idx = app.profile_idx;
 
     // Fetch moonlight balance
-    match app.wallet.get_moonlight_balance(idx).await {
-        Ok(bal) => {
+    match tokio::time::timeout(
+        Duration::from_secs(5),
+        app.wallet.get_moonlight_balance(idx),
+    )
+    .await
+    {
+        Ok(Ok(bal)) => {
             let entry = app.balances.entry(idx).or_default();
             entry.moonlight = Some(bal);
+            app.connection.state = true;
         }
-        Err(e) => {
+        Ok(Err(e)) => {
+            app.connection.state = false;
             tracing::debug!("Failed to fetch moonlight balance: {e}");
+        }
+        Err(_) => {
+            app.connection.state = false;
+            tracing::debug!("Timed out while fetching moonlight balance");
         }
     }
 
-    // Fetch phoenix balance
-    match app.wallet.get_phoenix_balance(idx).await {
+    refresh_cached_phoenix(app);
+}
+
+fn refresh_cached_phoenix(app: &mut App<'_>) {
+    let idx = app.profile_idx;
+    match app.wallet.get_phoenix_balance_cached(idx) {
         Ok(bal) => {
             let entry = app.balances.entry(idx).or_default();
             entry.phoenix = Some(bal);
@@ -772,7 +1011,15 @@ fn poll_sync_channel(app: &mut App<'_>) {
         })
         .unwrap_or_default();
 
+    let mut sync_complete = false;
     for msg in messages {
+        if msg.contains("Complete") || msg.contains("complete") {
+            sync_complete = true;
+        }
         app.handle_async_result(AsyncResult::SyncStatus(msg));
+    }
+
+    if sync_complete {
+        refresh_cached_phoenix(app);
     }
 }
