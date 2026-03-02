@@ -14,8 +14,8 @@ use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
-use crate::io::{self};
 use crate::settings::Settings;
+use crate::tui::tui_status;
 
 #[derive(Debug, PartialEq)]
 pub struct TransactionHistory {
@@ -60,6 +60,27 @@ impl TransactionHistory {
     }
 }
 
+impl TransactionHistory {
+    /// Compact single-line string for TUI list display (no trailing newline).
+    pub fn tui_line(&self) -> String {
+        // 1 DUSK = 1_000_000_000 lux; reuse the same formula as Display.
+        let amount_dusk = self.amount / dusk(1.0) as f64;
+        let arrow = match self.direction {
+            TransactionDirection::In => "\u{2193}", // ↓
+            TransactionDirection::Out => "\u{2191}", // ↑
+        };
+        let action = self.action();
+        let bal = match self.bal_type {
+            BalanceType::Shielded => "shield",
+            BalanceType::Public => "public",
+        };
+        format!(
+            "{arrow} {action:<14} {:>+11.4} DUSK   blk {:<9}  {bal}",
+            amount_dusk, self.height
+        )
+    }
+}
+
 impl Display for TransactionHistory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dusk = self.amount / dusk(1.0) as f64;
@@ -95,7 +116,7 @@ pub(crate) async fn transaction_from_notes(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        io::status::interactive,
+        tui_status,
     )?;
 
     let nullifiers = notes
@@ -239,7 +260,7 @@ pub(crate) async fn moonlight_history(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        io::status::interactive,
+        tui_status,
     )?;
 
     let history = gql

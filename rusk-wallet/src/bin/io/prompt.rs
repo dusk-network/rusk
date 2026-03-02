@@ -4,48 +4,39 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fmt::Display;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::{io::stdout, println};
+use std::io::{self, BufRead, Write, stdout};
+use std::println;
 
-use crossterm::{
-    ExecutableCommand,
-    cursor::{Hide, Show},
-};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use crossterm::{ExecutableCommand, cursor::Show};
 
-use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
-use inquire::error::InquireResult;
-use inquire::ui::{RenderConfig, Styled};
-use inquire::validator::Validation;
-use inquire::{
-    Confirm, CustomType, CustomUserError, InquireError, Password,
-    PasswordDisplayMode, Select, Text,
-};
 use rusk_wallet::dat::version_without_pre_higher;
-use rusk_wallet::{
-    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
-    currency::{Dusk, Lux},
-    dat::FileVersion as DatFileVersion,
-    gas::{self, MempoolGasPrices},
-};
+use rusk_wallet::{Error, dat::FileVersion as DatFileVersion};
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
+use thiserror::Error as ThisError;
 use zeroize::Zeroize;
 
 use crate::command::TransactionHistory;
 
+#[derive(Debug, ThisError)]
+pub(crate) enum PromptAbort {
+    #[error("interrupted")]
+    Interrupted,
+    #[error("cancelled")]
+    Cancelled,
+}
+
 pub(crate) trait Prompt {
-    /// Prompt the user to enter a password
-    fn create_new_password(&self) -> InquireResult<String> {
+    fn create_new_password(&self) -> anyhow::Result<String> {
         create_new_password()
     }
 
-    /// Prompt the user to enter text
-    fn prompt_text(&self, text_prompt: Text) -> InquireResult<String> {
-        text_prompt.prompt()
+    fn prompt_text(&self, message: &str) -> anyhow::Result<String> {
+        read_line(message)
     }
 }
 
@@ -53,29 +44,88 @@ pub(crate) struct Prompter;
 
 impl Prompt for Prompter {}
 
-pub(crate) const GO_BACK_HELP: &str = "esc to go back";
-pub(crate) const EXIT_HELP: &str = "ctrl+c to exit";
-pub(crate) const MOVE_HELP: &str = "↑↓ to move";
-pub(crate) const SELECT_HELP: &str = "enter to select";
-pub(crate) const FILTER_HELP: &str = "type to filter";
+/// Read a masked password from the terminal using crossterm raw mode.
+fn read_password(prompt: &str) -> anyhow::Result<String> {
+    eprint!("{prompt}");
+    io::stderr().flush()?;
 
-pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
-    Password::new(msg)
-        .with_display_toggle_enabled()
-        .without_confirmation()
-        .with_display_mode(PasswordDisplayMode::Masked)
-        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
-        .prompt()
+    enable_raw_mode()?;
+    let result = (|| {
+        let mut pwd = String::new();
+        loop {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Enter => {
+                        eprintln!();
+                        return Ok(pwd);
+                    }
+                    KeyCode::Char('c')
+                        if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                    {
+                        eprintln!();
+                        anyhow::bail!(PromptAbort::Interrupted);
+                    }
+                    KeyCode::Esc => {
+                        eprintln!();
+                        anyhow::bail!(PromptAbort::Cancelled);
+                    }
+                    KeyCode::Char(c) => {
+                        pwd.push(c);
+                        eprint!("*");
+                        io::stderr().flush()?;
+                    }
+                    KeyCode::Backspace => {
+                        if pwd.pop().is_some() {
+                            eprint!("\x08 \x08");
+                            io::stderr().flush()?;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    })();
+    disable_raw_mode()?;
+    result
 }
 
-pub(crate) fn create_new_password() -> Result<String, InquireError> {
-    Password::new("Password:")
-        .with_display_toggle_enabled()
-        .with_display_mode(PasswordDisplayMode::Hidden)
-        .with_custom_confirmation_message("Confirm password: ")
-        .with_custom_confirmation_error_message("The passwords doesn't match")
-        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
-        .prompt()
+/// Read a line of text from stdin.
+fn read_line(prompt: &str) -> anyhow::Result<String> {
+    eprint!("{prompt}");
+    io::stderr().flush()?;
+    let mut line = String::new();
+    io::stdin().lock().read_line(&mut line)?;
+    Ok(line.trim().to_string())
+}
+
+/// Ask a yes/no confirmation question.
+fn confirm(msg: &str) -> anyhow::Result<bool> {
+    loop {
+        eprint!("{msg} [y/n] ");
+        io::stderr().flush()?;
+        let mut input = String::new();
+        io::stdin().lock().read_line(&mut input)?;
+        match input.trim().to_lowercase().as_str() {
+            "y" | "yes" => return Ok(true),
+            "n" | "no" => return Ok(false),
+            _ => eprintln!("Please answer y or n."),
+        }
+    }
+}
+
+pub(crate) fn ask_pwd(msg: &str) -> anyhow::Result<String> {
+    read_password(msg)
+}
+
+pub(crate) fn create_new_password() -> anyhow::Result<String> {
+    loop {
+        let pwd = read_password("Password: ")?;
+        let confirm_pwd = read_password("Confirm password: ")?;
+        if pwd == confirm_pwd {
+            return Ok(pwd);
+        }
+        eprintln!("Passwords don't match. Try again.");
+    }
 }
 
 /// Request the user to authenticate with a password and return the derived key
@@ -87,7 +137,6 @@ pub(crate) fn derive_key_from_password(
 ) -> anyhow::Result<Vec<u8>> {
     let mut pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-
         None => ask_pwd(msg)?,
     };
 
@@ -118,22 +167,14 @@ pub(crate) fn confirm_mnemonic_phrase<S>(phrase: &S) -> anyhow::Result<()>
 where
     S: std::fmt::Display,
 {
-    // inform the user about the mnemonic phrase
-    let msg = format!(
-        "The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer. Please print it or write it down and store it somewhere safe.\n> {} \nHave you backed up this phrase?",
-        phrase
+    eprintln!(
+        "The following phrase is essential for you to regain access to your wallet\n\
+         in case you lose access to this computer. Please print it or write it\n\
+         down and store it somewhere safe.\n\
+         > {phrase}"
     );
 
-    // let the user confirm they have backed up their phrase
-    let confirm = Confirm::new(&msg)
-        .with_help_message(
-            "It is important you backup the mnemonic phrase before proceeding",
-        )
-        .prompt()?;
-
-    if !confirm {
-        confirm_mnemonic_phrase(phrase)?
-    }
+    while !confirm("Have you backed up this phrase?")? {}
 
     Ok(())
 }
@@ -142,21 +183,16 @@ where
 pub(crate) fn request_mnemonic_phrase(
     prompter: &dyn Prompt,
 ) -> anyhow::Result<String> {
-    // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
-        let phrase = prompter.prompt_text(
-            Text::new("Please enter the mnemonic phrase: ")
-                .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", ")),
-        )?;
+        let phrase =
+            prompter.prompt_text("Please enter the mnemonic phrase: ")?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
 
             Err(err) if attempt > 2 => match err.downcast_ref::<ErrorKind>() {
-                Some(ErrorKind::InvalidWord) => {
-                    Err(Error::AttemptsExhausted)?;
-                }
+                Some(ErrorKind::InvalidWord) => Err(Error::AttemptsExhausted)?,
                 _ => return Err(err),
             },
             Err(_) => {
@@ -193,280 +229,9 @@ pub(crate) fn derive_key(
     }
 }
 
-/// Request a directory
-pub(crate) fn request_dir(
-    what_for: &str,
-    profile: PathBuf,
-) -> Result<std::path::PathBuf> {
-    let validator = |dir: &str| {
-        let path = PathBuf::from(dir);
-
-        if path.is_dir() {
-            Ok(Validation::Valid)
-        } else {
-            Ok(Validation::Invalid("Not a valid directory".into()))
-        }
-    };
-
-    let msg = format!("Please enter a directory to {}:", what_for);
-    let q = match profile.to_str() {
-        Some(p) => Text::new(msg.as_str())
-            .with_default(p)
-            .with_validator(validator)
-            .prompt(),
-        None => Text::new(msg.as_str()).with_validator(validator).prompt(),
-    }?;
-
-    let p = PathBuf::from(q);
-
-    Ok(p)
-}
-
-/// Asks the user for confirmation
-pub(crate) fn ask_confirm() -> anyhow::Result<bool> {
-    Ok(Confirm::new("Transaction ready. Proceed?")
-        .with_default(true)
-        .prompt()?)
-}
-
 /// Asks the user for confirmation before deleting cache
 pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
-    Ok(Confirm::new(msg).prompt()?)
-}
-
-/// Request a receiver address
-pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
-    // let the user input the receiver address
-    Ok(Address::from_str(
-        &Text::new(format!("Please enter the {} address:", addr_for).as_str())
-            .with_validator(|addr: &str| {
-                if Address::from_str(addr).is_ok() {
-                    Ok(Validation::Valid)
-                } else {
-                    Ok(Validation::Invalid(
-                        "Please introduce a valid DUSK address".into(),
-                    ))
-                }
-            })
-            .prompt()?,
-    )?)
-}
-
-/// Request an amount of token larger than a given min.
-fn request_token(
-    action: &str,
-    min: Dusk,
-    balance: Dusk,
-    default: Option<f64>,
-) -> anyhow::Result<Dusk> {
-    // Checks if the value is larger than the given min and smaller than the
-    // min of the balance and `MAX_CONVERTIBLE`.
-    let validator = move |value: &f64| {
-        let max = std::cmp::min(balance, MAX_CONVERTIBLE);
-
-        match (min..=max).contains(&Dusk::try_from(*value)?) {
-            true => Ok(Validation::Valid),
-            false => Ok(Validation::Invalid(
-                format!("The amount has to be between {} and {}", min, max)
-                    .into(),
-            )),
-        }
-    };
-
-    let msg = format!("Introduce dusk amount for {}:", action);
-
-    let amount_prompt: CustomType<f64> = CustomType {
-        message: &msg,
-        starting_input: None,
-        formatter: &|i| format!("{} DUSK", i),
-        default_value_formatter: &|i| format!("{} DUSK", i),
-        default,
-        validators: vec![Box::new(validator)],
-        placeholder: Some("123.45"),
-        error_message: "Please type a valid number.".into(),
-        help_message: "The number should use a dot as the decimal separator."
-            .into(),
-        parser: &|i| match i.parse::<f64>() {
-            Ok(val) => Ok(val),
-            Err(_) => Err(()),
-        },
-        render_config: RenderConfig::default(),
-    };
-
-    let amount: Dusk = amount_prompt.prompt()?.try_into()?;
-    Ok(amount)
-}
-
-/// Request a positive amount of tokens
-pub(crate) fn request_token_amt(
-    action: &str,
-    balance: Dusk,
-) -> anyhow::Result<Dusk> {
-    let min = MIN_CONVERTIBLE;
-
-    request_token(action, min, balance, None)
-}
-
-/// Request positive amount of tokens with a default
-pub(crate) fn request_token_amt_with_default(
-    action: &str,
-    balance: Dusk,
-    default: Dusk,
-) -> anyhow::Result<Dusk> {
-    let min = MIN_CONVERTIBLE;
-
-    request_token(action, min, balance, Some(default.into()))
-}
-
-/// Request amount of tokens that can be 0
-pub(crate) fn request_optional_token_amt(
-    action: &str,
-    balance: Dusk,
-) -> anyhow::Result<Dusk> {
-    let min = Dusk::from(0);
-
-    request_token(action, min, balance, None)
-}
-
-/// Request amount of tokens that can't be lower than the `min` argument and
-/// higher than `balance`
-pub(crate) fn request_stake_token_amt(
-    balance: Dusk,
-    min: Dusk,
-) -> anyhow::Result<Dusk> {
-    request_token("stake", min, balance, None)
-}
-
-/// Request gas limit
-pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
-    Ok(
-        CustomType::<u64>::new("Introduce the gas limit for this transaction:")
-            .with_default(default_gas_limit)
-            .with_validator(|n: &u64| {
-                if *n < gas::MIN_LIMIT {
-                    Ok(Validation::Invalid("Gas limit too low".into()))
-                } else {
-                    Ok(Validation::Valid)
-                }
-            })
-            .prompt()?,
-    )
-}
-
-/// Request gas price
-pub(crate) fn request_gas_price(
-    min_gas_price: Lux,
-    mempool_gas_prices: MempoolGasPrices,
-) -> anyhow::Result<Lux> {
-    let default_gas_price = if mempool_gas_prices.average > min_gas_price {
-        mempool_gas_prices.average
-    } else {
-        min_gas_price
-    };
-
-    Ok(
-        CustomType::<u64>::new("Introduce the gas price for this transaction:")
-            .with_default(default_gas_price)
-            .with_formatter(&|val| format!("{} LUX", val))
-            .prompt()?,
-    )
-}
-
-pub(crate) fn request_init_args() -> anyhow::Result<Vec<u8>> {
-    const MAX_INIT_SIZE: usize = 32 * 1024;
-    let init = Text::new("Introduce init args:")
-        .with_help_message("Hex encoded rkyv serialized data")
-        .with_validator(move |input: &str| {
-            let error = match hex::decode(input) {
-                Ok(data) => data.len().gt(&MAX_INIT_SIZE).then_some(format!(
-                    "Input exceeds the maximum size of {MAX_INIT_SIZE} bytes",
-                )),
-                Err(_) => Some("Data must be a valid hex".into()),
-            };
-            Ok(error.map_or(Validation::Valid, |error| {
-                Validation::Invalid(error.into())
-            }))
-        })
-        .prompt()?;
-    let init = hex::decode(init).map_err(|e| {
-        anyhow::anyhow!("Expecting hex, this should be a bug: {e}")
-    })?;
-
-    Ok(init)
-}
-
-pub(crate) fn request_str(
-    name: &str,
-    max_length: usize,
-) -> anyhow::Result<String> {
-    Ok(
-        Text::new(format!("Introduce string for {}:", name).as_str())
-            .with_validator(move |input: &str| {
-                if input.len() > max_length {
-                    Ok(Validation::Invalid(
-                        format!(
-                            "Input exceeds the maximum length of {} characters",
-                            max_length
-                        )
-                        .into(),
-                    ))
-                } else {
-                    Ok(Validation::Valid)
-                }
-            })
-            .prompt()?,
-    )
-}
-
-pub enum TransactionModel {
-    Shielded,
-    Public,
-}
-
-impl Display for TransactionModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            TransactionModel::Shielded => write!(f, "Shielded"),
-            TransactionModel::Public => write!(f, "Public"),
-        }
-    }
-}
-
-/// Request transaction model to use
-pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
-    let choices = vec![TransactionModel::Shielded, TransactionModel::Public];
-
-    Ok(
-        Select::new("Please specify the transaction model to use", choices)
-            .prompt()?,
-    )
-}
-
-/// Request public key to use as stake owner
-pub(crate) fn request_owner_key(
-    current_idx: u8,
-    choices: Vec<Address>,
-) -> anyhow::Result<Address> {
-    let display_choices = choices
-        .iter()
-        .enumerate()
-        .map(|(idx, val)| (format!("Profile {}: {}", idx + 1, val), val))
-        .collect::<Vec<(String, &Address)>>();
-
-    let answer = Select::new(
-        "Please select the moonlight address to use as stake owner",
-        display_choices.iter().map(|(s, _)| s.clone()).collect(),
-    )
-    .with_starting_cursor(current_idx as usize)
-    .prompt()?;
-
-    let selected_address = display_choices
-        .into_iter()
-        .find(|(s, _)| s == &answer)
-        .map(|(_, addr)| addr.clone())
-        .expect("Address should be present");
-
-    Ok(selected_address)
+    confirm(msg)
 }
 
 pub(crate) fn tx_history_list(
@@ -476,89 +241,10 @@ pub(crate) fn tx_history_list(
         println!("No transactions found");
         return Ok(());
     }
-    let header = TransactionHistory::header();
-    let history_str: Vec<String> =
-        history.iter().map(|history| history.to_string()).collect();
-
-    Select::new(header.as_str(), history_str)
-        .with_help_message(
-            &[MOVE_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
-        )
-        .with_render_config(
-            RenderConfig::default()
-                .with_canceled_prompt_indicator(Styled::new(" ")),
-        )
-        .prompt()?;
-
-    Ok(())
-}
-
-const WASM_PATH_VALIDATOR: fn(&str) -> Result<Validation, CustomUserError> =
-    |path_str: &str| {
-        let path = PathBuf::from(path_str);
-        if path.extension().is_some_and(|ext| ext == "wasm") {
-            Ok(Validation::Valid)
-        } else {
-            Ok(Validation::Invalid("Not a valid WASM path".into()))
-        }
-    };
-
-/// Request contract WASM file location
-pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
-    let q = Text::new("Please Enter location of the WASM contract:")
-        .with_validator(WASM_PATH_VALIDATOR)
-        .prompt()?;
-
-    let p = PathBuf::from(q);
-
-    Ok(p)
-}
-
-/// Request contract's driver WASM file location
-pub(crate) fn request_driver_code() -> anyhow::Result<PathBuf> {
-    let q = Text::new("Please Enter location of the WASM driver:")
-        .with_validator(WASM_PATH_VALIDATOR)
-        .prompt()?;
-
-    let p = PathBuf::from(q);
-
-    Ok(p)
-}
-
-pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
-    let byte_string =
-        Text::new(format!("Introduce hex bytes for {}:", name).as_str())
-            .with_validator(|f: &str| match hex::decode(f) {
-                Ok(_) => Ok(Validation::Valid),
-                Err(_) => Ok(Validation::Invalid("Invalid hex string".into())),
-            })
-            .prompt()?;
-
-    let bytes = hex::decode(byte_string)?;
-
-    Ok(bytes)
-}
-
-pub(crate) fn request_nonce() -> anyhow::Result<u64> {
-    let nonce_string =
-        Text::new("Introduce a number for Contract Deployment nonce:")
-            .with_validator(|f: &str| match u64::from_str(f) {
-                Ok(_) => Ok(Validation::Valid),
-                Err(_) => Ok(Validation::Invalid("Invalid u64 nonce".into())),
-            })
-            .prompt()?;
-
-    let bytes = u64::from_str(&nonce_string)?;
-
-    Ok(bytes)
-}
-
-/// Request Dusk block explorer to be opened
-pub(crate) fn launch_explorer(url: String) -> Result<()> {
-    if Confirm::new("Launch block explorer?").prompt()? {
-        open::that(url)?;
+    println!("{}", TransactionHistory::header());
+    for entry in history {
+        println!("{entry}");
     }
-
     Ok(())
 }
 
@@ -566,12 +252,5 @@ pub(crate) fn launch_explorer(url: String) -> Result<()> {
 pub(crate) fn show_cursor() -> anyhow::Result<()> {
     let mut stdout = stdout();
     stdout.execute(Show)?;
-    Ok(())
-}
-
-/// Hides the terminal cursor
-pub(crate) fn hide_cursor() -> anyhow::Result<()> {
-    let mut stdout = stdout();
-    stdout.execute(Hide)?;
     Ok(())
 }

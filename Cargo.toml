@@ -91,7 +91,7 @@ chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 clap = "4.4.18"
 console = "0.12"
 criterion = "0.5.1"
-crossterm = "0.25"
+crossterm = "0.27"
 dirs = "4.0"
 dlmalloc = "0.2.6"
 fake = "2.9.2"
@@ -126,6 +126,7 @@ pbkdf2 = "0.12.2"
 pin-project = "1.1.5"
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
+ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
 reqwest = "0.12.7"
 ringbuffer = "0.15"
 rkyv = { version = "0.7.39", default-features = false }

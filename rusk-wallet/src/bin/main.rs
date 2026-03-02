@@ -6,9 +6,9 @@
 
 mod command;
 mod config;
-mod interactive;
 mod io;
 mod settings;
+mod tui;
 
 pub(crate) use command::{Command, RunResult};
 use command::{gen_iv, gen_salt};
@@ -19,7 +19,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use inquire::InquireError;
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
@@ -67,14 +66,10 @@ impl SecureWalletFile for WalletFile {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
-        // display the error message (if any)
-        match err.downcast_ref::<InquireError>() {
-            Some(
-                InquireError::OperationInterrupted
-                | InquireError::OperationCanceled,
-            ) => (),
-            _ => eprintln!("{err}"),
-        };
+        // Suppress Ctrl+C / Esc from password prompts
+        if err.downcast_ref::<prompt::PromptAbort>().is_none() {
+            eprintln!("{err}");
+        }
         // give cursor back to the user
         io::prompt::show_cursor()?;
     }
@@ -211,15 +206,21 @@ async fn exec() -> anyhow::Result<()> {
         }
     };
 
-    let is_headless = cmd.is_some();
-
     if let Some(Command::Settings) = cmd {
         println!("{}", &settings);
         settings.password.zeroize();
         return Ok(());
     };
 
-    // get our wallet ready
+    // TUI mode: the TUI handles password entry, wallet loading, and connection.
+    // If no wallet file exists, the TUI offers restore-from-mnemonic.
+    if cmd.is_none() {
+        let res = tui::run(&wallet_path, &settings).await;
+        settings.password.zeroize();
+        return res;
+    }
+
+    // Headless mode: load wallet, connect, and run command
     let mut wallet: Wallet<WalletFile> =
         get_wallet(&cmd, &settings, &wallet_path)
             .await
@@ -238,13 +239,7 @@ async fn exec() -> anyhow::Result<()> {
             })?;
     }
 
-    // set our status callback
-    let status_cb = match is_headless {
-        true => status::headless,
-        false => status::interactive,
-    };
-
-    wallet = connect(wallet, &settings, status_cb)
+    wallet = connect(wallet, &settings, status::headless)
         .await
         .inspect_err(|_| {
             settings.password.zeroize();
@@ -265,15 +260,11 @@ async fn run_command_or_enter_loop(
     settings: &Settings,
     cmd: Option<Command>,
 ) -> anyhow::Result<()> {
-    // run command
     match cmd {
-        // if there is no command we are in interactive mode and need to run the
-        // interactive loop
         None => {
-            wallet.register_sync()?;
-            interactive::run_loop(wallet, settings).await?;
+            // TUI mode is handled earlier in exec() — this is unreachable
+            unreachable!("TUI mode should be handled before this point");
         }
-        // else we run the given command and print the result
         Some(cmd) => {
             match cmd.run(wallet, settings).await? {
                 RunResult::PhoenixBalance(balance, spendable) => {
@@ -367,15 +358,9 @@ async fn run_command_or_enter_loop(
                 }
                 RunResult::History(txns) => {
                     if let Err(err) = crate::prompt::tx_history_list(&txns) {
-                        match err.downcast_ref::<InquireError>() {
-                            Some(
-                                InquireError::OperationInterrupted
-                                | InquireError::OperationCanceled,
-                            ) => (),
-                            _ => println!(
-                                "Failed to output transaction history with error {err}"
-                            ),
-                        }
+                        eprintln!(
+                            "Failed to output transaction history: {err}"
+                        );
                     }
                 }
                 RunResult::ContractId(id) => {
@@ -397,9 +382,33 @@ async fn get_wallet(
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let password = &settings.password;
     let wallet = match cmd {
-        // if `cmd` is `None` we are in interactive mode and need to load the
-        // wallet from file
-        None => interactive::load_wallet(wallet_path, settings).await?,
+        // In interactive (TUI) mode, load the wallet from file.
+        // Wallet creation/recovery is handled via headless subcommands.
+        None => {
+            if !wallet_path.inner().exists() {
+                return Err(anyhow::anyhow!(
+                    "No wallet found at {}. Use `rusk-wallet create` \
+                     or `rusk-wallet restore` first.",
+                    wallet_path.inner().display()
+                ));
+            }
+
+            let (file_version, salt_and_iv) =
+                dat::read_file_version_and_salt_iv(wallet_path)?;
+            let key = prompt::derive_key_from_password(
+                "Please enter your wallet password",
+                password,
+                salt_and_iv.map(|si| si.0).as_ref(),
+                file_version,
+            )?;
+
+            Wallet::from_file(WalletFile {
+                path: wallet_path.clone(),
+                aes_key: key,
+                salt: salt_and_iv.map(|si| si.0),
+                iv: salt_and_iv.map(|si| si.1),
+            })?
+        }
         // else we check if we need to replace the wallet and then load it
         Some(cmd) => match cmd {
             Command::Create {
@@ -478,7 +487,7 @@ async fn get_wallet(
     Ok(wallet)
 }
 
-fn update_wallet_file(
+pub(crate) fn update_wallet_file(
     wallet: &mut Wallet<WalletFile>,
     password: &Option<String>,
     file_version: DatFileVersion,

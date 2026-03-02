@@ -150,6 +150,7 @@ impl Settings {
         Ok(SettingsBuilder { wallet_dir, args })
     }
 
+    #[allow(dead_code)]
     pub async fn check_state_con(&self) -> Result<(), Error> {
         RuesHttpClient::new(self.state.as_ref())?
             .check_connection()
@@ -157,6 +158,7 @@ impl Settings {
             .map_err(Error::from)
     }
 
+    #[allow(dead_code)]
     pub async fn check_prover_con(&self) -> Result<(), Error> {
         RuesHttpClient::new(self.prover.as_ref())?
             .check_connection()
@@ -164,6 +166,7 @@ impl Settings {
             .map_err(Error::from)
     }
 
+    #[allow(dead_code)]
     pub async fn check_archiver_con(&self) -> Result<(), Error> {
         RuesHttpClient::new(self.archiver.as_ref())?
             .check_connection()
