@@ -19,6 +19,10 @@ pub(super) struct ForkPolicy {
     pub(super) bls_version: BlsVersion,
 }
 
+/// Applies VM-configured activations to the canonical hard-fork timeline.
+///
+/// This keeps feature-based config (`Height` / `Ranges`) and
+/// `node_data::hard_fork` in sync.
 pub(super) fn set_hard_fork_activations(vm_config: &RuskVmConfig) {
     hard_fork::set_aegis_activation_height(feature_activation_start(
         vm_config,
@@ -26,6 +30,10 @@ pub(super) fn set_hard_fork_activations(vm_config: &RuskVmConfig) {
     ));
 }
 
+/// Resolves the execution policy used by Rusk at `block_height`.
+///
+/// Execution policy is the fork marker plus fork-dependent cryptographic
+/// versions (Plonk and BLS) used for validation and VM host behavior.
 pub(super) fn policy_at(
     vm_config: &RuskVmConfig,
     block_height: u64,
@@ -39,6 +47,9 @@ pub(super) fn policy_at(
     }
 }
 
+/// Maps chain hard-fork values to the VM host-query hard-fork enum.
+///
+/// This isolates the type boundary between `node_data` and `dusk_vm`.
 pub(super) fn host_hard_fork(hard_fork: HardFork) -> host_queries::HardFork {
     match hard_fork {
         HardFork::PreFork => host_queries::HardFork::PreFork,
