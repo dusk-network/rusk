@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add full-screen TUI mode as the default interactive wallet experience
+- Add startup sync gate screen in TUI with cycle stage, progress bar, status stream, and block-height feedback
+- Add chain tip height polling and display in TUI overview status
+- Add explicit network indicator in TUI overview, using configured network name (including custom `--network` names)
+
+### Changed
+
+- Improve TUI startup responsiveness by avoiding long blocking phases on initial sync
+- Stabilize sync status transitions to reduce rapid `Synced`/`Syncing` toggling around normal block cadence
+
+### Fixed
+
+- Fix TUI stdout artifacting and stale frame residue after startup sync
+- Ignore placeholder `block 0` sync values so invalid heights are not shown in overview
+
 ## [0.3.0] - 2026-02-27
 
 ### Changed

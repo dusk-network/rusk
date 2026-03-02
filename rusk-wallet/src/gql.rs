@@ -66,6 +66,21 @@ struct BlockResponse {
     pub block: Option<Block>,
 }
 
+#[derive(Deserialize)]
+struct HeaderHeightResponse {
+    pub height: u64,
+}
+
+#[derive(Deserialize)]
+struct LastBlockHeightResponse {
+    pub header: HeaderHeightResponse,
+}
+
+#[derive(Deserialize)]
+struct BlocksResponse {
+    pub blocks: Vec<LastBlockHeightResponse>,
+}
+
 // See `PhoenixTransactionEventSubset` for the reason for this struct
 // and allowing dead code here.
 #[derive(Deserialize, Debug, Clone)]
@@ -245,6 +260,22 @@ impl GraphQL {
         }
 
         Ok(ret)
+    }
+
+    /// Obtain the current chain tip height from the state node.
+    ///
+    /// # Errors
+    /// This method errors if the query cannot be sent, the response cannot be
+    /// decoded, or no block information is returned.
+    pub async fn tip_height(&self) -> Result<u64, Error> {
+        let query = "query { blocks(last: 1) { header { height } } }";
+        let response = self.query_state(query).await?;
+        let blocks =
+            serde_json::from_slice::<BlocksResponse>(&response)?.blocks;
+        blocks
+            .first()
+            .map(|block| block.header.height)
+            .ok_or(GraphQLError::BlockInfo.into())
     }
 
     /// Sends an empty body to url to check if its available

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use dusk_core::stake::StakeData;
@@ -50,6 +51,8 @@ pub enum SyncStatus {
     Synced,
     Error(String),
 }
+
+const SYNCING_STATUS_GRACE_AFTER_COMPLETE: Duration = Duration::from_secs(8);
 
 /// Result info for display after a command completes.
 #[derive(Debug, Clone)]
@@ -128,7 +131,10 @@ pub struct App<'a> {
     pub balances: HashMap<u8, ProfileBalance>,
     pub stake_info: HashMap<u8, StakeState>,
     pub sync_status: SyncStatus,
+    pub sync_block_height: Option<u64>,
+    pub network_label: String,
     pub connection: ConnectionStatus,
+    last_sync_complete_at: Option<Instant>,
 
     // Pending command for confirmation flow
     pub pending_cmd: Option<Command>,
@@ -161,7 +167,10 @@ impl<'a> App<'a> {
             balances: HashMap::new(),
             stake_info: HashMap::new(),
             sync_status: SyncStatus::default(),
+            sync_block_height: None,
+            network_label: resolve_network_label(settings),
             connection: ConnectionStatus::default(),
+            last_sync_complete_at: None,
             pending_cmd: None,
             pending_cmd_description: Vec::new(),
             status_messages: Vec::new(),
@@ -480,14 +489,29 @@ impl<'a> App<'a> {
                 self.stake_info.insert(profile_idx, stake);
             }
             AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
+                if let Some(height) = parse_block_height(&msg) {
+                    self.sync_block_height = Some(
+                        self.sync_block_height
+                            .map_or(height, |current| current.max(height)),
+                    );
+                }
+
                 if msg.contains("Complete") || msg.contains("complete") {
                     self.sync_status = SyncStatus::Synced;
+                    self.last_sync_complete_at = Some(Instant::now());
                 } else if msg.contains("Error") || msg.contains("error") {
                     self.sync_status = SyncStatus::Error(msg.clone());
+                    self.last_sync_complete_at = None;
                 } else if msg.contains("Syncing") || msg.contains("syncing") {
-                    self.sync_status = SyncStatus::Syncing;
+                    self.transition_to_syncing();
                 }
                 self.push_status(msg);
+            }
+            AsyncResult::ChainTipHeight(height) => {
+                self.sync_block_height = Some(
+                    self.sync_block_height
+                        .map_or(height, |current| current.max(height)),
+                );
             }
             AsyncResult::TxComplete(hash) => {
                 let tx_hash = hex::encode(hash.to_bytes());
@@ -544,6 +568,22 @@ impl<'a> App<'a> {
         // Keep last 5 messages
         if self.status_messages.len() > 5 {
             self.status_messages.remove(0);
+        }
+    }
+
+    fn transition_to_syncing(&mut self) {
+        let should_switch = match self.sync_status {
+            SyncStatus::Unknown
+            | SyncStatus::Error(_)
+            | SyncStatus::Syncing => true,
+            SyncStatus::Synced => self
+                .last_sync_complete_at
+                .map(|at| at.elapsed() >= SYNCING_STATUS_GRACE_AFTER_COMPLETE)
+                .unwrap_or(true),
+        };
+
+        if should_switch {
+            self.sync_status = SyncStatus::Syncing;
         }
     }
 
@@ -745,4 +785,50 @@ fn build_confirmation_details(
     }
 
     d
+}
+
+fn parse_block_height(message: &str) -> Option<u64> {
+    let mut parts = message.split_whitespace();
+    while let Some(part) = parts.next() {
+        if part.eq_ignore_ascii_case("block") {
+            let raw = parts.next()?;
+            let digits = raw.trim_matches(|c: char| !c.is_ascii_digit());
+            if !digits.is_empty() {
+                let height = digits.parse::<u64>().ok()?;
+                return (height > 0).then_some(height);
+            }
+        }
+    }
+    None
+}
+
+fn resolve_network_label(settings: &Settings) -> String {
+    if let Some(name) = settings.network_name.as_deref() {
+        return name.to_string();
+    }
+
+    infer_network_label(&settings.state).to_string()
+}
+
+fn infer_network_label(state_url: &url::Url) -> &'static str {
+    let host = state_url
+        .host_str()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+
+    if host.contains("testnet") {
+        "Testnet"
+    } else if host.contains("devnet") {
+        "Devnet"
+    } else if host == "localhost"
+        || host == "127.0.0.1"
+        || host == "::1"
+        || host.ends_with(".local")
+    {
+        "Local"
+    } else if host.contains("mainnet") || host == "nodes.dusk.network" {
+        "Mainnet"
+    } else {
+        "Custom"
+    }
 }

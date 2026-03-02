@@ -76,6 +76,7 @@ fn node_address() -> String {
 fn wallet_settings(wallet_dir: &TempDir) -> Settings {
     let addr = format!("http://{}", node_address());
     Settings {
+        network_name: Some("test".to_string()),
         state: Url::parse(&addr).unwrap(),
         prover: Url::parse(&addr).unwrap(),
         archiver: Url::parse(&addr).unwrap(),

@@ -48,6 +48,7 @@ pub(crate) struct Logging {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Settings {
+    pub(crate) network_name: Option<String>,
     pub(crate) state: Url,
     pub(crate) prover: Url,
     pub(crate) archiver: Url,
@@ -71,26 +72,28 @@ impl SettingsBuilder {
 
     pub fn network(self, network: Network) -> Result<Settings, Error> {
         let mut args = self.args;
+        let selected_network_name = args.network.clone();
 
-        let network = match (args.network, network.clone().network) {
-            (Some(label), Some(mut networks)) => {
-                let r = networks.remove(&label);
-                // err if specified network is not in the list
-                if r.is_none() {
+        let network =
+            match (selected_network_name.clone(), network.clone().network) {
+                (Some(label), Some(mut networks)) => {
+                    let r = networks.remove(&label);
+                    // err if specified network is not in the list
+                    if r.is_none() {
+                        args.password.zeroize();
+                        return Err(Error::BadAddress);
+                    }
+
+                    r
+                }
+                // err if no networks are specified but argument is
+                (Some(_), None) => {
                     args.password.zeroize();
                     return Err(Error::BadAddress);
                 }
-
-                r
+                (_, _) => None,
             }
-            // err if no networks are specified but argument is
-            (Some(_), None) => {
-                args.password.zeroize();
-                return Err(Error::BadAddress);
-            }
-            (_, _) => None,
-        }
-        .unwrap_or(network);
+            .unwrap_or(network);
 
         let state = args
             .state
@@ -123,6 +126,7 @@ impl SettingsBuilder {
         };
 
         Ok(Settings {
+            network_name: selected_network_name,
             state,
             prover,
             archiver,
@@ -257,6 +261,9 @@ impl fmt::Display for Settings {
             }
         )?;
         writeln!(f, "{}", separator)?;
+        if let Some(network_name) = &self.network_name {
+            writeln!(f, "network: {network_name}")?;
+        }
         writeln!(f, "state: {}", self.state)?;
         writeln!(f, "prover: {}", self.prover)?;
 

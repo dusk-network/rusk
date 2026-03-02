@@ -334,22 +334,37 @@ pub fn render_new_password_screen(
     );
 }
 
+pub struct StartupSyncView<'a> {
+    pub latest_status: &'a str,
+    pub block_height: Option<u64>,
+    pub streamed_blocks: Option<u64>,
+    pub recent_messages: &'a [String],
+    pub stage_label: &'a str,
+    pub stage_progress: (usize, usize),
+    pub progress_percent: usize,
+    pub spinner_frame: usize,
+}
+
 pub fn render_startup_sync_screen(
     frame: &mut Frame,
-    latest_status: &str,
-    block_height: Option<u64>,
-    recent_messages: &[String],
-    stage_label: &str,
-    stage_progress: (usize, usize),
-    spinner_frame: usize,
+    view: &StartupSyncView<'_>,
 ) {
+    let latest_status = view.latest_status;
+    let block_height = view.block_height;
+    let streamed_blocks = view.streamed_blocks;
+    let recent_messages = view.recent_messages;
+    let stage_label = view.stage_label;
+    let (stage_index, stage_total) = view.stage_progress;
+    let progress_percent = view.progress_percent;
+    let spinner_frame = view.spinner_frame;
+
     let inner = wallet_frame(frame, Some("Syncing"));
-    let content = center_content(inner, 16, 80);
-    let (stage_index, stage_total) = stage_progress;
+    let content = center_content(inner, 17, 84);
 
     let rows = Layout::vertical([
         Constraint::Length(1), // title
         Constraint::Length(1), // spacer
+        Constraint::Length(1), // cycle tracker
         Constraint::Length(1), // stage
         Constraint::Length(1), // progress bar
         Constraint::Length(1), // spacer
@@ -369,19 +384,42 @@ pub fn render_startup_sync_screen(
         rows[0],
     );
 
+    let cycle_steps = ["Init", "Cache", "Fetch", "Stream", "Ready"];
+    let active_step = stage_index.clamp(1, cycle_steps.len());
+    let mut cycle_spans = Vec::new();
+    for (idx, step) in cycle_steps.iter().enumerate() {
+        if idx > 0 {
+            cycle_spans.push(Span::styled(" -> ", theme::dim()));
+        }
+
+        let step_number = idx + 1;
+        if step_number < active_step {
+            cycle_spans
+                .push(Span::styled(format!("[x] {step}"), theme::success()));
+        } else if step_number == active_step {
+            cycle_spans
+                .push(Span::styled(format!("[>] {step}"), theme::heading()));
+        } else {
+            cycle_spans.push(Span::styled(format!("[ ] {step}"), theme::dim()));
+        }
+    }
+    frame.render_widget(Paragraph::new(Line::from(cycle_spans)), rows[2]);
+
     let stage_line = Line::from(vec![
         Span::styled("Stage: ", theme::label()),
         Span::styled(stage_label, theme::value()),
         Span::styled("  ", theme::dim()),
         Span::styled(format!("{stage_index}/{stage_total}"), theme::heading()),
+        Span::styled("  ", theme::dim()),
+        Span::styled(format!("{progress_percent}%"), theme::hotkey()),
     ]);
-    frame.render_widget(Paragraph::new(stage_line), rows[2]);
+    frame.render_widget(Paragraph::new(stage_line), rows[3]);
 
     let bar_width = 28usize;
-    let filled = if stage_total == 0 {
+    let filled = if progress_percent == 0 {
         0
     } else {
-        (stage_index.min(stage_total) * bar_width) / stage_total
+        (progress_percent.min(100) * bar_width) / 100
     };
     let spinner = ['|', '/', '-', '\\'][spinner_frame % 4];
     let progress_line = Line::from(vec![
@@ -394,19 +432,25 @@ pub fn render_startup_sync_screen(
         Span::styled("]", theme::dim()),
         Span::styled(format!("  {spinner}"), theme::hotkey()),
     ]);
-    frame.render_widget(Paragraph::new(progress_line), rows[3]);
+    frame.render_widget(Paragraph::new(progress_line), rows[4]);
 
-    let height_line = match block_height {
-        Some(height) => Line::from(vec![
+    let height_line = match (block_height, streamed_blocks) {
+        (Some(height), Some(delta)) if delta > 0 => Line::from(vec![
+            Span::styled("Current block height: ", theme::label()),
+            Span::styled(height.to_string(), theme::value()),
+            Span::styled("  ", theme::dim()),
+            Span::styled(format!("(+{delta} in this sync)"), theme::success()),
+        ]),
+        (Some(height), _) => Line::from(vec![
             Span::styled("Current block height: ", theme::label()),
             Span::styled(height.to_string(), theme::value()),
         ]),
-        None => Line::from(vec![
+        (None, _) => Line::from(vec![
             Span::styled("Current block height: ", theme::label()),
             Span::styled("pending...", theme::dim()),
         ]),
     };
-    frame.render_widget(Paragraph::new(height_line), rows[5]);
+    frame.render_widget(Paragraph::new(height_line), rows[6]);
 
     let latest_line = if latest_status.is_empty() {
         Line::from(vec![
@@ -419,7 +463,7 @@ pub fn render_startup_sync_screen(
             Span::styled(latest_status, theme::value()),
         ])
     };
-    frame.render_widget(Paragraph::new(latest_line), rows[7]);
+    frame.render_widget(Paragraph::new(latest_line), rows[8]);
 
     let mut lines = Vec::new();
     lines.push(Line::from(Span::styled(
@@ -434,7 +478,7 @@ pub fn render_startup_sync_screen(
         ]));
     }
 
-    frame.render_widget(Paragraph::new(lines), rows[9]);
+    frame.render_widget(Paragraph::new(lines), rows[10]);
 }
 
 // ── Utilities ───────────────────────────────────────────────────────

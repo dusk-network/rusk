@@ -26,7 +26,7 @@ use ratatui::prelude::CrosstermBackend;
 use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::{GraphQL, Wallet, WalletPath};
 use tokio::sync::mpsc;
-use tracing::warn;
+use tracing::{debug, warn};
 use zeroize::Zeroize;
 
 use crate::WalletFile;
@@ -37,6 +37,9 @@ use crate::settings::Settings;
 pub use self::action::tui_status;
 use self::action::{AsyncResult, clear_status_channel, init_status_channel};
 use self::app::{App, AppAction, AppScreen, ConnectionStatus};
+
+const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
+const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
 
 /// Signals from `run_inner` about why it exited.
 enum ExitReason {
@@ -119,6 +122,10 @@ impl SyncStage {
     fn is_terminal(self) -> bool {
         matches!(self, Self::Complete | Self::Error)
     }
+
+    fn tracks_block_progress(self) -> bool {
+        matches!(self, Self::StreamingNotes | Self::Complete)
+    }
 }
 
 #[derive(Default)]
@@ -126,18 +133,22 @@ struct StartupSyncProgress {
     latest_status: String,
     recent_messages: Vec<String>,
     block_height: Option<u64>,
+    stream_start_block: Option<u64>,
     stage: SyncStage,
     spinner_frame: usize,
 }
 
 impl StartupSyncProgress {
     fn push_status(&mut self, message: String) {
-        if let Some(height) = parse_block_height(&message) {
-            self.block_height = Some(height);
-        }
-
         if let Some(next_stage) = SyncStage::from_status(&message) {
             self.advance_stage(next_stage);
+        }
+
+        if let Some(height) = parse_block_height(&message) {
+            self.block_height = Some(height);
+            if self.stage.tracks_block_progress() {
+                self.stream_start_block.get_or_insert(height);
+            }
         }
 
         self.latest_status = message.clone();
@@ -163,6 +174,21 @@ impl StartupSyncProgress {
 
     fn tick(&mut self) {
         self.spinner_frame = (self.spinner_frame + 1) % 4;
+    }
+
+    fn progress_percent(&self) -> usize {
+        if SyncStage::TOTAL_STEPS <= 1 {
+            return 100;
+        }
+
+        let capped = self.stage.index().min(SyncStage::TOTAL_STEPS);
+        ((capped.saturating_sub(1)) * 100) / (SyncStage::TOTAL_STEPS - 1)
+    }
+
+    fn streamed_blocks(&self) -> Option<u64> {
+        let start = self.stream_start_block?;
+        let current = self.block_height?;
+        Some(current.saturating_sub(start))
     }
 }
 
@@ -315,6 +341,7 @@ async fn run_inner(
 
     // Phase 4: Main event loop
     let mut app = App::new(&mut wallet, settings);
+    let mut tip_poller_started = false;
 
     let tick_rate = Duration::from_millis(100);
     let mut needs_initial_fetch = true;
@@ -337,6 +364,10 @@ async fn run_inner(
 
             if connected {
                 fetch_balances(&mut app).await;
+                if !tip_poller_started {
+                    spawn_tip_height_poller(tx.clone(), settings);
+                    tip_poller_started = true;
+                }
             } else {
                 app.handle_async_result(AsyncResult::StatusMessage(
                     "Offline mode: unable to reach node services".into(),
@@ -420,15 +451,20 @@ async fn run_startup_sync_gate(
         }
 
         terminal.draw(|frame| {
-            render::render_startup_sync_screen(
-                frame,
-                &progress.latest_status,
-                progress.block_height,
-                &progress.recent_messages,
-                progress.stage.label(),
-                (progress.stage.index(), SyncStage::TOTAL_STEPS),
-                progress.spinner_frame,
-            )
+            let view = render::StartupSyncView {
+                latest_status: &progress.latest_status,
+                block_height: progress.block_height,
+                streamed_blocks: progress.streamed_blocks(),
+                recent_messages: &progress.recent_messages,
+                stage_label: progress.stage.label(),
+                stage_progress: (
+                    progress.stage.index(),
+                    SyncStage::TOTAL_STEPS,
+                ),
+                progress_percent: progress.progress_percent(),
+                spinner_frame: progress.spinner_frame,
+            };
+            render::render_startup_sync_screen(frame, &view)
         })?;
 
         if let Some(key) = event::poll_event(Duration::from_millis(1))? {
@@ -481,6 +517,7 @@ fn ingest_startup_result(
         }
         AsyncResult::BalanceUpdate { .. }
         | AsyncResult::StakeUpdate { .. }
+        | AsyncResult::ChainTipHeight(_)
         | AsyncResult::TxComplete(_)
         | AsyncResult::DeployTxComplete(_, _)
         | AsyncResult::HistoryFetched(_)
@@ -495,11 +532,55 @@ fn parse_block_height(message: &str) -> Option<u64> {
             let raw = parts.next()?;
             let digits = raw.trim_matches(|c: char| !c.is_ascii_digit());
             if !digits.is_empty() {
-                return digits.parse::<u64>().ok();
+                let height = digits.parse::<u64>().ok()?;
+                return (height > 0).then_some(height);
             }
         }
     }
     None
+}
+
+fn spawn_tip_height_poller(
+    tx: mpsc::UnboundedSender<AsyncResult>,
+    settings: &Settings,
+) {
+    let state_url = settings.state.to_string();
+    let archiver_url = settings.archiver.to_string();
+
+    tokio::spawn(async move {
+        let gql = match GraphQL::new(state_url, archiver_url, tui_status) {
+            Ok(gql) => gql,
+            Err(err) => {
+                debug!(
+                    "Failed to initialize GraphQL client for tip polling: {err}"
+                );
+                return;
+            }
+        };
+
+        loop {
+            match tokio::time::timeout(
+                TIP_HEIGHT_POLL_TIMEOUT,
+                gql.tip_height(),
+            )
+            .await
+            {
+                Ok(Ok(height)) => {
+                    if tx.send(AsyncResult::ChainTipHeight(height)).is_err() {
+                        break;
+                    }
+                }
+                Ok(Err(err)) => {
+                    debug!("Failed to fetch chain tip height: {err}");
+                }
+                Err(_) => {
+                    debug!("Timed out while fetching chain tip height");
+                }
+            }
+
+            tokio::time::sleep(TIP_HEIGHT_POLL_INTERVAL).await;
+        }
+    });
 }
 
 /// Common key-driven screen loop: draw, poll for key presses, handle Ctrl+C.

@@ -121,7 +121,12 @@ fn render_info_block(
     lines.push(staking_line(stake));
 
     // ── Status ────────────────────────────────────────────────
-    lines.push(status_line(&app.sync_status, &app.connection));
+    lines.push(status_line(
+        &app.sync_status,
+        app.sync_block_height,
+        &app.network_label,
+        &app.connection,
+    ));
 
     frame.render_widget(Paragraph::new(lines), area);
 }
@@ -201,6 +206,8 @@ fn staking_line(stake: Option<&StakeState>) -> Line<'static> {
 
 fn status_line(
     sync: &SyncStatus,
+    block_height: Option<u64>,
+    network_label: &str,
     conn: &super::super::app::ConnectionStatus,
 ) -> Line<'static> {
     let mut spans = Vec::new();
@@ -213,6 +220,8 @@ fn status_line(
                 .fg(theme::RED)
                 .add_modifier(Modifier::BOLD),
         ));
+        spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
+        spans.push(Span::styled(network_label.to_string(), theme::heading()));
         return Line::from(spans);
     }
 
@@ -220,13 +229,50 @@ fn status_line(
         SyncStatus::Synced => {
             spans.push(Span::styled("\u{25cf} ", theme::status_ok()));
             spans.push(Span::styled("Synced", theme::dim()));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
+            spans.push(Span::styled(
+                network_label.to_string(),
+                theme::heading(),
+            ));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
+            spans.push(Span::styled("Block ", theme::label()));
+            match block_height {
+                Some(height) => {
+                    spans
+                        .push(Span::styled(height.to_string(), theme::value()));
+                }
+                None => {
+                    spans.push(Span::styled("--", theme::dim()));
+                }
+            }
         }
         SyncStatus::Syncing => {
             spans.push(Span::styled("\u{25cf} ", theme::warning()));
             spans.push(Span::styled("Syncing\u{2026}", theme::dim()));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
+            spans.push(Span::styled(
+                network_label.to_string(),
+                theme::heading(),
+            ));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
+            spans.push(Span::styled("Block ", theme::label()));
+            match block_height {
+                Some(height) => {
+                    spans
+                        .push(Span::styled(height.to_string(), theme::value()));
+                }
+                None => {
+                    spans.push(Span::styled("--", theme::dim()));
+                }
+            }
         }
         SyncStatus::Error(e) => {
             spans.push(Span::styled("\u{25cf} ", theme::status_err()));
+            spans.push(Span::styled(
+                network_label.to_string(),
+                theme::heading(),
+            ));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
             let msg = if e.len() > 20 {
                 format!("Err: {:.20}\u{2026}", e)
             } else {
@@ -236,6 +282,11 @@ fn status_line(
         }
         SyncStatus::Unknown => {
             spans.push(Span::styled("\u{25cb} ", theme::dim()));
+            spans.push(Span::styled(
+                network_label.to_string(),
+                theme::heading(),
+            ));
+            spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
             spans.push(Span::styled("--", theme::dim()));
         }
     }

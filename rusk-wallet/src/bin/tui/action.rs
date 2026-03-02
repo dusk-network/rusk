@@ -63,6 +63,8 @@ pub enum AsyncResult {
     SyncStatus(String),
     /// Status message from wallet operations
     StatusMessage(String),
+    /// Current chain tip height from GraphQL
+    ChainTipHeight(u64),
     /// Transaction completed
     TxComplete(BlsScalar),
     /// Deploy transaction completed
