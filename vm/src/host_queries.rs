@@ -676,3 +676,27 @@ pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         |(msg_hash, sig)| secp256k1_recover(msg_hash, sig),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plonk_verifier_overflow_lengths_do_not_panic() {
+        let mut bytes = Vec::with_capacity(48);
+        bytes.extend_from_slice(&0u64.to_be_bytes()); // label_len
+        bytes.extend_from_slice(&0u64.to_be_bytes()); // verifier_key_len
+        bytes.extend_from_slice(&0u64.to_be_bytes()); // opening_key_len
+        bytes.extend_from_slice(&u64::MAX.to_be_bytes()); // public_input_indexes_len
+        bytes.extend_from_slice(&0u64.to_be_bytes()); // size
+        bytes.extend_from_slice(&0u64.to_be_bytes()); // constraints
+
+        let result =
+            std::panic::catch_unwind(|| Verifier::try_from_bytes(&bytes));
+        assert!(result.is_ok(), "Verifier::try_from_bytes panicked");
+        assert!(matches!(
+            result.expect("checked above"),
+            Err(dusk_core::plonk::Error::NotEnoughBytes)
+        ));
+    }
+}
