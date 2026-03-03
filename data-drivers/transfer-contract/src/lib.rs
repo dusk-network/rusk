@@ -135,12 +135,19 @@ impl ConvertibleContract for ContractDriver {
             "existing_nullifiers" => rkyv_to_json::<Vec<BlsScalar>>(rkyv),
             // Feeder Queries
             "sync_accounts" => from_rkyv::<(AccountData, [u8; 193])>(rkyv)
-                .and_then(|(data, key)| unsafe {
-                    to_json((
-                        data,
-                        AccountPublicKey::from_slice_unchecked(&key),
-                    ))
-                    .map_err(Error::from)
+                .and_then(|(data, key)| {
+                    // Keys are stored in raw 193-byte format; the BLS API does
+                    // not currently expose a checked constructor for this
+                    // representation, so validate immediately after decoding.
+                    let key =
+                        unsafe { AccountPublicKey::from_slice_unchecked(&key) };
+                    if !key.is_valid() {
+                        return Err(Error::Other(
+                            "invalid account public key".into(),
+                        ));
+                    }
+
+                    to_json((data, key)).map_err(Error::from)
                 }),
             "sync_nullifiers" => rkyv_to_json::<BlsScalar>(rkyv),
             "sync_contract_balances" => from_rkyv::<(ContractId, u64)>(rkyv)
