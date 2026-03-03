@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject unsafe ZIP entry paths during state recovery extraction to prevent path traversal writes
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
