@@ -35,6 +35,8 @@ use dusk_data_driver::{
 #[derive(Default)]
 pub struct ContractDriver;
 
+const STAKE_SCHEMA: &str = r#"{"name":"StakeContract","imports":[],"functions":[{"name":"stake","doc":"","input":"Stake","output":"()","custom":false},{"name":"unstake","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"withdraw","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"stake_from_contract","doc":"","input":"ReceiveFromContract","output":"()","custom":false},{"name":"unstake_from_contract","doc":"","input":"WithdrawToContract","output":"()","custom":false},{"name":"withdraw_from_contract","doc":"","input":"WithdrawToContract","output":"()","custom":false},{"name":"get_stake","doc":"","input":"BlsPublicKey","output":"Option<StakeData>","custom":false},{"name":"get_stake_keys","doc":"","input":"BlsPublicKey","output":"Option<StakeKeys>","custom":false},{"name":"burnt_amount","doc":"","input":"()","output":"u64","custom":false},{"name":"get_version","doc":"","input":"()","output":"u64","custom":false},{"name":"get_config","doc":"","input":"()","output":"StakeConfig","custom":false},{"name":"stakes","doc":"","input":"()","output":"(StakeKeys,StakeData)","custom":false}],"events":[{"topic":"stake","data":"StakeEvent"},{"topic":"unstake","data":"StakeEvent"},{"topic":"withdraw","data":"StakeEvent"},{"topic":"reward","data":"Vec<Reward>"},{"topic":"slash","data":"SlashEvent"},{"topic":"hard_slash","data":"SlashEvent"}]}"#;
+
 impl ConvertibleContract for ContractDriver {
     fn encode_input_fn(
         &self,
@@ -130,7 +132,7 @@ impl ConvertibleContract for ContractDriver {
     }
 
     fn get_schema(&self) -> String {
-        todo!()
+        STAKE_SCHEMA.into()
     }
 }
 
