@@ -36,6 +36,54 @@ jobs:
               - 'w3sper.js/**'
               - '.github/workflows/w3sperjs_ci.yml'
 
+  w3sper_lint:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    name: "Deno lint check"
+    runs-on: core
+
+    steps:
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run deno lint and format checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${WORKDIR}/repo/w3sper.js"
+          deno lint --rules-exclude=no-slow-types src tests
+          deno fmt --check deno.json src tests
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true
+
   w3sper_test:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')

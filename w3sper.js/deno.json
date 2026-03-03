@@ -4,7 +4,8 @@
   "exports": "./src/mod.js",
   "imports": {
     "@dusk/exu": "jsr:@dusk/exu@0.1.2",
-    "@dusk/w3sper": "./src/mod.js"
+    "@dusk/w3sper": "./src/mod.js",
+    "bip39": "npm:bip39@3.1.0"
   },
   "tasks": {
     "test": "deno test --allow-net --allow-read --allow-write --allow-run --allow-import",

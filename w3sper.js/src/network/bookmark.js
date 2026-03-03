@@ -21,14 +21,14 @@ export class Bookmark {
     if (typeof source?.[intoBookmark] === "function") {
       return source[intoBookmark]();
     } else if (typeof source === "bigint" || typeof source === "number") {
-      let buffer = new ArrayBuffer(8);
+      const buffer = new ArrayBuffer(8);
       new DataView(buffer).setBigUint64(0, BigInt(source), true);
       return new Bookmark(new Uint8Array(buffer));
     } else if (source instanceof Bookmark) {
       return new Bookmark(source.data);
     }
 
-    let buffer = Uint8Array.from(data);
+    const buffer = Uint8Array.from(data);
     return new Bookmark(buffer);
   }
 

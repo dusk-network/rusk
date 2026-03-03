@@ -23,7 +23,7 @@ class TransactionExecutedEvent extends RuesEvent {
 
   memo(options = {}) {
     const memo = this.payload.inner.memo;
-    if ( typeof memo !== "string" || memo.length === 0) {
+    if (typeof memo !== "string" || memo.length === 0) {
       return null;
     }
     const buffer = base16.decode(memo);
