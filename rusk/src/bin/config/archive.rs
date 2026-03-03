@@ -7,7 +7,9 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-pub(crate) struct ArchiveConfig(pub(crate) node::archive::conf::Params);
+pub(crate) struct ArchiveConfig(
+    #[serde(default)] pub(crate) node::archive::conf::Params,
+);
 
 impl From<ArchiveConfig> for node::archive::conf::Params {
     fn from(conf: ArchiveConfig) -> Self {

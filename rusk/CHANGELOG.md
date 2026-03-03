@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Consolidate node config resolution and chain-upgrade policy into a single internal path.
 - Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
 - Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
 

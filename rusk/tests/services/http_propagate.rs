@@ -15,6 +15,8 @@ use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_rusk_test::{RuskVmConfig, TestContext};
 use hyper::HeaderMap;
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger};
 use rusk::http::HttpServer;
 use rusk::node::RuskNode;
@@ -76,7 +78,16 @@ async fn propagate_rejects_tx_that_fails_preverify() {
     kadcast_conf.listen_address = Some("127.0.0.1:0".to_string());
     let network =
         node::network::Kadcast::<255>::new(kadcast_conf).expect("valid config");
-    let node = RuskNode::new(node::Node::new(network, backend, rusk));
+    #[cfg(feature = "archive")]
+    let _archive_dir =
+        tempdir().expect("creating archive tempdir should succeed");
+    #[cfg(feature = "archive")]
+    let archive = Archive::create_or_open(_archive_dir.path()).await;
+    let node = RuskNode::new(
+        node::Node::new(network, backend, rusk),
+        #[cfg(feature = "archive")]
+        archive,
+    );
 
     let (event_sender, event_receiver) = broadcast::channel(1);
     let (_server, local_addr) = HttpServer::bind(

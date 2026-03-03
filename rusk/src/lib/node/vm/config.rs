@@ -127,30 +127,22 @@ impl Config {
 
     /// Create a new `Config` with the given parameters.
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
-        let with_public_sender: bool = self
-            .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
-        let with_blob = self
-            .feature(feature::FEATURE_BLOB)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+        let with_public_sender = self.feature_active_at(
+            feature::FEATURE_ABI_PUBLIC_SENDER,
+            block_height,
+        );
+        let with_blob =
+            self.feature_active_at(feature::FEATURE_BLOB, block_height);
         let disable_wasm64 = self
-            .feature(feature::FEATURE_DISABLE_WASM64)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_DISABLE_WASM64, block_height);
         let disable_wasm32 = self
-            .feature(feature::FEATURE_DISABLE_WASM32)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
-        let disable_3rd_party = self
-            .feature(feature::FEATURE_DISABLE_3RD_PARTY)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_DISABLE_WASM32, block_height);
+        let disable_3rd_party = self.feature_active_at(
+            feature::FEATURE_DISABLE_3RD_PARTY,
+            block_height,
+        );
         let phoenix_refund_check = self
-            .feature(feature::FEATURE_HARDFORK_AEGIS)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_HARDFORK_AEGIS, block_height);
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -174,6 +166,12 @@ impl Config {
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(feature))
             .map(|(_, v)| v)
+    }
+
+    pub fn feature_active_at(&self, feature: &str, block_height: u64) -> bool {
+        self.feature(feature)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 
     pub fn with_feature<S: Into<String>, F: Into<FeatureActivation>>(
