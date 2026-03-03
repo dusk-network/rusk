@@ -10,7 +10,7 @@ import { ProfileGenerator, useAsProtocolDriver } from "@dusk/w3sper";
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64);
-const seeder = () => SEED;
+const seeder = () => Promise.resolve(SEED);
 
 // fetch local wasm
 const wasmBuffer = await getLocalWasmBuffer();

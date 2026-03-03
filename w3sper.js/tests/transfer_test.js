@@ -83,6 +83,7 @@ async function getTxsFromStream(txsStream) {
  * in our history tests at the bottom of this file.
  */
 const collectedTransfers = new Map();
+const STAKE_CONTRACT_ID = [0x02, ...new Array(31).fill(0)];
 
 /**
  * @param {string} key
@@ -629,40 +630,7 @@ test("account contract call transfer", async () => {
   const payload = {
     fnName: METHOD,
     fnArgs: [],
-    contractId: [
-      0x02,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    ],
+    contractId: [...STAKE_CONTRACT_ID],
   };
 
   const transfer = bookkeeper
@@ -717,40 +685,7 @@ test("account contract call genesis with deposit", async () => {
   const payload = {
     fnName: METHOD,
     fnArgs: [],
-    contractId: [
-      0x02,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    ],
+    contractId: [...STAKE_CONTRACT_ID],
   };
 
   const transfer = bookkeeper
