@@ -32,8 +32,12 @@ where
 
     values.sort_by(|a, b| b.cmp(a));
 
-    let spendable = values.iter().take(MAX_INPUT_NOTES).sum();
-    let value = spendable + values.iter().skip(MAX_INPUT_NOTES).sum::<u64>();
+    let spendable = values
+        .iter()
+        .take(MAX_INPUT_NOTES)
+        .copied()
+        .fold(0u64, u64::saturating_add);
+    let value = values.into_iter().fold(0u64, u64::saturating_add);
 
     TotalAmount { value, spendable }
 }
@@ -55,8 +59,12 @@ where
 
     values.sort_by(|a, b| b.cmp(a));
 
-    let spendable = values.iter().take(MAX_INPUT_NOTES).sum();
-    let value = spendable + values.iter().skip(MAX_INPUT_NOTES).sum::<u64>();
+    let spendable = values
+        .iter()
+        .take(MAX_INPUT_NOTES)
+        .copied()
+        .fold(0u64, u64::saturating_add);
+    let value = values.into_iter().fold(0u64, u64::saturating_add);
 
     TotalAmount { value, spendable }
 }

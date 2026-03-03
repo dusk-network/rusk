@@ -171,6 +171,32 @@ fn test_balance() {
 }
 
 #[test]
+fn test_balance_saturates_on_overflow() {
+    let mut rng = StdRng::seed_from_u64(0xbabe);
+
+    let owner_sk = PhoenixSecretKey::random(&mut rng);
+    let owner_pk = PhoenixPublicKey::from(&owner_sk);
+
+    let notes = vec![
+        gen_note(&mut rng, true, &owner_pk, u64::MAX),
+        gen_note(&mut rng, true, &owner_pk, 1),
+    ];
+
+    let notes: Vec<NoteLeaf> = notes
+        .into_iter()
+        .map(|note| NoteLeaf {
+            note,
+            block_height: 0,
+        })
+        .collect();
+
+    let balance = phoenix_balance(&(&owner_sk).into(), notes.iter());
+
+    assert_eq!(balance.value, u64::MAX);
+    assert_eq!(balance.spendable, u64::MAX);
+}
+
+#[test]
 fn test_pick_notes() {
     use rand::SeedableRng;
 

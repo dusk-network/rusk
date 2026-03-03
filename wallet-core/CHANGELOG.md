@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Prevent phoenix balance aggregation from wrapping on `u64` overflow by using saturating sums
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
