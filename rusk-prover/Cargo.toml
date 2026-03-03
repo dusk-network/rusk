@@ -26,6 +26,7 @@ tracing = { workspace = true, optional = true }
 hex = { workspace = true }
 
 [features]
-no_random = []
+# Explicit unsafe name for deterministic proving mode used in tests.
+unsafe_deterministic_rng = []
 std = ["dusk-plonk/std"]
 debug = ["hex", "tracing"]

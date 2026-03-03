@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rename deterministic test proving feature to `unsafe_deterministic_rng` and remove the `no_random` alias
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed

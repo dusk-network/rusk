@@ -19,7 +19,7 @@ node = { workspace = true }
 dusk-consensus = { workspace = true }
 wallet-core = { workspace = true }
 rusk-recovery = { workspace = true, features = ["state"] }
-rusk-prover = { workspace = true, features = ["no_random", "debug"] }
+rusk-prover = { workspace = true, features = ["unsafe_deterministic_rng", "debug"] }
 dusk-bytes = { workspace = true }
 
 anyhow = { workspace = true }
