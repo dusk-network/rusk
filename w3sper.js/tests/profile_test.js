@@ -4,19 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import { test, assert, getLocalWasmBuffer } from "./harness.js";
+import { assert, getLocalWasmBuffer, test } from "./harness.js";
 
 import { ProfileGenerator, useAsProtocolDriver } from "@dusk/w3sper";
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64);
-const seeder = async () => SEED;
+const seeder = () => SEED;
 
 // fetch local wasm
 const wasmBuffer = await getLocalWasmBuffer();
 
 // Test case for initial profile generation
-test("Initial Profile Generation", async () => {
+test("Initial Profile Generation", () => {
   const profiles = new ProfileGenerator(seeder);
 
   // Verify that the profile list is initially empty

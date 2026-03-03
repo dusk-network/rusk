@@ -10,7 +10,6 @@ const _none = Symbol("none::instance");
 
 const DEFAULT_MESSAGE =
   "The object is uninitialized. Please initialize it before use.";
-const X = Symbol("X");
 
 export const none = function (strings, ...values) {
   return new Proxy(

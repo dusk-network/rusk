@@ -50,7 +50,7 @@ const subscribe = async (target, topic, options) => {
         throw new Error("Unable to subscribe: Target  not found");
       default:
         throw new Error(
-          `Unable to subscribe: Unknown Error ${response.status}: ${response.statusText}`
+          `Unable to subscribe: Unknown Error ${response.status}: ${response.statusText}`,
         );
     }
   }
@@ -91,7 +91,7 @@ const unsubscribe = async (target, topic, options) => {
         throw new Error("Unable to unsubscribe: Target or topic not found");
       default:
         throw new Error(
-          `Unable to unsubscribe: Unknown Error ${response.status}: ${response.statusText}`
+          `Unable to unsubscribe: Unknown Error ${response.status}: ${response.statusText}`,
         );
     }
   }
@@ -102,7 +102,7 @@ const unsubscribe = async (target, topic, options) => {
 export class ListenerError extends Error {
   constructor(message) {
     const [, name, description] = message.match(
-      /([A-Za-z\-]+?[ ]?Error)[: ]? ?(.*)/
+      /([A-Za-z\-]+?[ ]?Error)[: ]? ?(.*)/,
     ) ?? [, "ListenerError", message];
 
     super(description);
@@ -152,7 +152,7 @@ export class ListenerProxy {
               target.once.resolve(event);
               listenerController.abort();
             },
-            { signal }
+            { signal },
           );
           rues.addEventListener("error", handleDisrupt, { signal });
           rues.addEventListener("disconnect", handleDisrupt, { once: true });

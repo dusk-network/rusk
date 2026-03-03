@@ -48,7 +48,7 @@ export function load(source, importsURL) {
       const minimumStake = await u64(ptr(globals.MINIMUM_STAKE));
 
       return [{ key, item }, minimumStake];
-    })
+    }),
   )();
 }
 
@@ -81,16 +81,16 @@ export function useAsProtocolDriver(source, importsURL) {
 export async function opening(bytes) {
   const task = protocolDriverModule.task(async function (
     { malloc, opening },
-    { memcpy }
+    { memcpy },
   ) {
     const buffer = new Uint8Array(DataBuffer.from(bytes));
 
-    let ptr = await malloc(buffer.byteLength);
+    const ptr = await malloc(buffer.byteLength);
 
     // Copy the notes to the WASM memory
     await memcpy(ptr, buffer, buffer.byteLength);
 
-    let code = await opening(ptr);
+    const code = await opening(ptr);
     if (code > 0) throw DriverError.from(code);
   });
 
@@ -100,14 +100,14 @@ export async function opening(bytes) {
 export async function displayScalar(bytes) {
   const task = protocolDriverModule.task(async function (
     { malloc, display_scalar },
-    { memcpy }
+    { memcpy },
   ) {
-    let ptr = await malloc(32);
+    const ptr = await malloc(32);
     await memcpy(ptr, bytes, 32);
 
-    let out_ptr = await malloc(64);
+    const out_ptr = await malloc(64);
 
-    let code = await display_scalar(ptr, out_ptr);
+    const code = await display_scalar(ptr, out_ptr);
     if (code > 0) throw DriverError.from(code);
 
     const buffer = await memcpy(null, out_ptr, 64);
@@ -122,27 +122,27 @@ export async function displayScalar(bytes) {
 export async function bookmarks(notes) {
   const task = protocolDriverModule.task(async function (
     { malloc, bookmarks },
-    { memcpy }
+    { memcpy },
   ) {
     if (notes.length === 0) {
       return [];
     }
 
     // Prepare the notes buffer
-    let notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
+    const notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
 
     // Allocate memory for the notes + 4 bytes for the length
-    let ptr = await malloc(notesBuffer.byteLength);
+    const ptr = await malloc(notesBuffer.byteLength);
 
     // Copy the notes to the WASM memory
     await memcpy(ptr, notesBuffer, notesBuffer.byteLength);
 
     let bookmarks_ptr = await malloc(8);
 
-    let code = await bookmarks(ptr, bookmarks_ptr);
+    const code = await bookmarks(ptr, bookmarks_ptr);
     if (code > 0) throw DriverError.from(code);
     bookmarks_ptr = new DataView(
-      (await memcpy(null, bookmarks_ptr, 4)).buffer
+      (await memcpy(null, bookmarks_ptr, 4)).buffer,
     ).getUint32(0, true);
 
     return await memcpy(null, bookmarks_ptr, notes.size * 8);
@@ -154,56 +154,56 @@ export async function bookmarks(notes) {
 export async function pickNotes(owner, notes, value) {
   const task = protocolDriverModule.task(async function (
     { malloc, pick_notes },
-    { memcpy }
+    { memcpy },
   ) {
     if (notes.length === 0) {
       return new Map();
     }
 
     // Copy the seed to avoid invalidating the original buffer
-    let seed = new Uint8Array(await owner.seed);
+    const seed = new Uint8Array(await owner.seed);
     // Copy the seed to the WASM memory
-    let seed_ptr = await malloc(64);
+    const seed_ptr = await malloc(64);
     await memcpy(seed_ptr, seed, 64);
 
     // Prepare the notes buffer
     let notesBuffer = new Uint8Array(DataBuffer.from(notes.entries()));
 
     // Allocate memory for the notes + 4 bytes for the length
-    let ptr = await malloc(notesBuffer.byteLength);
+    const ptr = await malloc(notesBuffer.byteLength);
 
     // Copy the notes to the WASM memory
     await memcpy(ptr, notesBuffer, notesBuffer.byteLength);
 
     // Copy the value to the WASM memory
-    let valueBuffer = new Uint8Array(8);
+    const valueBuffer = new Uint8Array(8);
     new DataView(valueBuffer.buffer).setBigUint64(0, value, true);
-    let value_ptr = await malloc(valueBuffer.length);
+    const value_ptr = await malloc(valueBuffer.length);
     await memcpy(value_ptr, valueBuffer, valueBuffer.byteLength);
 
-    let code = await pick_notes(seed_ptr, +owner, value_ptr, ptr);
+    const code = await pick_notes(seed_ptr, +owner, value_ptr, ptr);
     if (code > 0) throw DriverError.from(code);
 
-    let len = new DataView((await memcpy(null, ptr, 4)).buffer).getUint32(
+    const len = new DataView((await memcpy(null, ptr, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
     notesBuffer = await memcpy(null, ptr + 4, len);
 
-    let notesLen = new DataView(notesBuffer.buffer).getUint32(
+    const notesLen = new DataView(notesBuffer.buffer).getUint32(
       notesBuffer.byteLength - 4,
-      true
+      true,
     );
 
-    let itemSize = (notesBuffer.buffer.byteLength - 8) / notesLen;
-    let keySize = 32;
-    let valueSize = itemSize - keySize;
+    const itemSize = (notesBuffer.buffer.byteLength - 8) / notesLen;
+    const keySize = 32;
+    const valueSize = itemSize - keySize;
 
-    let result = new Map();
+    const result = new Map();
     for (let i = 0; i < itemSize * notesLen; i += itemSize) {
-      let key = new Uint8Array(keySize);
-      let value = new Uint8Array(valueSize);
+      const key = new Uint8Array(keySize);
+      const value = new Uint8Array(valueSize);
       key.set(notesBuffer.subarray(i, i + keySize));
       value.set(notesBuffer.subarray(i + keySize, i + itemSize));
 
@@ -224,22 +224,22 @@ export const generateProfile = (seed, n) =>
       // Allocates memory on the WASM heap and then places `seed` into it.
       // We copy the seed since we do not want to transfer the original buffer
       // over the WASM memory.
-      let seed_ptr = await box(seed.slice(0));
+      const seed_ptr = await box(seed.slice(0));
 
       // Allocates memory on the WASM heap for the profile
-      let out = await box(capacity(64 + 96));
+      const out = await box(capacity(64 + 96));
 
       await generate_profile(+seed_ptr, n, +out);
 
       // Return the content of the `out` boxed value
       return out.valueOf();
-    })
+    }),
   )();
 
 export const mapOwned = (owners, notes) =>
   protocolDriverModule.task(
     withAllocator(async function ({ map_owned }, allocator) {
-      const { box, capacity, u64, u32x, ptrx, databuffer } = allocator.types;
+      const { box, capacity, u64, u32x, databuffer } = allocator.types;
 
       if (owners.length === 0) {
         return new Map();
@@ -254,17 +254,17 @@ export const mapOwned = (owners, notes) =>
         throw new Error("All owners must be generated from the same source");
       }
 
-      let { key: keySize, item: itemSize } = await getEntrySize();
-      let entrySize = keySize + itemSize;
+      const { key: keySize, item: itemSize } = await getEntrySize();
+      const entrySize = keySize + itemSize;
 
       let notesBuffer = new Uint8Array(
-        DataBuffer.from(notes, { size: notes.byteLength / itemSize })
+        DataBuffer.from(notes, { size: notes.byteLength / itemSize }),
       );
 
       // Allocates memory on the WASM heap and then places `seed` into it.
       // We copy the seed since we do not want to transfer the original buffer
       // over the WASM memory.
-      let seed = await box((await firstOwner.seed).slice(0));
+      const seed = await box((await firstOwner.seed).slice(0));
 
       // Allocate memory for the notes + 4 bytes for the length
       // let ptr = await malloc(notesBuffer.byteLength);
@@ -272,35 +272,35 @@ export const mapOwned = (owners, notes) =>
       // Copy the notes to the WASM memory
       //
       // await memcpy(ptr, notesBuffer, notesBuffer.byteLength);
-      let notes_ptr = await box(notesBuffer);
+      const notes_ptr = await box(notesBuffer);
 
       // Convert the profile to indexes and copy them to a Uint8Array
-      let indexes = new Uint8Array(owners.length + 1);
+      const indexes = new Uint8Array(owners.length + 1);
       indexes[0] = owners.length;
       indexes.set(
         owners.map((p) => +p),
-        1
+        1,
       );
 
-      let idx_ptr = await box(indexes);
+      const idx_ptr = await box(indexes);
 
       let out_ptr = await box(u32x);
 
-      let info_ptr = await box(capacity(16)); //malloc(16);
+      const info_ptr = await box(capacity(16)); //malloc(16);
 
-      let code = await map_owned(
+      const code = await map_owned(
         +seed,
         +idx_ptr,
         +notes_ptr,
         +out_ptr,
-        +info_ptr
+        +info_ptr,
       );
       if (code > 0) throw DriverError.from(code);
 
       out_ptr = await out_ptr.valueOf();
       // let len = await u32x(out_ptr);
 
-      let [buff] = await databuffer(out_ptr);
+      const [buff] = await databuffer(out_ptr);
 
       const { size, totalLength } = DataBuffer.layout(buff);
 
@@ -311,16 +311,16 @@ export const mapOwned = (owners, notes) =>
       }
 
       notesBuffer = buff;
-      let totalLen = buff.byteLength - (size + 1) * 8;
+      const totalLen = buff.byteLength - (size + 1) * 8;
 
-      let blockHeight = await u64(+info_ptr);
-      let bookmark = await u64(+info_ptr + 8);
+      const blockHeight = await u64(+info_ptr);
+      const bookmark = await u64(+info_ptr + 8);
 
-      let results = sizes.map((_) => new Map());
+      const results = sizes.map((_) => new Map());
       let j = 0;
       for (let i = 0; i < totalLen; i += entrySize) {
-        let key = new Uint8Array(keySize);
-        let value = new Uint8Array(itemSize);
+        const key = new Uint8Array(keySize);
+        const value = new Uint8Array(itemSize);
         key.set(notesBuffer.subarray(i, i + keySize));
         value.set(notesBuffer.subarray(i + keySize, i + entrySize));
 
@@ -330,49 +330,49 @@ export const mapOwned = (owners, notes) =>
       }
 
       return [results, { blockHeight, bookmark }];
-    })
+    }),
   )();
 
 export async function balance(seed, n, notes) {
   const task = await protocolDriverModule.task(async function (
     { malloc, balance },
-    { memcpy }
+    { memcpy },
   ) {
     // Copy the seed to avoid invalidating the original buffer
     seed = new Uint8Array(seed);
 
-    let seed_ptr = await malloc(64);
+    const seed_ptr = await malloc(64);
     await memcpy(seed_ptr, seed, 64);
 
-    let notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
+    const notesBuffer = new Uint8Array(DataBuffer.from(notes.values()));
 
-    let ptr = await malloc(notesBuffer.byteLength);
+    const ptr = await malloc(notesBuffer.byteLength);
     await memcpy(ptr, notesBuffer);
-    let info_ptr = await malloc(16);
+    const info_ptr = await malloc(16);
 
     const _result = await balance(seed_ptr, n, ptr, info_ptr);
 
-    let info = new Uint8Array(await memcpy(null, info_ptr, 16));
+    const info = new Uint8Array(await memcpy(null, info_ptr, 16));
 
-    let value = new DataView(info.buffer).getBigUint64(0, true);
-    let spendable = new DataView(info.buffer).getBigUint64(8, true);
+    const value = new DataView(info.buffer).getBigUint64(0, true);
+    const spendable = new DataView(info.buffer).getBigUint64(8, true);
 
     return { value, spendable };
   });
   return await task();
 }
 
-export const accountsIntoRaw = async (users) =>
+export const accountsIntoRaw = (users) =>
   protocolDriverModule.task(async function (
     { malloc, accounts_into_raw },
-    { memcpy }
+    { memcpy },
   ) {
     let buffer = new Uint8Array(
-      DataBuffer.from(DataBuffer.flatten(users.map((user) => user.valueOf())))
+      DataBuffer.from(DataBuffer.flatten(users.map((user) => user.valueOf()))),
     );
 
     // copy buffer into WASM memory
-    let ptr = await malloc(buffer.byteLength);
+    const ptr = await malloc(buffer.byteLength);
     await memcpy(ptr, buffer);
 
     // allocate pointer for result
@@ -385,28 +385,28 @@ export const accountsIntoRaw = async (users) =>
     // Copy the result from WASM memory
     out_ptr = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let len = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
+    const len = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
     buffer = await memcpy(null, out_ptr + 4, len);
     const size = buffer.byteLength / users.length;
 
-    let result = [];
+    const result = [];
     for (let i = 0; i < buffer.byteLength; i += size) {
       result.push(new Uint8Array(buffer.subarray(i, i + size)));
     }
     return result;
   })();
 
-export const intoProven = async (tx, proof) =>
+export const intoProven = (tx, proof) =>
   protocolDriverModule.task(async function (
     { malloc, into_proven },
-    { memcpy }
+    { memcpy },
   ) {
     let buffer = tx.valueOf();
     const tx_ptr = await malloc(buffer.byteLength);
@@ -422,17 +422,17 @@ export const intoProven = async (tx, proof) =>
     await memcpy(proof_ptr + 4, new Uint8Array(buffer));
 
     let proved_ptr = await malloc(4);
-    let hash_ptr = await malloc(64);
+    const hash_ptr = await malloc(64);
 
     const code = await into_proven(tx_ptr, proof_ptr, proved_ptr, hash_ptr);
     if (code > 0) throw DriverError.from(code);
 
     proved_ptr = new DataView(
-      (await memcpy(null, proved_ptr, 4)).buffer
+      (await memcpy(null, proved_ptr, 4)).buffer,
     ).getUint32(0, true);
 
     const len = new DataView(
-      (await memcpy(null, proved_ptr, 4)).buffer
+      (await memcpy(null, proved_ptr, 4)).buffer,
     ).getUint32(0, true);
 
     buffer = await memcpy(null, proved_ptr + 4, len);
@@ -441,213 +441,223 @@ export const intoProven = async (tx, proof) =>
     return [buffer, hash];
   })();
 
-export const phoenix = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
-    const ptr = Object.create(null);
+export const phoenix = (info) =>
+  protocolDriverModule.task(
+    async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
+      const ptr = Object.create(null);
 
-    const seed = new Uint8Array(await info.sender.seed);
+      const seed = new Uint8Array(await info.sender.seed);
 
-    ptr.seed = await malloc(64);
-    await memcpy(ptr.seed, seed, 64);
+      ptr.seed = await malloc(64);
+      await memcpy(ptr.seed, seed, 64);
 
-    ptr.rng = await malloc(32);
-    await memcpy(ptr.rng, new Uint8Array(rng()));
+      ptr.rng = await malloc(32);
+      await memcpy(ptr.rng, new Uint8Array(rng()));
 
-    const sender_index = +info.sender;
-    const receiver = info.receiver.valueOf();
+      const sender_index = +info.sender;
+      const receiver = info.receiver.valueOf();
 
-    ptr.receiver = await malloc(receiver.byteLength);
-    await memcpy(ptr.receiver, receiver);
+      ptr.receiver = await malloc(receiver.byteLength);
+      await memcpy(ptr.receiver, receiver);
 
-    const inputs = DataBuffer.from(info.inputs);
+      const inputs = DataBuffer.from(info.inputs);
 
-    ptr.inputs = await malloc(inputs.byteLength);
-    await memcpy(ptr.inputs, new Uint8Array(inputs));
+      ptr.inputs = await malloc(inputs.byteLength);
+      await memcpy(ptr.inputs, new Uint8Array(inputs));
 
-    const openings = DataBuffer.from(info.openings);
-    ptr.openings = await malloc(openings.byteLength);
-    await memcpy(ptr.openings, new Uint8Array(openings));
+      const openings = DataBuffer.from(info.openings);
+      ptr.openings = await malloc(openings.byteLength);
+      await memcpy(ptr.openings, new Uint8Array(openings));
 
-    const root = info.root;
-    ptr.root = await malloc(root.byteLength);
-    await memcpy(ptr.root, new Uint8Array(root));
+      const root = info.root;
+      ptr.root = await malloc(root.byteLength);
+      await memcpy(ptr.root, new Uint8Array(root));
 
-    const transfer_value = new Uint8Array(8);
-    new DataView(transfer_value.buffer).setBigUint64(
-      0,
-      info.transfer_value,
-      true
-    );
-    ptr.transfer_value = await malloc(8);
-    await memcpy(ptr.transfer_value, transfer_value);
+      const transfer_value = new Uint8Array(8);
+      new DataView(transfer_value.buffer).setBigUint64(
+        0,
+        info.transfer_value,
+        true,
+      );
+      ptr.transfer_value = await malloc(8);
+      await memcpy(ptr.transfer_value, transfer_value);
 
-    const deposit = new Uint8Array(8);
-    new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
-    ptr.deposit = await malloc(8);
-    await memcpy(ptr.deposit, deposit);
+      const deposit = new Uint8Array(8);
+      new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
+      ptr.deposit = await malloc(8);
+      await memcpy(ptr.deposit, deposit);
 
-    const gas_limit = new Uint8Array(8);
-    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
-    ptr.gas_limit = await malloc(8);
-    await memcpy(ptr.gas_limit, gas_limit);
+      const gas_limit = new Uint8Array(8);
+      new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+      ptr.gas_limit = await malloc(8);
+      await memcpy(ptr.gas_limit, gas_limit);
 
-    const gas_price = new Uint8Array(8);
-    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
-    ptr.gas_price = await malloc(8);
-    await memcpy(ptr.gas_price, gas_price);
+      const gas_price = new Uint8Array(8);
+      new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+      ptr.gas_price = await malloc(8);
+      await memcpy(ptr.gas_price, gas_price);
 
-    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
+      const data = info.data
+        ? await serializePayload(info.data, malloc, memcpy, create_tx_data)
+        : null;
 
-    if (data) {
-      ptr.data = await malloc(data.byteLength);
-      await memcpy(ptr.data, data);
-    } else {
-      ptr.data = null;
-    }
+      if (data) {
+        ptr.data = await malloc(data.byteLength);
+        await memcpy(ptr.data, data);
+      } else {
+        ptr.data = null;
+      }
 
-    let tx = await malloc(4);
-    let proof = await malloc(4);
+      const tx = await malloc(4);
+      const proof = await malloc(4);
 
-    // Copy the value to the WASM memory
-    const code = await phoenix(
-      ptr.rng,
-      ptr.seed,
-      sender_index,
-      ptr.receiver,
-      ptr.inputs,
-      ptr.openings,
-      ptr.root,
-      ptr.transfer_value,
-      info.obfuscated_transaction,
-      ptr.deposit,
-      ptr.gas_limit,
-      ptr.gas_price,
-      info.chainId,
-      ptr.data,
-      tx,
-      proof
-    );
+      // Copy the value to the WASM memory
+      const code = await phoenix(
+        ptr.rng,
+        ptr.seed,
+        sender_index,
+        ptr.receiver,
+        ptr.inputs,
+        ptr.openings,
+        ptr.root,
+        ptr.transfer_value,
+        info.obfuscated_transaction,
+        ptr.deposit,
+        ptr.gas_limit,
+        ptr.gas_price,
+        info.chainId,
+        ptr.data,
+        tx,
+        proof,
+      );
 
-    if (code > 0) throw DriverError.from(code);
+      if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
-      0,
-      true
-    );
+      const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+        0,
+        true,
+      );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+      const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+        .getUint32(
+          0,
+          true,
+        );
 
-    const tx_buffer = await memcpy(null, tx_ptr, tx_len);
+      const tx_buffer = await memcpy(null, tx_ptr, tx_len);
 
-    let proof_ptr = new DataView(
-      (await memcpy(null, proof, 4)).buffer
-    ).getUint32(0, true);
+      const proof_ptr = new DataView(
+        (await memcpy(null, proof, 4)).buffer,
+      ).getUint32(0, true);
 
-    let proof_len = new DataView(
-      (await memcpy(null, proof_ptr, 4)).buffer
-    ).getUint32(0, true);
+      const proof_len = new DataView(
+        (await memcpy(null, proof_ptr, 4)).buffer,
+      ).getUint32(0, true);
 
-    const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
+      const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
 
-    return [tx_buffer, proof_buffer];
-  })();
+      return [tx_buffer, proof_buffer];
+    },
+  )();
 
-export const moonlight = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
-    const ptr = Object.create(null);
+export const moonlight = (info) =>
+  protocolDriverModule.task(
+    async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
+      const ptr = Object.create(null);
 
-    const seed = new Uint8Array(await info.sender.seed);
+      const seed = new Uint8Array(await info.sender.seed);
 
-    ptr.seed = await malloc(64);
-    await memcpy(ptr.seed, seed, 64);
+      ptr.seed = await malloc(64);
+      await memcpy(ptr.seed, seed, 64);
 
-    const sender_index = +info.sender;
-    const receiver = info.receiver.valueOf();
-    ptr.receiver = await malloc(receiver.byteLength);
-    await memcpy(ptr.receiver, receiver);
+      const sender_index = +info.sender;
+      const receiver = info.receiver.valueOf();
+      ptr.receiver = await malloc(receiver.byteLength);
+      await memcpy(ptr.receiver, receiver);
 
-    const transfer_value = new Uint8Array(8);
-    new DataView(transfer_value.buffer).setBigUint64(
-      0,
-      info.transfer_value,
-      true
-    );
-    ptr.transfer_value = await malloc(8);
-    await memcpy(ptr.transfer_value, transfer_value);
+      const transfer_value = new Uint8Array(8);
+      new DataView(transfer_value.buffer).setBigUint64(
+        0,
+        info.transfer_value,
+        true,
+      );
+      ptr.transfer_value = await malloc(8);
+      await memcpy(ptr.transfer_value, transfer_value);
 
-    const deposit = new Uint8Array(8);
-    new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
-    ptr.deposit = await malloc(8);
-    await memcpy(ptr.deposit, deposit);
+      const deposit = new Uint8Array(8);
+      new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
+      ptr.deposit = await malloc(8);
+      await memcpy(ptr.deposit, deposit);
 
-    const gas_limit = new Uint8Array(8);
-    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
-    ptr.gas_limit = await malloc(8);
-    await memcpy(ptr.gas_limit, gas_limit);
+      const gas_limit = new Uint8Array(8);
+      new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+      ptr.gas_limit = await malloc(8);
+      await memcpy(ptr.gas_limit, gas_limit);
 
-    const gas_price = new Uint8Array(8);
-    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
-    ptr.gas_price = await malloc(8);
-    await memcpy(ptr.gas_price, gas_price);
+      const gas_price = new Uint8Array(8);
+      new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+      ptr.gas_price = await malloc(8);
+      await memcpy(ptr.gas_price, gas_price);
 
-    const nonce = new Uint8Array(8);
-    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
-    ptr.nonce = await malloc(8);
-    await memcpy(ptr.nonce, nonce);
+      const nonce = new Uint8Array(8);
+      new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+      ptr.nonce = await malloc(8);
+      await memcpy(ptr.nonce, nonce);
 
-    let tx = await malloc(4);
-    let hash = await malloc(64);
+      const tx = await malloc(4);
+      let hash = await malloc(64);
 
-    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
+      const data = info.data
+        ? await serializePayload(info.data, malloc, memcpy, create_tx_data)
+        : null;
 
-    if (data) {
-      ptr.data = await malloc(data.byteLength);
-      await memcpy(ptr.data, data);
-    } else {
-      ptr.data = null;
-    }
+      if (data) {
+        ptr.data = await malloc(data.byteLength);
+        await memcpy(ptr.data, data);
+      } else {
+        ptr.data = null;
+      }
 
-    // Copy the value to the WASM memory
-    const code = await moonlight(
-      ptr.seed,
-      sender_index,
-      ptr.receiver,
-      ptr.transfer_value,
-      ptr.deposit,
-      ptr.gas_limit,
-      ptr.gas_price,
-      ptr.nonce,
-      info.chainId,
-      ptr.data,
-      tx,
-      hash
-    );
+      // Copy the value to the WASM memory
+      const code = await moonlight(
+        ptr.seed,
+        sender_index,
+        ptr.receiver,
+        ptr.transfer_value,
+        ptr.deposit,
+        ptr.gas_limit,
+        ptr.gas_price,
+        ptr.nonce,
+        info.chainId,
+        ptr.data,
+        tx,
+        hash,
+      );
 
-    if (code > 0) throw DriverError.from(code);
+      if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
-      0,
-      true
-    );
+      const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+        0,
+        true,
+      );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+      const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+        .getUint32(
+          0,
+          true,
+        );
 
-    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+      const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
-    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
-    return [tx_buffer, hash];
-  })();
+      hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+      return [tx_buffer, hash];
+    },
+  )();
 
-export const unshield = async (info) =>
+export const unshield = (info) =>
   protocolDriverModule.task(async function (
     { malloc, phoenix_to_moonlight },
-    { memcpy }
+    { memcpy },
   ) {
     const ptr = Object.create(null);
 
@@ -682,7 +692,7 @@ export const unshield = async (info) =>
     new DataView(allocate_value.buffer).setBigUint64(
       0,
       info.allocate_value,
-      true
+      true,
     );
     ptr.allocate_value = await malloc(8);
     await memcpy(ptr.allocate_value, allocate_value);
@@ -697,8 +707,8 @@ export const unshield = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    let tx = await malloc(4);
-    let proof = await malloc(4);
+    const tx = await malloc(4);
+    const proof = await malloc(4);
 
     // Copy the value to the WASM memory
     const code = await phoenix_to_moonlight(
@@ -714,29 +724,30 @@ export const unshield = async (info) =>
       ptr.gas_price,
       info.chainId,
       tx,
-      proof
+      proof,
     );
 
     if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+    const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+    const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+      .getUint32(
+        0,
+        true,
+      );
 
     const tx_buffer = await memcpy(null, tx_ptr, tx_len);
 
-    let proof_ptr = new DataView(
-      (await memcpy(null, proof, 4)).buffer
+    const proof_ptr = new DataView(
+      (await memcpy(null, proof, 4)).buffer,
     ).getUint32(0, true);
 
-    let proof_len = new DataView(
-      (await memcpy(null, proof_ptr, 4)).buffer
+    const proof_len = new DataView(
+      (await memcpy(null, proof_ptr, 4)).buffer,
     ).getUint32(0, true);
 
     const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
@@ -744,10 +755,10 @@ export const unshield = async (info) =>
     return [tx_buffer, proof_buffer];
   })();
 
-export const shield = async (info) =>
+export const shield = (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_to_phoenix },
-    { memcpy }
+    { memcpy },
   ) {
     const ptr = Object.create(null);
 
@@ -765,7 +776,7 @@ export const shield = async (info) =>
     new DataView(allocate_value.buffer).setBigUint64(
       0,
       info.allocate_value,
-      true
+      true,
     );
     ptr.allocate_value = await malloc(8);
     await memcpy(ptr.allocate_value, allocate_value);
@@ -785,7 +796,7 @@ export const shield = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    let tx = await malloc(4);
+    const tx = await malloc(4);
     let hash = await malloc(64);
 
     // Copy the value to the WASM memory
@@ -799,20 +810,21 @@ export const shield = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash
+      hash,
     );
 
     if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+    const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+    const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+      .getUint32(
+        0,
+        true,
+      );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -820,10 +832,10 @@ export const shield = async (info) =>
     return [tx_buffer, hash];
   })();
 
-export const stake = async (info) =>
+export const stake = (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_stake },
-    { memcpy }
+    { memcpy },
   ) {
     const ptr = Object.create(null);
 
@@ -854,7 +866,7 @@ export const stake = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    let tx = await malloc(4);
+    const tx = await malloc(4);
     let hash = await malloc(64);
 
     const code = await moonlight_stake(
@@ -866,20 +878,21 @@ export const stake = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash
+      hash,
     );
 
     if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+    const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+    const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+      .getUint32(
+        0,
+        true,
+      );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -887,10 +900,10 @@ export const stake = async (info) =>
     return [tx_buffer, hash];
   })();
 
-export const unstake = async (info) =>
+export const unstake = (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_unstake },
-    { memcpy }
+    { memcpy },
   ) {
     const ptr = Object.create(null);
 
@@ -908,7 +921,7 @@ export const unstake = async (info) =>
     new DataView(unstake_value.buffer).setBigUint64(
       0,
       info.unstake_value,
-      true
+      true,
     );
     ptr.unstake_value = await malloc(8);
     await memcpy(ptr.unstake_value, unstake_value);
@@ -928,7 +941,7 @@ export const unstake = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    let tx = await malloc(4);
+    const tx = await malloc(4);
     let hash = await malloc(64);
 
     const code = await moonlight_unstake(
@@ -941,20 +954,21 @@ export const unstake = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash
+      hash,
     );
 
     if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+    const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+    const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+      .getUint32(
+        0,
+        true,
+      );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -962,10 +976,10 @@ export const unstake = async (info) =>
     return [tx_buffer, hash];
   })();
 
-export const withdraw = async (info) =>
+export const withdraw = (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_stake_reward },
-    { memcpy }
+    { memcpy },
   ) {
     const ptr = Object.create(null);
 
@@ -983,7 +997,7 @@ export const withdraw = async (info) =>
     new DataView(reward_amount.buffer).setBigUint64(
       0,
       info.reward_amount,
-      true
+      true,
     );
     ptr.reward_amount = await malloc(8);
     await memcpy(ptr.reward_amount, reward_amount);
@@ -1003,7 +1017,7 @@ export const withdraw = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    let tx = await malloc(4);
+    const tx = await malloc(4);
     let hash = await malloc(64);
 
     const code = await moonlight_stake_reward(
@@ -1016,20 +1030,21 @@ export const withdraw = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash
+      hash,
     );
 
     if (code > 0) throw DriverError.from(code);
 
-    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+    const tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true
+      true,
     );
 
-    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
-      0,
-      true
-    );
+    const tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer)
+      .getUint32(
+        0,
+        true,
+      );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -1043,16 +1058,16 @@ export const withdraw = async (info) =>
  * @returns {Uint8Array|null} Converted Uint8Array or null for invalid input
  */
 function toUint8Array(input) {
-    if (typeof input === 'string') {
-        return new TextEncoder().encode(input);
-    }
-    if (input instanceof ArrayBuffer) {
-        return input.byteLength ? new Uint8Array(input) : null;
-    }
-    if (input instanceof Uint8Array) {
-        return input.length ? input : null;
-    }
-    return null;
+  if (typeof input === "string") {
+    return new TextEncoder().encode(input);
+  }
+  if (input instanceof ArrayBuffer) {
+    return input.byteLength ? new Uint8Array(input) : null;
+  }
+  if (input instanceof Uint8Array) {
+    return input.length ? input : null;
+  }
+  return null;
 }
 
 /**
@@ -1065,15 +1080,22 @@ function toUint8Array(input) {
  * @param {function} memcpy - memory copying function
  * @returns {Promise<void>}
  */
-async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc, memcpy) {
-    ptr_obj[data_ptr_name] = await malloc(buffer.byteLength);
-    let len = buffer.byteLength;
-    await memcpy(ptr_obj[data_ptr_name], buffer);
+async function setPointers(
+  ptr_obj,
+  data_ptr_name,
+  len_ptr_name,
+  buffer,
+  malloc,
+  memcpy,
+) {
+  ptr_obj[data_ptr_name] = await malloc(buffer.byteLength);
+  const len = buffer.byteLength;
+  await memcpy(ptr_obj[data_ptr_name], buffer);
 
-    const len_buf = new Uint8Array(4);
-    new DataView(len_buf.buffer).setUint32(0, len, true);
-    ptr_obj[len_ptr_name] = await malloc(4);
-    await memcpy(ptr_obj[len_ptr_name], len_buf);
+  const len_buf = new Uint8Array(4);
+  new DataView(len_buf.buffer).setUint32(0, len, true);
+  ptr_obj[len_ptr_name] = await malloc(4);
+  await memcpy(ptr_obj[len_ptr_name], len_buf);
 }
 
 /**
@@ -1085,64 +1107,79 @@ async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc,
  * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Buffer containing serialized data
  */
 async function serializePayload(payload, malloc, memcpy, create_tx_data) {
-    const ptr = Object.create(null);
-    let code;
-    let ret;
+  const ptr = Object.create(null);
+  let code;
+  let ret;
 
-    if ('memo' in payload) {
-        const buffer = toUint8Array(payload.memo);
-        if (!buffer) return null;
-        await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);
-        ret = await malloc(4);
-        ptr.dummy_contract_id = await malloc(32);
-        code = await create_tx_data(
-            null,
-            null,
-            null,
-            null,
-            ptr.dummy_contract_id,
-            ptr.memo_len,
-            ptr.memo,
-            ret
-        )
-    } else if ('fnName' in payload) {
-        // fn_name
-        const fn_name_arg = toUint8Array(payload.fnName);
-        if (!fn_name_arg) return null;
-        await setPointers(ptr, "fn_name", "fn_name_len", fn_name_arg, malloc, memcpy);
-        // fn_args
-        const fn_args_buffer = new Uint8Array(payload.fnArgs);
-        await setPointers(ptr, "fn_args", "fn_args_len", fn_args_buffer, malloc, memcpy);
-        // contract_id
-        const contract_id_buffer = new Uint8Array(payload.contractId);
-        if (contract_id_buffer.byteLength !== CONTRACT_ID_LEN) return null;
-        ptr.contract_id = await malloc(contract_id_buffer.byteLength);
-        await memcpy(ptr.contract_id, contract_id_buffer);
-        ret = await malloc(4);
-        code = await create_tx_data(
-            ptr.fn_name_len,
-            ptr.fn_name,
-            ptr.fn_args_len,
-            ptr.fn_args,
-            ptr.contract_id,
-            null,
-            null,
-            ret
-        )
-    } else return null;
+  if ("memo" in payload) {
+    const buffer = toUint8Array(payload.memo);
+    if (!buffer) return null;
+    await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);
+    ret = await malloc(4);
+    ptr.dummy_contract_id = await malloc(32);
+    code = await create_tx_data(
+      null,
+      null,
+      null,
+      null,
+      ptr.dummy_contract_id,
+      ptr.memo_len,
+      ptr.memo,
+      ret,
+    );
+  } else if ("fnName" in payload) {
+    // fn_name
+    const fn_name_arg = toUint8Array(payload.fnName);
+    if (!fn_name_arg) return null;
+    await setPointers(
+      ptr,
+      "fn_name",
+      "fn_name_len",
+      fn_name_arg,
+      malloc,
+      memcpy,
+    );
+    // fn_args
+    const fn_args_buffer = new Uint8Array(payload.fnArgs);
+    await setPointers(
+      ptr,
+      "fn_args",
+      "fn_args_len",
+      fn_args_buffer,
+      malloc,
+      memcpy,
+    );
+    // contract_id
+    const contract_id_buffer = new Uint8Array(payload.contractId);
+    if (contract_id_buffer.byteLength !== CONTRACT_ID_LEN) return null;
+    ptr.contract_id = await malloc(contract_id_buffer.byteLength);
+    await memcpy(ptr.contract_id, contract_id_buffer);
+    ret = await malloc(4);
+    code = await create_tx_data(
+      ptr.fn_name_len,
+      ptr.fn_name,
+      ptr.fn_args_len,
+      ptr.fn_args,
+      ptr.contract_id,
+      null,
+      null,
+      ret,
+    );
+  } else return null;
 
-    if (code > 0) throw DriverError.from(code);
+  if (code > 0) throw DriverError.from(code);
 
-    const ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
-        0,
-        true
+  const ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+    0,
+    true,
+  );
+
+  const ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer)
+    .getUint32(
+      0,
+      true,
     );
 
-    const ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
-        0,
-        true
-    );
-
-    const ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
-    return new Uint8Array(DataBuffer.from(ret_buf));
+  const ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+  return new Uint8Array(DataBuffer.from(ret_buf));
 }

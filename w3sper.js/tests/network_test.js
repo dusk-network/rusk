@@ -6,7 +6,13 @@
 
 import { Network } from "@dusk/w3sper";
 
-import { assert, FakeWebSocket, NETWORK, resolveAfter, test } from "./harness.js";
+import {
+  assert,
+  FakeWebSocket,
+  NETWORK,
+  resolveAfter,
+  test,
+} from "./harness.js";
 
 const NETWORK_FAKE_HOST = (() => {
   const url = new URL(NETWORK);
@@ -52,14 +58,14 @@ test("Network connection failure", async () => {
 
   const timeoutError = await assert.reject(
     () => Network.connect(NETWORK, { signal }),
-    DOMException
+    DOMException,
   );
 
   assert.ok(timeoutError.name === "TimeoutError");
 
   const networkError = await assert.reject(
     () => Network.connect(NETWORK_FAKE_HOST),
-    DOMException
+    DOMException,
   );
 
   assert.ok(networkError.name === "NetworkError");

@@ -81,7 +81,7 @@ export class FakeWebSocket extends WebSocket {
   static triggerSocketError(error, delay = 0) {
     setTimeout(() => {
       globalThis.dispatchEvent(
-        new CustomEvent("ws-test-error", { detail: error })
+        new CustomEvent("ws-test-error", { detail: error }),
       );
     }, delay);
   }
@@ -97,7 +97,7 @@ export class FakeWebSocket extends WebSocket {
       new ErrorEvent("error", {
         error: simulatedError,
         message: simulatedError.message,
-      })
+      }),
     );
   }
 
@@ -110,10 +110,70 @@ export class FakeWebSocket extends WebSocket {
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array([
-  153, 16, 102, 99, 133, 196, 55, 237, 42, 2, 163, 116, 233, 89, 10, 115, 19,
-  81, 140, 31, 38, 81, 10, 46, 118, 112, 151, 244, 145, 90, 145, 168, 214, 242,
-  68, 123, 116, 76, 223, 56, 200, 60, 188, 217, 34, 113, 55, 172, 27, 255, 184,
-  55, 143, 233, 109, 20, 137, 34, 20, 196, 252, 117, 221, 221,
+  153,
+  16,
+  102,
+  99,
+  133,
+  196,
+  55,
+  237,
+  42,
+  2,
+  163,
+  116,
+  233,
+  89,
+  10,
+  115,
+  19,
+  81,
+  140,
+  31,
+  38,
+  81,
+  10,
+  46,
+  118,
+  112,
+  151,
+  244,
+  145,
+  90,
+  145,
+  168,
+  214,
+  242,
+  68,
+  123,
+  116,
+  76,
+  223,
+  56,
+  200,
+  60,
+  188,
+  217,
+  34,
+  113,
+  55,
+  172,
+  27,
+  255,
+  184,
+  55,
+  143,
+  233,
+  109,
+  20,
+  137,
+  34,
+  20,
+  196,
+  252,
+  117,
+  221,
+  221,
 ]);
 
 export const seeder = () => SEED;
@@ -150,9 +210,11 @@ export class Treasury {
 
     from = from ?? Bookmark.from(this.lastSyncInfo?.bookmark ?? 0n);
 
-    for await (let [notes, syncInfo] of await addresses.notes(this.#users, {
-      from,
-    })) {
+    for await (
+      const [notes, syncInfo] of await addresses.notes(this.#users, {
+        from,
+      })
+    ) {
       for (let i = 0; i < this.#users.length; i++) {
         const userNotes = this.#notes.get(this.#users[i].address.toString());
         mergeMap(userNotes, notes[i], this.#keySet);
@@ -172,7 +234,7 @@ export class Treasury {
     );
 
     this.#notes.forEach((notes) => {
-      for (let [key, _value] of notes) {
+      for (const [key, _value] of notes) {
         if (spent.includes(hex(key).join(""))) {
           notes.delete(key);
         }

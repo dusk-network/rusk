@@ -12,7 +12,7 @@ class RuesEventOrigin {
   constructor(source, options) {
     const [, target, topic] = source.match(/^\/?on\/([^\\]+)\/(.+)/) ?? [];
 
-    let [scope, ...id] = target?.split(":") ?? [];
+    const [scope, ...id] = target?.split(":") ?? [];
 
     if (target) {
       this.scope = scope;
@@ -75,7 +75,7 @@ export class RuesEvent extends Event {
         default:
           try {
             payload = JSON.parse(new TextDecoder().decode(body));
-          } catch (e) {
+          } catch {
             payload = body;
           }
       }
@@ -84,7 +84,7 @@ export class RuesEvent extends Event {
       payload = event.payload;
     }
 
-    let type = new RuesEventOrigin(
+    const type = new RuesEventOrigin(
       headers.get("content-location"),
       options,
     ).toString();

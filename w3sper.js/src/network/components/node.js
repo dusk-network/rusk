@@ -35,7 +35,7 @@ function createBiMapEnum(list) {
   const bimap = Object.create(null);
 
   let i = 0;
-  for (let item of new Set(list)) {
+  for (const item of new Set(list)) {
     bimap[i] = new BiMapValue(i, item);
     bimap[item.toUpperCase()] = bimap[i];
     i++;
@@ -68,12 +68,12 @@ export class Node {
             snakeToCamel(key),
             value,
           ]),
-        ),
+        )
       )
       .then((info) => {
         info.chainId = info.chainId ?? 0;
-        info.chain =
-          Node.CHAIN[info.chainId] || new BiMapValue(info.chainId, "unknown");
+        info.chain = Node.CHAIN[info.chainId] ||
+          new BiMapValue(info.chainId, "unknown");
         this.#info = Object.freeze(info);
         return this.#info;
       });

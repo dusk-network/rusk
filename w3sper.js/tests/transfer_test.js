@@ -61,7 +61,7 @@ async function waitForFinalizedBlock(network, blockHeight) {
         resolve();
       }
     },
-    { signal: controller.signal }
+    { signal: controller.signal },
   );
 
   return promise;
@@ -146,7 +146,7 @@ test("Offline account transfers", async () => {
   // from the network, so it does not need to be connected.
   // All transactions are signed locally.
   const offlineOperations = useAsProtocolDriver(
-    await getLocalWasmBuffer()
+    await getLocalWasmBuffer(),
   ).then(async () => {
     const profiles = new ProfileGenerator(seeder);
     const users = await Promise.all([profiles.default, profiles.next()]);
@@ -160,7 +160,7 @@ test("Offline account transfers", async () => {
           .chain(Network.LOCALNET)
           .gas({ limit: 500_000_000n })
           .build()
-      )
+      ),
     );
 
     assert.equal(transfers[0].nonce, balance.nonce + 1n);
@@ -459,7 +459,7 @@ test("account memo transfer", async () => {
 
   assert.equal(
     evt.memo({ as: "string" }),
-    "Tarapia Tapioco, come fosse stringa"
+    "Tarapia Tapioco, come fosse stringa",
   );
 
   await network.disconnect();
@@ -529,7 +529,7 @@ test("address memo transfer", async () => {
 
   assert.equal(
     evt.memo({ as: "string" }),
-    "Tarapia Tapioco, come fosse stringa"
+    "Tarapia Tapioco, come fosse stringa",
   );
 
   await network.disconnect();
@@ -607,7 +607,7 @@ test("address memo transfer using payload method", async () => {
 
   assert.equal(
     evt.memo({ as: "string" }),
-    "Tarapia Tapioco, come fosse stringa"
+    "Tarapia Tapioco, come fosse stringa",
   );
 
   await network.disconnect();
@@ -630,8 +630,38 @@ test("account contract call transfer", async () => {
     fnName: METHOD,
     fnArgs: [],
     contractId: [
-      0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0,
+      0x02,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
     ],
   };
 
@@ -662,7 +692,7 @@ test("account contract call transfer", async () => {
 
   assert.equal(
     contract,
-    "0200000000000000000000000000000000000000000000000000000000000000"
+    "0200000000000000000000000000000000000000000000000000000000000000",
   );
   assert.equal(fn_name, METHOD);
 
@@ -688,8 +718,38 @@ test("account contract call genesis with deposit", async () => {
     fnName: METHOD,
     fnArgs: [],
     contractId: [
-      0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0,
+      0x02,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
     ],
   };
 
@@ -707,7 +767,7 @@ test("account contract call genesis with deposit", async () => {
     hash,
     method: "get_version",
     // History stream uses "N/A" as the 'to' for this kind of TX
-    to: "N/A"
+    to: "N/A",
   };
 
   const evt = await network.transactions.withId(hash).once.executed();
@@ -722,7 +782,7 @@ test("account contract call genesis with deposit", async () => {
 
   assert.equal(
     contract,
-    "0200000000000000000000000000000000000000000000000000000000000000"
+    "0200000000000000000000000000000000000000000000000000000000000000",
   );
   assert.equal(fn_name, METHOD);
 

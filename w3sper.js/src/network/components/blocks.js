@@ -19,7 +19,7 @@ export class Blocks {
       .then((data) =>
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [key, BigInt(value)]),
-        ),
+        )
       );
   }
 

@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-const unbind = Function.call.bind(Function.bind, Function.call);
-
 function setLayout(dest, size) {
   // Subtract 8 bytes to exclude the space reserved for alignment and size
   const totalLength = dest.byteLength - 8;

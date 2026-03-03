@@ -126,13 +126,13 @@ export class Rues extends EventTarget {
     return new Rues(url).connect(options);
   }
 
-  async connect(options = {}) {
+  connect(options = {}) {
     if (
       [WebSocket.CONNECTING, WebSocket.OPEN].includes(this.#socket?.readyState)
     ) {
       if (options && Object.keys(options).length !== 0) {
         console.warn(
-          "Options not applied: Rues is already either connected or connecting"
+          "Options not applied: Rues is already either connected or connecting",
         );
       }
 
@@ -157,8 +157,8 @@ export class Rues extends EventTarget {
     this.#socket = socket;
 
     socket.onerror = (errorEvent) => {
-      const cause =
-        errorEvent.error ?? (signal?.aborted ? signal.reason : errorEvent);
+      const cause = errorEvent.error ??
+        (signal?.aborted ? signal.reason : errorEvent);
 
       /**
        * This handles the case where the WebSocket can't
@@ -171,7 +171,7 @@ export class Rues extends EventTarget {
           new ErrorEvent("error", {
             error: cause,
             message: cause instanceof Error ? cause.message : String(cause),
-          })
+          }),
         );
       }
     };
@@ -246,7 +246,7 @@ export class Rues extends EventTarget {
         ruesEvent = scope.eventFrom(ruesEvent);
       }
 
-      let ruesComponentEvent = RuesEvent.from(ruesEvent, { as: "component" });
+      const ruesComponentEvent = RuesEvent.from(ruesEvent, { as: "component" });
 
       this.dispatchEvent(ruesEvent);
       this.dispatchEvent(ruesComponentEvent);

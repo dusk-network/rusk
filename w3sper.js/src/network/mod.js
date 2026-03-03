@@ -55,7 +55,7 @@ export class Network extends EventTarget {
       this.dispatchEvent(
         ruesEvent instanceof ErrorEvent
           ? makeErrorEventFrom(ruesEvent.error)
-          : new CustomEvent(ruesEvent.type)
+          : new CustomEvent(ruesEvent.type),
       );
     };
 
@@ -75,7 +75,9 @@ export class Network extends EventTarget {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
-    ProtocolDriver.load(new URL("/static/drivers/wallet-core-1.6.0.wasm", this.url));
+    ProtocolDriver.load(
+      new URL("/static/drivers/wallet-core-1.6.0.wasm", this.url),
+    );
 
     return this;
   }
@@ -116,7 +118,7 @@ export class Network extends EventTarget {
     return tx;
   }
 
-  async prove(circuits) {
+  prove(circuits) {
     return this.#rues
       .scope("prover")
       .call.prove(circuits, {
@@ -137,7 +139,7 @@ export class Network extends EventTarget {
         throw new Error((await response.json())[0]);
       default:
         throw new Error(
-          `Unexpected [${response.status}] : ${response.statusText}}`
+          `Unexpected [${response.status}] : ${response.statusText}}`,
         );
     }
   }
