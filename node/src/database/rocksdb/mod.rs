@@ -328,6 +328,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 mod blocks;
+mod error;
 mod metadata_indexes;
 mod tx_events;
 mod tx_utils;

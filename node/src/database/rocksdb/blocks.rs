@@ -86,13 +86,12 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
         let mut faults = vec![];
         let mut hash = self
             .op_read(MD_HASH_KEY)?
-            .ok_or(anyhow::anyhow!("Cannot read tip"))?;
+            .ok_or(error::RocksDbError::CannotReadTip)?;
 
         loop {
-            let block = self.light_block(&hash)?.ok_or(anyhow::anyhow!(
-                "Cannot read block {}",
-                hex::encode(&hash)
-            ))?;
+            let block = self
+                .light_block(&hash)?
+                .ok_or_else(|| error::RocksDbError::cannot_read_block(&hash))?;
 
             let block_height = block.header.height;
 
@@ -173,9 +172,12 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
     fn latest_block(&self) -> Result<LightBlock> {
         let tip_hash = self
             .op_read(MD_HASH_KEY)?
-            .ok_or(anyhow::anyhow!("Cannot find tip stored in metadata"))?;
-        self.light_block(&tip_hash)?
-            .ok_or(anyhow::anyhow!("Cannot find tip block"))
+            .ok_or(error::RocksDbError::TipMetadataMissing)?;
+
+        let tip_block = self
+            .light_block(&tip_hash)?
+            .ok_or(error::RocksDbError::TipBlockMissing)?;
+        Ok(tip_block)
     }
 
     fn blob_data_by_hash(&self, hash: &[u8; 32]) -> Result<Option<Vec<u8>>> {
@@ -269,11 +271,9 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
                                     BlobSidecar::from_buf(&mut &bytes[..])
                                 })
                                 .transpose()
-                                .map_err(|e| {
-                                    anyhow::anyhow!(
-                                        "Failed to parse blob sidecar: {e:?}"
-                                    )
-                                })?;
+                                .map_err(
+                                    error::RocksDbError::blob_sidecar_parse,
+                                )?;
                             blob.data = sidecar;
                         }
                     }
@@ -368,9 +368,9 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
             let opt_blob = result.map_err(std::io::Error::other)?;
 
             let Some(blob) = opt_blob else {
-                return Err(anyhow::anyhow!(
-                    "At least one Transaction ID was not found"
-                ));
+                return Err(
+                    error::RocksDbError::MissingLedgerTransaction.into()
+                );
             };
 
             let stx = SpentTransaction::read(&mut &blob[..])?;

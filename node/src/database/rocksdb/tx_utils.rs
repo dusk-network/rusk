@@ -5,6 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
+
+enum FinalizeOp {
+    Commit,
+    Rollback,
+}
+
 impl<DB: DBAccess> Persist for DBTransaction<'_, DB> {
     /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
     fn clear_database(&mut self) -> Result<()> {
@@ -22,19 +28,11 @@ impl<DB: DBAccess> Persist for DBTransaction<'_, DB> {
     }
 
     fn commit(self) -> Result<()> {
-        if let Err(e) = self.inner.commit() {
-            return Err(anyhow::Error::new(e).context("failed to commit"));
-        }
-
-        Ok(())
+        self.finalize(FinalizeOp::Commit)
     }
 
     fn rollback(self) -> Result<()> {
-        if let Err(e) = self.inner.rollback() {
-            return Err(anyhow::Error::new(e).context("failed to rollback"));
-        }
-
-        Ok(())
+        self.finalize(FinalizeOp::Rollback)
     }
 }
 
@@ -80,6 +78,20 @@ impl<DB: DBAccess> std::fmt::Debug for DBTransaction<'_, DB> {
 }
 
 impl<DB: DBAccess> DBTransaction<'_, DB> {
+    fn finalize(self, op: FinalizeOp) -> Result<()> {
+        match op {
+            FinalizeOp::Commit => self
+                .inner
+                .commit()
+                .map_err(error::RocksDbError::commit_failed)?,
+            FinalizeOp::Rollback => self
+                .inner
+                .rollback()
+                .map_err(error::RocksDbError::rollback_failed)?,
+        }
+        Ok(())
+    }
+
     /// A thin wrapper around inner.put_cf that calculates a db transaction
     /// disk footprint
     pub(super) fn put_cf<K: AsRef<[u8]>, V: AsRef<[u8]>>(
