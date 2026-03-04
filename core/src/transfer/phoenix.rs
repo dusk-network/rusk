@@ -1059,3 +1059,24 @@ pub trait Prove {
     // when delegating the proof generation.
     fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tx_skeleton_from_slice_rejects_unbounded_nullifier_count_without_panicking()
+     {
+        let mut bytes = Vec::new();
+        bytes.extend(BlsScalar::from(0u64).to_bytes());
+        bytes.extend(u64::MAX.to_bytes());
+
+        // Keep fixed-tail lengths valid while making nullifier count
+        // intentionally inconsistent with available bytes.
+        let min_tail_len = OUTPUT_NOTES * Note::SIZE + u64::SIZE + u64::SIZE;
+        bytes.resize(BlsScalar::SIZE + u64::SIZE + min_tail_len, 0u8);
+
+        let err = TxSkeleton::from_slice(&bytes).unwrap_err();
+        assert_eq!(err, BytesError::InvalidData);
+    }
+}
