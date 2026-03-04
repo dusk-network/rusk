@@ -374,18 +374,10 @@ impl<DB: DBAccess> Mempool for DBTransaction<'_, DB> {
 
                 let tx_timestamp = u64::from_be_bytes(
                     iter.value()
-                        .ok_or_else(|| {
-                            io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "no value",
-                            )
-                        })?
+                        .ok_or(error::RocksDbError::MissingIteratorValue)?
                         .try_into()
                         .map_err(|_| {
-                            io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "invalid data",
-                            )
+                            error::RocksDbError::InvalidTimestampData
                         })?,
                 );
 
