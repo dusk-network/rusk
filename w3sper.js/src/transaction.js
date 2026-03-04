@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/**
+ * Canonical transfer contract id used on Dusk networks.
+ */
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
 
@@ -45,6 +48,9 @@ class BasicTransfer {
   }
 }
 
+/**
+ * Fluent builder that routes to account or address transfer variants.
+ */
 export class Transfer extends BasicTransfer {
   constructor(from) {
     super(from);
@@ -233,6 +239,9 @@ class AddressTransfer extends Transfer {
   }
 }
 
+/**
+ * Builder for Phoenix -> Moonlight unshield transactions.
+ */
 export class UnshieldTransfer extends BasicTransfer {
   constructor(from) {
     super(from);
@@ -292,6 +301,9 @@ export class UnshieldTransfer extends BasicTransfer {
   }
 }
 
+/**
+ * Builder for Moonlight -> Phoenix shield transactions.
+ */
 export class ShieldTransfer extends BasicTransfer {
   constructor(from) {
     super(from);
@@ -327,6 +339,9 @@ export class ShieldTransfer extends BasicTransfer {
   }
 }
 
+/**
+ * Builder for stake and top-up stake transactions.
+ */
 export class StakeTransfer extends BasicTransfer {
   constructor(from, options = {}) {
     super(from);
@@ -381,6 +396,9 @@ export class StakeTransfer extends BasicTransfer {
   }
 }
 
+/**
+ * Builder for unstake transactions.
+ */
 export class UnstakeTransfer extends BasicTransfer {
   constructor(from) {
     super(from);
@@ -434,6 +452,9 @@ export class UnstakeTransfer extends BasicTransfer {
   }
 }
 
+/**
+ * Builder for withdrawing stake rewards.
+ */
 export class WithdrawStakeRewardTransfer extends BasicTransfer {
   constructor(from) {
     super(from);

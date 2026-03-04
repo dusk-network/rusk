@@ -28,6 +28,9 @@ function makeErrorEventFrom(value) {
   });
 }
 
+/**
+ * High-level client for interacting with a Rusk node over RUES/HTTP.
+ */
 export class Network extends EventTarget {
   #rues;
   dataDrivers;

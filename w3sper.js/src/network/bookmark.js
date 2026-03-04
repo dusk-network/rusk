@@ -6,6 +6,9 @@
 
 export const intoBookmark = Symbol("bookmark::into");
 
+/**
+ * Opaque 8-byte cursor used to page note leaves from the transfer contract.
+ */
 export class Bookmark {
   #data = new Uint8Array(8).fill(0xff);
 

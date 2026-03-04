@@ -90,6 +90,9 @@ class BookEntry {
   }
 }
 
+/**
+ * Wallet orchestration helper over a synced treasury snapshot.
+ */
 export class Bookkeeper {
   #treasury;
 
