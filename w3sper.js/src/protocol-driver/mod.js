@@ -62,6 +62,12 @@ export async function unload() {
   [protocolDriverModule, driverGlobals] = uninit;
 }
 
+/**
+ * Loads a wallet-core protocol driver for the scope of one async operation.
+ *
+ * The returned thenable resolves once globals are initialized and always
+ * unloads the driver in `finally`.
+ */
 export function useAsProtocolDriver(source, importsURL) {
   load(source, importsURL);
 

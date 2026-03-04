@@ -12,6 +12,9 @@ import { Bookmark } from "../bookmark.js";
 
 const size = (array) => array.reduce((sum, { size }) => sum + size, 0);
 
+/**
+ * Synchronizes Phoenix notes and nullifier state for one or more profiles.
+ */
 export class AddressSyncer extends EventTarget {
   #network;
 

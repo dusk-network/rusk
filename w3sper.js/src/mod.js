@@ -3,6 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+//
+// @ts-self-types="./mod.d.ts"
 
 export * from "./network/mod.js";
 export * from "./profile.js";
@@ -11,4 +13,6 @@ export * from "./transaction.js";
 export * as lux from "./lux.js";
 export { useAsProtocolDriver } from "./protocol-driver/mod.js";
 export { Contract } from "./contract.js";
+
+/** Utilities to load and register contract data-driver WASM artifacts. */
 export * as dataDrivers from "./data-driver/mod.js";
