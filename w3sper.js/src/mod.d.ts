@@ -347,11 +347,7 @@ export class Network extends EventTarget {
 
   connect(options?: NetworkConnectOptions): Promise<this>;
   disconnect(): Promise<void>;
-  execute<
-    T extends { build?: (network: Network) => Promise<T>; buffer: Uint8Array },
-  >(
-    tx: T,
-  ): Promise<T>;
+  execute(tx: BasicTransfer | BuiltTransaction): Promise<BuiltTransaction>;
   prove(circuits: Uint8Array): Promise<ArrayBuffer>;
   query(gql?: string, options?: RequestInit): Promise<JsonObject>;
 
@@ -496,17 +492,15 @@ export interface BookEntry {
   ): Contract;
 }
 
-export interface TransferBuildable {
-  build(network: Network): Promise<BuiltTransaction>;
-}
-
-export interface AccountTransferBuilder extends TransferBuildable {
+export interface AccountTransfer extends Transfer {
   chain(value: number | bigint): this;
   nonce(value: bigint): this;
+  build(network: Network): Promise<NonceTransactionResult>;
 }
 
-export interface AddressTransferBuilder extends TransferBuildable {
+export interface AddressTransfer extends Transfer {
   obfuscated(): this;
+  build(network: Network): Promise<NullifierTransactionResult>;
 }
 
 /**
@@ -529,22 +523,8 @@ export class Bookkeeper {
 /**
  * Canonical transfer contract id used on Dusk networks.
  */
-export const TRANSFER: string;
-
-/**
- * Base transfer builder that dispatches to account or address flow via `.to(...)`.
- */
-export class Transfer {
-  constructor(from: BookEntry | Profile);
-  amount(value: bigint): this;
-  gas(value: { limit?: bigint | number; price?: bigint | number }): this;
-  deposit(value: bigint): this;
-  memo(value: ContractValue): this;
-  payload(payload: ContractValue): this;
-  to(
-    value: string | AccountKey | AddressKey,
-  ): AccountTransferBuilder | AddressTransferBuilder;
-}
+export const TRANSFER:
+  "0100000000000000000000000000000000000000000000000000000000000000";
 
 export type NonceTransactionResult = Readonly<{
   buffer: Uint8Array;
@@ -562,56 +542,66 @@ export type BuiltTransaction =
   | NonceTransactionResult
   | NullifierTransactionResult;
 
-/**
- * Phoenix to Moonlight transfer builder.
- */
-export class UnshieldTransfer {
+export abstract class BasicTransfer {
   constructor(from: BookEntry | Profile);
   amount(value: bigint): this;
   gas(value: { limit?: bigint | number; price?: bigint | number }): this;
+  build(network: Network): Promise<BuiltTransaction>;
+}
+
+/**
+ * Base transfer builder that dispatches to account or address flow via `.to(...)`.
+ */
+export class Transfer extends BasicTransfer {
+  constructor(from: BookEntry | Profile);
+  deposit(value: bigint): this;
+  memo(value: ContractValue): this;
+  payload(payload: ContractValue): this;
+  to(
+    value: string | AccountKey | AddressKey,
+  ): AccountTransfer | AddressTransfer;
+}
+
+/**
+ * Phoenix to Moonlight transfer builder.
+ */
+export class UnshieldTransfer extends BasicTransfer {
+  constructor(from: BookEntry | Profile);
   build(network: Network): Promise<NullifierTransactionResult>;
 }
 
 /**
  * Moonlight to Phoenix transfer builder.
  */
-export class ShieldTransfer {
+export class ShieldTransfer extends BasicTransfer {
   constructor(from: BookEntry | Profile);
-  amount(value: bigint): this;
-  gas(value: { limit?: bigint | number; price?: bigint | number }): this;
   build(network: Network): Promise<NonceTransactionResult>;
 }
 
 /**
  * Stake/top-up transfer builder.
  */
-export class StakeTransfer {
+export class StakeTransfer extends BasicTransfer {
   constructor(
     from: BookEntry | Profile,
     options?: { topup?: boolean },
   );
-  amount(value: bigint): this;
-  gas(value: { limit?: bigint | number; price?: bigint | number }): this;
   build(network: Network): Promise<NonceTransactionResult>;
 }
 
 /**
  * Unstake transfer builder.
  */
-export class UnstakeTransfer {
+export class UnstakeTransfer extends BasicTransfer {
   constructor(from: BookEntry | Profile);
-  amount(value: bigint): this;
-  gas(value: { limit?: bigint | number; price?: bigint | number }): this;
   build(network: Network): Promise<NonceTransactionResult>;
 }
 
 /**
  * Stake reward withdrawal transfer builder.
  */
-export class WithdrawStakeRewardTransfer {
+export class WithdrawStakeRewardTransfer extends BasicTransfer {
   constructor(from: BookEntry | Profile);
-  amount(value: bigint): this;
-  gas(value: { limit?: bigint | number; price?: bigint | number }): this;
   build(network: Network): Promise<NonceTransactionResult>;
 }
 
