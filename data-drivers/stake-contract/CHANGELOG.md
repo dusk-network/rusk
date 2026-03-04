@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add missing `decode_input_fn` support for `stakes` so query inputs are
+  round-trip decodable.
+- Add `prev_state_changes` feeder query mapping to schema, input decoding, and
+  output decoding.
+
 ## [0.3.0] - 2025-11-06
 
 ### Changed
