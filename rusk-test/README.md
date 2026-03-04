@@ -30,6 +30,6 @@ Rusk Test provides a shared test harness for integration tests across the worksp
 
 - [`dusk-rusk`](../rusk/) — the node instance spun up for tests
 - [`rusk-recovery`](../rusk-recovery/) — provides genesis state deployment
-- [`rusk-prover`](../rusk-prover/) — used with `no_random` + `debug` for deterministic proofs
+- [`rusk-prover`](../rusk-prover/) — used with `unsafe_deterministic_rng` + `debug` for deterministic proofs
 - [`wallet-core`](../wallet-core/) — wallet primitives used by the test wallet
 - [`dusk-core`](../core/) — transaction and key types

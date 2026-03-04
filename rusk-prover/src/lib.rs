@@ -63,12 +63,12 @@ impl Prove for LocalProver {
         #[cfg(not(feature = "std"))]
         let plonk_version = plonk_prove_version_from_mode(None);
 
-        #[cfg(not(feature = "no_random"))]
+        #[cfg(not(feature = "unsafe_deterministic_rng"))]
         let rng = &mut rand::rngs::OsRng;
 
-        #[cfg(feature = "no_random")]
+        #[cfg(feature = "unsafe_deterministic_rng")]
         use rand::{SeedableRng, rngs::StdRng};
-        #[cfg(feature = "no_random")]
+        #[cfg(feature = "unsafe_deterministic_rng")]
         let rng = &mut StdRng::seed_from_u64(0xbeef);
 
         #[cfg(feature = "debug")]

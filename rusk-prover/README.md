@@ -24,7 +24,7 @@ Rusk Prover generates PLONK zero-knowledge proofs for Phoenix transactions local
 
 | Feature | Description |
 |---------|-------------|
-| `no_random` | Use a seeded RNG for deterministic proofs (for testing) |
+| `unsafe_deterministic_rng` | **Unsafe for production**. Use a fixed seeded RNG for deterministic proofs (testing only) |
 | `debug` | Enable tracing and hex logging of proof data |
 
 ## Related Crates
@@ -32,4 +32,4 @@ Rusk Prover generates PLONK zero-knowledge proofs for Phoenix transactions local
 - [`dusk-core`](../core/) — defines the `Prove` trait and Phoenix circuit types
 - [`rusk-profile`](../rusk-profile/) — stores and retrieves circuit prover keys
 - [`rusk`](../rusk/) — uses the prover in prover node mode (`--features prover`)
-- [`rusk-test`](../rusk-test/) — uses the prover with `no_random` + `debug` for deterministic test proofs
+- [`rusk-test`](../rusk-test/) — uses the prover with `unsafe_deterministic_rng` + `debug` for deterministic test proofs
