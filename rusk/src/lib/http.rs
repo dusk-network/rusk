@@ -1028,6 +1028,10 @@ mod tests {
 
     /// A [`HandleRequest`] implementation that returns the same data
     struct TestHandle;
+    struct SlowRuesHandle {
+        entered: std::sync::Arc<tokio::sync::Notify>,
+        delay: std::time::Duration,
+    }
 
     const STREAMED_DATA: &[&[u8; 16]] = &[
         b"I am call data 0",
@@ -1066,6 +1070,27 @@ mod tests {
                 _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
+        }
+    }
+
+    #[async_trait]
+    impl HandleRequest for SlowRuesHandle {
+        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
+            true
+        }
+
+        async fn handle_rues(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            match request.uri.inner() {
+                ("test", _, "slow") => {
+                    self.entered.notify_waiters();
+                    tokio::time::sleep(self.delay).await;
+                    Ok(ResponseData::new(request.data.as_bytes().to_vec()))
+                }
+                _ => Err(HttpError::Unsupported),
+            }
         }
     }
 
@@ -1353,6 +1378,63 @@ mod tests {
             .send()
             .await
             .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert!(
+            second.headers().contains_key("Retry-After"),
+            "429 responses should carry Retry-After"
+        );
+    }
+
+    #[tokio::test]
+    async fn policy_other_rues_concurrency_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_rues =
+            policy::HttpPolicyClassLimit {
+                rps: 2,
+                burst: 2,
+                concurrency: 1,
+            };
+
+        let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                SlowRuesHandle {
+                    entered: entered.clone(),
+                    delay: std::time::Duration::from_millis(250),
+                },
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+
+        let first_client = client.clone();
+        let first_request = tokio::spawn(async move {
+            first_client
+                .post(format!("http://{local_addr}/on/test/slow"))
+                .body("first")
+                .send()
+                .await
+                .expect("First request should complete")
+        });
+
+        entered.notified().await;
+
+        let second = client
+            .post(format!("http://{local_addr}/on/test/slow"))
+            .body("second")
+            .send()
+            .await
+            .expect("Second request should complete");
+        let first = first_request
+            .await
+            .expect("First request task should complete");
+
+        assert_eq!(first.status(), StatusCode::OK);
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
         assert!(
             second.headers().contains_key("Retry-After"),

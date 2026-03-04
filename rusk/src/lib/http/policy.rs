@@ -707,3 +707,57 @@ const fn default_other_http_limit() -> HttpPolicyClassLimit {
 fn is_graphql_path(path: &str) -> bool {
     matches!(path, "/graphql" | "/graphql/")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wildcard_match_handles_edge_cases() {
+        assert!(wildcard_match("", ""));
+        assert!(!wildcard_match("", "/on/test/echo"));
+
+        assert!(wildcard_match("*", ""));
+        assert!(wildcard_match("*", "/on/test/echo"));
+
+        assert!(wildcard_match("/on/*", "/on/test"));
+        assert!(wildcard_match("/on/*/echo", "/on/test/echo"));
+        assert!(wildcard_match("/on/*/echo", "/on/test/inner/echo"));
+        assert!(wildcard_match("/on/*/echo", "/on//echo"));
+        assert!(wildcard_match("/on/**/echo", "/on/test/echo"));
+
+        assert!(!wildcard_match("/on/*/echo", "/off/test/echo"));
+        assert!(!wildcard_match("/on/*/echo", "/on/test/stream"));
+    }
+
+    #[test]
+    fn global_limiter_concurrency_rejection_returns_too_many_requests() {
+        let limits = HttpPolicyClassLimitsConfig {
+            contract_query: HttpPolicyClassLimit {
+                rps: 2,
+                burst: 2,
+                concurrency: 1,
+            },
+            ..HttpPolicyClassLimitsConfig::default()
+        };
+        let limiter = GlobalLimiter::new(limits);
+
+        let first = limiter
+            .acquire(EndpointClass::ContractQuery, "/on/contracts:abcd/query")
+            .expect("First acquire should succeed");
+        let second = match limiter
+            .acquire(EndpointClass::ContractQuery, "/on/contracts:abcd/query")
+        {
+            Ok(_) => {
+                panic!("Second acquire should be rejected by concurrency cap")
+            }
+            Err(err) => err,
+        };
+
+        assert_eq!(second.status, StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(second.retry_after_seconds, Some(1));
+        assert_eq!(second.body, r#"{"error":"too_many_requests"}"#);
+
+        drop(first);
+    }
+}
