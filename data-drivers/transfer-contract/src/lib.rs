@@ -42,6 +42,8 @@ use dusk_data_driver::{
 #[derive(Default)]
 pub struct ContractDriver;
 
+const TRANSFER_SCHEMA_FUNCTIONS: &str = r#"[{"name":"convert","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"deposit","doc":"","input":"u64","output":"()","custom":false},{"name":"mint","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"withdraw","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"mint_to_contract","doc":"","input":"ContractToContract","output":"()","custom":false},{"name":"contract_to_contract","doc":"","input":"ContractToContract","output":"()","custom":false},{"name":"contract_to_account","doc":"","input":"ContractToAccount","output":"()","custom":false},{"name":"root","doc":"","input":"()","output":"BlsScalar","custom":false},{"name":"num_notes","doc":"","input":"()","output":"u64","custom":false},{"name":"chain_id","doc":"","input":"()","output":"u8","custom":false},{"name":"account","doc":"","input":"AccountPublicKey","output":"AccountData","custom":false},{"name":"contract_balance","doc":"","input":"ContractId","output":"u64","custom":false},{"name":"opening","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"existing_nullifiers","doc":"","input":"Vec<BlsScalar>","output":"Vec<BlsScalar>","custom":false},{"name":"leaves_from_height","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"leaves_from_pos","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"sync","doc":"","input":"(u64,u64)","output":"unsupported","custom":false},{"name":"sync_nullifiers","doc":"","input":"(u64,u64)","output":"BlsScalar","custom":false},{"name":"sync_contract_balances","doc":"","input":"(u64,u64)","output":"(ContractId,u64)","custom":false},{"name":"sync_accounts","doc":"","input":"(u64,u64)","output":"(AccountData,AccountPublicKey)","custom":false}]"#;
+
 #[allow(clippy::match_same_arms)]
 impl ConvertibleContract for ContractDriver {
     fn encode_input_fn(
@@ -188,7 +190,24 @@ impl ConvertibleContract for ContractDriver {
     }
 
     fn get_schema(&self) -> String {
-        todo!()
+        let moonlight = MOONLIGHT_TOPIC;
+        let phoenix = PHOENIX_TOPIC;
+        let contract_to_contract = CONTRACT_TO_CONTRACT_TOPIC;
+        let mint_contract = MINT_CONTRACT_TOPIC;
+        let contract_to_account = CONTRACT_TO_ACCOUNT_TOPIC;
+        let withdraw = WITHDRAW_TOPIC;
+        let mint = MINT_TOPIC;
+        let deposit = DEPOSIT_TOPIC;
+        let convert = CONVERT_TOPIC;
+
+        let events = format!(
+            r#"[{{"topic":"{moonlight}","data":"MoonlightTransactionEvent"}},{{"topic":"{phoenix}","data":"PhoenixTransactionEvent"}},{{"topic":"{contract_to_contract}","data":"ContractToContractEvent"}},{{"topic":"{mint_contract}","data":"ContractToContractEvent"}},{{"topic":"{contract_to_account}","data":"ContractToAccountEvent"}},{{"topic":"{withdraw}","data":"WithdrawEvent"}},{{"topic":"{mint}","data":"WithdrawEvent"}},{{"topic":"{deposit}","data":"DepositEvent"}},{{"topic":"{convert}","data":"ConvertEvent"}}]"#
+        );
+        let functions = TRANSFER_SCHEMA_FUNCTIONS;
+
+        format!(
+            r#"{{"name":"TransferContract","imports":[],"functions":{functions},"events":{events}}}"#
+        )
     }
 }
 

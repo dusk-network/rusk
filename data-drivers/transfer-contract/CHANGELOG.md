@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Document intentional partial coverage of transfer contract data-driver
+  mappings: external API surface is supported while internal management
+  entrypoints and selected feeder outputs remain unsupported by design.
+
 ## [0.3.0] - 2025-11-06
 
 ### Changed
