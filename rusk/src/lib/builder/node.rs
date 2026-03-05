@@ -305,6 +305,7 @@ impl RuskNodeBuilder {
                     http.ws_event_channel_cap,
                     http.address,
                     http.headers,
+                    http.policy,
                     cert_and_key,
                 )
                 .await?,

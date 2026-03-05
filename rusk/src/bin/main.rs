@@ -99,6 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             key: config.http.key,
             headers: config.http.headers,
             ws_event_channel_cap: config.http.ws_event_channel_cap,
+            policy: config.http.policy,
         };
         node_builder = node_builder.with_http(http_builder)
     }

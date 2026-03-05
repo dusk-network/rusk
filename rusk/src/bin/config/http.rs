@@ -7,6 +7,7 @@
 use std::path::PathBuf;
 
 use hyper::HeaderMap;
+use rusk::http::HttpPolicyConfig;
 use serde::de::{self, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -31,6 +32,8 @@ pub struct HttpConfig {
     pub ws_event_channel_cap: usize,
     #[serde(with = "vec_header_map", default = "default_http_headers")]
     pub headers: HeaderMap,
+    #[serde(default)]
+    pub policy: HttpPolicyConfig,
 }
 
 // Custom deserialization function for `feeder_call_gas`.
@@ -74,6 +77,7 @@ impl Default for HttpConfig {
             listen_address: None,
             ws_sub_channel_cap: default_ws_sub_channel_cap(),
             ws_event_channel_cap: default_ws_event_channel_cap(),
+            policy: HttpPolicyConfig::default(),
         }
     }
 }

@@ -433,10 +433,11 @@ impl SessionId {
 
 /// A subscription to an event.
 ///
-/// Subscriptions have data related to the component the subscriber wishes to
-/// subscribe to, the component targeted by the event (`contracts`,
-/// `transactions`, etc...) and an optional entity within the component that
-/// the event targets.
+/// Subscriptions are represented as RUES `target/topic` paths.
+///
+/// Externally, `target` is the first path segment after `/on` (for example
+/// `contracts:<id>` or `transactions`). Internally we split `target` into a
+/// `component` plus optional `entity`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct RuesEventUri {
     pub component: String,
@@ -473,15 +474,15 @@ impl RuesEventUri {
     ///
     /// # Format
     ///
-    /// `/on/component[:entity]/topic`
+    /// `/on/target/topic`
     ///
     /// # Rules
     ///
     /// - Path must start with `/on`
-    /// - Component and topic are normalized to lowercase
+    /// - Target component and topic are normalized to lowercase
     /// - Topic is mandatory and cannot be empty
-    /// - Entity is optional (for blocks & transactions), separated from
-    ///   component by `:`
+    /// - Target is parsed as `component[:entity]`
+    /// - Entity is optional (for blocks & transactions)
     /// - Entity can contain colons (only first `:` is used as delimiter)
     /// - `contracts` component requires an entity (contract ID)
     ///
@@ -498,12 +499,11 @@ impl RuesEventUri {
         // Skip the empty segment before first '/' (path starts with "/")
         segments.next()?;
 
-        // Parse component and optional entity from first segment
-        // Format: "component" or "component:entity"
-        let first_segment = segments.next()?;
-        let (component, entity) = match first_segment.split_once(':') {
+        // Parse target as "component" or "component:entity"
+        let target = segments.next()?;
+        let (component, entity) = match target.split_once(':') {
             Some((comp, ent)) => (comp, Some(ent.to_string())),
-            None => (first_segment, None),
+            None => (target, None),
         };
         let component = component.to_lowercase();
 

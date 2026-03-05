@@ -10,6 +10,7 @@ mod chain;
 mod driver;
 mod error;
 mod event;
+mod policy;
 #[cfg(feature = "prover")]
 mod prover;
 #[cfg(feature = "chain")]
@@ -80,8 +81,10 @@ use crate::http::event::FullOrStreamBody;
 
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
+pub use policy::HttpPolicyConfig;
 
 use self::event::{ResponseData, RuesEventUri, SessionId, check_rusk_version};
+use self::policy::HttpRequestPolicy;
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -118,6 +121,7 @@ pub struct HttpServerConfig {
     pub key: Option<PathBuf>,
     pub headers: HeaderMap,
     pub ws_event_channel_cap: usize,
+    pub policy: HttpPolicyConfig,
 }
 
 impl HttpServer {
@@ -131,6 +135,7 @@ impl HttpServer {
         ws_event_channel_cap: usize,
         addr: A,
         headers: HeaderMap,
+        policy: HttpPolicyConfig,
         cert_and_key: Option<(P1, P2)>,
     ) -> io::Result<(Self, SocketAddr)>
     where
@@ -156,6 +161,7 @@ impl HttpServer {
             event_receiver,
             shutdown_receiver,
             headers,
+            policy,
             ws_event_channel_cap,
         ));
 
@@ -259,6 +265,7 @@ async fn listening_loop<H>(
     events: broadcast::Receiver<RuesEvent>,
     mut shutdown: broadcast::Receiver<Infallible>,
     headers: HeaderMap,
+    policy: HttpPolicyConfig,
     ws_event_channel_cap: usize,
 ) where
     H: HandleRequest,
@@ -272,6 +279,7 @@ async fn listening_loop<H>(
         events: events.resubscribe(),
         shutdown: shutdown.resubscribe(),
         headers: Arc::new(headers),
+        policy: Arc::new(HttpRequestPolicy::new(policy)),
         ws_event_channel_cap,
     };
 
@@ -314,6 +322,7 @@ struct ExecutionService<H> {
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     headers: Arc<HeaderMap>,
+    policy: Arc<HttpRequestPolicy>,
     ws_event_channel_cap: usize,
 }
 
@@ -325,6 +334,7 @@ impl<H> Clone for ExecutionService<H> {
             events: self.events.resubscribe(),
             shutdown: self.shutdown.resubscribe(),
             headers: self.headers.clone(),
+            policy: self.policy.clone(),
             ws_event_channel_cap: self.ws_event_channel_cap,
         }
     }
@@ -356,8 +366,28 @@ where
         let shutdown = self.shutdown.resubscribe();
         let ws_event_channel_cap = self.ws_event_channel_cap;
         let headers = self.headers.clone();
+        let policy = self.policy.clone();
 
         Box::pin(async move {
+            let request_policy_permit = match policy.enforce(&req) {
+                Ok(permit) => permit,
+                Err(rejection) => {
+                    let mut rsp = response(rejection.status, rejection.body)
+                        .expect("Failed to build policy response");
+                    if let Some(retry_after_seconds) =
+                        rejection.retry_after_seconds
+                    {
+                        if let Ok(retry_after) = HeaderValue::from_str(
+                            &retry_after_seconds.to_string(),
+                        ) {
+                            rsp.headers_mut()
+                                .insert("Retry-After", retry_after);
+                        }
+                    }
+                    return Ok(rsp);
+                }
+            };
+
             let rsp = handle_request(
                 req,
                 sources,
@@ -367,6 +397,7 @@ where
                 ws_event_channel_cap,
             )
             .await;
+            drop(request_policy_permit);
 
             // We insert all the custom headers set in the configuration here,
             // skipping the ones that are invalid.
@@ -997,6 +1028,10 @@ mod tests {
 
     /// A [`HandleRequest`] implementation that returns the same data
     struct TestHandle;
+    struct SlowRuesHandle {
+        entered: std::sync::Arc<tokio::sync::Notify>,
+        delay: std::time::Duration,
+    }
 
     const STREAMED_DATA: &[&[u8; 16]] = &[
         b"I am call data 0",
@@ -1028,12 +1063,34 @@ mod tests {
                     ResponseData::new(request.data.as_bytes().to_vec())
                 }
                 ("test", _, "no-content") => ResponseData::new(DataType::None),
+                ("contracts", Some(_), _) => ResponseData::new(DataType::None),
                 ("graphql", _, "query") => {
                     ResponseData::new(serde_json::json!({ "data": "ok" }))
                 }
                 _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
+        }
+    }
+
+    #[async_trait]
+    impl HandleRequest for SlowRuesHandle {
+        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
+            true
+        }
+
+        async fn handle_rues(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            match request.uri.inner() {
+                ("test", _, "slow") => {
+                    self.entered.notify_waiters();
+                    tokio::time::sleep(self.delay).await;
+                    Ok(ResponseData::new(request.data.as_bytes().to_vec()))
+                }
+                _ => Err(HttpError::Unsupported),
+            }
         }
     }
 
@@ -1068,15 +1125,22 @@ mod tests {
     const EVENT_CHANNEL_CAP: usize = 16;
     const WS_EVENT_CHANNEL_CAP: usize = 2;
 
+    #[derive(Default)]
+    struct TestServerOptions {
+        cert_and_key: Option<(&'static str, &'static str)>,
+        policy: HttpPolicyConfig,
+    }
+
     async fn bind_test_server<H: HandleRequest>(
         handler: H,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        bind_test_server_with_tls(handler, None).await
+        bind_test_server_with_options(handler, TestServerOptions::default())
+            .await
     }
 
-    async fn bind_test_server_with_tls<H: HandleRequest>(
+    async fn bind_test_server_with_options<H: HandleRequest>(
         handler: H,
-        cert_and_key: Option<(&'static str, &'static str)>,
+        options: TestServerOptions,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
         let (event_sender, event_receiver) =
             broadcast::channel(EVENT_CHANNEL_CAP);
@@ -1086,7 +1150,8 @@ mod tests {
             WS_EVENT_CHANNEL_CAP,
             "localhost:0",
             HeaderMap::new(),
-            cert_and_key,
+            options.policy,
+            options.cert_and_key,
         )
         .await
         .expect("Binding the server to the address should succeed");
@@ -1196,6 +1261,185 @@ mod tests {
             .expect("Requesting should succeed");
 
         assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    #[tokio::test]
+    async fn policy_acl_denied_request_returns_forbidden() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.acl.rules.push(policy::HttpPolicyAclRule {
+            id: "deny-test-echo".to_string(),
+            enabled: true,
+            action: policy::HttpPolicyAclAction::Deny,
+            path: "/on/test/echo".to_string(),
+            method: vec!["POST".to_string()],
+            headers: HashMap::new(),
+        });
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains("forbidden"),
+            "Forbidden response body should contain error marker"
+        );
+    }
+
+    #[tokio::test]
+    async fn policy_graphql_class_rate_limit_rejects_with_too_many_requests() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.graphql = policy::HttpPolicyClassLimit {
+            rps: 1,
+            burst: 1,
+            concurrency: 64,
+        };
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .body("{ ping }")
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .body("{ ping }")
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert!(
+            second.headers().contains_key("Retry-After"),
+            "429 responses should carry Retry-After"
+        );
+    }
+
+    #[tokio::test]
+    async fn policy_non_rues_paths_use_other_http_limits() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_http =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let second = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert!(
+            second.headers().contains_key("Retry-After"),
+            "429 responses should carry Retry-After"
+        );
+    }
+
+    #[tokio::test]
+    async fn policy_other_rues_concurrency_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_rues =
+            policy::HttpPolicyClassLimit {
+                rps: 2,
+                burst: 2,
+                concurrency: 1,
+            };
+
+        let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                SlowRuesHandle {
+                    entered: entered.clone(),
+                    delay: std::time::Duration::from_millis(250),
+                },
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+
+        let first_client = client.clone();
+        let first_request = tokio::spawn(async move {
+            first_client
+                .post(format!("http://{local_addr}/on/test/slow"))
+                .body("first")
+                .send()
+                .await
+                .expect("First request should complete")
+        });
+
+        entered.notified().await;
+
+        let second = client
+            .post(format!("http://{local_addr}/on/test/slow"))
+            .body("second")
+            .send()
+            .await
+            .expect("Second request should complete");
+        let first = first_request
+            .await
+            .expect("First request task should complete");
+
+        assert_eq!(first.status(), StatusCode::OK);
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert!(
+            second.headers().contains_key("Retry-After"),
+            "429 responses should carry Retry-After"
+        );
     }
 
     #[tokio::test]
@@ -1318,8 +1562,14 @@ mod tests {
             .expect("cert should be valid");
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server_with_tls(TestHandle, Some((cert_path, key_path)))
-                .await;
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    cert_and_key: Some((cert_path, key_path)),
+                    ..Default::default()
+                },
+            )
+            .await;
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });

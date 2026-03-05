@@ -21,6 +21,12 @@ pub enum Error {
     /// Requested resource was not found
     #[error("Not found: {0}")]
     NotFound(String),
+    /// Request blocked by ACL policy
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+    /// Request rejected by rate/concurrency limiting
+    #[error("Too many requests: {0}")]
+    TooManyRequests(String),
     /// Unsupported operation / endpoint
     #[error("Unsupported operation")]
     Unsupported,
@@ -58,6 +64,8 @@ impl Error {
             | Error::InvalidEncoding(_) => 400,
             Error::PayloadTooLarge(_) => 413,
             Error::NotFound(_) => 404,
+            Error::Forbidden(_) => 403,
+            Error::TooManyRequests(_) => 429,
             Error::Unsupported => 501,
             Error::Serialization(_)
             | Error::Vm(_)
@@ -80,6 +88,14 @@ impl Error {
 
     pub fn vm<T: AsRef<str>>(msg: T) -> Self {
         Error::Vm(msg.as_ref().to_string())
+    }
+
+    pub fn forbidden<T: AsRef<str>>(msg: T) -> Self {
+        Error::Forbidden(msg.as_ref().to_string())
+    }
+
+    pub fn too_many_requests<T: AsRef<str>>(msg: T) -> Self {
+        Error::TooManyRequests(msg.as_ref().to_string())
     }
 
     pub fn database<T: AsRef<str>>(msg: T) -> Self {

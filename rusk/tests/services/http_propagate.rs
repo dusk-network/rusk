@@ -18,7 +18,7 @@ use hyper::HeaderMap;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger};
-use rusk::http::HttpServer;
+use rusk::http::{HttpPolicyConfig, HttpServer};
 use rusk::node::RuskNode;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
@@ -96,6 +96,7 @@ async fn propagate_rejects_tx_that_fails_preverify() {
         16,
         "127.0.0.1:0",
         HeaderMap::new(),
+        HttpPolicyConfig::default(),
         None::<(PathBuf, PathBuf)>,
     )
     .await
