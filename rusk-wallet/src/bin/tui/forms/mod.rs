@@ -46,10 +46,25 @@ pub struct FormState {
     shielded_addr: Address,
     /// The public address for the current profile
     public_addr: Address,
+    /// Max spendable shielded balance for transfers.
+    transfer_shielded_max: Dusk,
+    /// Max spendable public balance for transfers.
+    transfer_public_max: Dusk,
 }
 
 impl FormState {
     pub fn next_field(&mut self) {
+        if self.id == FormId::Transfer
+            && self
+                .fields
+                .get(self.focused)
+                .is_some_and(|field| field.name == "recipient")
+            && self.parse_address("recipient").is_none()
+        {
+            self.error = Some("Enter a valid recipient address first.".into());
+            return;
+        }
+
         if self.focused + 1 < self.fields.len() {
             self.focused += 1;
         }
@@ -66,14 +81,40 @@ impl FormState {
     }
 
     pub fn input_char(&mut self, c: char) {
+        let is_transfer_recipient = self.id == FormId::Transfer
+            && self
+                .fields
+                .get(self.focused)
+                .is_some_and(|field| field.name == "recipient");
+
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.input_char(c);
+        }
+
+        if is_transfer_recipient {
+            self.update_transfer_amount_max();
+            if self.parse_address("recipient").is_some() {
+                self.error = None;
+            }
         }
     }
 
     pub fn delete_char(&mut self) {
+        let is_transfer_recipient = self.id == FormId::Transfer
+            && self
+                .fields
+                .get(self.focused)
+                .is_some_and(|field| field.name == "recipient");
+
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.delete_char();
+        }
+
+        if is_transfer_recipient {
+            self.update_transfer_amount_max();
+            if self.parse_address("recipient").is_some() {
+                self.error = None;
+            }
         }
     }
 
@@ -117,8 +158,66 @@ impl FormState {
 
     /// Fill max amount for current amount field.
     pub fn set_max(&mut self) {
+        if self.id == FormId::Transfer
+            && self
+                .fields
+                .get(self.focused)
+                .is_some_and(|field| field.name == "amount")
+        {
+            let Some(max) = self.transfer_amount_max_for_recipient() else {
+                self.error =
+                    Some("Enter a valid recipient address first.".into());
+                if let Some(idx) = self
+                    .fields
+                    .iter()
+                    .position(|field| field.name == "recipient")
+                {
+                    self.focused = idx;
+                }
+                return;
+            };
+
+            if let Some(field) = self.fields.get_mut(self.focused) {
+                if let field::FieldKind::Amount { max: field_max } =
+                    &mut field.kind
+                {
+                    *field_max = max;
+                }
+                field.set_max();
+            }
+            self.error = None;
+            return;
+        }
+
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.set_max();
+        }
+    }
+
+    fn transfer_amount_max_for_recipient(&self) -> Option<Dusk> {
+        match self.parse_address("recipient") {
+            Some(Address::Public(_)) => Some(self.transfer_public_max),
+            Some(Address::Shielded(_)) => Some(self.transfer_shielded_max),
+            None => None,
+        }
+    }
+
+    fn update_transfer_amount_max(&mut self) {
+        if self.id != FormId::Transfer {
+            return;
+        }
+
+        let Some(max) = self.transfer_amount_max_for_recipient() else {
+            return;
+        };
+
+        if let Some(field) =
+            self.fields.iter_mut().find(|field| field.name == "amount")
+        {
+            if let field::FieldKind::Amount { max: field_max } = &mut field.kind
+            {
+                *field_max = max;
+            }
         }
     }
 
@@ -615,5 +714,7 @@ pub fn build_form(
         error: None,
         shielded_addr,
         public_addr,
+        transfer_shielded_max: phoenix_spendable,
+        transfer_public_max: moonlight_balance,
     }
 }

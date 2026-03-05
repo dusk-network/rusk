@@ -445,14 +445,14 @@ async fn test() -> Result<(), Error> {
         )
         .await?;
     let block_txs = gql.txs_for_block(90).await?;
-    block_txs.into_iter().for_each(|tx_block| {
+    for tx_block in block_txs {
         let tx = tx_block.tx;
         let chain_txid = tx_block.id;
         let hash = tx.hash();
         let tx_id = hex::encode(hash.to_bytes());
         assert_eq!(chain_txid, tx_id);
         println!("txid: {tx_id}");
-    });
+    }
     Ok(())
 }
 

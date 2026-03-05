@@ -895,7 +895,7 @@ mod tests {
 
         // check addresses are different
         let addr = wallet.default_shielded_account();
-        assert!(format!("{}", addr).ne(TEST_ADDR));
+        assert!(format!("{addr}").ne(TEST_ADDR));
 
         // attempt to create a wallet from an invalid mnemonic
         let bad_wallet: Result<Wallet<WalletFile>, Error> =

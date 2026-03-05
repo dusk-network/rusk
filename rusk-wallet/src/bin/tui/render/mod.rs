@@ -104,6 +104,7 @@ fn masked_input(
     len: usize,
     placeholder: &str,
     show_placeholder: bool,
+    focused: bool,
 ) {
     let display = if len == 0 && show_placeholder {
         Span::styled(placeholder, theme::dim())
@@ -111,10 +112,39 @@ fn masked_input(
         Span::styled("*".repeat(len), theme::value())
     };
     frame.render_widget(Paragraph::new(Line::from(display)), area);
-    if area.width > 0 {
+    if focused && area.width > 0 {
         let cx = area.x + (len as u16).min(area.width - 1);
         frame.set_cursor_position((cx, area.y));
     }
+}
+
+fn mask_mnemonic_input(input: &str, cursor: usize) -> String {
+    let bytes = input.as_bytes();
+    let mut out = String::with_capacity(input.len());
+    let mut i = 0usize;
+
+    while i < bytes.len() {
+        if bytes[i].is_ascii_whitespace() {
+            out.push(bytes[i] as char);
+            i += 1;
+            continue;
+        }
+
+        let start = i;
+        while i < bytes.len() && !bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        let end = i;
+
+        let reveal = cursor >= start && cursor <= end;
+        if reveal {
+            out.push_str(&input[start..end]);
+        } else {
+            out.push_str(&"*".repeat(end - start));
+        }
+    }
+
+    out
 }
 
 /// Render either an error message or a hint bar.
@@ -166,7 +196,8 @@ pub fn render(frame: &mut Frame, app: &App) {
     match &app.screen {
         AppScreen::Dashboard
         | AppScreen::History { .. }
-        | AppScreen::StakeInfo => {}
+        | AppScreen::StakeInfo
+        | AppScreen::Addresses => {}
         AppScreen::Form { form } => forms::render_form_modal(frame, form),
         AppScreen::Confirmation => {
             modals::render_confirmation_modal(frame, app)
@@ -198,6 +229,7 @@ pub fn render_password_screen(
         pwd_len,
         "Enter your wallet password",
         true,
+        true,
     );
 
     let hint_area =
@@ -210,28 +242,61 @@ pub fn render_password_screen(
     );
 }
 
-pub fn render_welcome_screen(frame: &mut Frame) {
+pub fn render_welcome_screen(
+    frame: &mut Frame,
+    replacing_existing_wallet: bool,
+) {
     let inner = wallet_frame(frame, None);
     let content = center_content(inner, 10, 70);
 
-    let lines = vec![
-        Line::default(),
-        Line::from(Span::styled("  No wallet found.", theme::heading())),
-        Line::default(),
-        Line::from(Span::styled(
-            "  You can restore a wallet from an existing mnemonic",
-            theme::value(),
-        )),
-        Line::from(Span::styled("  phrase (12 words).", theme::value())),
-        Line::default(),
-        Line::default(),
-        Line::from(vec![
-            Span::styled("  [r]", theme::hotkey()),
-            Span::raw(" Restore from mnemonic  "),
-            Span::styled("[q]", theme::hotkey()),
-            Span::raw(" Quit"),
-        ]),
-    ];
+    let lines = if replacing_existing_wallet {
+        vec![
+            Line::default(),
+            Line::from(Span::styled(
+                "  Importing Different Wallet.",
+                theme::heading(),
+            )),
+            Line::default(),
+            Line::from(Span::styled(
+                "  This will replace the current wallet with one",
+                theme::value(),
+            )),
+            Line::from(Span::styled(
+                "  restored from a 12-word mnemonic phrase.",
+                theme::value(),
+            )),
+            Line::from(Span::styled(
+                "  A backup is kept as wallet.dat.old.",
+                theme::dim(),
+            )),
+            Line::default(),
+            Line::from(vec![
+                Span::styled("  [r]", theme::hotkey()),
+                Span::raw(" Import from mnemonic  "),
+                Span::styled("[q]", theme::hotkey()),
+                Span::raw(" Cancel"),
+            ]),
+        ]
+    } else {
+        vec![
+            Line::default(),
+            Line::from(Span::styled("  No wallet found.", theme::heading())),
+            Line::default(),
+            Line::from(Span::styled(
+                "  You can restore a wallet from an existing mnemonic",
+                theme::value(),
+            )),
+            Line::from(Span::styled("  phrase (12 words).", theme::value())),
+            Line::default(),
+            Line::default(),
+            Line::from(vec![
+                Span::styled("  [r]", theme::hotkey()),
+                Span::raw(" Restore from mnemonic  "),
+                Span::styled("[q]", theme::hotkey()),
+                Span::raw(" Quit"),
+            ]),
+        ]
+    };
     frame.render_widget(Paragraph::new(lines), content);
 }
 
@@ -265,7 +330,7 @@ pub fn render_mnemonic_screen(
     let display = if input.is_empty() {
         Span::styled("word1 word2 word3 ... word12", theme::dim())
     } else {
-        Span::styled(input, theme::value())
+        Span::styled(mask_mnemonic_input(input, cursor), theme::value())
     };
     frame.render_widget(Paragraph::new(Line::from(display)), field_inner);
 
@@ -311,7 +376,14 @@ pub fn render_new_password_screen(
     );
 
     let pwd_inner = input_field(frame, rows[2], "Password", !on_confirm);
-    masked_input(frame, pwd_inner, pwd_len, "Enter password", !on_confirm);
+    masked_input(
+        frame,
+        pwd_inner,
+        pwd_len,
+        "Enter password",
+        !on_confirm,
+        !on_confirm,
+    );
 
     let cfm_inner = input_field(frame, rows[3], "Confirm Password", on_confirm);
     masked_input(
@@ -319,6 +391,7 @@ pub fn render_new_password_screen(
         cfm_inner,
         confirm_len,
         "Confirm password",
+        on_confirm,
         on_confirm,
     );
 

@@ -18,6 +18,8 @@ use crate::command::TransactionHistory;
 use crate::tui::app::{App, AppScreen, MENU_ITEMS, StakeState, SyncStatus};
 use crate::tui::theme;
 
+const MAX_BALANCE_TEXT_LEN: usize = 24;
+
 pub fn render_dashboard(frame: &mut Frame, app: &App) {
     let area = frame.area();
     frame.render_widget(Clear, area);
@@ -75,6 +77,10 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
         }
         AppScreen::StakeInfo => {
             render_stake_panel(frame, layout[1], stake);
+            render_panel_hint_bar(frame, layout[2], &[("Esc", "Back")]);
+        }
+        AppScreen::Addresses => {
+            render_addresses_panel(frame, layout[1], profile);
             render_panel_hint_bar(frame, layout[2], &[("Esc", "Back")]);
         }
         _ => {
@@ -139,10 +145,10 @@ fn shielded_balance_line(balance: Option<&BalanceInfo>) -> Line<'static> {
             Line::from(vec![
                 Span::raw("              "),
                 Span::styled("Spendable ", theme::label()),
-                Span::styled(format!("{spendable}"), theme::value()),
+                Span::styled(truncate_balance(spendable), theme::value()),
                 Span::styled("  \u{00b7}  ", theme::dim()),
                 Span::styled("Total ", theme::label()),
-                Span::styled(format!("{total}"), theme::value()),
+                Span::styled(truncate_balance(total), theme::value()),
             ])
         }
         None => Line::from(vec![
@@ -157,7 +163,7 @@ fn public_balance_line(balance: Option<Dusk>) -> Line<'static> {
         Some(bal) => Line::from(vec![
             Span::raw("              "),
             Span::styled("Balance ", theme::label()),
-            Span::styled(format!("{bal}"), theme::value()),
+            Span::styled(truncate_balance(bal), theme::value()),
         ]),
         None => Line::from(vec![
             Span::raw("              "),
@@ -175,17 +181,22 @@ fn staking_line(stake: Option<&StakeState>) -> Line<'static> {
                 let eligible: Dusk = amt.value.into();
                 let rewards: Dusk = data.reward.into();
                 spans.push(Span::styled("  Staking   ", theme::heading()));
-                spans.push(Span::styled(format!("{eligible}"), theme::value()));
+                spans.push(Span::styled(
+                    truncate_balance(eligible),
+                    theme::value(),
+                ));
                 spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
                 spans.push(Span::styled("Rewards ", theme::label()));
-                spans
-                    .push(Span::styled(format!("{rewards}"), theme::success()));
+                spans.push(Span::styled(
+                    truncate_balance(rewards),
+                    theme::success(),
+                ));
             } else {
                 let rewards: Dusk = data.reward.into();
                 if rewards > Dusk::from(0) {
                     spans.push(Span::styled("  Rewards   ", theme::heading()));
                     spans.push(Span::styled(
-                        format!("{rewards}"),
+                        truncate_balance(rewards),
                         theme::success(),
                     ));
                 } else {
@@ -202,6 +213,20 @@ fn staking_line(stake: Option<&StakeState>) -> Line<'static> {
     }
 
     Line::from(spans)
+}
+
+fn truncate_balance(value: Dusk) -> String {
+    let text = value.to_string();
+    if text.chars().count() <= MAX_BALANCE_TEXT_LEN {
+        return text;
+    }
+
+    let mut shortened = String::new();
+    for ch in text.chars().take(MAX_BALANCE_TEXT_LEN - 3) {
+        shortened.push(ch);
+    }
+    shortened.push_str("...");
+    shortened
 }
 
 fn status_line(
@@ -365,6 +390,7 @@ fn render_hint_bar(frame: &mut Frame, area: ratatui::layout::Rect) {
         &[
             ("\u{2191}\u{2193}", "Navigate"),
             ("Enter", "Select"),
+            ("v", "Addresses"),
             ("?", "Help"),
             ("q", "Quit"),
         ],
@@ -385,6 +411,47 @@ fn render_panel_hint_bar(
         spans.push(Span::styled(format!(" {desc}"), theme::dim()));
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
+}
+
+fn render_addresses_panel(
+    frame: &mut Frame,
+    area: ratatui::layout::Rect,
+    profile: &rusk_wallet::Profile,
+) {
+    let block = Block::default()
+        .borders(Borders::TOP)
+        .border_style(theme::border())
+        .title(Span::styled(" Full Addresses ", theme::heading()));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let shielded =
+        rusk_wallet::Address::Shielded(profile.shielded_addr).to_string();
+    let public = rusk_wallet::Address::Public(profile.public_addr).to_string();
+
+    let lines = vec![
+        Line::from(Span::styled("  Shielded:", theme::label())),
+        Line::from(vec![
+            Span::raw("    "),
+            Span::styled(shielded, theme::value()),
+        ]),
+        Line::default(),
+        Line::from(Span::styled("  Public:", theme::label())),
+        Line::from(vec![
+            Span::raw("    "),
+            Span::styled(public, theme::value()),
+        ]),
+        Line::default(),
+        Line::from(Span::styled(
+            "  Tip: use `profiles` for copy-friendly one-line output",
+            theme::dim(),
+        )),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(lines).wrap(ratatui::widgets::Wrap { trim: false }),
+        inner,
+    );
 }
 
 // ── History panel (replaces menu) ───────────────────────────────────

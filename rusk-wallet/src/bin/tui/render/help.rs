@@ -31,6 +31,7 @@ pub fn render_help(frame: &mut Frame) {
                 ("\u{2191}\u{2193}/jk", "Navigate menu"),
                 ("Enter", "Select action"),
                 ("t s u c ...", "Direct hotkeys"),
+                ("v", "View full addresses"),
                 ("p", "Switch profile"),
                 ("a", "Add profile"),
             ],

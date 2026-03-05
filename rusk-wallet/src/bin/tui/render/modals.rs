@@ -74,13 +74,31 @@ pub fn render_loading_modal(
         / 120) as usize;
     let spinner = dots[idx % dots.len()];
 
-    let mut lines = vec![
-        Line::from(vec![
+    let mut lines = Vec::new();
+    let mut desc_lines = description
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty());
+
+    if let Some(first) = desc_lines.next() {
+        lines.push(Line::from(vec![
+            Span::raw("  "),
+            Span::styled(format!("{spinner} {first}"), theme::warning()),
+        ]));
+        for line in desc_lines {
+            lines.push(Line::from(vec![
+                Span::raw("    "),
+                Span::styled(line, theme::warning()),
+            ]));
+        }
+    } else {
+        lines.push(Line::from(vec![
             Span::raw("  "),
             Span::styled(format!("{spinner} {description}"), theme::warning()),
-        ]),
-        Line::default(),
-    ];
+        ]));
+    }
+
+    lines.push(Line::default());
 
     for msg in status_messages.iter().rev().take(3) {
         lines.push(Line::from(vec![
@@ -183,10 +201,20 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
             ]));
         }
         ResultInfo::Error { message } => {
-            lines.push(Line::from(vec![
-                Span::raw("  "),
-                Span::styled(message, theme::error()),
-            ]));
+            let mut had_line = false;
+            for line in message.lines() {
+                had_line = true;
+                lines.push(Line::from(vec![
+                    Span::raw("  "),
+                    Span::styled(line, theme::error()),
+                ]));
+            }
+            if !had_line {
+                lines.push(Line::from(vec![
+                    Span::raw("  "),
+                    Span::styled(message, theme::error()),
+                ]));
+            }
             lines.push(Line::default());
             lines.push(Line::from(vec![
                 Span::raw("  "),

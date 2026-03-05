@@ -13,16 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add startup sync gate screen in TUI with cycle stage, progress bar, status stream, and block-height feedback
 - Add chain tip height polling and display in TUI overview status
 - Add explicit network indicator in TUI overview, using configured network name (including custom `--network` names)
+- Add `View Addresses` dashboard action to show full shielded/public addresses in TUI
 
 ### Changed
 
 - Improve TUI startup responsiveness by avoiding long blocking phases on initial sync
 - Stabilize sync status transitions to reduce rapid `Synced`/`Syncing` toggling around normal block cadence
+- Rename dashboard action to `Import Different Wallet` and clarify that import replaces the current wallet (backup kept as `wallet.dat.old`)
 
 ### Fixed
 
 - Fix TUI stdout artifacting and stale frame residue after startup sync
 - Ignore placeholder `block 0` sync values so invalid heights are not shown in overview
+- Restore pre-submit balance checks in TUI command flow for clearer insufficient-balance feedback
+- Fix new-wallet password screen cursor to follow the active input field
+- Harden wallet prompt/TUI secret handling and terminal cleanup paths
+- Fix TUI import/restore lock contention by closing the active wallet before importing a different one
+- Clear stale cache when importing a different wallet and auto-retry connect on cache schema mismatch errors
+- Avoid printing raw startup/offline connection warnings into the terminal buffer while TUI is active
 
 ## [0.3.0] - 2026-02-27
 

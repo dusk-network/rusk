@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -53,6 +54,7 @@ pub enum SyncStatus {
 }
 
 const SYNCING_STATUS_GRACE_AFTER_COMPLETE: Duration = Duration::from_secs(8);
+const MAX_DISPLAYABLE_ERROR_LEN: usize = 180;
 
 /// Result info for display after a command completes.
 #[derive(Debug, Clone)]
@@ -92,6 +94,8 @@ pub enum AppScreen {
     History { entries: Vec<TransactionHistory> },
     /// Stake info display (replaces menu area)
     StakeInfo,
+    /// Full address display (replaces menu area)
+    Addresses,
     /// Help overlay showing keybindings
     Help,
 }
@@ -100,6 +104,7 @@ pub enum AppScreen {
 /// The "p" entry label is overridden dynamically by `App::menu_label()`.
 pub const MENU_ITEMS: &[(&str, &str)] = &[
     ("t", "Transfer DUSK"),
+    ("v", "View Addresses"),
     ("s", "Stake DUSK"),
     ("u", "Unstake"),
     ("c", "Claim Rewards"),
@@ -110,7 +115,7 @@ pub const MENU_ITEMS: &[(&str, &str)] = &[
     ("x", "Deploy Contract"),
     ("X", "Call Contract"),
     ("k", "Export Keys"),
-    ("m", "Import Wallet"),
+    ("m", "Import Different Wallet"),
     ("p", "Switch Profile"),
     ("a", "Add Profile"),
     ("?", "Help"),
@@ -205,7 +210,9 @@ impl<'a> App<'a> {
                 self.handle_result_key(key);
                 None
             }
-            AppScreen::History { .. } | AppScreen::StakeInfo => {
+            AppScreen::History { .. }
+            | AppScreen::StakeInfo
+            | AppScreen::Addresses => {
                 self.handle_history_key(key);
                 None
             }
@@ -307,6 +314,10 @@ impl<'a> App<'a> {
                 None
             }
             "h" => Some(AppAction::FetchHistory),
+            "v" => {
+                self.screen = AppScreen::Addresses;
+                None
+            }
             "x" => {
                 self.open_form(FormId::ContractDeploy);
                 None
@@ -389,7 +400,7 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Char('y') | KeyCode::Enter => {
                 if let Some(cmd) = self.pending_cmd.take() {
-                    let desc = self.pending_cmd_description.join(", ");
+                    let desc = self.pending_cmd_description.join("\n");
                     self.screen = AppScreen::Executing { description: desc };
                     self.status_messages.clear();
                     return Some(AppAction::ExecuteCommand(cmd));
@@ -427,22 +438,45 @@ impl<'a> App<'a> {
                 self.screen = AppScreen::Dashboard;
             }
             KeyCode::Char('o') => {
-                // Open explorer if available
-                if let AppScreen::Result {
-                    info:
-                        ResultInfo::TxSent {
-                            explorer_url: Some(url),
-                            ..
+                let explorer_url = match &self.screen {
+                    AppScreen::Result {
+                        info:
+                            ResultInfo::TxSent {
+                                explorer_url: Some(url),
+                                ..
+                            }
+                            | ResultInfo::DeployTxSent {
+                                explorer_url: Some(url),
+                                ..
+                            },
+                    } => Some(url.clone()),
+                    _ => None,
+                };
+
+                if let Some(url) = explorer_url {
+                    match open_explorer_url(&url) {
+                        Ok(()) => self.screen = AppScreen::Dashboard,
+                        Err(err) => {
+                            self.screen = AppScreen::Result {
+                                info: ResultInfo::Error {
+                                    message: format!(
+                                        "Could not open explorer automatically.\n\
+                                         Copy this URL in your browser:\n{url}\n\
+                                         Launcher error:\n{err}"
+                                    ),
+                                },
+                            };
                         }
-                        | ResultInfo::DeployTxSent {
-                            explorer_url: Some(url),
-                            ..
+                    }
+                } else {
+                    self.screen = AppScreen::Result {
+                        info: ResultInfo::Error {
+                            message:
+                                "No explorer URL configured for this network."
+                                    .into(),
                         },
-                } = &self.screen
-                {
-                    let _ = open::that(url);
+                    };
                 }
-                self.screen = AppScreen::Dashboard;
             }
             _ => {}
         }
@@ -557,7 +591,9 @@ impl<'a> App<'a> {
             }
             AsyncResult::Error(msg) => {
                 self.screen = AppScreen::Result {
-                    info: ResultInfo::Error { message: msg },
+                    info: ResultInfo::Error {
+                        message: sanitize_error_for_display(&msg),
+                    },
                 };
             }
         }
@@ -632,10 +668,318 @@ impl<'a> App<'a> {
         if let AppScreen::Form { form } = &self.screen {
             self.last_form = Some(form.clone());
         }
+        if let Some(err) = self.balance_precheck_error(&cmd) {
+            self.pending_cmd = None;
+            self.pending_cmd_description.clear();
+            self.screen = AppScreen::Result {
+                info: ResultInfo::Error { message: err },
+            };
+            return;
+        }
         let details = build_confirmation_details(&cmd, self.wallet);
         self.pending_cmd_description = details;
         self.pending_cmd = Some(cmd);
         self.screen = AppScreen::Confirmation;
+    }
+
+    fn balance_precheck_error(&self, cmd: &Command) -> Option<String> {
+        let current = self.current_balance();
+        let moonlight_bal = current.moonlight;
+        let phoenix_spendable = current
+            .phoenix
+            .as_ref()
+            .map(|bal| Dusk::from(bal.spendable));
+
+        let (balance_type, to_deduct) = max_deduction(cmd);
+        match balance_type {
+            BalanceType::Public => {
+                let spendable = moonlight_bal?;
+                (spendable < to_deduct).then(|| {
+                    format!(
+                        "Balance is not enough to cover amount + max fee. \
+                         You need {} more DUSK.",
+                        to_deduct - spendable
+                    )
+                })
+            }
+            BalanceType::Shielded => {
+                let spendable = phoenix_spendable?;
+                (spendable < to_deduct).then(|| {
+                    format!(
+                        "Balance is not enough to cover amount + max fee. \
+                         You need {} more DUSK.",
+                        to_deduct - spendable
+                    )
+                })
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum BalanceType {
+    Public,
+    Shielded,
+}
+
+fn max_deduction(cmd: &Command) -> (BalanceType, Dusk) {
+    match cmd {
+        Command::Shield { amt, .. }
+        | Command::Unshield { amt, .. }
+        | Command::ContractCall { deposit: amt, .. }
+        | Command::Stake { amt, .. }
+        | Command::Transfer { amt, .. } => {
+            let (bal_type, fee) = max_fee(cmd);
+            (bal_type, fee + *amt)
+        }
+        Command::Balance { .. }
+        | Command::Blob { .. }
+        | Command::CalculateContractId { .. }
+        | Command::ClaimRewards { .. }
+        | Command::Create { .. }
+        | Command::Restore { .. }
+        | Command::Settings
+        | Command::Export { .. }
+        | Command::History { .. }
+        | Command::Profiles { .. }
+        | Command::Withdraw { .. }
+        | Command::StakeInfo { .. }
+        | Command::Unstake { .. }
+        | Command::ContractDeploy { .. }
+        | Command::DriverDeploy { .. } => max_fee(cmd),
+    }
+}
+
+fn max_fee(cmd: &Command) -> (BalanceType, Dusk) {
+    let gas_fee = |gas_limit: &u64, gas_price: &u64| {
+        Dusk::from(gas_limit.saturating_mul(*gas_price))
+    };
+
+    match cmd {
+        Command::Blob {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::Withdraw {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::ClaimRewards {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::ContractDeploy {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::ContractCall {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::Stake {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::Transfer {
+            sender: address,
+            gas_limit,
+            gas_price,
+            ..
+        }
+        | Command::Unstake {
+            address,
+            gas_limit,
+            gas_price,
+            ..
+        } => match address {
+            Some(Address::Shielded(_)) => {
+                (BalanceType::Shielded, gas_fee(gas_limit, gas_price))
+            }
+            Some(Address::Public(_)) | None => {
+                (BalanceType::Public, gas_fee(gas_limit, gas_price))
+            }
+        },
+        Command::Shield {
+            gas_limit,
+            gas_price,
+            ..
+        } => (BalanceType::Public, gas_fee(gas_limit, gas_price)),
+        Command::Unshield {
+            gas_limit,
+            gas_price,
+            ..
+        } => (BalanceType::Shielded, gas_fee(gas_limit, gas_price)),
+        Command::Settings
+        | Command::CalculateContractId { .. }
+        | Command::Create { .. }
+        | Command::Restore { .. }
+        | Command::StakeInfo { .. }
+        | Command::Profiles { .. }
+        | Command::Balance { .. }
+        | Command::History { .. }
+        | Command::Export { .. }
+        | Command::DriverDeploy { .. } => (BalanceType::Public, Dusk::from(0)),
+    }
+}
+
+fn sanitize_error_for_display(message: &str) -> String {
+    let mut first_line =
+        message.lines().next().unwrap_or("").trim().to_string();
+
+    if first_line.is_empty() {
+        return "Operation failed. See logs for details.".into();
+    }
+
+    if first_line.contains('/')
+        || first_line.contains('\\')
+        || first_line.contains("://")
+    {
+        return "Operation failed. See logs for details.".into();
+    }
+
+    if first_line.len() > MAX_DISPLAYABLE_ERROR_LEN {
+        first_line.truncate(MAX_DISPLAYABLE_ERROR_LEN - 3);
+        first_line.push_str("...");
+    }
+
+    first_line
+}
+
+fn open_explorer_url(url: &str) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        open_explorer_url_linux(url)
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        open::that(url).map_err(|e| e.to_string())
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn open_explorer_url_linux(url: &str) -> Result<(), String> {
+    if is_wsl() {
+        if try_open_with_command("wslview", &[url]).is_ok() {
+            return Ok(());
+        }
+        if try_open_with_command("cmd.exe", &["/C", "start", "", url]).is_ok() {
+            return Ok(());
+        }
+        if try_open_with_powershell(url).is_ok() {
+            return Ok(());
+        }
+    }
+
+    if let Ok(browser) = std::env::var("BROWSER") {
+        for candidate in browser
+            .split(':')
+            .map(str::trim)
+            .filter(|candidate| !candidate.is_empty())
+        {
+            if try_open_with_browser_candidate(candidate, url).is_ok() {
+                return Ok(());
+            }
+        }
+    }
+
+    for (cmd, args) in [
+        ("xdg-open", vec![url]),
+        ("sensible-browser", vec![url]),
+        ("gio", vec!["open", url]),
+    ] {
+        if try_open_with_command(cmd, &args).is_ok() {
+            return Ok(());
+        }
+    }
+
+    if open::that(url).is_ok() {
+        return Ok(());
+    }
+
+    Err("No supported browser launcher succeeded on this environment.".into())
+}
+
+#[cfg(target_os = "linux")]
+fn is_wsl() -> bool {
+    std::env::var("WSL_DISTRO_NAME").is_ok()
+        || std::env::var("WSL_INTEROP").is_ok()
+}
+
+#[cfg(target_os = "linux")]
+fn try_open_with_browser_candidate(
+    candidate: &str,
+    url: &str,
+) -> Result<(), String> {
+    let mut parts = candidate.split_whitespace();
+    let cmd = parts
+        .next()
+        .ok_or_else(|| "BROWSER candidate is empty".to_string())?;
+
+    let mut args: Vec<String> = parts.map(str::to_owned).collect();
+    if args.is_empty() {
+        args.push(url.to_string());
+    } else {
+        let mut replaced = false;
+        for arg in &mut args {
+            if arg.contains("%s") {
+                *arg = arg.replace("%s", url);
+                replaced = true;
+            }
+        }
+        if !replaced {
+            args.push(url.to_string());
+        }
+    }
+
+    let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    try_open_with_command(cmd, &arg_refs)
+        .map_err(|err| format!("BROWSER candidate '{candidate}' failed: {err}"))
+}
+
+#[cfg(target_os = "linux")]
+fn try_open_with_command(cmd: &str, args: &[&str]) -> Result<(), String> {
+    let output = ProcessCommand::new(cmd)
+        .args(args)
+        .output()
+        .map_err(|e| format!("{cmd}: {e}"))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        if stderr.is_empty() {
+            Err(format!("{cmd} exited with {}", output.status))
+        } else {
+            Err(format!("{cmd}: {stderr}"))
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn try_open_with_powershell(url: &str) -> Result<(), String> {
+    let script = format!("Start-Process '{}'", url.replace('\'', "''"));
+    let output = ProcessCommand::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+        .output()
+        .map_err(|e| format!("powershell.exe: {e}"))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!("powershell.exe exited with {}", output.status))
     }
 }
 
