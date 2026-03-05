@@ -9,7 +9,6 @@ use std::env;
 use std::net::TcpStream;
 use std::time::Duration;
 
-use inquire::Text;
 use rusk_wallet::GraphQL;
 use serde::Deserialize;
 use tempfile::{TempDir, tempdir};
@@ -28,17 +27,12 @@ struct FakePrompter {
 }
 
 impl Prompt for FakePrompter {
-    fn create_new_password(
-        &self,
-    ) -> anyhow::Result<String, inquire::InquireError> {
+    fn create_new_password(&self) -> anyhow::Result<String> {
         Ok("password".to_string())
     }
 
-    fn prompt_text(
-        &self,
-        _text_prompt: Text,
-    ) -> inquire::error::InquireResult<String> {
-        return Ok(self.text_answer.clone());
+    fn prompt_text(&self, _message: &str) -> anyhow::Result<String> {
+        Ok(self.text_answer.clone())
     }
 }
 
@@ -82,6 +76,7 @@ fn node_address() -> String {
 fn wallet_settings(wallet_dir: &TempDir) -> Settings {
     let addr = format!("http://{}", node_address());
     Settings {
+        network_name: Some("test".to_string()),
         state: Url::parse(&addr).unwrap(),
         prover: Url::parse(&addr).unwrap(),
         archiver: Url::parse(&addr).unwrap(),
