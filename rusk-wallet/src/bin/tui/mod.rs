@@ -23,11 +23,13 @@ use crossterm::terminal::{
 };
 use ratatui::Terminal;
 use ratatui::prelude::CrosstermBackend;
+use ratatui::widgets::Clear;
+use rocksdb::ErrorKind;
 use rusk_wallet::dat::{self, LATEST_VERSION};
-use rusk_wallet::{GraphQL, Wallet, WalletPath};
+use rusk_wallet::{Error as WalletError, GraphQL, Wallet, WalletPath};
 use tokio::sync::mpsc;
-use tracing::{debug, warn};
-use zeroize::Zeroize;
+use tracing::debug;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::WalletFile;
 use crate::command::{gen_iv, gen_salt};
@@ -40,6 +42,7 @@ use self::app::{App, AppAction, AppScreen, ConnectionStatus};
 
 const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
 const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
+const MAX_PASSWORD_ATTEMPTS: u8 = 3;
 
 /// Signals from `run_inner` about why it exited.
 enum ExitReason {
@@ -220,9 +223,12 @@ pub async fn run(
             Ok(ExitReason::Quit) => break Ok(()),
             Ok(ExitReason::ImportWallet) => {
                 // Back up old wallet, run restore flow, then re-enter
-                backup_wallet(wallet_path);
-                match restore_wallet_flow(&mut terminal, wallet_path)? {
-                    Some(_) => continue,  // New wallet saved, restart
+                backup_wallet(wallet_path)?;
+                match restore_wallet_flow(&mut terminal, wallet_path, true)? {
+                    Some(_) => {
+                        clear_wallet_cache(wallet_path)?;
+                        continue;
+                    } // New wallet saved, restart
                     None => break Ok(()), // User cancelled
                 }
             }
@@ -231,6 +237,9 @@ pub async fn run(
     };
 
     // Restore terminal
+    let _ = terminal.draw(|frame| {
+        frame.render_widget(Clear, frame.area());
+    });
     disable_raw_mode()?;
     execute!(stdout(), LeaveAlternateScreen)?;
     clear_status_channel();
@@ -239,12 +248,47 @@ pub async fn run(
 }
 
 /// Back up existing wallet.dat to wallet.dat.old.
-fn backup_wallet(wallet_path: &WalletPath) {
+fn backup_wallet(wallet_path: &WalletPath) -> anyhow::Result<()> {
     let src = wallet_path.inner();
     if src.exists() {
         let mut dst = src.to_path_buf();
         dst.set_extension("dat.old");
-        let _ = std::fs::copy(src, dst);
+        std::fs::copy(src, &dst).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to back up wallet file {} -> {}: {}",
+                src.display(),
+                dst.display(),
+                e
+            )
+        })?;
+    }
+    Ok(())
+}
+
+/// Remove the wallet cache directory if present.
+fn clear_wallet_cache(wallet_path: &WalletPath) -> anyhow::Result<()> {
+    let cache_dir = wallet_path.cache_dir();
+    if cache_dir.exists() {
+        std::fs::remove_dir_all(&cache_dir).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to clear cache directory {}: {}",
+                cache_dir.display(),
+                e
+            )
+        })?;
+    }
+    Ok(())
+}
+
+fn should_reset_cache_on_connect_error(err: &WalletError) -> bool {
+    match err {
+        WalletError::RocksDB(db_err) => {
+            matches!(
+                db_err.kind(),
+                ErrorKind::InvalidArgument | ErrorKind::Corruption
+            )
+        }
+        _ => false,
     }
 }
 
@@ -256,7 +300,7 @@ async fn run_inner(
 ) -> anyhow::Result<ExitReason> {
     // If no wallet file exists, offer to restore from mnemonic
     let mut wallet = if !wallet_path.inner().exists() {
-        match restore_wallet_flow(terminal, wallet_path)? {
+        match restore_wallet_flow(terminal, wallet_path, false)? {
             Some(w) => w,
             None => return Ok(ExitReason::Quit), // User cancelled
         }
@@ -267,8 +311,9 @@ async fn run_inner(
 
         // Get password and load wallet (with retry on wrong password)
         let mut pwd_error: Option<&str> = None;
+        let mut password_attempts = 0u8;
         let (wallet, password) = loop {
-            let pwd = match &settings.password {
+            let mut pwd = match &settings.password {
                 Some(p) => p.clone(),
                 None => match enter_password(terminal, pwd_error)? {
                     Some(p) => p,
@@ -290,10 +335,20 @@ async fn run_inner(
             }) {
                 Ok(w) => break (w, pwd),
                 Err(_) if settings.password.is_none() => {
+                    pwd.zeroize();
+                    password_attempts = password_attempts.saturating_add(1);
+                    if password_attempts >= MAX_PASSWORD_ATTEMPTS {
+                        return Err(
+                            rusk_wallet::Error::AttemptsExhausted.into()
+                        );
+                    }
                     pwd_error = Some("Wrong password. Please try again.");
                     continue;
                 }
-                Err(e) => return Err(e.into()),
+                Err(e) => {
+                    pwd.zeroize();
+                    return Err(e.into());
+                }
             }
         };
 
@@ -301,8 +356,11 @@ async fn run_inner(
         let mut wallet = wallet;
         let wallet_fv = wallet.get_file_version()?;
         if wallet_fv.is_old() {
-            let pwd_opt = Some(password.clone());
-            crate::update_wallet_file(&mut wallet, &pwd_opt, wallet_fv)?;
+            crate::update_wallet_file(
+                &mut wallet,
+                Some(password.as_str()),
+                wallet_fv,
+            )?;
         }
 
         // Zeroize the password — no longer needed
@@ -316,7 +374,7 @@ async fn run_inner(
     let (tx, mut rx) = mpsc::unbounded_channel::<AsyncResult>();
     init_status_channel(tx.clone());
 
-    if let Err(e) = wallet
+    if let Err(err) = wallet
         .connect_with_status(
             settings.state.as_str(),
             settings.prover.as_str(),
@@ -325,7 +383,33 @@ async fn run_inner(
         )
         .await
     {
-        warn!("[OFFLINE MODE]: Unable to connect: {e}");
+        if should_reset_cache_on_connect_error(&err) {
+            debug!(
+                "[OFFLINE MODE]: connect failed with cache mismatch; \
+                 clearing cache and retrying: {err}"
+            );
+
+            if let Err(cache_err) = wallet.delete_cache() {
+                debug!(
+                    "Failed to clear wallet cache for reconnect: {cache_err}"
+                );
+            } else if let Err(retry_err) = wallet
+                .connect_with_status(
+                    settings.state.as_str(),
+                    settings.prover.as_str(),
+                    settings.archiver.as_str(),
+                    tui_status,
+                )
+                .await
+            {
+                debug!(
+                    "[OFFLINE MODE]: reconnect after cache reset failed: \
+                     {retry_err}"
+                );
+            }
+        } else {
+            debug!("[OFFLINE MODE]: Unable to connect: {err}");
+        }
     }
 
     let connected: bool =
@@ -334,6 +418,7 @@ async fn run_inner(
             .unwrap_or_default();
 
     if connected && !run_startup_sync_gate(terminal, &wallet, &mut rx).await? {
+        wallet.close();
         return Ok(ExitReason::Quit);
     }
 
@@ -408,6 +493,7 @@ async fn run_inner(
                     }
                 }
                 AppAction::ImportWallet => {
+                    app.wallet.close();
                     return Ok(ExitReason::ImportWallet);
                 }
                 AppAction::CloseForm => {
@@ -430,6 +516,7 @@ async fn run_inner(
         }
     }
 
+    app.wallet.close();
     Ok(ExitReason::Quit)
 }
 
@@ -492,7 +579,7 @@ async fn run_startup_sync_gate(
                             "Initial sync failed, continuing in offline mode: {err}"
                         ));
                         progress.advance_stage(SyncStage::Error);
-                        warn!("[OFFLINE MODE]: Initial sync failed: {err}");
+                        debug!("[OFFLINE MODE]: Initial sync failed: {err}");
                         return Ok(true);
                     }
                 }
@@ -624,14 +711,14 @@ fn enter_password(
     let tick_rate = Duration::from_millis(100);
 
     struct State {
-        password: String,
+        password: Zeroizing<String>,
         error: Option<String>,
     }
 
     run_screen(
         terminal,
         State {
-            password: String::new(),
+            password: Zeroizing::new(String::new()),
             error: initial_error.map(String::from),
         },
         tick_rate,
@@ -644,9 +731,12 @@ fn enter_password(
         },
         |s, key| match key.code {
             KeyCode::Enter => {
-                Ok(ScreenFlow::Done(std::mem::take(&mut s.password)))
+                Ok(ScreenFlow::Done(std::mem::take(&mut *s.password)))
             }
-            KeyCode::Esc => Ok(ScreenFlow::Cancel),
+            KeyCode::Esc => {
+                s.password.zeroize();
+                Ok(ScreenFlow::Cancel)
+            }
             KeyCode::Char(c) => {
                 s.password.push(c);
                 s.error = None;
@@ -662,19 +752,20 @@ fn enter_password(
     )
 }
 
-/// Full restore-from-mnemonic flow for when no wallet file exists.
+/// Full restore-from-mnemonic flow for creating/replacing wallet data.
 /// Returns the created wallet, or None if the user cancelled.
 fn restore_wallet_flow(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     wallet_path: &WalletPath,
+    replacing_existing_wallet: bool,
 ) -> anyhow::Result<Option<Wallet<WalletFile>>> {
     // Step 1: Show welcome screen, wait for user to proceed or quit
-    if !enter_welcome(terminal)? {
+    if !enter_welcome(terminal, replacing_existing_wallet)? {
         return Ok(None);
     }
 
     // Step 2: Get mnemonic phrase (with BIP39 validation)
-    let phrase = match enter_mnemonic(terminal)? {
+    let mut phrase = match enter_mnemonic(terminal)? {
         Some(p) => p,
         None => return Ok(None),
     };
@@ -691,7 +782,14 @@ fn restore_wallet_flow(
     let file_version = dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION);
     let key = prompt::derive_key(file_version, &password, Some(&salt))?;
 
-    let mut wallet: Wallet<WalletFile> = Wallet::new(phrase)?;
+    let mut wallet: Wallet<WalletFile> = match Wallet::new(phrase.as_str()) {
+        Ok(wallet) => wallet,
+        Err(err) => {
+            phrase.zeroize();
+            return Err(err.into());
+        }
+    };
+    phrase.zeroize();
     wallet.save_to(WalletFile {
         path: wallet_path.clone(),
         aes_key: key,
@@ -705,10 +803,11 @@ fn restore_wallet_flow(
     Ok(Some(wallet))
 }
 
-/// Show the welcome screen when no wallet exists.
+/// Show the restore/import welcome screen.
 /// Returns true if the user wants to proceed, false to quit.
 fn enter_welcome(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    replacing_existing_wallet: bool,
 ) -> anyhow::Result<bool> {
     let tick_rate = Duration::from_millis(100);
 
@@ -716,7 +815,9 @@ fn enter_welcome(
         terminal,
         (),
         tick_rate,
-        |frame, _| render::render_welcome_screen(frame),
+        |frame, _| {
+            render::render_welcome_screen(frame, replacing_existing_wallet)
+        },
         |_, key| match key.code {
             KeyCode::Enter | KeyCode::Char('r') => Ok(ScreenFlow::Done(())),
             KeyCode::Esc | KeyCode::Char('q') => Ok(ScreenFlow::Cancel),
@@ -735,7 +836,7 @@ fn enter_mnemonic(
     let tick_rate = Duration::from_millis(100);
 
     struct State {
-        input: String,
+        input: Zeroizing<String>,
         cursor: usize,
         error: Option<String>,
     }
@@ -743,7 +844,7 @@ fn enter_mnemonic(
     run_screen(
         terminal,
         State {
-            input: String::new(),
+            input: Zeroizing::new(String::new()),
             cursor: 0,
             error: None,
         },
@@ -758,9 +859,12 @@ fn enter_mnemonic(
         },
         |s, key| match key.code {
             KeyCode::Enter => {
-                let trimmed = s.input.trim().to_string();
-                match Mnemonic::from_phrase(&trimmed, Language::English) {
-                    Ok(mnem) => Ok(ScreenFlow::Done(mnem.to_string())),
+                match Mnemonic::from_phrase(s.input.trim(), Language::English) {
+                    Ok(mnem) => {
+                        let validated = mnem.to_string();
+                        s.input.zeroize();
+                        Ok(ScreenFlow::Done(validated))
+                    }
                     Err(_) => {
                         s.error = Some(
                             "Invalid mnemonic. Enter 12 valid BIP39 words \
@@ -771,7 +875,10 @@ fn enter_mnemonic(
                     }
                 }
             }
-            KeyCode::Esc => Ok(ScreenFlow::Cancel),
+            KeyCode::Esc => {
+                s.input.zeroize();
+                Ok(ScreenFlow::Cancel)
+            }
             KeyCode::Char(c) => {
                 s.input.insert(s.cursor, c);
                 s.cursor += 1;
@@ -817,8 +924,8 @@ fn enter_new_password(
     let tick_rate = Duration::from_millis(100);
 
     struct State {
-        password: String,
-        confirm: String,
+        password: Zeroizing<String>,
+        confirm: Zeroizing<String>,
         on_confirm: bool,
         error: Option<String>,
     }
@@ -826,8 +933,8 @@ fn enter_new_password(
     run_screen(
         terminal,
         State {
-            password: String::new(),
-            confirm: String::new(),
+            password: Zeroizing::new(String::new()),
+            confirm: Zeroizing::new(String::new()),
             on_confirm: false,
             error: None,
         },
@@ -849,13 +956,19 @@ fn enter_new_password(
                     Ok(ScreenFlow::Continue)
                 } else if s.password != s.confirm {
                     s.error = Some("Passwords do not match.".into());
+                    s.confirm.zeroize();
                     s.confirm.clear();
                     Ok(ScreenFlow::Continue)
                 } else {
-                    Ok(ScreenFlow::Done(std::mem::take(&mut s.password)))
+                    s.confirm.zeroize();
+                    Ok(ScreenFlow::Done(std::mem::take(&mut *s.password)))
                 }
             }
-            KeyCode::Esc => Ok(ScreenFlow::Cancel),
+            KeyCode::Esc => {
+                s.password.zeroize();
+                s.confirm.zeroize();
+                Ok(ScreenFlow::Cancel)
+            }
             KeyCode::BackTab | KeyCode::Up => {
                 if s.on_confirm {
                     s.on_confirm = false;

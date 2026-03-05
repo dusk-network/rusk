@@ -232,11 +232,15 @@ async fn exec() -> anyhow::Result<()> {
     })?;
 
     if file_version.is_old() {
-        update_wallet_file(&mut wallet, &settings.password, file_version)
-            .inspect_err(|_| {
-                wallet.close();
-                settings.password.zeroize();
-            })?;
+        update_wallet_file(
+            &mut wallet,
+            settings.password.as_deref(),
+            file_version,
+        )
+        .inspect_err(|_| {
+            wallet.close();
+            settings.password.zeroize();
+        })?;
     }
 
     wallet = connect(wallet, &settings, status::headless)
@@ -489,49 +493,52 @@ async fn get_wallet(
 
 pub(crate) fn update_wallet_file(
     wallet: &mut Wallet<WalletFile>,
-    password: &Option<String>,
+    password: Option<&str>,
     file_version: DatFileVersion,
 ) -> Result<(), anyhow::Error> {
     let salt = gen_salt();
     let iv = gen_iv();
-    let pwd = match password.as_ref() {
+    let mut pwd = match password {
         Some(p) => p.to_string(),
         None => ask_pwd(
             "Updating your wallet data file, please enter your wallet password ",
         )?,
     };
+    let result = (|| {
+        let old_wallet_file = wallet
+            .file()
+            .clone()
+            .expect("wallet file should never be none");
 
-    let old_wallet_file = wallet
-        .file()
-        .clone()
-        .expect("wallet file should never be none");
+        let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
+        // Is the password correct?
+        Wallet::from_file(WalletFile {
+            aes_key: old_key,
+            ..old_wallet_file.clone()
+        })?;
 
-    let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
-    // Is the password correct?
-    Wallet::from_file(WalletFile {
-        aes_key: old_key,
-        ..old_wallet_file.clone()
-    })?;
+        let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
 
-    let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
+        let key = derive_key(
+            DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            &pwd,
+            Some(&salt),
+        )?;
+        wallet.save_to(WalletFile {
+            path: old_wallet_file.path,
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+        println!(
+            "Update successful. Old wallet data file is saved at {}",
+            old_wallet_path.display()
+        );
 
-    let key = derive_key(
-        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-        &pwd,
-        Some(&salt),
-    )?;
-    wallet.save_to(WalletFile {
-        path: old_wallet_file.path,
-        aes_key: key,
-        salt: Some(salt),
-        iv: Some(iv),
-    })?;
-    println!(
-        "Update successful. Old wallet data file is saved at {}",
-        old_wallet_path.display()
-    );
-
-    Ok(())
+        Ok(())
+    })();
+    pwd.zeroize();
+    result
 }
 
 fn save_old_wallet(wallet_path: &WalletPath) -> Result<PathBuf, Error> {
