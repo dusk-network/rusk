@@ -86,7 +86,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         P: Into<String>,
     {
         // generate mnemonic
-        let phrase: String = phrase.into();
+        let mut phrase: String = phrase.into();
         let try_mnem = Mnemonic::from_phrase(&phrase, Language::English);
 
         if let Ok(mnemonic) = try_mnem {
@@ -105,6 +105,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 shielded_addr: derive_phoenix_pk(&seed_bytes, 0),
                 public_addr: derive_bls_pk(&seed_bytes, 0),
             }];
+            phrase.zeroize();
 
             // return new wallet instance
             Ok(Wallet {
@@ -115,6 +116,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 file_version: None,
             })
         } else {
+            phrase.zeroize();
             Err(Error::InvalidMnemonicPhrase)
         }
     }

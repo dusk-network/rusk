@@ -44,13 +44,22 @@ pub(crate) struct Prompter;
 
 impl Prompt for Prompter {}
 
+struct RawModeGuard;
+
+impl Drop for RawModeGuard {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+    }
+}
+
 /// Read a masked password from the terminal using crossterm raw mode.
 fn read_password(prompt: &str) -> anyhow::Result<String> {
     eprint!("{prompt}");
     io::stderr().flush()?;
 
     enable_raw_mode()?;
-    let result = (|| {
+    let _raw_mode_guard = RawModeGuard;
+    (|| {
         let mut pwd = String::new();
         loop {
             if let Event::Key(key) = event::read()? {
@@ -62,10 +71,12 @@ fn read_password(prompt: &str) -> anyhow::Result<String> {
                     KeyCode::Char('c')
                         if key.modifiers.contains(KeyModifiers::CONTROL) =>
                     {
+                        pwd.zeroize();
                         eprintln!();
                         anyhow::bail!(PromptAbort::Interrupted);
                     }
                     KeyCode::Esc => {
+                        pwd.zeroize();
                         eprintln!();
                         anyhow::bail!(PromptAbort::Cancelled);
                     }
@@ -84,9 +95,7 @@ fn read_password(prompt: &str) -> anyhow::Result<String> {
                 }
             }
         }
-    })();
-    disable_raw_mode()?;
-    result
+    })()
 }
 
 /// Read a line of text from stdin.
@@ -119,11 +128,14 @@ pub(crate) fn ask_pwd(msg: &str) -> anyhow::Result<String> {
 
 pub(crate) fn create_new_password() -> anyhow::Result<String> {
     loop {
-        let pwd = read_password("Password: ")?;
-        let confirm_pwd = read_password("Confirm password: ")?;
+        let mut pwd = read_password("Password: ")?;
+        let mut confirm_pwd = read_password("Confirm password: ")?;
         if pwd == confirm_pwd {
+            confirm_pwd.zeroize();
             return Ok(pwd);
         }
+        confirm_pwd.zeroize();
+        pwd.zeroize();
         eprintln!("Passwords don't match. Try again.");
     }
 }
@@ -185,17 +197,26 @@ pub(crate) fn request_mnemonic_phrase(
 ) -> anyhow::Result<String> {
     let mut attempt = 1;
     loop {
-        let phrase =
+        let mut phrase =
             prompter.prompt_text("Please enter the mnemonic phrase: ")?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
-            Ok(phrase) => break Ok(phrase.to_string()),
-
-            Err(err) if attempt > 2 => match err.downcast_ref::<ErrorKind>() {
-                Some(ErrorKind::InvalidWord) => Err(Error::AttemptsExhausted)?,
-                _ => return Err(err),
-            },
+            Ok(mnem) => {
+                let validated_phrase = mnem.to_string();
+                phrase.zeroize();
+                break Ok(validated_phrase);
+            }
+            Err(err) if attempt > 2 => {
+                phrase.zeroize();
+                match err.downcast_ref::<ErrorKind>() {
+                    Some(ErrorKind::InvalidWord) => {
+                        Err(Error::AttemptsExhausted)?
+                    }
+                    _ => return Err(err),
+                }
+            }
             Err(_) => {
+                phrase.zeroize();
                 println!("Invalid mnemonic phrase, please try again");
                 attempt += 1;
             }

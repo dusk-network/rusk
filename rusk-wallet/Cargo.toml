@@ -59,7 +59,6 @@ tracing-subscriber = { workspace = true, features = [
 ] }
 
 rkyv = { workspace = true, features = ["validation"] }
-inquire = { workspace = true }
 konst = { workspace = true }
 pbkdf2 = { workspace = true }
 aes-gcm = { workspace = true, features = ["std"] }

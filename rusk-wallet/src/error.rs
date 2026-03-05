@@ -8,7 +8,6 @@ use std::io;
 use std::str::Utf8Error;
 
 use hex::FromHexError;
-use inquire::InquireError;
 use node_data::bls::ConsensusKeysError;
 use rand::Error as RngError;
 
@@ -170,9 +169,6 @@ pub enum Error {
     /// GraphQL error
     #[error("GraphQL error: {0}")]
     GraphQLError(GraphQLError),
-    /// Inquire error
-    #[error("Inquire error: {0}")]
-    InquireError(String),
     /// Error while querying archival node
     #[error("Archive node query error: {0}")]
     ArchiveJsonError(String),
@@ -229,12 +225,6 @@ impl From<rocksdb::Error> for Error {
 impl From<GraphQLError> for Error {
     fn from(e: GraphQLError) -> Self {
         Self::GraphQLError(e)
-    }
-}
-
-impl From<InquireError> for Error {
-    fn from(e: InquireError) -> Self {
-        Self::InquireError(e.to_string())
     }
 }
 
