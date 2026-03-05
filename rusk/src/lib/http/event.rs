@@ -29,6 +29,8 @@ use tungstenite::http::HeaderValue;
 
 use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
 
+const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
@@ -53,9 +55,14 @@ impl MessageResponse {
         if let Some((error, code)) = self.error {
             let code = hyper::StatusCode::from_u16(code)
                 .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
+            let error_body = serde_json::json!({ "error": error }).to_string();
             return Ok(hyper::Response::builder()
                 .status(code)
-                .body(Full::new(error.into()).into())?);
+                .header(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static(CONTENT_TYPE_JSON),
+                )
+                .body(Full::new(error_body.into()).into())?);
         }
 
         let mut headers = HashMap::new();
@@ -367,6 +374,8 @@ pub enum ExecutionError {
     Tungstenite(#[from] tungstenite::Error),
     #[error("Invalid header: {0}")]
     InvalidHeader(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
     #[error("{0}")]
     Other(String),
 }
@@ -505,11 +514,18 @@ impl RuesEventUri {
             Some((comp, ent)) => (comp, Some(ent.to_string())),
             None => (target, None),
         };
+        if component.is_empty() || entity.as_deref().is_some_and(str::is_empty)
+        {
+            return None;
+        }
         let component = component.to_lowercase();
 
         // Parse topic (mandatory, must be non-empty)
         let topic = segments.next().filter(|t| !t.is_empty())?;
         let topic = topic.to_lowercase();
+        if segments.next().is_some() {
+            return None;
+        }
 
         // Contracts require an entity (contract ID)
         if component == "contracts" && entity.is_none() {
@@ -563,6 +579,16 @@ pub struct RuesDispatchEvent {
     pub data: RequestData,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum RequestParseError {
+    #[error("Invalid URL path")]
+    InvalidPath,
+    #[error("{0}")]
+    InvalidPayload(String),
+    #[error("{0}")]
+    Other(anyhow::Error),
+}
+
 impl RuesDispatchEvent {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
@@ -599,27 +625,24 @@ impl RuesDispatchEvent {
     }
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> Result<(Self, bool), super::HttpError> {
+    ) -> Result<(Self, bool), RequestParseError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(super::HttpError::invalid_input("Invalid URL path"))?;
+            .ok_or(RequestParseError::InvalidPath)?;
 
         let headers = parts
             .headers
             .iter()
             .map(|(k, v)| {
-                let v = if v.is_empty() {
-                    serde_json::Value::Null
-                } else {
-                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
-                        .unwrap_or(serde_json::Value::String(
-                            v.to_str().unwrap().to_string(),
-                        ))
-                };
-                (k.to_string().to_lowercase(), v)
+                let value = parse_request_header_value(k.as_str(), v)?;
+
+                Ok((k.to_string().to_lowercase(), value))
             })
-            .collect();
+            .collect::<Result<
+                serde_json::Map<String, serde_json::Value>,
+                RequestParseError,
+            >>()?;
 
         // HTTP REQUEST
         let content_type = parts
@@ -644,11 +667,14 @@ impl RuesDispatchEvent {
             .await
             .map_err(|e| {
                 if e.downcast_ref::<LengthLimitError>().is_some() {
-                    super::HttpError::payload_too_large(format!(
-                        "Request body exceeds {max_body_bytes} bytes"
-                    ))
+                    RequestParseError::Other(
+                        super::HttpError::payload_too_large(format!(
+                            "Request body exceeds {max_body_bytes} bytes"
+                        ))
+                        .into(),
+                    )
                 } else {
-                    super::HttpError::internal(e.to_string())
+                    RequestParseError::Other(anyhow::Error::msg(e.to_string()))
                 }
             })?
             .to_bytes()
@@ -657,9 +683,7 @@ impl RuesDispatchEvent {
             true => bytes.into(),
             _ => {
                 let text = String::from_utf8(bytes).map_err(|_| {
-                    super::HttpError::InvalidEncoding(
-                        "Invalid utf8".to_string(),
-                    )
+                    RequestParseError::InvalidPayload("Invalid utf8".into())
                 })?;
                 if let Some(hex) = text.strip_prefix("0x") {
                     if let Ok(bytes) = hex::decode(hex) {
@@ -677,6 +701,29 @@ impl RuesDispatchEvent {
 
         Ok((ret, binary_response))
     }
+}
+
+fn parse_request_header_value(
+    key: &str,
+    value: &HeaderValue,
+) -> Result<serde_json::Value, RequestParseError> {
+    if value.is_empty() {
+        return Ok(serde_json::Value::Null);
+    }
+
+    let as_str = value.to_str().map_err(|_| {
+        RequestParseError::InvalidPayload(format!(
+            "Invalid header encoding for {key}",
+        ))
+    })?;
+
+    if key.to_lowercase().starts_with(GQL_VAR_PREFIX)
+        && let Ok(parsed) = serde_json::from_str::<serde_json::Value>(as_str)
+    {
+        return Ok(parsed);
+    }
+
+    Ok(serde_json::Value::String(as_str.to_string()))
 }
 
 impl RuesEvent {
@@ -796,108 +843,142 @@ pub fn check_rusk_version(
 
 #[cfg(test)]
 mod tests {
-    use super::{DataType, RuesEvent, RuesEventUri};
+    use super::{
+        DataType, RequestParseError, RuesEvent, RuesEventUri,
+        parse_request_header_value,
+    };
+    use tungstenite::http::HeaderValue;
 
     const DUMMY_ENTITY: &str = "abc123";
 
-    // valid parsing
-
     #[test]
-    fn parse_contracts_with_entity_and_topic() {
-        let uri = RuesEventUri::parse_from_path(&format!(
-            "/on/contracts:{DUMMY_ENTITY}/withdraw"
-        ))
-        .expect("Should parse successfully");
+    fn parse_uri_cases() {
+        let valid_cases = [
+            (
+                format!("/on/contracts:{DUMMY_ENTITY}/withdraw"),
+                ("contracts", Some(DUMMY_ENTITY), "withdraw"),
+                "contracts with entity and topic",
+            ),
+            (
+                "/on/blocks/accepted".to_string(),
+                ("blocks", None, "accepted"),
+                "blocks without entity",
+            ),
+            (
+                "/on/transactions/included".to_string(),
+                ("transactions", None, "included"),
+                "transactions without entity",
+            ),
+            (
+                "/on/BLOCKS/ACCEPTED".to_string(),
+                ("blocks", None, "accepted"),
+                "normalizes component/topic to lowercase",
+            ),
+            (
+                "/on/contracts:entity:with:colons/topic".to_string(),
+                ("contracts", Some("entity:with:colons"), "topic"),
+                "entity can include colons",
+            ),
+        ];
 
-        assert_eq!(uri.component, "contracts");
-        assert_eq!(uri.entity, Some(DUMMY_ENTITY.to_string()));
-        assert_eq!(uri.topic, "withdraw");
+        for (path, (component, entity, topic), message) in valid_cases {
+            let uri = RuesEventUri::parse_from_path(&path)
+                .expect("valid URI should parse");
+            assert_eq!(uri.component, component, "{message}: component");
+            assert_eq!(uri.entity.as_deref(), entity, "{message}: entity");
+            assert_eq!(uri.topic, topic, "{message}: topic");
+        }
+
+        let invalid_cases = [
+            (
+                "/on/contracts/withdraw".to_string(),
+                "contracts without entity should fail parsing",
+            ),
+            (
+                format!("/on/contracts:{DUMMY_ENTITY}/"),
+                "empty topic should fail parsing",
+            ),
+            (
+                format!("/on/contracts:{DUMMY_ENTITY}"),
+                "missing topic segment should fail parsing",
+            ),
+            (
+                "/on/blocks".to_string(),
+                "component only path should fail parsing",
+            ),
+            (
+                "/on//topic".to_string(),
+                "empty component should fail parsing",
+            ),
+            (
+                "/on/blocks/topic/".to_string(),
+                "trailing slash should fail parsing",
+            ),
+            (
+                "/on/blocks/topic/extra".to_string(),
+                "extra path segment should fail parsing",
+            ),
+            (
+                "/on/contracts:/topic".to_string(),
+                "empty entity should fail parsing",
+            ),
+            (
+                format!("/invalid/contracts:{DUMMY_ENTITY}/topic"),
+                "invalid prefix should fail parsing",
+            ),
+        ];
+
+        for (path, message) in invalid_cases {
+            let uri = RuesEventUri::parse_from_path(&path);
+            assert!(uri.is_none(), "{message}");
+        }
     }
 
     #[test]
-    fn parse_blocks_without_entity() {
-        // Blocks can omit entity (wildcard)
-        let uri = RuesEventUri::parse_from_path("/on/blocks/accepted")
-            .expect("Should parse successfully");
+    fn parse_request_header_value_cases() {
+        enum HeaderParseExpectation {
+            Value(serde_json::Value),
+            InvalidPayload,
+        }
 
-        assert_eq!(uri.component, "blocks");
-        assert_eq!(uri.entity, None);
-        assert_eq!(uri.topic, "accepted");
-    }
+        let cases = vec![
+            (
+                "sign",
+                HeaderValue::from_static("1234"),
+                HeaderParseExpectation::Value(serde_json::Value::String(
+                    "1234".to_string(),
+                )),
+            ),
+            (
+                "rusk-gqlvar-limit",
+                HeaderValue::from_static("1234"),
+                HeaderParseExpectation::Value(serde_json::json!(1234)),
+            ),
+            (
+                "sign",
+                HeaderValue::from_bytes(&[0xff])
+                    .expect("header value construction should succeed"),
+                HeaderParseExpectation::InvalidPayload,
+            ),
+        ];
 
-    #[test]
-    fn parse_transactions_without_entity() {
-        // Transactions can omit entity (wildcard)
-        let uri = RuesEventUri::parse_from_path("/on/transactions/included")
-            .expect("Should parse successfully");
-
-        assert_eq!(uri.component, "transactions");
-        assert_eq!(uri.entity, None);
-        assert_eq!(uri.topic, "included");
-    }
-
-    #[test]
-    fn parse_normalizes_to_lowercase() {
-        let uri = RuesEventUri::parse_from_path("/on/BLOCKS/ACCEPTED")
-            .expect("Should parse successfully");
-
-        assert_eq!(uri.component, "blocks");
-        assert_eq!(uri.topic, "accepted");
-    }
-
-    #[test]
-    fn parse_entity_with_colon() {
-        // Entity can contain colons (split_once only splits on first colon)
-        let uri = RuesEventUri::parse_from_path(
-            "/on/contracts:entity:with:colons/topic",
-        )
-        .expect("Should parse successfully");
-
-        assert_eq!(uri.component, "contracts");
-        assert_eq!(uri.entity, Some("entity:with:colons".to_string()));
-        assert_eq!(uri.topic, "topic");
-    }
-
-    // invalid parsing
-
-    #[test]
-    fn parse_contracts_without_entity_fails() {
-        // Contracts component requires an entity (contract ID)
-        let uri = RuesEventUri::parse_from_path("/on/contracts/withdraw");
-        assert!(
-            uri.is_none(),
-            "Contracts without entity should fail parsing"
-        );
-    }
-
-    #[test]
-    fn parse_empty_topic_with_trailing_slash_fails() {
-        let uri = RuesEventUri::parse_from_path(&format!(
-            "/on/contracts:{DUMMY_ENTITY}/"
-        ));
-        assert!(uri.is_none(), "Empty topic should fail parsing");
-    }
-
-    #[test]
-    fn parse_missing_topic_segment_fails() {
-        let uri = RuesEventUri::parse_from_path(&format!(
-            "/on/contracts:{DUMMY_ENTITY}"
-        ));
-        assert!(uri.is_none(), "Missing topic segment should fail parsing");
-    }
-
-    #[test]
-    fn parse_component_only_fails() {
-        let uri = RuesEventUri::parse_from_path("/on/blocks");
-        assert!(uri.is_none(), "Missing topic should fail parsing");
-    }
-
-    #[test]
-    fn parse_invalid_prefix_fails() {
-        let uri = RuesEventUri::parse_from_path(&format!(
-            "/invalid/contracts:{DUMMY_ENTITY}/topic"
-        ));
-        assert!(uri.is_none(), "Invalid prefix should fail parsing");
+        for (key, value, expected) in cases {
+            match expected {
+                HeaderParseExpectation::Value(expected) => {
+                    let parsed = parse_request_header_value(key, &value)
+                        .expect("header parse should succeed");
+                    assert_eq!(parsed, expected);
+                }
+                HeaderParseExpectation::InvalidPayload => {
+                    let err = parse_request_header_value(key, &value)
+                        .expect_err("invalid header should fail");
+                    assert!(matches!(
+                        err,
+                        RequestParseError::InvalidPayload(_)
+                    ));
+                }
+            }
+        }
     }
 
     // matches test
