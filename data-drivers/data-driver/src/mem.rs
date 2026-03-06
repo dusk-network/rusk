@@ -26,5 +26,5 @@ pub extern "C" fn alloc(size: usize) -> *mut u8 {
 pub unsafe extern "C" fn dealloc(ptr: *mut u8, size: usize) {
     // SAFETY: The caller guarantees `ptr` was returned by `alloc` with
     // the same `size`, and has not been previously deallocated.
-    drop(unsafe { Vec::from_raw_parts(ptr, size, size) });
+    drop(unsafe { Vec::from_raw_parts(ptr, 0, size) });
 }
