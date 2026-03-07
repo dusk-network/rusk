@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reuse a shared secp256k1 context in `secp256k1_recover` to avoid per-call allocations (P1.2-6)
+
 ## [1.6.0] - 2026-02-27
 
 ### Added

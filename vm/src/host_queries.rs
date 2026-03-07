@@ -9,6 +9,7 @@
 use alloc::vec::Vec;
 
 use core::cell::Cell;
+use std::sync::LazyLock;
 
 use bytecheck::CheckBytes;
 use c_kzg::{Bytes32 as KzgBytes32, Bytes48};
@@ -45,6 +46,9 @@ thread_local! {
     static PLONK_VERSION: Cell<PlonkVersion> = const { Cell::new(PlonkVersion::V2) };
     static HARD_FORK: Cell<HardFork> = const { Cell::new(HardFork::PreFork) };
 }
+
+static SECP256K1_CONTEXT: LazyLock<Secp256k1<secp256k1::All>> =
+    LazyLock::new(Secp256k1::new);
 
 /// Active hardfork context for host-query rule selection.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -500,8 +504,7 @@ pub fn secp256k1_recover(
     };
     let msg = Message::from_digest(msg_hash);
 
-    let secp = Secp256k1::new();
-    let pk = match secp.recover_ecdsa(msg, &sig) {
+    let pk = match SECP256K1_CONTEXT.recover_ecdsa(msg, &sig) {
         Ok(pk) => pk,
         Err(e) => {
             warn!("vm: secp256k1 recovery failed ({e})");
