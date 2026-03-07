@@ -557,16 +557,37 @@ where
 }
 
 pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, "host_hash", &BlsScalar::default(), hash)
+    let cache_key =
+        *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_hash(cache_key);
+
+    wrap_host_query(
+        arg_buf,
+        arg_len,
+        "host_hash",
+        &BlsScalar::default(),
+        |arg| {
+            let result = cached.unwrap_or_else(|| hash(arg));
+            cache::put_hash(cache_key, result);
+            result
+        },
+    )
 }
 
 pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_poseidon_hash(hash);
+
     wrap_host_query(
         arg_buf,
         arg_len,
         "host_poseidon_hash",
         &BlsScalar::default(),
-        poseidon_hash,
+        |arg| {
+            let result = cached.unwrap_or_else(|| poseidon_hash(arg));
+            cache::put_poseidon_hash(hash, result);
+            result
+        },
     )
 }
 
@@ -612,12 +633,20 @@ pub(crate) fn host_verify_groth16_bn254(
 }
 
 pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_schnorr_verification(hash);
+
     wrap_host_query(
         arg_buf,
         arg_len,
         "host_verify_schnorr",
         &false,
-        |(msg, pk, sig)| verify_schnorr(msg, pk, sig),
+        |(msg, pk, sig)| {
+            let is_valid =
+                cached.unwrap_or_else(|| verify_schnorr(msg, pk, sig));
+            cache::put_schnorr_verification(hash, is_valid);
+            is_valid
+        },
     )
 }
 
@@ -643,40 +672,79 @@ pub(crate) fn host_verify_bls_multisig(
     arg_buf: &mut [u8],
     arg_len: u32,
 ) -> u32 {
+    let current_hard_fork = hard_fork();
+    let hash = bls_cache_key(current_hard_fork, &arg_buf[..arg_len as usize]);
+    let cached = cache::get_bls_multisig_verification(hash);
+
     wrap_host_query(
         arg_buf,
         arg_len,
         "host_verify_bls_multisig",
         &false,
-        |(msg, keys, sig)| verify_bls_multisig(msg, keys, sig),
+        |(msg, keys, sig)| {
+            let is_valid =
+                cached.unwrap_or_else(|| verify_bls_multisig(msg, keys, sig));
+            cache::put_bls_multisig_verification(hash, is_valid);
+            is_valid
+        },
     )
 }
 
 pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], keccak256)
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_keccak256(hash);
+
+    wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], |arg| {
+        let output = cached.unwrap_or_else(|| keccak256(arg));
+        cache::put_keccak256(hash, output);
+        output
+    })
 }
 
 pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], sha256)
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_sha256(hash);
+
+    wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], |arg| {
+        let output = cached.unwrap_or_else(|| sha256(arg));
+        cache::put_sha256(hash, output);
+        output
+    })
 }
 
 pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_kzg_verification(hash);
+
     wrap_host_query(
         arg_buf,
         arg_len,
         "host_verify_kzg_proof",
         &false,
-        |(commitment, z, y, proof)| verify_kzg_proof(commitment, z, y, proof),
+        |(commitment, z, y, proof)| {
+            let is_valid = cached
+                .unwrap_or_else(|| verify_kzg_proof(commitment, z, y, proof));
+            cache::put_kzg_verification(hash, is_valid);
+            is_valid
+        },
     )
 }
 
 pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cached = cache::get_secp256k1_recover(hash);
+
     wrap_host_query(
         arg_buf,
         arg_len,
         "host_secp256k1_recover",
         &Option::<[u8; 65]>::None,
-        |(msg_hash, sig)| secp256k1_recover(msg_hash, sig),
+        |(msg_hash, sig)| {
+            let recovered =
+                cached.unwrap_or_else(|| secp256k1_recover(msg_hash, sig));
+            cache::put_secp256k1_recover(hash, recovered);
+            recovered
+        },
     )
 }
 
