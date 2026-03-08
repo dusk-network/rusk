@@ -26,7 +26,7 @@ pub(crate) struct WalletArgs {
     #[arg(short, long)]
     pub network: Option<String>,
 
-    /// Set the password for wallet's creation
+    /// Set the wallet password. Prefer the prompt or `RUSK_WALLET_PWD`; use `--password` only for automation when other options are not practical
     #[arg(long, env = "RUSK_WALLET_PWD")]
     pub password: Option<String>,
 
