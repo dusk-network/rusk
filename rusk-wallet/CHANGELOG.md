@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Zeroize the validated mnemonic phrase immediately after CLI restore derives the wallet
 - Fix TUI stdout artifacting and stale frame residue after startup sync
 - Ignore placeholder `block 0` sync values so invalid heights are not shown in overview
 - Restore pre-submit balance checks in TUI command flow for clearer insufficient-balance feedback
