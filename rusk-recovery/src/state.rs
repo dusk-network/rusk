@@ -6,7 +6,7 @@
 
 use std::error::Error;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use dusk_core::JubJubScalar;
 use dusk_core::abi::ContractId;
@@ -304,10 +304,9 @@ fn load_state<P: AsRef<Path>>(
         Theme::default().action("Retrieving"),
     );
     let url = Url::parse(url)?;
-    let buffer = match url.scheme() {
-        "http" | "https" => http::download(url)?,
-        "file" => fs::read(url.path())?,
-        _ => Err("Unsupported scheme for base state")?,
+    let buffer = match classify_base_state_url(url)? {
+        BaseStateSource::Https(url) => http::download(url)?,
+        BaseStateSource::File(path) => fs::read(path)?,
     };
 
     tar::unarchive(&buffer, state_dir)?;
@@ -320,6 +319,26 @@ fn load_state<P: AsRef<Path>>(
     );
 
     Ok((vm, commit))
+}
+
+enum BaseStateSource {
+    Https(Url),
+    File(PathBuf),
+}
+
+fn classify_base_state_url(url: Url) -> Result<BaseStateSource, Box<dyn Error>> {
+    match url.scheme() {
+        "https" => Ok(BaseStateSource::Https(url)),
+        "file" => Ok(BaseStateSource::File(PathBuf::from(url.path()))),
+        "http" => Err(
+            "Refusing insecure http:// base_state URL; use https:// or file://"
+                .into(),
+        ),
+        scheme => Err(format!(
+            "Unsupported scheme `{scheme}` for base state; use https:// or file://"
+        )
+        .into()),
+    }
 }
 
 #[cfg(test)]
@@ -356,5 +375,40 @@ mod tests {
         assert_eq!(root, mainnet_root);
 
         Ok(())
+    }
+
+    #[test]
+    fn validate_base_state_url_policy() {
+        let cases = [
+            ("https://example.com/state.tar", Ok(())),
+            ("file:///tmp/state.tar", Ok(())),
+            (
+                "http://example.com/state.tar",
+                Err("Refusing insecure http://"),
+            ),
+            (
+                "ftp://example.com/state.tar",
+                Err("Unsupported scheme"),
+            ),
+        ];
+
+        for (raw, expected) in cases {
+            let url = Url::parse(raw).unwrap();
+
+            match (classify_base_state_url(url), expected) {
+                (Ok(BaseStateSource::Https(_)), Ok(())) => {}
+                (Ok(BaseStateSource::File(_)), Ok(())) => {}
+                (Err(err), Err(fragment)) => {
+                    assert!(err.to_string().contains(fragment), "{raw}");
+                }
+                (result, expected) => {
+                    panic!(
+                        "unexpected validation result for {raw}: got {:?}, expected {:?}",
+                        result.as_ref().map(|_| ()),
+                        expected
+                    );
+                }
+            }
+        }
     }
 }
