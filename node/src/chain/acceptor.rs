@@ -313,9 +313,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub async fn init_delay(tip_ts: u64) {
-        let spin_time: u64 = env::var("RUSK_CONSENSUS_SPIN_TIME")
-            .unwrap_or_default()
-            .parse()
+        let spin_time = env::var("RUSK_CONSENSUS_SPIN_TIME")
+            .ok()
+            .and_then(|value| value.parse().ok())
             .unwrap_or_default();
 
         let spin_time = cmp::max(spin_time, tip_ts);
@@ -361,9 +361,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             tokio::time::sleep(chunk).await;
             now = SystemTime::now();
         }
-        // SAFETY: This is only called during initialization, before any
-        // threads that read this variable are spawned.
-        unsafe { env::remove_var("RUSK_CONSENSUS_SPIN_TIME") };
     }
 
     pub async fn spawn_task(&self) {
