@@ -405,6 +405,7 @@ impl node_data::Serializable for LightBlock {
 #[cfg(test)]
 mod tests {
     use fake::{Fake, Faker};
+    use node_data::hard_fork;
     use node_data::ledger;
 
     use super::*;
@@ -416,6 +417,7 @@ mod tests {
 
             let b: Block = Faker.fake();
             assert!(!b.txs().is_empty());
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
 
             let hash = b.header().hash;
 
@@ -423,7 +425,7 @@ mod tests {
                 db.update(|txn| {
                     txn.store_block(
                         b.header(),
-                        &to_spent_txs(b.txs()),
+                        &spent_txs,
                         b.faults(),
                         Label::Final(3),
                     )?;
@@ -443,7 +445,7 @@ mod tests {
                 // Assert all transactions are fully fetched from ledger as
                 // well.
                 for pos in 0..b.txs().len() {
-                    assert_eq!(db_blk.txs()[pos].id(), b.txs()[pos].id());
+                    assert_eq!(db_blk.txs()[pos], spent_txs[pos].inner);
                 }
 
                 // Assert all faults are fully fetched from ledger as
@@ -474,10 +476,11 @@ mod tests {
         TestWrapper::new("test_read_only").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: Block = Faker.fake();
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
             db.update_dry_run(true, |txn| {
                 txn.store_block(
                     b.header(),
-                    &to_spent_txs(b.txs()),
+                    &spent_txs,
                     b.faults(),
                     Label::Final(3),
                 )
@@ -498,6 +501,7 @@ mod tests {
         TestWrapper::new("test_transaction_isolation").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let mut b: Block = Faker.fake();
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
             let hash = b.header().hash;
 
             db.view(|txn| {
@@ -508,7 +512,7 @@ mod tests {
                         inner
                             .store_block(
                                 b.header(),
-                                &to_spent_txs(b.txs()),
+                                &spent_txs,
                                 b.faults(),
                                 Label::Final(3),
                             )
@@ -720,11 +724,15 @@ mod tests {
         });
     }
 
-    fn to_spent_txs(txs: &Vec<Transaction>) -> Vec<SpentTransaction> {
+    fn to_spent_txs(
+        block_height: u64,
+        txs: &[Transaction],
+    ) -> Vec<SpentTransaction> {
+        let format = hard_fork::ledger_tx_format_at(block_height);
         txs.iter()
             .map(|t| SpentTransaction {
-                inner: t.clone(),
-                block_height: 0,
+                inner: t.clone().with_format(format),
+                block_height,
                 gas_spent: 0,
                 err: None,
             })
@@ -737,13 +745,14 @@ mod tests {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: Block = Faker.fake();
             assert!(!b.txs().is_empty());
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
 
             // Store a block
             assert!(
                 db.update(|txn| {
                     txn.store_block(
                         b.header(),
-                        &to_spent_txs(b.txs()),
+                        &spent_txs,
                         b.faults(),
                         Label::Final(3),
                     )?;
@@ -755,14 +764,13 @@ mod tests {
             // Assert all transactions of the accepted (stored) block are
             // accessible by hash.
             db.view(|v| {
-                for t in b.txs().iter() {
-                    assert!(
-                        v.ledger_tx(&t.id())
-                            .expect("should not return error")
-                            .expect("should find a transaction")
-                            .inner
-                            .eq(t)
-                    );
+                for expected in &spent_txs {
+                    let fetched = v
+                        .ledger_tx(&expected.inner.id())
+                        .expect("should not return error")
+                        .expect("should find a transaction");
+                    assert_eq!(fetched.inner, expected.inner);
+                    assert_eq!(fetched.block_height, expected.block_height);
                 }
             });
         });
@@ -773,13 +781,14 @@ mod tests {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: Block = Faker.fake();
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
 
             // Store a block
             assert!(
                 db.update(|txn| {
                     txn.store_block(
                         b.header(),
-                        &to_spent_txs(b.txs()),
+                        &spent_txs,
                         b.faults(),
                         Label::Attested(3),
                     )?;
@@ -805,13 +814,14 @@ mod tests {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: Block = Faker.fake();
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
 
             // Store a block
             assert!(
                 db.update(|txn| {
                     txn.store_block(
                         b.header(),
-                        &to_spent_txs(b.txs()),
+                        &spent_txs,
                         b.faults(),
                         Label::Attested(3),
                     )?;
@@ -840,12 +850,13 @@ mod tests {
         t.run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
+            let spent_txs = to_spent_txs(b.header().height, b.txs());
 
             assert!(
                 db.update(|ut| {
                     ut.store_block(
                         b.header(),
-                        &to_spent_txs(b.txs()),
+                        &spent_txs,
                         b.faults(),
                         Label::Final(3),
                     )?;

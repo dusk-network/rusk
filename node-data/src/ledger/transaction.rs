@@ -6,19 +6,24 @@
 
 use dusk_bytes::Serializable as DuskSerializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
+use dusk_core::transfer::{
+    DecodedTransaction as DecodedProtocolTransaction,
+    Transaction as ProtocolTransaction, TransactionFormat,
+};
 use serde::Serialize;
 use sha3::Digest;
 
 use crate::Serializable;
+use crate::hard_fork;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: u32,
     pub r#type: u32,
     pub inner: ProtocolTransaction,
+    pub(crate) format: TransactionFormat,
     pub(crate) size: Option<usize>,
 }
 
@@ -41,6 +46,19 @@ impl From<ProtocolTransaction> for Transaction {
             inner: value,
             r#type: 1,
             version: 1,
+            format: TransactionFormat::Aegis,
+            size: None,
+        }
+    }
+}
+
+impl From<DecodedProtocolTransaction> for Transaction {
+    fn from(value: DecodedProtocolTransaction) -> Self {
+        Self {
+            inner: value.transaction,
+            r#type: 1,
+            version: 1,
+            format: value.format,
             size: None,
         }
     }
@@ -83,6 +101,54 @@ impl SpentTransaction {
 }
 
 impl Transaction {
+    fn decode_with_selected_format(
+        bytes: &[u8],
+        format: TransactionFormat,
+    ) -> Result<Self, dusk_bytes::Error> {
+        ProtocolTransaction::decode_with_format(format, bytes).map(Into::into)
+    }
+
+    pub fn decode_for_ingress(
+        bytes: &[u8],
+        block_height: u64,
+    ) -> Result<Self, dusk_bytes::Error> {
+        Self::decode_with_selected_format(
+            bytes,
+            hard_fork::ingress_tx_format_at(block_height),
+        )
+    }
+
+    pub fn decode_for_ledger(
+        bytes: &[u8],
+        block_height: u64,
+    ) -> Result<Self, dusk_bytes::Error> {
+        Self::decode_with_selected_format(
+            bytes,
+            hard_fork::ledger_tx_format_at(block_height),
+        )
+    }
+
+    pub fn decode_any(bytes: &[u8]) -> Result<Self, dusk_bytes::Error> {
+        ProtocolTransaction::decode_any(bytes).map(Into::into)
+    }
+
+    pub fn with_format(mut self, format: TransactionFormat) -> Self {
+        self.format = format;
+        self
+    }
+
+    pub fn format(&self) -> TransactionFormat {
+        self.format
+    }
+
+    pub fn protocol_bytes(&self) -> Vec<u8> {
+        self.encode_transaction(&self.inner)
+    }
+
+    fn encode_transaction(&self, transaction: &ProtocolTransaction) -> Vec<u8> {
+        transaction.encode_for_format(self.format)
+    }
+
     /// Computes the hash digest of the entire transaction data.
     ///
     /// This method returns the Sha3 256 digest of the entire
@@ -95,10 +161,10 @@ impl Transaction {
     /// An array of 32 bytes representing the hash of the transaction.
     pub fn digest(&self) -> [u8; 32] {
         let tx_bytes = self.inner.blob_to_memo().map_or_else(
-            || self.inner.to_var_bytes(),
+            || self.protocol_bytes(),
             |mut blob_tx| {
                 let _ = blob_tx.strip_blobs();
-                blob_tx.to_var_bytes()
+                self.encode_transaction(&blob_tx)
             },
         );
         sha3::Sha3_256::digest(tx_bytes).into()
@@ -149,6 +215,7 @@ impl PartialEq<Self> for Transaction {
     fn eq(&self, other: &Self) -> bool {
         self.r#type == other.r#type
             && self.version == other.version
+            && self.format == other.format
             && self.id() == other.id()
     }
 }
@@ -212,7 +279,8 @@ pub mod faker {
 
     impl<T> Dummy<T> for SpentTransaction {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, _rng: &mut R) -> Self {
-            let tx = gen_dummy_tx(1_000_000);
+            let tx = gen_dummy_tx(1_000_000)
+                .with_format(TransactionFormat::PreAegis);
             SpentTransaction {
                 inner: tx,
                 block_height: 0,
