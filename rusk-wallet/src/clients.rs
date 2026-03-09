@@ -38,6 +38,7 @@ use super::cache::Cache;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
 use crate::{Address, Error, MAX_PROFILES};
+use dusk_core::transfer::TransactionFormat;
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";
@@ -171,6 +172,51 @@ impl State {
         sync_db(&self.client, &self.cache(), &self.store, self.status).await
     }
 
+    async fn next_propagation_format(
+        &self,
+    ) -> Result<TransactionFormat, Error> {
+        Ok(node_data::hard_fork::ingress_tx_format_at(
+            self.latest_block_height().await?.saturating_add(1),
+        ))
+    }
+
+    async fn latest_block_height(&self) -> Result<u64, Error> {
+        #[derive(serde::Deserialize)]
+        struct LatestBlockHeader {
+            height: u64,
+        }
+
+        #[derive(serde::Deserialize)]
+        struct LatestBlock {
+            header: LatestBlockHeader,
+        }
+
+        #[derive(serde::Deserialize)]
+        struct LatestBlocksResponse {
+            blocks: Vec<LatestBlock>,
+        }
+
+        let response = self
+            .client
+            .call(
+                "graphql",
+                None,
+                "query",
+                br"query { blocks(last: 1) { header { height } } }",
+            )
+            .await?;
+        let response =
+            serde_json::from_slice::<LatestBlocksResponse>(&response).map_err(
+                |_| Error::Rusk("Failed to parse latest block height".into()),
+            )?;
+
+        response
+            .blocks
+            .first()
+            .map(|block| block.header.height)
+            .ok_or_else(|| Error::Rusk("Failed to load latest block".into()))
+    }
+
     /// Requests that a node prove the given shielded transaction.
     /// Returns the transaction unchanged for unshielded transaction.
     pub async fn prove(&self, tx: Transaction) -> Result<Transaction, Error> {
@@ -202,7 +248,8 @@ impl State {
         tx: Transaction,
     ) -> Result<Transaction, Error> {
         let status = self.status;
-        let tx_bytes = tx.to_var_bytes();
+        let tx_bytes =
+            tx.encode_for_format(self.next_propagation_format().await?);
 
         status("Attempt to preverify tx...");
         let _ = self

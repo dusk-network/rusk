@@ -250,8 +250,12 @@ impl GraphQL {
         for spent_tx in block.transactions {
             let tx_raw = hex::decode(&spent_tx.raw)
                 .map_err(|_| GraphQLError::TxStatus)?;
-            let ph_tx = Transaction::from_slice(&tx_raw)
-                .map_err(|_| GraphQLError::BytesError)?;
+            let ph_tx = Transaction::decode_with_format(
+                node_data::hard_fork::ledger_tx_format_at(block_height),
+                &tx_raw,
+            )
+            .map(|decoded| decoded.transaction)
+            .map_err(|_| GraphQLError::BytesError)?;
             ret.push(BlockTransaction {
                 tx: ph_tx,
                 id: spent_tx.id,
