@@ -15,9 +15,12 @@ use zeroize::Zeroize;
 mod tests;
 
 use std::fmt;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
 
 use aes_gcm::AeadCore;
 use aes_gcm::Aes256Gcm;
@@ -890,7 +893,7 @@ impl Command {
 
         match (skip_recovery, seed_file) {
             (_, Some(file)) => {
-                let mut file = File::create(file)?;
+                let mut file = create_seed_file(file)?;
                 file.write_all(mnemonic.phrase().as_bytes())?
             }
             // skip phrase confirmation if explicitly
@@ -1080,4 +1083,38 @@ pub(crate) fn gen_salt() -> [u8; SALT_SIZE] {
 pub(crate) fn gen_iv() -> [u8; IV_SIZE] {
     let iv = Aes256Gcm::generate_nonce(OsRng);
     iv.into()
+}
+
+fn create_seed_file(path: &PathBuf) -> std::io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+
+    #[cfg(unix)]
+    options.mode(0o600);
+
+    options.open(path)
+}
+
+#[cfg(test)]
+mod unit_tests {
+    use super::create_seed_file;
+
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+
+    use tempfile::tempdir;
+
+    #[test]
+    #[cfg(unix)]
+    fn seed_file_is_created_owner_only() {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().join("seed.txt");
+
+        let file = create_seed_file(&path).unwrap();
+        drop(file);
+
+        let mode =
+            std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+    }
 }
