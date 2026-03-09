@@ -2,6 +2,9 @@ help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 test: ## Run Node tests
+	@RUST_LOG=error cargo test --release
+
+test-debug: ## Run Node tests with full output
 	@cargo test --release -- --nocapture
 
 binary: ## Build a binary
@@ -26,4 +29,4 @@ clippy: ## Run clippy
 doc: ## Run doc gen
 	@cargo doc --release
 
-.PHONY: test help binary clean
+.PHONY: test test-debug help binary clean

@@ -2,6 +2,12 @@ help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 test: ## Run tests
+	@RUST_LOG=error cargo test \
+		--release \
+		--all-features \
+		-- --test-threads 1
+
+test-debug: ## Run tests with full output
 	@cargo test \
 		--release \
 		--all-features \
@@ -17,4 +23,4 @@ clippy: ## Run clippy
 doc: ## Run doc gen
 	@cargo doc --release
 
-.PHONY: test clippy help
+.PHONY: test test-debug clippy help
