@@ -59,6 +59,7 @@ pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
     pub const FEATURE_HARDFORK_AEGIS: &str = "HARDFORK_AEGIS";
+    pub const FEATURE_HARDFORK_BOREAS: &str = "HARDFORK_BOREAS";
     pub const FEATURE_PLONK_V2: &str = "PLONK_V2";
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";

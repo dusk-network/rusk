@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
+  decoding.
+
 ### Changed
 
 - Consolidate node config resolution and chain-upgrade policy into a single internal path.

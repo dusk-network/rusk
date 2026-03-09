@@ -13,7 +13,6 @@ use std::sync::Arc;
 use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_vm::execute;
 use node::database::rocksdb::MD_HASH_KEY;
@@ -97,11 +96,21 @@ async fn preverify_tx(
     node: &RuskNode,
     data: &[u8],
 ) -> ChainResult<Transaction> {
-    let tx: Transaction = ProtocolTransaction::from_slice(data)
-        .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?
-        .into();
-
     let db = node.inner().database();
+    let tip_height = db
+        .read()
+        .await
+        .view(|db| db.latest_block())
+        .map_err(|e| {
+            ChainError::database(format!(
+                "Failed to load the latest block for tx decoding: {e}"
+            ))
+        })?
+        .header
+        .height;
+    let tx =
+        Transaction::decode_for_ingress(data, tip_height.saturating_add(1))
+            .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?;
     let vm = node.inner().vm_handler();
 
     MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
@@ -389,17 +398,9 @@ impl RuskNode {
     }
 
     async fn simulate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
-        let tx = ProtocolTransaction::from_slice(tx).map_err(|e| {
-            ChainError::invalid_input(format!("Invalid transaction: {e:?}"))
-        })?;
-        let (config, mut session, _plonk_version_guard, _hard_fork_guard) = {
+        let (config, mut session, _plonk_version_guard, _hard_fork_guard, tx) = {
             let vm_handler = self.inner().vm_handler();
             let vm_handler = vm_handler.read().await;
-            if tx.gas_limit() > vm_handler.get_block_gas_limit() {
-                return Err(ChainError::invalid_input(
-                    "Gas limit is too high.",
-                ));
-            }
             let tip = load_tip(&self.db())
                 .await
                 .map_err(|e| {
@@ -409,6 +410,17 @@ impl RuskNode {
                     ChainError::database("Could not find the tip")
                 })?;
             let height = tip.header.height.saturating_add(1);
+            let tx =
+                Transaction::decode_for_ingress(tx, height).map_err(|e| {
+                    ChainError::invalid_input(format!(
+                        "Invalid transaction: {e:?}"
+                    ))
+                })?;
+            if tx.inner.gas_limit() > vm_handler.get_block_gas_limit() {
+                return Err(ChainError::invalid_input(
+                    "Gas limit is too high.",
+                ));
+            }
             let config = vm_handler.vm_config.to_execution_config(height);
             let (plonk_version_guard, hard_fork_guard) =
                 set_vm_host_context(&vm_handler.vm_config, height);
@@ -419,9 +431,9 @@ impl RuskNode {
                         "Failed to initialize a session: {e}"
                     ))
                 })?;
-            (config, session, plonk_version_guard, hard_fork_guard)
+            (config, session, plonk_version_guard, hard_fork_guard, tx)
         };
-        let receipt = execute(&mut session, &tx, &config);
+        let receipt = execute(&mut session, &tx.inner, &config);
         let resp = match receipt {
             Ok(receipt) => json!({
                 "gas-spent": receipt.gas_spent,
