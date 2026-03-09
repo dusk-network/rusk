@@ -18,7 +18,7 @@ use rusk_wallet::{Error, dat::FileVersion as DatFileVersion};
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 use thiserror::Error as ThisError;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::command::TransactionHistory;
 
@@ -194,7 +194,7 @@ where
 /// Request the user to input the mnemonic phrase
 pub(crate) fn request_mnemonic_phrase(
     prompter: &dyn Prompt,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<Zeroizing<String>> {
     let mut attempt = 1;
     loop {
         let mut phrase =
@@ -202,7 +202,7 @@ pub(crate) fn request_mnemonic_phrase(
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(mnem) => {
-                let validated_phrase = mnem.to_string();
+                let validated_phrase = Zeroizing::new(mnem.into_phrase());
                 phrase.zeroize();
                 break Ok(validated_phrase);
             }

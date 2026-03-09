@@ -916,8 +916,12 @@ impl Command {
         wallet_path: &WalletPath,
         prompter: &dyn Prompt,
     ) -> anyhow::Result<Wallet<WalletFile>> {
-        // ask user for 12-word mnemonic phrase
-        let phrase = prompt::request_mnemonic_phrase(prompter)?;
+        // ask user for 12-word mnemonic phrase and derive the wallet before
+        // requesting a new wallet password so restore remains mnemonic-first
+        let mut w = {
+            let phrase = prompt::request_mnemonic_phrase(prompter)?;
+            Wallet::new(phrase.as_str())?
+        };
         let salt = gen_salt();
         let iv = gen_iv();
         // ask user for a password to secure the wallet, create the latest
@@ -928,8 +932,6 @@ impl Command {
             dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION),
             prompter,
         )?;
-        // create and store the recovered wallet
-        let mut w = Wallet::new(phrase)?;
         let path = wallet_path.clone();
         w.save_to(WalletFile {
             path,
