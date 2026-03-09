@@ -94,6 +94,17 @@ impl PartialEq for Transaction {
 impl Eq for Transaction {}
 
 impl Transaction {
+    fn from_slice_with(
+        buf: &[u8],
+        parse_payload: fn(&[u8]) -> Result<Payload, BytesError>,
+    ) -> Result<Self, BytesError> {
+        let mut buf = buf;
+        let payload = parse_payload(read_len_prefixed(&mut buf)?)?;
+        let proof = read_len_prefixed(&mut buf)?.into();
+
+        Ok(Self { payload, proof })
+    }
+
     /// Create a new phoenix transaction given the sender secret-key, receiver
     /// public-key, the input note positions in the transaction tree and the
     /// new output-notes.
@@ -565,27 +576,17 @@ impl Transaction {
     /// # Errors
     /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
-        let mut buf = buf;
+        Self::from_slice_with(buf, Payload::from_slice)
+    }
 
-        let payload_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-
-        if buf.len() < payload_len {
-            return Err(BytesError::InvalidData);
-        }
-        let (payload_buf, new_buf) = buf.split_at(payload_len);
-
-        let payload = Payload::from_slice(payload_buf)?;
-        buf = new_buf;
-
-        let proof_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        if buf.len() < proof_len {
-            return Err(BytesError::InvalidData);
-        }
-        let proof = buf[..proof_len].into();
-
-        Ok(Self { payload, proof })
+    /// Deserialize the transaction from bytes using the historical Phoenix
+    /// compatibility parser for finalized ledger data.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical for the historical Phoenix
+    /// ledger-compat parser.
+    pub fn from_slice_ledger_compat(buf: &[u8]) -> Result<Self, BytesError> {
+        Self::from_slice_with(buf, Payload::from_slice_ledger_compat)
     }
 
     /// Return input bytes to hash the Transaction.
@@ -707,6 +708,25 @@ impl PartialEq for Payload {
 impl Eq for Payload {}
 
 impl Payload {
+    fn from_slice_with(
+        buf: &[u8],
+        parse_skeleton: fn(&[u8]) -> Result<TxSkeleton, BytesError>,
+        parse_fee: fn(&mut &[u8]) -> Result<Fee, BytesError>,
+    ) -> Result<Self, BytesError> {
+        let mut buf = buf;
+        let chain_id = u8::from_reader(&mut buf)?;
+        let tx_skeleton = parse_skeleton(read_len_prefixed(&mut buf)?)?;
+        let fee = parse_fee(&mut buf)?;
+        let data = TransactionData::from_slice(buf)?;
+
+        Ok(Self {
+            chain_id,
+            tx_skeleton,
+            fee,
+            data,
+        })
+    }
+
     /// Serialize the `Payload` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -731,29 +751,21 @@ impl Payload {
     /// # Errors
     /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
-        let mut buf = buf;
+        Self::from_slice_with(buf, TxSkeleton::from_slice, Fee::read_strict)
+    }
 
-        let chain_id = u8::from_reader(&mut buf)?;
-
-        // deserialize the tx-skeleton
-        #[allow(clippy::cast_possible_truncation)]
-        let skeleton_len = usize::try_from(u64::from_reader(&mut buf)?)
-            .map_err(|_| BytesError::InvalidData)?;
-        let tx_skeleton = TxSkeleton::from_slice(buf)?;
-        buf = &buf[skeleton_len..];
-
-        // deserialize fee
-        let fee = Fee::from_reader(&mut buf)?;
-
-        // deserialize optional transaction data
-        let data = TransactionData::from_slice(buf)?;
-
-        Ok(Self {
-            chain_id,
-            tx_skeleton,
-            fee,
-            data,
-        })
+    /// Deserialize the payload from bytes using the historical Phoenix
+    /// compatibility parser for finalized ledger data.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical for the historical Phoenix
+    /// ledger-compat parser.
+    pub fn from_slice_ledger_compat(buf: &[u8]) -> Result<Self, BytesError> {
+        Self::from_slice_with(
+            buf,
+            TxSkeleton::from_slice_legacy_compat,
+            Fee::read_legacy_compat,
+        )
     }
 
     /// Return input bytes to hash the payload.
@@ -804,6 +816,8 @@ impl PartialEq for Fee {
 impl Eq for Fee {}
 
 impl Fee {
+    const SIZE: usize = 2 * u64::SIZE + StealthAddress::SIZE + Sender::SIZE;
+
     /// Create a new Fee with inner randomness
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(
@@ -895,9 +909,62 @@ impl Fee {
             self.sender,
         )
     }
+
+    fn read_strict(reader: &mut &[u8]) -> Result<Self, BytesError> {
+        Self::from_reader(reader)
+    }
+
+    fn read_legacy_compat(reader: &mut &[u8]) -> Result<Self, BytesError> {
+        let bytes = take_fixed_bytes::<{ Fee::SIZE }>(reader)?;
+        let mut reader = &bytes[..];
+        let gas_limit = u64::from_reader(&mut reader)?;
+        let gas_price = u64::from_reader(&mut reader)?;
+
+        let stealth_address =
+            StealthAddress::from_bytes_legacy_compat(take_fixed_bytes::<
+                { StealthAddress::SIZE },
+            >(
+                &mut reader
+            )?)?;
+        let sender = Sender::from_bytes_legacy_compat(take_fixed_bytes::<
+            { Sender::SIZE },
+        >(&mut reader)?)?;
+
+        Ok(Fee {
+            gas_limit,
+            gas_price,
+            stealth_address,
+            sender,
+        })
+    }
 }
 
-const SIZE: usize = 2 * u64::SIZE + StealthAddress::SIZE + Sender::SIZE;
+const SIZE: usize = Fee::SIZE;
+
+fn read_len_prefixed<'a>(buf: &mut &'a [u8]) -> Result<&'a [u8], BytesError> {
+    let len = usize::try_from(u64::from_reader(buf)?)
+        .map_err(|_| BytesError::InvalidData)?;
+
+    if buf.len() < len {
+        return Err(BytesError::InvalidData);
+    }
+
+    let (bytes, rest) = buf.split_at(len);
+    *buf = rest;
+    Ok(bytes)
+}
+
+fn take_fixed_bytes<'a, const N: usize>(
+    buf: &mut &'a [u8],
+) -> Result<&'a [u8; N], BytesError> {
+    if buf.len() < N {
+        return Err(BytesError::InvalidData);
+    }
+
+    let (bytes, rest) = buf.split_at(N);
+    *buf = rest;
+    bytes.try_into().map_err(|_| BytesError::InvalidData)
+}
 
 impl Serializable<SIZE> for Fee {
     type Error = BytesError;
@@ -1064,6 +1131,60 @@ pub trait Prove {
 mod tests {
     use super::*;
 
+    const HISTORICAL_R: [u8; 32] = [
+        0x93, 0x98, 0xf3, 0x42, 0x62, 0x20, 0x2d, 0x7f, 0x24, 0x57, 0x74, 0xef,
+        0xd6, 0x51, 0xa5, 0x03, 0xcb, 0x7a, 0x4f, 0x6d, 0x7c, 0xcf, 0x23, 0x40,
+        0x4d, 0x17, 0xc2, 0xbf, 0xf3, 0x0e, 0x68, 0xa9,
+    ];
+
+    const HISTORICAL_NOTE_PK: [u8; 32] = [
+        0x0a, 0x8e, 0x2e, 0x57, 0xa2, 0x2d, 0x40, 0xb5, 0x51, 0x22, 0x38, 0x9f,
+        0x32, 0x41, 0x7f, 0x20, 0xf8, 0x4d, 0xd7, 0x0b, 0x33, 0x88, 0x60, 0x42,
+        0xe4, 0x44, 0xc4, 0x5f, 0x5d, 0x50, 0x4b, 0x8d,
+    ];
+
+    fn historical_note_bytes() -> [u8; Note::SIZE] {
+        let mut bytes = [0u8; Note::SIZE];
+        bytes[0] = 0; // transparent note
+
+        let mut offset = 1 + JubJubAffine::SIZE;
+        bytes[offset..offset + 32].copy_from_slice(&HISTORICAL_R);
+        bytes[offset + 32..offset + 64].copy_from_slice(&HISTORICAL_NOTE_PK);
+        offset += StealthAddress::SIZE + u64::SIZE + NOTE_VAL_ENC_SIZE;
+
+        bytes[offset] = 1; // Sender::ContractInfo
+        bytes
+    }
+
+    fn historical_protocol_tx_bytes() -> Vec<u8> {
+        let mut skeleton = Vec::new();
+        skeleton.extend(BlsScalar::from(0u64).to_bytes());
+        skeleton.extend(0u64.to_bytes());
+        skeleton.extend(historical_note_bytes());
+        skeleton.extend(Note::empty().to_bytes());
+        skeleton.extend(0u64.to_bytes());
+        skeleton.extend(0u64.to_bytes());
+
+        let mut fee = [0u8; Fee::SIZE];
+        fee[2 * u64::SIZE..2 * u64::SIZE + StealthAddress::SIZE]
+            .copy_from_slice(&StealthAddress::default().to_bytes());
+        fee[2 * u64::SIZE + StealthAddress::SIZE] = 1;
+
+        let mut payload = Vec::new();
+        payload.push(0);
+        payload.extend((skeleton.len() as u64).to_bytes());
+        payload.extend(skeleton);
+        payload.extend(fee);
+        payload.extend(TransactionData::option_to_var_bytes(None));
+
+        let mut tx = Vec::new();
+        tx.push(0);
+        tx.extend((payload.len() as u64).to_bytes());
+        tx.extend(payload);
+        tx.extend(0u64.to_bytes());
+        tx
+    }
+
     #[test]
     fn tx_skeleton_from_slice_rejects_unbounded_nullifier_count_without_panicking()
      {
@@ -1078,5 +1199,25 @@ mod tests {
 
         let err = TxSkeleton::from_slice(&bytes).unwrap_err();
         assert_eq!(err, BytesError::InvalidData);
+    }
+
+    #[test]
+    fn ledger_compat_accepts_historical_non_subgroup_note_pk() {
+        let tx = historical_protocol_tx_bytes();
+
+        assert!(
+            crate::transfer::Transaction::decode_with_format(
+                crate::transfer::TransactionFormat::Aegis,
+                &tx,
+            )
+            .is_err()
+        );
+        assert!(
+            crate::transfer::Transaction::decode_with_format(
+                crate::transfer::TransactionFormat::PreAegis,
+                &tx,
+            )
+            .is_ok()
+        );
     }
 }

@@ -188,5 +188,5 @@ dusk-jubjub = { git = "https://github.com/dusk-network/jubjub-private.git", rev 
 jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", rev = "1f0d481fb29282c69fdc0063a0404cb89a53bd10" }
 piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "66ddb31693ffb0fd5a4faac3c80930e6228e0836" }
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "66ddb31693ffb0fd5a4faac3c80930e6228e0836" }
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3" }
-phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3" }
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
+phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }

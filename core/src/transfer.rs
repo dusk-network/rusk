@@ -70,6 +70,73 @@ pub const MINT_TOPIC: &str = "mint";
 /// Topic for the mint to contract event.
 pub const MINT_CONTRACT_TOPIC: &str = "mint_c";
 
+const BOREAS_FORMAT_VERSION: u8 = 2;
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[repr(u8)]
+enum TransactionTag {
+    LegacyPhoenix = 0,
+    LegacyMoonlight = 1,
+    VersionedPhoenix = 2,
+    VersionedMoonlight = 3,
+}
+
+impl TryFrom<u8> for TransactionTag {
+    type Error = BytesError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::LegacyPhoenix),
+            1 => Ok(Self::LegacyMoonlight),
+            2 => Ok(Self::VersionedPhoenix),
+            3 => Ok(Self::VersionedMoonlight),
+            _ => Err(BytesError::InvalidData),
+        }
+    }
+}
+
+impl TransactionTag {
+    fn from_transaction(
+        transaction: &Transaction,
+        format: TransactionFormat,
+    ) -> Self {
+        match (transaction, format) {
+            (Transaction::Phoenix(_), TransactionFormat::Boreas) => {
+                Self::VersionedPhoenix
+            }
+            (Transaction::Moonlight(_), TransactionFormat::Boreas) => {
+                Self::VersionedMoonlight
+            }
+            (Transaction::Phoenix(_), _) => Self::LegacyPhoenix,
+            (Transaction::Moonlight(_), _) => Self::LegacyMoonlight,
+        }
+    }
+
+    fn is_versioned(self) -> bool {
+        matches!(self, Self::VersionedPhoenix | Self::VersionedMoonlight)
+    }
+}
+
+/// Canonical protocol transaction format.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum TransactionFormat {
+    /// Historical transactions before AEGIS.
+    PreAegis,
+    /// Historical and produced transactions under AEGIS rules.
+    Aegis,
+    /// Explicitly versioned transactions introduced in the Boreas era.
+    Boreas,
+}
+
+/// Result of a version-aware transaction decode.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DecodedTransaction {
+    /// Decoded semantic transaction.
+    pub transaction: Transaction,
+    /// Canonical transaction format used for the decoded bytes.
+    pub format: TransactionFormat,
+}
+
 /// The transaction used by the transfer contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -82,6 +149,110 @@ pub enum Transaction {
 }
 
 impl Transaction {
+    fn decode_tagged(
+        tag: TransactionTag,
+        buf: &[u8],
+        phoenix_tag: TransactionTag,
+        moonlight_tag: TransactionTag,
+        parse_phoenix: fn(&[u8]) -> Result<PhoenixTransaction, BytesError>,
+    ) -> Result<Transaction, BytesError> {
+        match tag {
+            tag if tag == phoenix_tag => Ok(Self::Phoenix(parse_phoenix(buf)?)),
+            tag if tag == moonlight_tag => {
+                Ok(Self::Moonlight(MoonlightTransaction::from_slice(buf)?))
+            }
+            _ => Err(BytesError::InvalidData),
+        }
+    }
+
+    fn decode_legacy(
+        format: TransactionFormat,
+        buf: &[u8],
+        parse_phoenix: fn(&[u8]) -> Result<PhoenixTransaction, BytesError>,
+    ) -> Result<DecodedTransaction, BytesError> {
+        let mut buf = buf;
+        let family_tag = TransactionTag::try_from(u8::from_reader(&mut buf)?)?;
+
+        let transaction = Self::decode_tagged(
+            family_tag,
+            buf,
+            TransactionTag::LegacyPhoenix,
+            TransactionTag::LegacyMoonlight,
+            parse_phoenix,
+        )?;
+
+        Ok(DecodedTransaction {
+            transaction,
+            format,
+        })
+    }
+
+    fn decode_boreas(buf: &[u8]) -> Result<DecodedTransaction, BytesError> {
+        let mut buf = buf;
+        let family_tag = TransactionTag::try_from(u8::from_reader(&mut buf)?)?;
+        let format_version = u8::from_reader(&mut buf)?;
+
+        if format_version != BOREAS_FORMAT_VERSION {
+            return Err(BytesError::InvalidData);
+        }
+
+        let transaction = Self::decode_tagged(
+            family_tag,
+            buf,
+            TransactionTag::VersionedPhoenix,
+            TransactionTag::VersionedMoonlight,
+            PhoenixTransaction::from_slice,
+        )?;
+
+        Ok(DecodedTransaction {
+            transaction,
+            format: TransactionFormat::Boreas,
+        })
+    }
+
+    /// Decode a transaction according to the selected protocol format.
+    ///
+    /// # Errors
+    /// Returns [`BytesError::InvalidData`] when the bytes do not match the
+    /// transaction families or formats accepted under `format`.
+    pub fn decode_with_format(
+        format: TransactionFormat,
+        buf: &[u8],
+    ) -> Result<DecodedTransaction, BytesError> {
+        match format {
+            TransactionFormat::PreAegis => Self::decode_legacy(
+                format,
+                buf,
+                PhoenixTransaction::from_slice_ledger_compat,
+            ),
+            TransactionFormat::Aegis => {
+                Self::decode_legacy(format, buf, PhoenixTransaction::from_slice)
+            }
+            TransactionFormat::Boreas => Self::decode_boreas(buf),
+        }
+    }
+
+    /// Decode a transaction in any currently supported format.
+    ///
+    /// # Errors
+    /// Returns [`BytesError::InvalidData`] when the bytes do not encode a
+    /// supported transaction family or explicit format version.
+    pub fn decode_any(buf: &[u8]) -> Result<DecodedTransaction, BytesError> {
+        let tag = TransactionTag::try_from(
+            buf.first().copied().ok_or(BytesError::InvalidData)?,
+        )?;
+
+        if tag.is_versioned() {
+            Self::decode_boreas(buf)
+        } else {
+            Self::decode_legacy(
+                TransactionFormat::Aegis,
+                buf,
+                PhoenixTransaction::from_slice,
+            )
+        }
+    }
+
     /// Create a new phoenix transaction.
     ///
     /// # Errors
@@ -372,21 +543,27 @@ impl Transaction {
 
     /// Serialize the transaction into a byte buffer.
     #[must_use]
-    pub fn to_var_bytes(&self) -> Vec<u8> {
+    pub fn encode_for_format(&self, format: TransactionFormat) -> Vec<u8> {
         let mut bytes = Vec::new();
+        let tag = TransactionTag::from_transaction(self, format);
+
+        bytes.push(tag as u8);
+        if tag.is_versioned() {
+            bytes.push(BOREAS_FORMAT_VERSION);
+        }
 
         match self {
-            Self::Phoenix(tx) => {
-                bytes.push(0);
-                bytes.extend(tx.to_var_bytes());
-            }
-            Self::Moonlight(tx) => {
-                bytes.push(1);
-                bytes.extend(tx.to_var_bytes());
-            }
+            Self::Phoenix(tx) => bytes.extend(tx.to_var_bytes()),
+            Self::Moonlight(tx) => bytes.extend(tx.to_var_bytes()),
         }
 
         bytes
+    }
+
+    /// Serialize the transaction into the legacy transport format.
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        self.encode_for_format(TransactionFormat::Aegis)
     }
 
     /// Deserialize the transaction from a byte slice.
@@ -394,13 +571,7 @@ impl Transaction {
     /// # Errors
     /// Errors when the bytes are not canonical.
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
-        let mut buf = buf;
-
-        Ok(match u8::from_reader(&mut buf)? {
-            0 => Self::Phoenix(PhoenixTransaction::from_slice(buf)?),
-            1 => Self::Moonlight(MoonlightTransaction::from_slice(buf)?),
-            _ => return Err(BytesError::InvalidData),
-        })
+        Self::decode_any(buf).map(|decoded| decoded.transaction)
     }
 
     /// Return input bytes to hash the transaction.
