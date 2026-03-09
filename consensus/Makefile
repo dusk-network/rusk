@@ -13,6 +13,9 @@ release:
 	cargo clippy; cargo b --release
 
 test: ## Run tests
+	@RUST_LOG=error cargo test --release
+
+test-debug: ## Run tests with full output
 	@cargo test --release -- --nocapture
 	
 clippy: ## Run clippy
@@ -24,4 +27,4 @@ doc: ## Run doc gen
 clean:
 	@cargo clean
 
-.PHONY: test help clean test-harness testbed release
+.PHONY: test test-debug help clean test-harness testbed release
