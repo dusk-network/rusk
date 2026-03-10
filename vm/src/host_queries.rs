@@ -556,6 +556,26 @@ where
     write_to_arg_buf(arg_buf, &result)
 }
 
+fn memoize_host_query<R, FPut, FCompute>(
+    cached: Option<R>,
+    put: FPut,
+    compute: FCompute,
+) -> R
+where
+    R: Clone,
+    FPut: FnOnce(R),
+    FCompute: FnOnce() -> R,
+{
+    match cached {
+        Some(result) => result,
+        None => {
+            let result = compute();
+            put(result.clone());
+            result
+        }
+    }
+}
+
 pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let cache_key =
         *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
@@ -567,9 +587,11 @@ pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_hash",
         &BlsScalar::default(),
         |arg| {
-            let result = cached.unwrap_or_else(|| hash(arg));
-            cache::put_hash(cache_key, result);
-            result
+            memoize_host_query(
+                cached,
+                |result| cache::put_hash(cache_key, result),
+                || hash(arg),
+            )
         },
     )
 }
@@ -584,9 +606,11 @@ pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_poseidon_hash",
         &BlsScalar::default(),
         |arg| {
-            let result = cached.unwrap_or_else(|| poseidon_hash(arg));
-            cache::put_poseidon_hash(hash, result);
-            result
+            memoize_host_query(
+                cached,
+                |result| cache::put_poseidon_hash(hash, result),
+                || poseidon_hash(arg),
+            )
         },
     )
 }
@@ -602,11 +626,11 @@ pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_verify_plonk",
         &false,
         |(vd, proof, pis)| {
-            let is_valid = cached.unwrap_or_else(|| {
-                verify_plonk_with_version(version, vd, proof, pis)
-            });
-            cache::put_plonk_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_plonk_verification(hash, is_valid),
+                || verify_plonk_with_version(version, vd, proof, pis),
+            )
         },
     )
 }
@@ -624,10 +648,11 @@ pub(crate) fn host_verify_groth16_bn254(
         "host_verify_groth16_bn254",
         &false,
         |(pvk, proof, inputs)| {
-            let is_valid = cached
-                .unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
-            cache::put_groth16_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_groth16_verification(hash, is_valid),
+                || verify_groth16_bn254(pvk, proof, inputs),
+            )
         },
     )
 }
@@ -642,10 +667,11 @@ pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_verify_schnorr",
         &false,
         |(msg, pk, sig)| {
-            let is_valid =
-                cached.unwrap_or_else(|| verify_schnorr(msg, pk, sig));
-            cache::put_schnorr_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_schnorr_verification(hash, is_valid),
+                || verify_schnorr(msg, pk, sig),
+            )
         },
     )
 }
@@ -661,9 +687,11 @@ pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_verify_bls",
         &false,
         |(msg, pk, sig)| {
-            let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
-            cache::put_bls_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_bls_verification(hash, is_valid),
+                || verify_bls(msg, pk, sig),
+            )
         },
     )
 }
@@ -682,10 +710,11 @@ pub(crate) fn host_verify_bls_multisig(
         "host_verify_bls_multisig",
         &false,
         |(msg, keys, sig)| {
-            let is_valid =
-                cached.unwrap_or_else(|| verify_bls_multisig(msg, keys, sig));
-            cache::put_bls_multisig_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_bls_multisig_verification(hash, is_valid),
+                || verify_bls_multisig(msg, keys, sig),
+            )
         },
     )
 }
@@ -695,9 +724,11 @@ pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let cached = cache::get_keccak256(hash);
 
     wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], |arg| {
-        let output = cached.unwrap_or_else(|| keccak256(arg));
-        cache::put_keccak256(hash, output);
-        output
+        memoize_host_query(
+            cached,
+            |output| cache::put_keccak256(hash, output),
+            || keccak256(arg),
+        )
     })
 }
 
@@ -706,9 +737,11 @@ pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let cached = cache::get_sha256(hash);
 
     wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], |arg| {
-        let output = cached.unwrap_or_else(|| sha256(arg));
-        cache::put_sha256(hash, output);
-        output
+        memoize_host_query(
+            cached,
+            |output| cache::put_sha256(hash, output),
+            || sha256(arg),
+        )
     })
 }
 
@@ -722,10 +755,11 @@ pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_verify_kzg_proof",
         &false,
         |(commitment, z, y, proof)| {
-            let is_valid = cached
-                .unwrap_or_else(|| verify_kzg_proof(commitment, z, y, proof));
-            cache::put_kzg_verification(hash, is_valid);
-            is_valid
+            memoize_host_query(
+                cached,
+                |is_valid| cache::put_kzg_verification(hash, is_valid),
+                || verify_kzg_proof(commitment, z, y, proof),
+            )
         },
     )
 }
@@ -740,16 +774,19 @@ pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
         "host_secp256k1_recover",
         &Option::<[u8; 65]>::None,
         |(msg_hash, sig)| {
-            let recovered =
-                cached.unwrap_or_else(|| secp256k1_recover(msg_hash, sig));
-            cache::put_secp256k1_recover(hash, recovered);
-            recovered
+            memoize_host_query(
+                cached,
+                |recovered| cache::put_secp256k1_recover(hash, recovered),
+                || secp256k1_recover(msg_hash, sig),
+            )
         },
     )
 }
 
 #[cfg(test)]
 mod tests {
+    use core::cell::RefCell;
+
     use super::*;
 
     #[test]
@@ -769,5 +806,45 @@ mod tests {
             result.expect("checked above"),
             Err(dusk_core::plonk::Error::NotEnoughBytes)
         ));
+    }
+
+    #[test]
+    fn memoize_host_query_skips_compute_and_store_on_hit() {
+        let stores = Cell::new(0);
+        let computes = Cell::new(0);
+        let expected = hash(vec![1, 2, 3]);
+
+        let result = memoize_host_query(
+            Some(expected),
+            |_| stores.set(stores.get() + 1),
+            || {
+                computes.set(computes.get() + 1);
+                hash(vec![4, 5, 6])
+            },
+        );
+
+        assert_eq!(result, expected);
+        assert_eq!(stores.get(), 0);
+        assert_eq!(computes.get(), 0);
+    }
+
+    #[test]
+    fn memoize_host_query_stores_non_boolean_result_on_miss() {
+        let stored = RefCell::new(Option::<[u8; 65]>::None);
+        let computes = Cell::new(0);
+        let expected = Some([7u8; 65]);
+
+        let result = memoize_host_query(
+            None,
+            |recovered| *stored.borrow_mut() = recovered,
+            || {
+                computes.set(computes.get() + 1);
+                expected
+            },
+        );
+
+        assert_eq!(result, expected);
+        assert_eq!(*stored.borrow(), expected);
+        assert_eq!(computes.get(), 1);
     }
 }

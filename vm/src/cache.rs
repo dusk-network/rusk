@@ -8,8 +8,10 @@ use std::env;
 use std::num::NonZeroUsize;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
-use dusk_core::BlsScalar;
 use lru::LruCache;
+
+type ScalarCacheValue = dusk_core::BlsScalar;
+type RecoverCacheValue = Option<[u8; 65]>;
 
 macro_rules! define_cache {
     ($get_func:ident, $put_func:ident, $cache_func:ident, $type:ty, $size:literal, $var:literal) => {
@@ -99,7 +101,7 @@ define_cache!(
     get_hash,
     put_hash,
     with_hash_cache,
-    BlsScalar,
+    ScalarCacheValue,
     2048,
     "DUSK_VM_HASH_CACHE_SIZE"
 );
@@ -107,7 +109,7 @@ define_cache!(
     get_poseidon_hash,
     put_poseidon_hash,
     with_poseidon_hash_cache,
-    BlsScalar,
+    ScalarCacheValue,
     2048,
     "DUSK_VM_POSEIDON_HASH_CACHE_SIZE"
 );
@@ -155,7 +157,7 @@ define_cache!(
     get_secp256k1_recover,
     put_secp256k1_recover,
     with_secp256k1_recover_cache,
-    Option<[u8; 65]>,
+    RecoverCacheValue,
     2048,
     "DUSK_VM_SECP256K1_RECOVER_CACHE_SIZE"
 );
