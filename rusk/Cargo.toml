@@ -67,8 +67,9 @@ tokio-rustls = { workspace = true }
 rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true, features = ["ws"] }
-tower = { workspace = true }
+tower = { workspace = true, features = ["limit"] }
 tower-http = { workspace = true, features = ["limit", "normalize-path", "trace"] }
+regex = { workspace = true }
 
 dusk-core = { workspace = true, features = ["zk"] }
 dusk-vm = { workspace = true }

@@ -5,12 +5,18 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::convert::Infallible;
+use std::future::{Ready, ready};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::task::{Context, Poll, Wake, Waker};
+use std::time::Duration;
 
 use axum::http::{HeaderMap, Request, StatusCode};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+use tower::Service;
+use tower::limit::rate::{Rate, RateLimit};
 use tracing::warn;
 
 use super::RUES_LOCATION_PREFIX;
@@ -350,7 +356,7 @@ struct AclEngine {
 struct CompiledAclRule {
     id: String,
     action: HttpPolicyAclAction,
-    path_pattern: String,
+    path_regex: Regex,
     methods: Vec<String>,
     headers: Vec<(String, String)>,
 }
@@ -364,7 +370,9 @@ impl AclEngine {
             .map(|rule| CompiledAclRule {
                 id: rule.id,
                 action: rule.action,
-                path_pattern: rule.path.to_ascii_lowercase(),
+                path_regex: wildcard_pattern_to_regex(
+                    &rule.path.to_ascii_lowercase(),
+                ),
                 methods: rule
                     .method
                     .into_iter()
@@ -390,7 +398,7 @@ impl AclEngine {
         let method = req.method().as_str().to_ascii_uppercase();
 
         for rule in self.rules.iter() {
-            if !wildcard_match(&rule.path_pattern, &path) {
+            if !rule.path_regex.is_match(&path) {
                 continue;
             }
 
@@ -456,8 +464,7 @@ impl GlobalLimiter {
         let limiter = self.limiter(class);
         match limiter.acquire() {
             Ok(permit) => Ok(PolicyPermit::from_permit(permit)),
-            Err(LimiterReject::RateLimited(wait)) => {
-                let retry_after_seconds = wait.as_secs_f64().ceil() as u64;
+            Err(LimiterReject::RateLimited(retry_after_seconds)) => {
                 warn!(
                     counter = "rate_limited_total",
                     class = class.as_str(),
@@ -482,98 +489,94 @@ impl GlobalLimiter {
 
 #[derive(Clone)]
 struct ClassLimiter {
-    bucket: Arc<Mutex<TokenBucket>>,
+    rate_limiter: Arc<Mutex<RateLimit<NoopRateService>>>,
+    retry_after_seconds: u64,
     semaphore: Arc<Semaphore>,
 }
 
 impl ClassLimiter {
     fn new(config: HttpPolicyClassLimit) -> Self {
-        let capacity = config.burst as f64;
-        let rps = config.rps as f64;
+        let rps = config.rps.max(1) as f64;
+        let burst = config.burst.max(1) as u64;
+        let window = Duration::from_secs_f64((burst as f64 / rps).max(0.001));
+        let retry_after_seconds = (1.0 / rps).ceil() as u64;
+
         Self {
-            bucket: Arc::new(Mutex::new(TokenBucket::new(capacity, rps))),
+            rate_limiter: Arc::new(Mutex::new(RateLimit::new(
+                NoopRateService,
+                Rate::new(burst, window),
+            ))),
+            retry_after_seconds: retry_after_seconds.max(1),
             semaphore: Arc::new(Semaphore::new(config.concurrency)),
         }
     }
 
     /// Tries to consume one token and one concurrency slot.
     fn acquire(&self) -> Result<OwnedSemaphorePermit, LimiterReject> {
-        let now = Instant::now();
-        {
-            let mut bucket = self
-                .bucket
-                .lock()
-                .expect("Policy token bucket mutex should be lockable");
-            if let Some(wait) = bucket.try_take(now) {
-                return Err(LimiterReject::RateLimited(wait));
-            }
-        }
+        let permit = self
+            .semaphore
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| LimiterReject::ConcurrencyLimited)?;
 
-        match self.semaphore.clone().try_acquire_owned() {
-            Ok(permit) => Ok(permit),
-            Err(_) => {
-                let mut bucket = self
-                    .bucket
-                    .lock()
-                    .expect("Policy token bucket mutex should be lockable");
-                bucket.refund_one(now);
-                Err(LimiterReject::ConcurrencyLimited)
+        let mut limiter = self
+            .rate_limiter
+            .lock()
+            .expect("Policy rate limiter mutex should be lockable");
+
+        let waker = noop_waker();
+        let mut cx = Context::from_waker(&waker);
+        match limiter.poll_ready(&mut cx) {
+            Poll::Ready(Ok(())) => {
+                drop(limiter.call(()));
+                Ok(permit)
+            }
+            Poll::Pending => {
+                drop(permit);
+                Err(LimiterReject::RateLimited(self.retry_after_seconds))
+            }
+            Poll::Ready(Err(_)) => {
+                drop(permit);
+                Err(LimiterReject::RateLimited(self.retry_after_seconds))
             }
         }
     }
 }
 
 enum LimiterReject {
-    RateLimited(Duration),
+    RateLimited(u64),
     ConcurrencyLimited,
 }
 
-struct TokenBucket {
-    capacity: f64,
-    tokens: f64,
-    refill_per_second: f64,
-    last_refill: Instant,
+#[derive(Clone, Copy, Debug, Default)]
+struct NoopRateService;
+
+impl Service<()> for NoopRateService {
+    type Response = ();
+    type Error = Infallible;
+    type Future = Ready<Result<(), Infallible>>;
+
+    fn poll_ready(
+        &mut self,
+        _cx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, _req: ()) -> Self::Future {
+        ready(Ok(()))
+    }
 }
 
-impl TokenBucket {
-    fn new(capacity: f64, refill_per_second: f64) -> Self {
-        let now = Instant::now();
-        Self {
-            capacity,
-            tokens: capacity,
-            refill_per_second,
-            last_refill: now,
-        }
-    }
+#[derive(Default)]
+struct NoopWake;
 
-    fn refill(&mut self, now: Instant) {
-        let elapsed = now.duration_since(self.last_refill).as_secs_f64();
-        if elapsed <= 0.0 {
-            return;
-        }
+impl Wake for NoopWake {
+    fn wake(self: Arc<Self>) {}
+}
 
-        self.tokens =
-            (self.tokens + elapsed * self.refill_per_second).min(self.capacity);
-        self.last_refill = now;
-    }
-
-    fn try_take(&mut self, now: Instant) -> Option<Duration> {
-        self.refill(now);
-
-        if self.tokens >= 1.0 {
-            self.tokens -= 1.0;
-            return None;
-        }
-
-        let required = 1.0 - self.tokens;
-        let seconds = required / self.refill_per_second;
-        Some(Duration::from_secs_f64(seconds.max(0.001)))
-    }
-
-    fn refund_one(&mut self, now: Instant) {
-        self.refill(now);
-        self.tokens = (self.tokens + 1.0).min(self.capacity);
-    }
+fn noop_waker() -> Waker {
+    Waker::from(Arc::new(NoopWake))
 }
 
 /// Ensures class limits always remain valid at runtime.
@@ -603,45 +606,15 @@ fn sanitize_limit(limit: &mut HttpPolicyClassLimit, class: EndpointClass) {
     }
 }
 
-/// Matches a path with `*` wildcards against a lowercase normalized pattern.
-fn wildcard_match(pattern: &str, text: &str) -> bool {
-    let pattern = pattern.as_bytes();
-    let text = text.as_bytes();
-
-    let mut p = 0usize;
-    let mut t = 0usize;
-    let mut star = None;
-    let mut match_index = 0usize;
-
-    while t < text.len() {
-        if p < pattern.len() && pattern[p] == text[t] {
-            p += 1;
-            t += 1;
-            continue;
-        }
-
-        if p < pattern.len() && pattern[p] == b'*' {
-            star = Some(p);
-            p += 1;
-            match_index = t;
-            continue;
-        }
-
-        if let Some(star_pos) = star {
-            p = star_pos + 1;
-            match_index += 1;
-            t = match_index;
-            continue;
-        }
-
-        return false;
-    }
-
-    while p < pattern.len() && pattern[p] == b'*' {
-        p += 1;
-    }
-
-    p == pattern.len()
+/// Compiles a lowercase wildcard path pattern to a regex.
+///
+/// `*` is mapped to `.*` so matching behavior remains unchanged.
+fn wildcard_pattern_to_regex(pattern: &str) -> Regex {
+    let mut escaped = regex::escape(pattern);
+    escaped = escaped.replace("\\*", ".*");
+    let regex = format!("^{escaped}$");
+    Regex::new(&regex)
+        .expect("Wildcard pattern should always compile into regex")
 }
 
 fn default_true() -> bool {
@@ -713,25 +686,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn wildcard_match_handles_edge_cases() {
-        assert!(wildcard_match("", ""));
-        assert!(!wildcard_match("", "/on/test/echo"));
+    fn wildcard_pattern_to_regex_handles_edge_cases() {
+        let matches = |pattern: &str, path: &str| {
+            wildcard_pattern_to_regex(pattern).is_match(path)
+        };
 
-        assert!(wildcard_match("*", ""));
-        assert!(wildcard_match("*", "/on/test/echo"));
+        assert!(matches("", ""));
+        assert!(!matches("", "/on/test/echo"));
 
-        assert!(wildcard_match("/on/*", "/on/test"));
-        assert!(wildcard_match("/on/*/echo", "/on/test/echo"));
-        assert!(wildcard_match("/on/*/echo", "/on/test/inner/echo"));
-        assert!(wildcard_match("/on/*/echo", "/on//echo"));
-        assert!(wildcard_match("/on/**/echo", "/on/test/echo"));
+        assert!(matches("*", ""));
+        assert!(matches("*", "/on/test/echo"));
 
-        assert!(!wildcard_match("/on/*/echo", "/off/test/echo"));
-        assert!(!wildcard_match("/on/*/echo", "/on/test/stream"));
+        assert!(matches("/on/*", "/on/test"));
+        assert!(matches("/on/*/echo", "/on/test/echo"));
+        assert!(matches("/on/*/echo", "/on/test/inner/echo"));
+        assert!(matches("/on/*/echo", "/on//echo"));
+        assert!(matches("/on/**/echo", "/on/test/echo"));
+
+        assert!(!matches("/on/*/echo", "/off/test/echo"));
+        assert!(!matches("/on/*/echo", "/on/test/stream"));
     }
 
-    #[test]
-    fn global_limiter_concurrency_rejection_returns_too_many_requests() {
+    #[tokio::test]
+    async fn global_limiter_concurrency_rejection_returns_too_many_requests() {
         let limits = HttpPolicyClassLimitsConfig {
             contract_query: HttpPolicyClassLimit {
                 rps: 2,

@@ -125,6 +125,7 @@ pin-project = "1.1.5"
 rand = { version = "0.8.5", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
+regex = "1.12.3"
 reqwest = "0.12.7"
 ringbuffer = "0.15"
 rkyv = { version = "0.7.39", default-features = false }
