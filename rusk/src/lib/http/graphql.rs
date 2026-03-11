@@ -11,20 +11,25 @@ use async_graphql::{
     BatchRequest, BatchResponse, ParseRequestError,
     Response as GraphqlResponse, ServerError,
 };
+use axum::body::Body as AxumBody;
+use axum::response::Response as AxumResponse;
 use futures_util::io::Cursor;
-use http_body_util::{BodyExt, LengthLimitError, Limited};
-use hyper::body::Incoming;
+use hyper::body::{Body, Bytes};
 use hyper::header::{ALLOW, CONTENT_TYPE};
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::{Method, Request, Response, StatusCode};
 
+use super::event::{LimitedBodyError, collect_limited_body};
 use super::{
     ExecutionError, GraphqlHandler, MAX_GRAPHQL_REQUEST_BODY_BYTES, response,
 };
 use crate::http::event::FullOrStreamBody;
 
-pub(super) fn is_graphql_path(path: &str) -> bool {
-    matches!(path, "/graphql" | "/graphql/")
+fn full_or_stream_to_axum(
+    response: Response<FullOrStreamBody>,
+) -> AxumResponse {
+    let (parts, body) = response.into_parts();
+    AxumResponse::from_parts(parts, AxumBody::new(body))
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -33,7 +38,7 @@ pub(super) fn is_graphql_path(path: &str) -> bool {
 fn graphql_batch_response(
     status: StatusCode,
     batch_response: BatchResponse,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<AxumResponse, ExecutionError> {
     let body = serde_json::to_vec(&batch_response)?;
     let mut response = response(status, body)?;
     let headers = response.headers_mut();
@@ -43,7 +48,7 @@ fn graphql_batch_response(
         let value = HeaderValue::from_bytes(value.as_bytes())?;
         headers.append(name, value);
     }
-    Ok(response)
+    Ok(full_or_stream_to_axum(response))
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -52,7 +57,7 @@ fn graphql_batch_response(
 fn graphql_error_response(
     status: StatusCode,
     message: impl Into<String>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<AxumResponse, ExecutionError> {
     let error = ServerError::new(message, None);
     let response = GraphqlResponse::from_errors(vec![error]);
     graphql_batch_response(status, BatchResponse::from(response))
@@ -64,7 +69,7 @@ fn graphql_error_response(
 pub(super) fn handle_graphql_http_error(
     status: StatusCode,
     message: impl Into<String>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<AxumResponse, ExecutionError> {
     graphql_error_response(status, message)
 }
 
@@ -76,10 +81,14 @@ fn graphql_parse_error_status(error: &ParseRequestError) -> StatusCode {
     }
 }
 
-pub(super) async fn handle_graphql_http(
+pub(super) async fn handle_graphql_http<B>(
     handler: &dyn GraphqlHandler,
-    req: Request<Incoming>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    req: Request<B>,
+) -> Result<AxumResponse, ExecutionError>
+where
+    B: Body<Data = Bytes> + Send + 'static,
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
     match *req.method() {
         Method::GET => {
             let query = req.uri().query().unwrap_or_default();
@@ -110,21 +119,22 @@ pub(super) async fn handle_graphql_http(
                 .headers
                 .get(CONTENT_TYPE)
                 .and_then(|v| v.to_str().ok());
-            let body = match Limited::new(body, MAX_GRAPHQL_REQUEST_BODY_BYTES)
-                .collect()
-                .await
+            let body = match collect_limited_body(
+                body,
+                MAX_GRAPHQL_REQUEST_BODY_BYTES,
+            )
+            .await
             {
-                Ok(collected) => collected.to_bytes().to_vec(),
-                Err(err) => {
-                    if err.downcast_ref::<LengthLimitError>().is_some() {
-                        return graphql_error_response(
-                            StatusCode::PAYLOAD_TOO_LARGE,
-                            format!(
-                                "Request body exceeds {MAX_GRAPHQL_REQUEST_BODY_BYTES} bytes"
-                            ),
-                        );
-                    }
-
+                Ok(body) => body,
+                Err(LimitedBodyError::TooLarge) => {
+                    return graphql_error_response(
+                        StatusCode::PAYLOAD_TOO_LARGE,
+                        format!(
+                            "Request body exceeds {MAX_GRAPHQL_REQUEST_BODY_BYTES} bytes"
+                        ),
+                    );
+                }
+                Err(LimitedBodyError::Other(err)) => {
                     return graphql_error_response(
                         StatusCode::INTERNAL_SERVER_ERROR,
                         err.to_string(),

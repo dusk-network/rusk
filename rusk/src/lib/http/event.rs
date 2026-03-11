@@ -16,7 +16,7 @@ use futures_util::{Stream, stream};
 use http_body_util::{
     BodyExt, Either, Full, LengthLimitError, Limited, StreamBody,
 };
-use hyper::body::{Body, Bytes, Frame, Incoming};
+use hyper::body::{Body, Bytes, Frame};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::{HeaderMap, Request, Response};
 use pin_project::pin_project;
@@ -375,8 +375,6 @@ pub enum ExecutionError {
     Tungstenite(#[from] tungstenite::Error),
     #[error("Invalid header: {0}")]
     InvalidHeader(String),
-    #[error("Not found: {0}")]
-    NotFound(String),
     #[error("{0}")]
     Other(String),
 }
@@ -590,6 +588,12 @@ pub enum RequestParseError {
     Other(anyhow::Error),
 }
 
+#[derive(Debug)]
+pub(super) enum LimitedBodyError {
+    TooLarge,
+    Other(anyhow::Error),
+}
+
 impl RuesDispatchEvent {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
@@ -641,9 +645,13 @@ impl RuesDispatchEvent {
         )
     }
 
-    pub async fn from_request(
-        req: Request<Incoming>,
-    ) -> Result<(Self, bool), RequestParseError> {
+    pub async fn from_request<B>(
+        req: Request<B>,
+    ) -> Result<(Self, bool), RequestParseError>
+    where
+        B: Body<Data = Bytes> + Send + 'static,
+        B::Error: std::error::Error + Send + Sync + 'static,
+    {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
@@ -716,26 +724,46 @@ fn parse_rues_request_meta(
     Ok((uri, headers, binary_request, binary_response))
 }
 
-async fn collect_limited_request_body(
-    body: Incoming,
+pub(super) async fn collect_limited_body<B>(
+    body: B,
     max_body_bytes: usize,
-) -> Result<Vec<u8>, RequestParseError> {
+) -> Result<Vec<u8>, LimitedBodyError>
+where
+    B: Body<Data = Bytes> + Send + 'static,
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
     Limited::new(body, max_body_bytes)
         .collect()
         .await
         .map_err(|e| {
             if e.downcast_ref::<LengthLimitError>().is_some() {
-                RequestParseError::Other(
-                    super::HttpError::payload_too_large(format!(
-                        "Request body exceeds {max_body_bytes} bytes"
-                    ))
-                    .into(),
-                )
+                LimitedBodyError::TooLarge
             } else {
-                RequestParseError::Other(anyhow::Error::msg(e.to_string()))
+                LimitedBodyError::Other(anyhow::Error::msg(e.to_string()))
             }
         })
         .map(|collected| collected.to_bytes().to_vec())
+}
+
+async fn collect_limited_request_body<B>(
+    body: B,
+    max_body_bytes: usize,
+) -> Result<Vec<u8>, RequestParseError>
+where
+    B: Body<Data = Bytes> + Send + 'static,
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
+    collect_limited_body(body, max_body_bytes)
+        .await
+        .map_err(|err| match err {
+            LimitedBodyError::TooLarge => RequestParseError::Other(
+                super::HttpError::payload_too_large(format!(
+                    "Request body exceeds {max_body_bytes} bytes"
+                ))
+                .into(),
+            ),
+            LimitedBodyError::Other(err) => RequestParseError::Other(err),
+        })
 }
 
 fn parse_request_data(

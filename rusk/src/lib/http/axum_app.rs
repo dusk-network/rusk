@@ -4,23 +4,35 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
+use std::convert::Infallible;
+use std::sync::Arc;
+
 use axum::Router;
-use axum::body::{Body, to_bytes};
-#[cfg(feature = "http-wasm")]
+use axum::body::Body;
+use axum::extract::{FromRequestParts, ws::WebSocketUpgrade};
 use axum::http::StatusCode;
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{Request, Response};
-#[cfg(feature = "http-wasm")]
 use axum::response::IntoResponse;
-#[cfg(feature = "http-wasm")]
+use axum::response::Json;
 use axum::routing::any;
-use http_body_util::Full;
+#[cfg(feature = "chain")]
+use hyper::StatusCode as HyperStatusCode;
 use hyper::body::Incoming;
+use serde_json::json;
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use tower::ServiceExt;
 
-use super::ExecutionError;
+use super::SubscriptionAction;
+use super::error::map_execution_error;
 use super::event::FullOrStreamBody;
+#[cfg(feature = "chain")]
+use super::graphql;
+use super::responses;
+use super::rues;
+use super::{ExecutionError, HandleRequest, RuesEvent, SessionId};
 
 #[cfg(feature = "http-wasm")]
 const WALLET_CORE_ALIAS_PATH: &str = "/static/drivers/wallet-core.wasm";
@@ -35,16 +47,15 @@ const WALLET_CORE_1_6_0_PATH: &str = "/static/drivers/wallet-core-1.6.0.wasm";
 const WASM_CONTENT_TYPE: &str = "application/wasm";
 #[cfg(feature = "http-wasm")]
 const WASM_CACHE_CONTROL: &str = "public, max-age=31536000, immutable";
-#[cfg(feature = "chain")]
-const GRAPHQL_PATH: &str = "/graphql";
-#[cfg(feature = "chain")]
-const GRAPHQL_TRAILING_SLASH_PATH: &str = "/graphql/";
-const RUES_ROOT_PATH: &str = "/on";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum RouteOwner {
-    Legacy,
-    Axum,
+#[derive(Clone)]
+pub(super) struct AxumRequestContext {
+    pub(super) sources: Arc<dyn HandleRequest>,
+    pub(super) sockets_map:
+        Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
+    pub(super) events: Arc<Mutex<broadcast::Receiver<RuesEvent>>>,
+    pub(super) shutdown: Arc<Mutex<broadcast::Receiver<Infallible>>>,
+    pub(super) ws_event_channel_cap: usize,
 }
 
 #[derive(Clone)]
@@ -58,24 +69,17 @@ impl RouteDispatchPlan {
         Self { router }
     }
 
-    pub(super) fn owner_for_path(&self, path: &str) -> RouteOwner {
-        if is_axum_path(path) {
-            RouteOwner::Axum
-        } else {
-            RouteOwner::Legacy
-        }
-    }
-
     pub(super) async fn handle_axum(
         &self,
         req: Request<Incoming>,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-        let req = req.map(Body::new);
-        let response = match self.router.clone().oneshot(req).await {
+        context: AxumRequestContext,
+    ) -> Result<Response<Body>, ExecutionError> {
+        let mut req = req.map(Body::new);
+        req.extensions_mut().insert(context);
+        Ok(match self.router.clone().oneshot(req).await {
             Ok(response) => response,
             Err(err) => match err {},
-        };
-        axum_response_to_hyper(response).await
+        })
     }
 }
 
@@ -87,6 +91,14 @@ impl Default for RouteDispatchPlan {
 
 fn build_router() -> Router {
     let router = Router::new();
+    let router = router
+        .route("/on", any(rues_route))
+        .route("/on/{*path}", any(rues_route));
+
+    #[cfg(feature = "chain")]
+    let router = router
+        .route("/graphql", any(graphql_route))
+        .route("/graphql/", any(graphql_route));
 
     #[cfg(feature = "http-wasm")]
     let router = router
@@ -95,42 +107,87 @@ fn build_router() -> Router {
         .route(WALLET_CORE_1_3_0_PATH, any(wallet_core_1_3_0))
         .route(WALLET_CORE_1_6_0_PATH, any(wallet_core_1_6_0));
 
-    router
+    router.fallback(not_found)
 }
 
-fn is_axum_path(path: &str) -> bool {
-    if path == RUES_ROOT_PATH || path.starts_with("/on/") {
-        return true;
-    }
-
-    #[cfg(feature = "chain")]
-    if matches!(path, GRAPHQL_PATH | GRAPHQL_TRAILING_SLASH_PATH) {
-        return true;
-    }
-
-    #[cfg(feature = "http-wasm")]
-    if matches!(
-        path,
-        WALLET_CORE_ALIAS_PATH
-            | WALLET_CORE_1_0_1_PATH
-            | WALLET_CORE_1_3_0_PATH
-            | WALLET_CORE_1_6_0_PATH
-    ) {
-        return true;
-    }
-
-    let _ = path;
-    false
+fn execution_error_to_axum_response(error: &ExecutionError) -> Response<Body> {
+    let (status, message, _category) = map_execution_error(error);
+    let response = responses::api_error_response(status, message)
+        .expect("Failed to build execution error response");
+    full_or_stream_to_axum(response)
 }
 
-async fn axum_response_to_hyper(
-    response: Response<Body>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+fn full_or_stream_to_axum(
+    response: Response<FullOrStreamBody>,
+) -> Response<Body> {
     let (parts, body) = response.into_parts();
-    let bytes = to_bytes(body, usize::MAX)
-        .await
-        .map_err(|err| ExecutionError::Other(err.to_string()))?;
-    Ok(Response::from_parts(parts, Full::new(bytes).into()))
+    Response::from_parts(parts, Body::new(body))
+}
+
+async fn rues_route(mut req: Request<Body>) -> Response<Body> {
+    let context = req
+        .extensions_mut()
+        .remove::<AxumRequestContext>()
+        .expect("axum request context should be present");
+
+    let events = context.events.lock().await.resubscribe();
+    let shutdown = context.shutdown.lock().await.resubscribe();
+
+    let (mut parts, body) = req.into_parts();
+    if let Ok(ws) = WebSocketUpgrade::from_request_parts(&mut parts, &()).await
+    {
+        return rues::handle_request_rues_ws(
+            ws,
+            context.sockets_map,
+            events,
+            shutdown,
+            context.ws_event_channel_cap,
+        )
+        .await;
+    }
+    let req = Request::from_parts(parts, body);
+
+    match rues::handle_request_rues_http(
+        req,
+        context.sources,
+        context.sockets_map,
+    )
+    .await
+    {
+        Ok(response) => response,
+        Err(error) => execution_error_to_axum_response(&error),
+    }
+}
+
+#[cfg(feature = "chain")]
+async fn graphql_route(mut req: Request<Body>) -> Response<Body> {
+    let context = req
+        .extensions_mut()
+        .remove::<AxumRequestContext>()
+        .expect("axum request context should be present");
+
+    let handler = match context.sources.graphql_handler() {
+        Some(handler) => handler,
+        None => {
+            return graphql::handle_graphql_http_error(
+                HyperStatusCode::NOT_FOUND,
+                "GraphQL endpoint not configured",
+            )
+            .expect("GraphQL error response should be built");
+        }
+    };
+
+    match graphql::handle_graphql_http(handler, req).await {
+        Ok(response) => response,
+        Err(error) => execution_error_to_axum_response(&error),
+    }
+}
+
+async fn not_found() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        Json(json!({ "error": "Path not found" })),
+    )
 }
 
 #[cfg(feature = "http-wasm")]
@@ -167,48 +224,42 @@ fn wasm_response(bytes: &'static [u8]) -> impl IntoResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::{RouteDispatchPlan, RouteOwner};
+    use axum::body::{Body, to_bytes};
+    use axum::http::header::CONTENT_TYPE;
+    use axum::http::{Request, StatusCode};
+    use serde_json::Value;
+    use tower::ServiceExt;
 
-    #[test]
-    fn route_dispatch_defaults_to_legacy_owner() {
-        let dispatch = RouteDispatchPlan::new();
-        assert_eq!(dispatch.owner_for_path("/legacy/path"), RouteOwner::Legacy);
-    }
+    use super::RouteDispatchPlan;
 
-    #[cfg(feature = "http-wasm")]
-    #[test]
-    fn static_wasm_paths_map_to_axum_owner() {
+    #[tokio::test]
+    async fn router_fallback_returns_json_not_found() {
         let dispatch = RouteDispatchPlan::new();
-        assert_eq!(
-            dispatch.owner_for_path("/static/drivers/wallet-core.wasm"),
-            RouteOwner::Axum
-        );
-        assert_eq!(
-            dispatch.owner_for_path("/static/drivers/wallet-core-1.0.1.wasm"),
-            RouteOwner::Axum
-        );
-        assert_eq!(
-            dispatch.owner_for_path("/static/drivers/wallet-core-1.3.0.wasm"),
-            RouteOwner::Axum
-        );
-        assert_eq!(
-            dispatch.owner_for_path("/static/drivers/wallet-core-1.6.0.wasm"),
-            RouteOwner::Axum
-        );
-    }
+        let response = dispatch
+            .router
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/unsupported")
+                    .body(Body::empty())
+                    .expect("Request should be built"),
+            )
+            .await
+            .expect("Fallback response should be produced");
 
-    #[cfg(feature = "chain")]
-    #[test]
-    fn graphql_paths_map_to_axum_owner() {
-        let dispatch = RouteDispatchPlan::new();
-        assert_eq!(dispatch.owner_for_path("/graphql"), RouteOwner::Axum);
-        assert_eq!(dispatch.owner_for_path("/graphql/"), RouteOwner::Axum);
-    }
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "application/json");
 
-    #[test]
-    fn rues_paths_map_to_axum_owner() {
-        let dispatch = RouteDispatchPlan::new();
-        assert_eq!(dispatch.owner_for_path("/on"), RouteOwner::Axum);
-        assert_eq!(dispatch.owner_for_path("/on/test/echo"), RouteOwner::Axum);
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("Body should be readable");
+        let payload: Value =
+            serde_json::from_slice(&body).expect("Body should be JSON");
+        assert_eq!(payload["error"], "Path not found");
     }
 }

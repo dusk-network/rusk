@@ -179,9 +179,6 @@ pub(super) fn map_execution_error(
             "Internal server error".to_string(),
             "internal",
         ),
-        ExecutionError::NotFound(message) => {
-            (StatusCode::NOT_FOUND, message.clone(), "not_found")
-        }
         ExecutionError::InvalidHeader(_) => (
             StatusCode::UNPROCESSABLE_ENTITY,
             "Invalid header".to_string(),
@@ -218,28 +215,13 @@ pub(super) fn log_execution_service_error(
     error: &ExecutionError,
 ) {
     let (status, _message, category) = map_execution_error(error);
-    match error {
-        ExecutionError::NotFound(_) => {
-            debug!(
-                request_id,
-                %method,
-                %path,
-                %status,
-                error_category = category,
-                error = %error,
-                "HTTP request path not found"
-            );
-        }
-        _ => {
-            error!(
-                request_id,
-                %method,
-                %path,
-                %status,
-                error_category = category,
-                error = %error,
-                "HTTP request handling failed"
-            );
-        }
-    }
+    error!(
+        request_id,
+        %method,
+        %path,
+        %status,
+        error_category = category,
+        error = %error,
+        "HTTP request handling failed"
+    );
 }

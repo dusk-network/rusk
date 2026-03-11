@@ -29,21 +29,14 @@ pub(crate) use event::{
 };
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::future::Future;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::sync::Arc;
 
 #[cfg(feature = "chain")]
 use async_graphql::{BatchRequest, BatchResponse};
 use async_trait::async_trait;
-#[cfg(feature = "chain")]
-pub(crate) use driver::DriverExecutor;
-pub use error::Error as HttpError;
-pub(crate) use event::{
-    DataType, ExecutionError, MessageResponse as EventResponse,
-};
+use axum::body::Body as AxumBody;
 #[cfg(test)]
 use http_body_util::BodyExt;
 use http_body_util::Full;
@@ -53,24 +46,33 @@ use hyper::header::ALLOW;
 #[cfg(test)]
 use hyper::header::CONTENT_TYPE;
 use hyper::http::HeaderValue;
-use hyper::service::Service;
-use hyper::{HeaderMap, Request, Response, StatusCode};
+use hyper::{
+    HeaderMap, Request, Response, StatusCode,
+    body::{Bytes, Incoming},
+};
 use hyper_util::rt::TokioIo;
 use hyper_util::server::conn::auto::Builder as HttpBuilder;
-pub use policy::HttpPolicyConfig;
+use hyper_util::service::TowerToHyperService;
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use tokio::task::JoinError;
 use tokio::{io, task};
+use tower::{ServiceBuilder, service_fn};
+use tower_http::trace::TraceLayer;
 use tracing::info;
-use self::axum_app::{RouteDispatchPlan, RouteOwner};
-use self::error::{log_execution_service_error, map_execution_error};
+
+use crate::http::event::FullOrStreamBody;
+
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
+pub use error::Error as HttpError;
+pub use policy::HttpPolicyConfig;
+
+use self::axum_app::{AxumRequestContext, RouteDispatchPlan};
+use self::error::{log_execution_service_error, map_execution_error};
 use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::policy::HttpRequestPolicy;
 use self::rues::SubscriptionAction;
 use self::stream::Listener;
-use crate::http::event::FullOrStreamBody;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
 
@@ -206,36 +208,6 @@ impl HandleRequest for DataSources {
         }
         Err(HttpError::Unsupported)
     }
-
-    async fn handle_http(
-        &self,
-        req: Request<Incoming>,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-        let path = req.uri().path();
-        #[cfg(feature = "chain")]
-        {
-            if graphql::is_graphql_path(path) {
-                let handler = match self.graphql.as_ref() {
-                    Some(handler) => handler,
-                    None => {
-                        return graphql::handle_graphql_http_error(
-                            StatusCode::NOT_FOUND,
-                            "GraphQL endpoint not configured",
-                        );
-                    }
-                };
-
-                return graphql::handle_graphql_http(handler.as_ref(), req)
-                    .await;
-            }
-        }
-        #[cfg(not(feature = "chain"))]
-        {
-            let _ = path;
-        }
-
-        Err(ExecutionError::NotFound("Path not found".to_string()))
-    }
 }
 
 #[derive(Clone)]
@@ -262,31 +234,90 @@ async fn listening_loop<H>(
 ) where
     H: HandleRequest,
 {
-    let sources = Arc::new(handler);
+    let sources: Arc<dyn HandleRequest> = Arc::new(handler);
     let sockets_map = Arc::new(RwLock::new(HashMap::new()));
     let route_dispatch = Arc::new(RouteDispatchPlan::new());
-
-    let service = ExecutionService {
+    let dispatch_context = DispatchContext {
         sources: sources.clone(),
         sockets_map: sockets_map.clone(),
-        route_dispatch,
+        route_dispatch: route_dispatch.clone(),
         events: events.resubscribe(),
         shutdown: shutdown.resubscribe(),
-        headers: Arc::new(headers),
-        policy: Arc::new(HttpRequestPolicy::new(policy)),
         ws_event_channel_cap,
     };
+    let policy = Arc::new(HttpRequestPolicy::new(policy));
+    let headers = Arc::new(headers);
+    let service = {
+        let dispatch_context = dispatch_context.clone();
+        let policy = policy.clone();
+        let headers = headers.clone();
 
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(4)
-        .thread_name("http")
-        .enable_all()
-        .build()
-        .expect("http runtime to be created");
+        ServiceBuilder::new()
+            .layer(TraceLayer::new_for_http())
+            .service(service_fn(move |req: Request<Incoming>| {
+                let dispatch_context = dispatch_context.clone();
+                let policy = policy.clone();
+                let headers = headers.clone();
+
+                async move {
+                    let method = req.method().clone();
+                    let path = req.uri().path().to_string();
+                    let request_id = rand::random::<u64>();
+
+                    let request_policy_permit = match policy.enforce(&req) {
+                        Ok(permit) => permit,
+                        Err(rejection) => {
+                            let mut rsp = full_or_stream_to_axum_body(
+                                policy_rejection_response(rejection),
+                            );
+                            rsp.headers_mut().extend(headers.as_ref().clone());
+                            return Ok::<Response<AxumBody>, Infallible>(rsp);
+                        }
+                    };
+
+                    let rsp = dispatch_context
+                        .route_dispatch
+                        .handle_axum(
+                            req,
+                            AxumRequestContext {
+                                sources: dispatch_context.sources.clone(),
+                                sockets_map: dispatch_context
+                                    .sockets_map
+                                    .clone(),
+                                events: Arc::new(Mutex::new(
+                                    dispatch_context.events.resubscribe(),
+                                )),
+                                shutdown: Arc::new(Mutex::new(
+                                    dispatch_context.shutdown.resubscribe(),
+                                )),
+                                ws_event_channel_cap: dispatch_context
+                                    .ws_event_channel_cap,
+                            },
+                        )
+                        .await;
+                    drop(request_policy_permit);
+
+                    let mut rsp = match rsp {
+                        Ok(rsp) => rsp,
+                        Err(error) => {
+                            log_execution_service_error(
+                                request_id, &method, &path, &error,
+                            );
+                            full_or_stream_to_axum_body(
+                                execution_error_response(&error)
+                                    .expect("Failed to build response"),
+                            )
+                        }
+                    };
+                    rsp.headers_mut().extend(headers.as_ref().clone());
+                    Ok::<Response<AxumBody>, Infallible>(rsp)
+                }
+            }))
+    };
+
     loop {
         tokio::select! {
             _ = shutdown.recv() => {
-                runtime.shutdown_background();
                 break;
             }
             r = listener.accept() => {
@@ -298,9 +329,9 @@ async fn listening_loop<H>(
                 let http = HttpBuilder::new(TokioExecutor);
 
                 let stream = TokioIo::new(stream);
-                let service = service.clone();
+                let service = TowerToHyperService::new(service.clone());
 
-                runtime.spawn(async move {
+                task::spawn(async move {
                     let conn = http.serve_connection_with_upgrades(stream, service);
                     conn.await
                 });
@@ -309,19 +340,17 @@ async fn listening_loop<H>(
     }
 }
 
-struct ExecutionService<H> {
-    sources: Arc<H>,
+struct DispatchContext {
+    sources: Arc<dyn HandleRequest>,
     sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
     route_dispatch: Arc<RouteDispatchPlan>,
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
-    headers: Arc<HeaderMap>,
-    policy: Arc<HttpRequestPolicy>,
     ws_event_channel_cap: usize,
 }
 
-impl<H> Clone for ExecutionService<H> {
+impl Clone for DispatchContext {
     fn clone(&self) -> Self {
         Self {
             sources: self.sources.clone(),
@@ -329,161 +358,30 @@ impl<H> Clone for ExecutionService<H> {
             route_dispatch: self.route_dispatch.clone(),
             events: self.events.resubscribe(),
             shutdown: self.shutdown.resubscribe(),
-            headers: self.headers.clone(),
-            policy: self.policy.clone(),
             ws_event_channel_cap: self.ws_event_channel_cap,
         }
     }
 }
 
-impl<H> Service<Request<Incoming>> for ExecutionService<H>
-where
-    H: HandleRequest,
-{
-    type Response = Response<FullOrStreamBody>;
-    type Error = Infallible;
-    type Future = Pin<
-        Box<
-            dyn Future<Output = Result<Self::Response, Self::Error>>
-                + Send
-                + 'static,
-        >,
-    >;
-
-    /// Handle the HTTP request.
-    ///
-    /// A request may be a "normal" request, or a WebSocket upgrade request. In
-    /// the former case, the request is handled on the spot, while in the
-    /// latter task running the stream handler loop is spawned.
-    fn call(&self, req: Request<Incoming>) -> Self::Future {
-        let method = req.method().clone();
-        let path = req.uri().path().to_string();
-        let route_dispatch = self.route_dispatch.clone();
-        let route_owner = route_dispatch.owner_for_path(&path);
-        let request_id = rand::random::<u64>();
-        let sources = self.sources.clone();
-        let sockets_map = self.sockets_map.clone();
-        let events = self.events.resubscribe();
-        let shutdown = self.shutdown.resubscribe();
-        let ws_event_channel_cap = self.ws_event_channel_cap;
-        let headers = self.headers.clone();
-        let policy = self.policy.clone();
-
-        Box::pin(async move {
-            let request_policy_permit = match policy.enforce(&req) {
-                Ok(permit) => permit,
-                Err(rejection) => {
-                    let mut rsp = response(rejection.status, rejection.body)
-                        .expect("Failed to build policy response");
-                    if let Some(retry_after_seconds) =
-                        rejection.retry_after_seconds
-                        && let Ok(retry_after) = HeaderValue::from_str(
-                            &retry_after_seconds.to_string(),
-                        )
-                    {
-                        rsp.headers_mut().insert("Retry-After", retry_after);
-                    }
-                    return Ok(rsp);
-                }
-            };
-
-            let rsp = match route_owner {
-                RouteOwner::Legacy => {
-                    handle_request(
-                        req,
-                        sources.clone(),
-                        sockets_map,
-                        events,
-                        shutdown,
-                        ws_event_channel_cap,
-                    )
-                    .await
-                }
-                RouteOwner::Axum => {
-                    handle_axum_request(
-                        req,
-                        sources,
-                        sockets_map,
-                        events,
-                        shutdown,
-                        ws_event_channel_cap,
-                        route_dispatch,
-                    )
-                    .await
-                }
-            };
-            drop(request_policy_permit);
-
-            // We insert all the custom headers set in the configuration here,
-            // skipping the ones that are invalid.
-            rsp.map(|mut rsp| {
-                rsp.headers_mut().extend(headers.as_ref().clone());
-                rsp
-            })
-            .or_else(|error| {
-                log_execution_service_error(request_id, &method, &path, &error);
-
-                Ok(execution_error_response(&error)
-                    .expect("Failed to build response"))
-            })
-        })
+fn policy_rejection_response(
+    rejection: policy::PolicyRejection,
+) -> Response<FullOrStreamBody> {
+    let mut rsp = response(rejection.status, rejection.body)
+        .expect("Failed to build policy response");
+    if let Some(retry_after_seconds) = rejection.retry_after_seconds
+        && let Ok(retry_after) =
+            HeaderValue::from_str(&retry_after_seconds.to_string())
+    {
+        rsp.headers_mut().insert("Retry-After", retry_after);
     }
+    rsp
 }
 
-async fn handle_axum_request<H>(
-    req: Request<Incoming>,
-    sources: Arc<H>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
-    route_dispatch: Arc<RouteDispatchPlan>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError>
-where
-    H: HandleRequest,
-{
-    let path = req.uri().path().to_string();
-
-    if rues::is_rues_path(&path) {
-        return rues::handle_request_rues(
-            req,
-            sources,
-            sockets_map,
-            events,
-            shutdown,
-            ws_event_channel_cap,
-        )
-        .await;
-    }
-
-    #[cfg(feature = "chain")]
-    {
-        if graphql::is_graphql_path(req.uri().path()) {
-            let handler = match sources.graphql_handler() {
-                Some(handler) => handler,
-                None => {
-                    return graphql::handle_graphql_http_error(
-                        StatusCode::NOT_FOUND,
-                        "GraphQL endpoint not configured",
-                    );
-                }
-            };
-
-            return graphql::handle_graphql_http(handler, req).await;
-        }
-    }
-    #[cfg(not(feature = "chain"))]
-    {
-        let _ = sources;
-        let _ = sockets_map;
-        let _ = events;
-        let _ = shutdown;
-        let _ = ws_event_channel_cap;
-    }
-
-    route_dispatch.handle_axum(req).await
+fn full_or_stream_to_axum_body(
+    response: Response<FullOrStreamBody>,
+) -> Response<AxumBody> {
+    let (parts, body) = response.into_parts();
+    Response::from_parts(parts, AxumBody::new(body))
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -507,22 +405,6 @@ fn execution_error_response(
     responses::api_error_response(status, message)
 }
 
-async fn handle_request<H>(
-    req: Request<Incoming>,
-    sources: Arc<H>,
-    _sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    _events: broadcast::Receiver<RuesEvent>,
-    _shutdown: broadcast::Receiver<Infallible>,
-    _ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError>
-where
-    H: HandleRequest,
-{
-    sources.handle_http(req).await
-}
-
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
@@ -534,13 +416,6 @@ pub trait HandleRequest: Send + Sync + 'static {
         &self,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData>;
-    async fn handle_http(
-        &self,
-        req: Request<Incoming>,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-        let _ = req;
-        Err(ExecutionError::NotFound("Path not found".to_string()))
-    }
 }
 
 #[cfg(test)]
@@ -550,8 +425,8 @@ mod tests {
 
     #[cfg(feature = "chain")]
     use async_graphql::{
-        BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Object,
-        Schema,
+        BatchRequest, BatchResponse, Context, EmptyMutation, EmptySubscription,
+        Object, Schema,
     };
     use dusk_core::abi::ContractId;
     use event::{BinaryWrapper, RequestData};
@@ -659,6 +534,39 @@ mod tests {
             let schema =
                 Schema::build(GraphqlQuery, EmptyMutation, EmptySubscription)
                     .finish();
+            schema.execute_batch(request).await
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    struct TestGraphqlHttpHeaderHandler;
+
+    #[cfg(feature = "chain")]
+    struct GraphqlHeaderQuery;
+
+    #[cfg(feature = "chain")]
+    #[Object]
+    impl GraphqlHeaderQuery {
+        async fn ping(&self, ctx: &Context<'_>) -> &'static str {
+            let _ = ctx
+                .insert_http_header("x-graphql-test-header", "set-by-handler");
+            "pong"
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl GraphqlHandler for TestGraphqlHttpHeaderHandler {
+        async fn execute_graphql(
+            &self,
+            request: BatchRequest,
+        ) -> BatchResponse {
+            let schema = Schema::build(
+                GraphqlHeaderQuery,
+                EmptyMutation,
+                EmptySubscription,
+            )
+            .finish();
             schema.execute_batch(request).await
         }
     }
@@ -823,6 +731,22 @@ mod tests {
         );
     }
 
+    fn assert_retry_after_positive_integer(response: &reqwest::Response) {
+        let retry_after = response
+            .headers()
+            .get("Retry-After")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert!(
+            !retry_after.is_empty(),
+            "429 responses should carry Retry-After",
+        );
+        let retry_after = retry_after
+            .parse::<u64>()
+            .expect("Retry-After should be a positive integer");
+        assert!(retry_after >= 1, "Retry-After should be at least 1 second");
+    }
+
     #[tokio::test]
     async fn http_query() {
         let (_server, local_addr, _event_sender) =
@@ -952,6 +876,49 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn configured_headers_are_added_to_policy_forbidden_responses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let mut policy = HttpPolicyConfig::default();
+        policy.acl.rules.push(policy::HttpPolicyAclRule {
+            id: "deny-test-echo".to_string(),
+            enabled: true,
+            action: policy::HttpPolicyAclAction::Deny,
+            path: "/on/test/echo".to_string(),
+            method: vec!["POST".to_string()],
+            headers: HashMap::new(),
+        });
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    headers,
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let header = response
+            .headers()
+            .get("x-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(header, "test-value");
+    }
+
+    #[tokio::test]
     async fn policy_graphql_class_rate_limit_rejects_with_too_many_requests() {
         let mut policy = HttpPolicyConfig::default();
         policy.global_limits.classes.graphql = policy::HttpPolicyClassLimit {
@@ -986,10 +953,7 @@ mod tests {
             .await
             .expect("Second request should complete");
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
-        assert!(
-            second.headers().contains_key("Retry-After"),
-            "429 responses should carry Retry-After"
-        );
+        assert_retry_after_positive_integer(&second);
     }
 
     #[tokio::test]
@@ -1026,10 +990,55 @@ mod tests {
             .await
             .expect("Second request should complete");
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
-        assert!(
-            second.headers().contains_key("Retry-After"),
-            "429 responses should carry Retry-After"
-        );
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[tokio::test]
+    async fn configured_headers_are_added_to_policy_rate_limited_responses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_http =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    headers,
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::NOT_FOUND);
+
+        let second = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("Second request should complete");
+
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        let header = second
+            .headers()
+            .get("x-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(header, "test-value");
+        assert_retry_after_positive_integer(&second);
     }
 
     #[tokio::test]
@@ -1083,10 +1092,7 @@ mod tests {
 
         assert_eq!(first.status(), StatusCode::OK);
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
-        assert!(
-            second.headers().contains_key("Retry-After"),
-            "429 responses should carry Retry-After"
-        );
+        assert_retry_after_positive_integer(&second);
     }
 
     #[tokio::test]
@@ -1345,6 +1351,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_rues_root_path_without_session_id_returns_failed_dependency() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/on"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::FAILED_DEPENDENCY,
+            "Session ID not provided or invalid",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn get_rues_root_path_with_session_id_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/on"))
+            .header("Rusk-Session-Id", "00112233445566778899aabbccddeeff")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Invalid URL path",
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn get_delete_rues_invalid_session_id_returns_failed_dependency() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
@@ -1379,6 +1426,50 @@ mod tests {
             delete_response,
             StatusCode::FAILED_DEPENDENCY,
             "Session ID not provided or invalid",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn put_rues_without_session_id_returns_failed_dependency() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([7; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+        let response = client
+            .put(path)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::FAILED_DEPENDENCY,
+            "Session ID not provided or invalid",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn put_rues_root_path_with_session_id_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .put(format!("http://{local_addr}/on"))
+            .header("Rusk-Session-Id", "00112233445566778899aabbccddeeff")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Invalid URL path",
         )
         .await;
     }
@@ -1632,6 +1723,48 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_handshake_returns_switching_protocols_and_session_id()
+     {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, response) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
+        let upgrade = response
+            .headers()
+            .get("Upgrade")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        assert_eq!(upgrade, "websocket");
+        assert!(
+            response.headers().contains_key("Sec-WebSocket-Accept"),
+            "Handshake should contain Sec-WebSocket-Accept"
+        );
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid_text = first_message
+            .into_text()
+            .expect("Session ID should come in a text message");
+        assert_eq!(
+            sid_text.len(),
+            32,
+            "Session ID should be a 16-byte hex string"
+        );
+        assert!(
+            SessionId::parse(&sid_text).is_some(),
+            "Session ID should be parseable"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
     async fn websocket_rues_missing_topic() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
@@ -1823,6 +1956,33 @@ mod tests {
             .expect("Response should be JSON");
         assert!(payload["errors"].is_array());
         assert!(!payload["errors"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_response_headers_from_handler_are_preserved() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHttpHeaderHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let header = response
+            .headers()
+            .get("x-graphql-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(header, "set-by-handler");
     }
 
     #[tokio::test]
