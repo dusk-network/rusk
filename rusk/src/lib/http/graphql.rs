@@ -21,10 +21,7 @@ use axum::{
     },
 };
 
-use super::event::{LimitedBodyError, collect_limited_body};
-use super::{
-    ExecutionError, GraphqlHandler, MAX_GRAPHQL_REQUEST_BODY_BYTES, response,
-};
+use super::{ExecutionError, GraphqlHandler, response};
 
 // ExecutionError is intentionally large; boxing it would add complexity
 // without meaningful benefit here.
@@ -108,30 +105,7 @@ where
             graphql_batch_response(StatusCode::OK, batch_response)
         }
         Method::POST => {
-            let (parts, body) = req.into_parts();
-            let body = match collect_limited_body(
-                body,
-                MAX_GRAPHQL_REQUEST_BODY_BYTES,
-            )
-            .await
-            {
-                Ok(body) => body,
-                Err(LimitedBodyError::TooLarge) => {
-                    return graphql_error_response(
-                        StatusCode::PAYLOAD_TOO_LARGE,
-                        format!(
-                            "Request body exceeds {MAX_GRAPHQL_REQUEST_BODY_BYTES} bytes"
-                        ),
-                    );
-                }
-                Err(LimitedBodyError::Other(err)) => {
-                    return graphql_error_response(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        err.to_string(),
-                    );
-                }
-            };
-            let req = Request::from_parts(parts, AxumBody::from(body));
+            let req = req.map(AxumBody::new);
             let batch_request =
                 match GraphQLBatchRequest::from_request(req, &()).await {
                     Ok(batch_request) => batch_request.into_inner(),

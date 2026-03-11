@@ -175,6 +175,7 @@ pub(super) struct ApiError {
     message: String,
     category: &'static str,
     allow: Option<&'static str>,
+    retry_after_seconds: Option<u64>,
 }
 
 impl ApiError {
@@ -188,6 +189,7 @@ impl ApiError {
             message: message.into(),
             category,
             allow: None,
+            retry_after_seconds: None,
         }
     }
 
@@ -197,7 +199,13 @@ impl ApiError {
             message: "Method not allowed".to_string(),
             category: "method_not_allowed",
             allow: Some(allow),
+            retry_after_seconds: None,
         }
+    }
+
+    pub(super) fn with_retry_after(mut self, retry_after_seconds: u64) -> Self {
+        self.retry_after_seconds = Some(retry_after_seconds.max(1));
+        self
     }
 }
 
@@ -231,6 +239,11 @@ impl IntoResponse for ApiError {
                 .headers_mut()
                 .insert(ALLOW, HeaderValue::from_static(allow));
         }
+        if let Some(retry_after) = self.retry_after_seconds
+            && let Ok(value) = HeaderValue::from_str(&retry_after.to_string())
+        {
+            response.headers_mut().insert("Retry-After", value);
+        }
         response
     }
 }
@@ -245,6 +258,7 @@ impl From<Error> for ApiError {
             message,
             category: http_error_category(&value),
             allow: None,
+            retry_after_seconds: None,
         }
     }
 }
@@ -257,6 +271,7 @@ impl From<ExecutionError> for ApiError {
             message,
             category,
             allow: None,
+            retry_after_seconds: None,
         }
     }
 }
@@ -285,6 +300,7 @@ impl From<RequestParseError> for ApiError {
                         message,
                         category: http_error_category(http_err),
                         allow: None,
+                        retry_after_seconds: None,
                     };
                 }
                 error!(error = %err, "Failed parsing RUES dispatch request");

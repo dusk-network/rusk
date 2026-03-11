@@ -13,7 +13,7 @@ use axum::body::Body;
 use axum::extract::{FromRequestParts, State, ws::WebSocketUpgrade};
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
-use axum::http::{HeaderMap, HeaderValue, Request, Response, StatusCode};
+use axum::http::{HeaderMap, Request, Response, StatusCode};
 use axum::middleware::{Next, from_fn_with_state};
 use axum::response::IntoResponse;
 use axum::response::Json;
@@ -21,12 +21,15 @@ use axum::routing::any;
 use serde_json::json;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use tower::ServiceExt;
+#[cfg(feature = "chain")]
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
 
+#[cfg(feature = "chain")]
+use super::MAX_GRAPHQL_REQUEST_BODY_BYTES;
 use super::error::ApiError;
 #[cfg(feature = "chain")]
 use super::graphql;
-use super::policy;
 use super::policy::HttpRequestPolicy;
 use super::rues;
 use super::rues::SubscriptionAction;
@@ -65,7 +68,12 @@ pub(super) fn build_app(state: HttpAppState) -> Router {
         .route("/on/{*path}", any(rues_route));
 
     #[cfg(feature = "chain")]
-    let router = router.route("/graphql", any(graphql_route));
+    let router = router.route(
+        "/graphql",
+        any(graphql_route).layer(RequestBodyLimitLayer::new(
+            MAX_GRAPHQL_REQUEST_BODY_BYTES,
+        )),
+    );
 
     #[cfg(feature = "http-wasm")]
     let router = router
@@ -85,20 +93,6 @@ pub(super) fn build_app(state: HttpAppState) -> Router {
         .with_state(state)
 }
 
-fn policy_rejection_response(
-    rejection: policy::PolicyRejection,
-) -> Response<Body> {
-    let mut response = super::response(rejection.status, rejection.body)
-        .expect("Failed to build policy response");
-    if let Some(retry_after_seconds) = rejection.retry_after_seconds
-        && let Ok(retry_after) =
-            HeaderValue::from_str(&retry_after_seconds.to_string())
-    {
-        response.headers_mut().insert("Retry-After", retry_after);
-    }
-    response
-}
-
 async fn policy_middleware(
     State(state): State<HttpAppState>,
     req: Request<Body>,
@@ -110,7 +104,14 @@ async fn policy_middleware(
             drop(permit);
             response
         }
-        Err(rejection) => policy_rejection_response(rejection),
+        Err(rejection) => {
+            let mut error =
+                ApiError::new(rejection.status, rejection.message, "policy");
+            if let Some(retry_after) = rejection.retry_after_seconds {
+                error = error.with_retry_after(retry_after);
+            }
+            error.into_response()
+        }
     }
 }
 

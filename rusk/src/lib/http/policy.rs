@@ -318,7 +318,7 @@ impl PolicyPermit {
 #[derive(Clone, Debug)]
 pub struct PolicyRejection {
     pub status: StatusCode,
-    pub body: String,
+    pub message: String,
     pub retry_after_seconds: Option<u64>,
 }
 
@@ -326,7 +326,7 @@ impl PolicyRejection {
     fn forbidden() -> Self {
         Self {
             status: StatusCode::FORBIDDEN,
-            body: r#"{"error":"forbidden"}"#.to_string(),
+            message: "forbidden".to_string(),
             retry_after_seconds: None,
         }
     }
@@ -334,7 +334,7 @@ impl PolicyRejection {
     fn too_many_requests(retry_after_seconds: u64) -> Self {
         Self {
             status: StatusCode::TOO_MANY_REQUESTS,
-            body: r#"{"error":"too_many_requests"}"#.to_string(),
+            message: "too_many_requests".to_string(),
             retry_after_seconds: Some(retry_after_seconds.max(1)),
         }
     }
@@ -756,7 +756,7 @@ mod tests {
 
         assert_eq!(second.status, StatusCode::TOO_MANY_REQUESTS);
         assert_eq!(second.retry_after_seconds, Some(1));
-        assert_eq!(second.body, r#"{"error":"too_many_requests"}"#);
+        assert_eq!(second.message, "too_many_requests");
 
         drop(first);
     }
