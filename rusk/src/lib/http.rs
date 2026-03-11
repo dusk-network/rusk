@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod axum_app;
 #[cfg(feature = "chain")]
 mod chain;
 #[cfg(feature = "chain")]
@@ -21,6 +22,11 @@ mod rues;
 mod rusk;
 mod stream;
 
+#[cfg(feature = "chain")]
+pub(crate) use driver::DriverExecutor;
+pub(crate) use event::{
+    DataType, ExecutionError, MessageResponse as EventResponse,
+};
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::future::Future;
@@ -57,7 +63,7 @@ use tokio::sync::{RwLock, broadcast, mpsc};
 use tokio::task::JoinError;
 use tokio::{io, task};
 use tracing::info;
-
+use self::axum_app::{RouteDispatchPlan, RouteOwner};
 use self::error::{log_execution_service_error, map_execution_error};
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 use self::event::{ResponseData, RuesEventUri, SessionId};
@@ -162,7 +168,7 @@ pub struct DataSources {
 
 #[cfg(feature = "chain")]
 #[async_trait]
-pub(crate) trait GraphqlHandler: Send + Sync + 'static {
+pub trait GraphqlHandler: Send + Sync + 'static {
     async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse;
 }
 
@@ -180,6 +186,11 @@ impl DataSources {
 impl HandleRequest for DataSources {
     fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
         self.sources.iter().any(|s| s.can_handle_rues(event))
+    }
+
+    #[cfg(feature = "chain")]
+    fn graphql_handler(&self) -> Option<&dyn GraphqlHandler> {
+        self.graphql.as_deref()
     }
 
     async fn handle_rues(
@@ -253,10 +264,12 @@ async fn listening_loop<H>(
 {
     let sources = Arc::new(handler);
     let sockets_map = Arc::new(RwLock::new(HashMap::new()));
+    let route_dispatch = Arc::new(RouteDispatchPlan::new());
 
     let service = ExecutionService {
         sources: sources.clone(),
         sockets_map: sockets_map.clone(),
+        route_dispatch,
         events: events.resubscribe(),
         shutdown: shutdown.resubscribe(),
         headers: Arc::new(headers),
@@ -300,6 +313,7 @@ struct ExecutionService<H> {
     sources: Arc<H>,
     sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
+    route_dispatch: Arc<RouteDispatchPlan>,
     events: broadcast::Receiver<RuesEvent>,
     shutdown: broadcast::Receiver<Infallible>,
     headers: Arc<HeaderMap>,
@@ -312,6 +326,7 @@ impl<H> Clone for ExecutionService<H> {
         Self {
             sources: self.sources.clone(),
             sockets_map: self.sockets_map.clone(),
+            route_dispatch: self.route_dispatch.clone(),
             events: self.events.resubscribe(),
             shutdown: self.shutdown.resubscribe(),
             headers: self.headers.clone(),
@@ -343,6 +358,8 @@ where
     fn call(&self, req: Request<Incoming>) -> Self::Future {
         let method = req.method().clone();
         let path = req.uri().path().to_string();
+        let route_dispatch = self.route_dispatch.clone();
+        let route_owner = route_dispatch.owner_for_path(&path);
         let request_id = rand::random::<u64>();
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
@@ -370,15 +387,31 @@ where
                 }
             };
 
-            let rsp = handle_request(
-                req,
-                sources,
-                sockets_map,
-                events,
-                shutdown,
-                ws_event_channel_cap,
-            )
-            .await;
+            let rsp = match route_owner {
+                RouteOwner::Legacy => {
+                    handle_request(
+                        req,
+                        sources.clone(),
+                        sockets_map,
+                        events,
+                        shutdown,
+                        ws_event_channel_cap,
+                    )
+                    .await
+                }
+                RouteOwner::Axum => {
+                    handle_axum_request(
+                        req,
+                        sources,
+                        sockets_map,
+                        events,
+                        shutdown,
+                        ws_event_channel_cap,
+                        route_dispatch,
+                    )
+                    .await
+                }
+            };
             drop(request_policy_permit);
 
             // We insert all the custom headers set in the configuration here,
@@ -395,6 +428,62 @@ where
             })
         })
     }
+}
+
+async fn handle_axum_request<H>(
+    req: Request<Incoming>,
+    sources: Arc<H>,
+    sockets_map: Arc<
+        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
+    >,
+    events: broadcast::Receiver<RuesEvent>,
+    shutdown: broadcast::Receiver<Infallible>,
+    ws_event_channel_cap: usize,
+    route_dispatch: Arc<RouteDispatchPlan>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError>
+where
+    H: HandleRequest,
+{
+    let path = req.uri().path().to_string();
+
+    if rues::is_rues_path(&path) {
+        return rues::handle_request_rues(
+            req,
+            sources,
+            sockets_map,
+            events,
+            shutdown,
+            ws_event_channel_cap,
+        )
+        .await;
+    }
+
+    #[cfg(feature = "chain")]
+    {
+        if graphql::is_graphql_path(req.uri().path()) {
+            let handler = match sources.graphql_handler() {
+                Some(handler) => handler,
+                None => {
+                    return graphql::handle_graphql_http_error(
+                        StatusCode::NOT_FOUND,
+                        "GraphQL endpoint not configured",
+                    );
+                }
+            };
+
+            return graphql::handle_graphql_http(handler, req).await;
+        }
+    }
+    #[cfg(not(feature = "chain"))]
+    {
+        let _ = sources;
+        let _ = sockets_map;
+        let _ = events;
+        let _ = shutdown;
+        let _ = ws_event_channel_cap;
+    }
+
+    route_dispatch.handle_axum(req).await
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -417,70 +506,30 @@ fn execution_error_response(
     let (status, message, _category) = map_execution_error(error);
     responses::api_error_response(status, message)
 }
+
 async fn handle_request<H>(
     req: Request<Incoming>,
     sources: Arc<H>,
-    sockets_map: Arc<
+    _sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
+    _events: broadcast::Receiver<RuesEvent>,
+    _shutdown: broadcast::Receiver<Infallible>,
+    _ws_event_channel_cap: usize,
 ) -> Result<Response<FullOrStreamBody>, ExecutionError>
 where
     H: HandleRequest,
 {
-    let path = req.uri().path();
-
-    // If the request is a RUES request, we handle it differently.
-    if rues::is_rues_path(path) {
-        return rues::handle_request_rues(
-            req,
-            sources.clone(),
-            sockets_map,
-            events,
-            shutdown,
-            ws_event_channel_cap,
-        )
-        .await;
-    }
-
-    #[cfg(feature = "http-wasm")]
-    {
-        // Map request path -> wasm bytes
-        if let Some(wallet_wasm) = match path {
-            "/static/drivers/wallet-core.wasm"
-            | "/static/drivers/wallet-core-1.0.1.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.0.1.wasm").to_vec(),
-            ),
-            "/static/drivers/wallet-core-1.3.0.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.3.0.wasm").to_vec(),
-            ),
-            "/static/drivers/wallet-core-1.6.0.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.6.0.wasm").to_vec(),
-            ),
-            _ => None,
-        } {
-            let mut response = Response::new(Full::from(wallet_wasm).into());
-            let headers = response.headers_mut();
-            headers.append(
-                "Content-Type",
-                HeaderValue::from_static("application/wasm"),
-            );
-            headers.append(
-                "Cache-Control",
-                HeaderValue::from_static("public, max-age=31536000, immutable"),
-            );
-            return Ok(response);
-        }
-    }
-
     sources.handle_http(req).await
 }
 
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
+    #[cfg(feature = "chain")]
+    fn graphql_handler(&self) -> Option<&dyn GraphqlHandler> {
+        None
+    }
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
@@ -621,6 +670,7 @@ mod tests {
     struct TestServerOptions {
         cert_and_key: Option<(&'static str, &'static str)>,
         policy: HttpPolicyConfig,
+        headers: HeaderMap,
     }
 
     async fn bind_test_server<H: HandleRequest>(
@@ -630,9 +680,38 @@ mod tests {
             .await
     }
 
+    async fn bind_test_server_with_headers<H: HandleRequest>(
+        handler: H,
+        headers: HeaderMap,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        bind_test_server_with_options(
+            handler,
+            TestServerOptions {
+                headers,
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
     async fn bind_test_server_with_options<H: HandleRequest>(
         handler: H,
         options: TestServerOptions,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        bind_test_server_with_headers_and_tls(
+            handler,
+            options.headers,
+            options.cert_and_key,
+            options.policy,
+        )
+        .await
+    }
+
+    async fn bind_test_server_with_headers_and_tls<H: HandleRequest>(
+        handler: H,
+        headers: HeaderMap,
+        cert_and_key: Option<(&'static str, &'static str)>,
+        policy: HttpPolicyConfig,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
         let (event_sender, event_receiver) =
             broadcast::channel(EVENT_CHANNEL_CAP);
@@ -641,9 +720,9 @@ mod tests {
             event_receiver,
             WS_EVENT_CHANNEL_CAP,
             "localhost:0",
-            HeaderMap::new(),
-            options.policy,
-            options.cert_and_key,
+            headers,
+            policy,
+            cert_and_key,
         )
         .await
         .expect("Binding the server to the address should succeed");
@@ -709,6 +788,39 @@ mod tests {
     ) {
         assert_status_contains(response, StatusCode::BAD_REQUEST, expected)
             .await;
+    }
+
+    async fn assert_graphql_error_contains(
+        response: reqwest::Response,
+        status: StatusCode,
+        expected: &str,
+    ) {
+        assert_eq!(response.status(), status);
+
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "application/json");
+
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        let json: serde_json::Value = serde_json::from_str(&body)
+            .expect("Error body should be valid JSON");
+        let error_msg = json
+            .get("errors")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|errors| errors.first())
+            .and_then(|error| error.get("message"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        assert!(
+            error_msg.contains(expected),
+            "Expected GraphQL error containing '{expected}', got: {body}"
+        );
     }
 
     #[tokio::test]
@@ -1711,6 +1823,303 @@ mod tests {
             .expect("Response should be JSON");
         assert!(payload["errors"].is_array());
         assert!(!payload["errors"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_get_query_returns_ok() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/graphql?query=%7Bping%7D"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_get_missing_query_returns_bad_request() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/graphql"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_graphql_error_contains(
+            response,
+            StatusCode::BAD_REQUEST,
+            "require a query parameter",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_put_returns_method_not_allowed_with_allow_header() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .put(format!("http://{local_addr}/graphql"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let allow_header = response
+            .headers()
+            .get(ALLOW)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+
+        assert_graphql_error_contains(
+            response,
+            StatusCode::METHOD_NOT_ALLOWED,
+            "Method not allowed",
+        )
+        .await;
+        assert_eq!(allow_header, "GET, POST");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_not_configured_returns_not_found() {
+        let handler = DataSources::default();
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/graphql?query=%7Bping%7D"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_graphql_error_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "GraphQL endpoint not configured",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_trailing_slash_path_works() {
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/graphql/"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "http-wasm")]
+    async fn http_wasm_wallet_core_alias_returns_wasm_with_cache_headers() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!(
+                "http://{local_addr}/static/drivers/wallet-core.wasm"
+            ))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let content_type = response
+            .headers()
+            .get("Content-Type")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+        let cache_control = response
+            .headers()
+            .get("Cache-Control")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+        let body = response
+            .bytes()
+            .await
+            .expect("Reading response body should succeed");
+
+        assert_eq!(content_type, "application/wasm");
+        assert_eq!(cache_control, "public, max-age=31536000, immutable");
+        assert!(!body.is_empty(), "WASM response body should not be empty");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "http-wasm")]
+    async fn http_wasm_versioned_paths_return_wasm() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let paths = [
+            "/static/drivers/wallet-core-1.0.1.wasm",
+            "/static/drivers/wallet-core-1.3.0.wasm",
+            "/static/drivers/wallet-core-1.6.0.wasm",
+        ];
+
+        let client = reqwest::Client::new();
+        for path in paths {
+            let response = client
+                .get(format!("http://{local_addr}{path}"))
+                .send()
+                .await
+                .expect("Requesting should succeed");
+
+            assert_eq!(response.status(), StatusCode::OK);
+            let content_type = response
+                .headers()
+                .get("Content-Type")
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or_default()
+                .to_string();
+            let cache_control = response
+                .headers()
+                .get("Cache-Control")
+                .and_then(|value| value.to_str().ok())
+                .unwrap_or_default()
+                .to_string();
+            let body = response
+                .bytes()
+                .await
+                .expect("Reading response body should succeed");
+
+            assert_eq!(content_type, "application/wasm");
+            assert_eq!(cache_control, "public, max-age=31536000, immutable");
+            assert!(
+                !body.is_empty(),
+                "WASM response body should not be empty for {path}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn configured_headers_are_added_to_success_responses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_headers(TestHandle, headers).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let header = response
+            .headers()
+            .get("x-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(header, "test-value");
+    }
+
+    #[tokio::test]
+    async fn configured_headers_are_added_to_error_responses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_headers(TestHandle, headers).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let header = response
+            .headers()
+            .get("x-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+        assert_eq!(header, "test-value");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_IMPLEMENTED,
+            "Unsupported operation",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_x_headers_are_reflected_case_insensitively() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .header("X-Trace-Id", "trace-123")
+            .header("Authorization", "secret")
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let trace_header = response
+            .headers()
+            .get("x-trace-id")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(trace_header, "trace-123");
+        assert!(
+            response.headers().get("authorization").is_none(),
+            "Non x-* headers should not be reflected"
+        );
     }
 
     fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {

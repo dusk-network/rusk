@@ -69,6 +69,8 @@ tokio-stream = { workspace = true, features = ["sync"] }
 tokio-rustls = { workspace = true }
 rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
 
 dusk-core = { workspace = true, features = ["zk"] }
 dusk-vm = { workspace = true }

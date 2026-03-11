@@ -18,7 +18,7 @@ use http_body_util::{
 };
 use hyper::body::{Body, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{Request, Response};
+use hyper::{HeaderMap, Request, Response};
 use pin_project::pin_project;
 use rand::Rng;
 use rand::distributions::{Distribution, Standard};
@@ -624,6 +624,23 @@ impl RuesDispatchEvent {
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_JSON))
             .unwrap_or_default()
     }
+
+    pub(crate) fn from_path_headers_and_body(
+        path: &str,
+        request_headers: &HeaderMap,
+        body_bytes: Vec<u8>,
+    ) -> Result<(Self, bool), RequestParseError> {
+        let (uri, headers, binary_request, binary_response) =
+            parse_rues_request_meta(path, request_headers)?;
+        Self::from_parsed_parts(
+            uri,
+            headers,
+            body_bytes,
+            binary_request,
+            binary_response,
+        )
+    }
+
     pub async fn from_request(
         req: Request<Incoming>,
     ) -> Result<(Self, bool), RequestParseError> {
@@ -632,12 +649,49 @@ impl RuesDispatchEvent {
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
             .ok_or(RequestParseError::InvalidPath)?;
 
-        let headers = parts
-            .headers
+        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
+        let bytes = collect_limited_request_body(body, max_body_bytes).await?;
+
+        Self::from_path_headers_and_body(
+            parts.uri.path(),
+            &parts.headers,
+            bytes,
+        )
+    }
+
+    fn from_parsed_parts(
+        uri: RuesEventUri,
+        headers: serde_json::Map<String, serde_json::Value>,
+        body_bytes: Vec<u8>,
+        binary_request: bool,
+        binary_response: bool,
+    ) -> Result<(Self, bool), RequestParseError> {
+        let data = parse_request_data(body_bytes, binary_request)?;
+        let ret = RuesDispatchEvent { headers, data, uri };
+        Ok((ret, binary_response))
+    }
+}
+
+fn parse_rues_request_meta(
+    path: &str,
+    request_headers: &HeaderMap,
+) -> Result<
+    (
+        RuesEventUri,
+        serde_json::Map<String, serde_json::Value>,
+        bool,
+        bool,
+    ),
+    RequestParseError,
+> {
+    let uri = RuesEventUri::parse_from_path(path)
+        .ok_or(RequestParseError::InvalidPath)?;
+
+    let headers =
+        request_headers
             .iter()
             .map(|(k, v)| {
                 let value = parse_request_header_value(k.as_str(), v)?;
-
                 Ok((k.to_string().to_lowercase(), value))
             })
             .collect::<Result<
@@ -645,62 +699,64 @@ impl RuesDispatchEvent {
                 RequestParseError,
             >>()?;
 
-        // HTTP REQUEST
-        let content_type = parts
-            .headers
-            .get(CONTENT_TYPE)
+    let content_type = request_headers
+        .get(CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or_default();
+
+    let binary_request = content_type == CONTENT_TYPE_BINARY;
+
+    let binary_response = binary_request
+        || request_headers
+            .get(ACCEPT)
             .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default();
 
-        let binary_request = content_type == CONTENT_TYPE_BINARY;
+    Ok((uri, headers, binary_request, binary_response))
+}
 
-        let binary_response = binary_request
-            || parts
-                .headers
-                .get(ACCEPT)
-                .and_then(|h| h.to_str().ok())
-                .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
-                .unwrap_or_default();
-
-        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
-        let bytes = Limited::new(body, max_body_bytes)
-            .collect()
-            .await
-            .map_err(|e| {
-                if e.downcast_ref::<LengthLimitError>().is_some() {
-                    RequestParseError::Other(
-                        super::HttpError::payload_too_large(format!(
-                            "Request body exceeds {max_body_bytes} bytes"
-                        ))
-                        .into(),
-                    )
-                } else {
-                    RequestParseError::Other(anyhow::Error::msg(e.to_string()))
-                }
-            })?
-            .to_bytes()
-            .to_vec();
-        let data = match binary_request {
-            true => bytes.into(),
-            _ => {
-                let text = String::from_utf8(bytes).map_err(|_| {
-                    RequestParseError::InvalidPayload("Invalid utf8".into())
-                })?;
-                if let Some(hex) = text.strip_prefix("0x") {
-                    if let Ok(bytes) = hex::decode(hex) {
-                        bytes.into()
-                    } else {
-                        text.into()
-                    }
-                } else {
-                    text.into()
-                }
+async fn collect_limited_request_body(
+    body: Incoming,
+    max_body_bytes: usize,
+) -> Result<Vec<u8>, RequestParseError> {
+    Limited::new(body, max_body_bytes)
+        .collect()
+        .await
+        .map_err(|e| {
+            if e.downcast_ref::<LengthLimitError>().is_some() {
+                RequestParseError::Other(
+                    super::HttpError::payload_too_large(format!(
+                        "Request body exceeds {max_body_bytes} bytes"
+                    ))
+                    .into(),
+                )
+            } else {
+                RequestParseError::Other(anyhow::Error::msg(e.to_string()))
             }
-        };
+        })
+        .map(|collected| collected.to_bytes().to_vec())
+}
 
-        let ret = RuesDispatchEvent { headers, data, uri };
+fn parse_request_data(
+    bytes: Vec<u8>,
+    binary_request: bool,
+) -> Result<RequestData, RequestParseError> {
+    if binary_request {
+        return Ok(bytes.into());
+    }
 
-        Ok((ret, binary_response))
+    let text = String::from_utf8(bytes).map_err(|_| {
+        RequestParseError::InvalidPayload("Invalid utf8".into())
+    })?;
+    if let Some(hex) = text.strip_prefix("0x") {
+        if let Ok(bytes) = hex::decode(hex) {
+            Ok(bytes.into())
+        } else {
+            Ok(text.into())
+        }
+    } else {
+        Ok(text.into())
     }
 }
 
