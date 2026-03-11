@@ -300,7 +300,7 @@ where
     let binary_response = binary_request || execution_response.force_binary;
     let is_empty = execution_response.error.is_none()
         && matches!(execution_response.data, DataType::None);
-    let mut resp = execution_response.into_http(binary_response)?;
+    let mut resp = execution_response.into_http(binary_response);
     if is_empty {
         *resp.status_mut() = StatusCode::ACCEPTED;
     }

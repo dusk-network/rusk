@@ -14,6 +14,7 @@ use std::task::{Context, Poll};
 use axum::body::{Body as AxumBody, Bytes, HttpBody};
 use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
+use axum::response::IntoResponse;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
 use http_body_util::{BodyExt, LengthLimitError, Limited};
@@ -43,24 +44,17 @@ pub struct MessageResponse {
 }
 
 impl MessageResponse {
-    // ExecutionError is intentionally large; boxing it would add complexity
-    // without meaningful benefit here.
-    #[allow(clippy::result_large_err)]
-    pub fn into_http(
-        self,
-        is_binary: bool,
-    ) -> Result<Response<AxumBody>, ExecutionError> {
+    pub fn into_http(self, is_binary: bool) -> Response<AxumBody> {
         if let Some((error, code)) = self.error {
             let code = StatusCode::from_u16(code)
                 .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
             let error_body = serde_json::json!({ "error": error }).to_string();
-            return Ok(Response::builder()
-                .status(code)
-                .header(
-                    CONTENT_TYPE,
-                    HeaderValue::from_static(CONTENT_TYPE_JSON),
-                )
-                .body(AxumBody::from(error_body))?);
+            return (
+                code,
+                [(CONTENT_TYPE, CONTENT_TYPE_JSON)],
+                AxumBody::from(error_body),
+            )
+                .into_response();
         }
 
         let mut headers = HashMap::new();
@@ -106,7 +100,7 @@ impl MessageResponse {
             response.headers_mut().insert(k, v);
         }
 
-        Ok(response)
+        response
     }
 
     pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
