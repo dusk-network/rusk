@@ -5,8 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use axum::http::StatusCode;
+use axum::http::header::{ALLOW, CONTENT_TYPE};
+use axum::http::{HeaderValue, Response};
+use axum::response::IntoResponse;
+use tracing::{debug, error};
 
 use super::event::ExecutionError;
+use super::event::RequestParseError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -162,6 +167,135 @@ pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
         | Error::Internal(_) => "Internal server error".to_string(),
     };
     (status, message)
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct ApiError {
+    status: StatusCode,
+    message: String,
+    category: &'static str,
+    allow: Option<&'static str>,
+}
+
+impl ApiError {
+    pub(super) fn new(
+        status: StatusCode,
+        message: impl Into<String>,
+        category: &'static str,
+    ) -> Self {
+        Self {
+            status,
+            message: message.into(),
+            category,
+            allow: None,
+        }
+    }
+
+    pub(super) fn method_not_allowed(allow: &'static str) -> Self {
+        Self {
+            status: StatusCode::METHOD_NOT_ALLOWED,
+            message: "Method not allowed".to_string(),
+            category: "method_not_allowed",
+            allow: Some(allow),
+        }
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response<axum::body::Body> {
+        if self.status.is_server_error() {
+            error!(
+                status = %self.status,
+                error_category = self.category,
+                error_message = %self.message,
+                "HTTP request failed"
+            );
+        } else {
+            debug!(
+                status = %self.status,
+                error_category = self.category,
+                error_message = %self.message,
+                "HTTP request rejected"
+            );
+        }
+        let mut response = super::response(
+            self.status,
+            serde_json::json!({ "error": self.message }).to_string(),
+        )
+        .expect("API error response should be buildable");
+        response
+            .headers_mut()
+            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        if let Some(allow) = self.allow {
+            response
+                .headers_mut()
+                .insert(ALLOW, HeaderValue::from_static(allow));
+        }
+        response
+    }
+}
+
+impl From<Error> for ApiError {
+    fn from(value: Error) -> Self {
+        let (status, message) = map_http_error_for_response(&value);
+        let status = StatusCode::from_u16(status)
+            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        Self {
+            status,
+            message,
+            category: http_error_category(&value),
+            allow: None,
+        }
+    }
+}
+
+impl From<ExecutionError> for ApiError {
+    fn from(value: ExecutionError) -> Self {
+        let (status, message, category) = map_execution_error(&value);
+        Self {
+            status,
+            message,
+            category,
+            allow: None,
+        }
+    }
+}
+
+impl From<RequestParseError> for ApiError {
+    fn from(value: RequestParseError) -> Self {
+        match value {
+            RequestParseError::InvalidPath => Self::new(
+                StatusCode::NOT_FOUND,
+                "Invalid URL path",
+                "invalid_path",
+            ),
+            RequestParseError::InvalidPayload(message) => Self::new(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                message,
+                "invalid_payload",
+            ),
+            RequestParseError::Other(err) => {
+                if let Some(http_err) = err.downcast_ref::<Error>() {
+                    let (status, message) =
+                        map_http_error_for_response(http_err);
+                    let status = StatusCode::from_u16(status)
+                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Self {
+                        status,
+                        message,
+                        category: http_error_category(http_err),
+                        allow: None,
+                    };
+                }
+                error!(error = %err, "Failed parsing RUES dispatch request");
+                Self::new(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed parsing request",
+                    "internal",
+                )
+            }
+        }
+    }
 }
 
 pub(super) fn map_execution_error(

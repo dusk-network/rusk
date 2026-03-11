@@ -23,15 +23,14 @@ use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use tower::ServiceExt;
 use tower_http::trace::TraceLayer;
 
-use super::error::map_execution_error;
+use super::error::ApiError;
 #[cfg(feature = "chain")]
 use super::graphql;
 use super::policy;
 use super::policy::HttpRequestPolicy;
-use super::responses;
 use super::rues;
 use super::rues::SubscriptionAction;
-use super::{ExecutionError, HandleRequest, RuesEvent, SessionId};
+use super::{HandleRequest, RuesEvent, SessionId};
 
 #[cfg(feature = "http-wasm")]
 const WALLET_CORE_ALIAS_PATH: &str = "/static/drivers/wallet-core.wasm";
@@ -77,18 +76,13 @@ pub(super) fn build_app(state: HttpAppState) -> Router {
 
     router
         .fallback(not_found)
+        .layer(from_fn_with_state(state.clone(), policy_middleware))
         .layer(from_fn_with_state(
             state.clone(),
-            policy_and_headers_middleware,
+            configured_headers_middleware,
         ))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
-}
-
-fn execution_error_to_axum_response(error: &ExecutionError) -> Response<Body> {
-    let (status, message, _category) = map_execution_error(error);
-    responses::api_error_response(status, message)
-        .expect("Failed to build execution error response")
 }
 
 fn policy_rejection_response(
@@ -105,20 +99,27 @@ fn policy_rejection_response(
     response
 }
 
-async fn policy_and_headers_middleware(
+async fn policy_middleware(
     State(state): State<HttpAppState>,
     req: Request<Body>,
     next: Next,
 ) -> Response<Body> {
-    let mut response = match state.policy.enforce(&req) {
+    match state.policy.enforce(&req) {
         Ok(permit) => {
             let response = next.run(req).await;
             drop(permit);
             response
         }
         Err(rejection) => policy_rejection_response(rejection),
-    };
+    }
+}
 
+async fn configured_headers_middleware(
+    State(state): State<HttpAppState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response<Body> {
+    let mut response = next.run(req).await;
     response
         .headers_mut()
         .extend(state.headers.as_ref().clone());
@@ -128,52 +129,46 @@ async fn policy_and_headers_middleware(
 async fn rues_route(
     State(state): State<HttpAppState>,
     req: Request<Body>,
-) -> Response<Body> {
+) -> Result<Response<Body>, ApiError> {
     let events = state.events.lock().await.resubscribe();
     let shutdown = state.shutdown.lock().await.resubscribe();
 
     let (mut parts, body) = req.into_parts();
     if let Ok(ws) = WebSocketUpgrade::from_request_parts(&mut parts, &()).await
     {
-        return rues::handle_request_rues_ws(
+        return Ok(rues::handle_request_rues_ws(
             ws,
             state.sockets_map.clone(),
             events,
             shutdown,
             state.ws_event_channel_cap,
         )
-        .await;
+        .await);
     }
     let req = Request::from_parts(parts, body);
 
-    match rues::handle_request_rues_http(req, state.sources, state.sockets_map)
-        .await
-    {
-        Ok(response) => response,
-        Err(error) => execution_error_to_axum_response(&error),
-    }
+    rues::handle_request_rues_http(req, state.sources, state.sockets_map).await
 }
 
 #[cfg(feature = "chain")]
 async fn graphql_route(
     State(state): State<HttpAppState>,
     req: Request<Body>,
-) -> Response<Body> {
+) -> Result<Response<Body>, ApiError> {
     let handler = match state.sources.graphql_handler() {
         Some(handler) => handler,
         None => {
-            return graphql::handle_graphql_http_error(
+            return Ok(graphql::handle_graphql_http_error(
                 StatusCode::NOT_FOUND,
                 "GraphQL endpoint not configured",
             )
-            .expect("GraphQL error response should be built");
+            .expect("GraphQL error response should be built"));
         }
     };
 
-    match graphql::handle_graphql_http(handler, req).await {
-        Ok(response) => response,
-        Err(error) => execution_error_to_axum_response(&error),
-    }
+    graphql::handle_graphql_http(handler, req)
+        .await
+        .map_err(ApiError::from)
 }
 
 async fn not_found() -> impl IntoResponse {

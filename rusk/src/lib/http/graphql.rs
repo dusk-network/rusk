@@ -4,22 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use async_graphql::http::{
-    MultipartOptions, parse_query_string, receive_batch_body,
-};
+use async_graphql::http::parse_query_string;
 use async_graphql::{
     BatchRequest, BatchResponse, ParseRequestError,
     Response as GraphqlResponse, ServerError,
 };
+use async_graphql_axum::{GraphQLBatchRequest, rejection::GraphQLRejection};
+use axum::body::Body as AxumBody;
 use axum::response::Response as AxumResponse;
 use axum::{
     body::{Bytes, HttpBody},
+    extract::FromRequest,
     http::{
         Method, Request, StatusCode,
         header::{ALLOW, CONTENT_TYPE, HeaderName, HeaderValue},
     },
 };
-use futures_util::io::Cursor;
 
 use super::event::{LimitedBodyError, collect_limited_body};
 use super::{
@@ -109,10 +109,6 @@ where
         }
         Method::POST => {
             let (parts, body) = req.into_parts();
-            let content_type = parts
-                .headers
-                .get(CONTENT_TYPE)
-                .and_then(|v| v.to_str().ok());
             let body = match collect_limited_body(
                 body,
                 MAX_GRAPHQL_REQUEST_BODY_BYTES,
@@ -135,26 +131,20 @@ where
                     );
                 }
             };
-            let reader = Cursor::new(body);
+            let req = Request::from_parts(parts, AxumBody::from(body));
+            let batch_request =
+                match GraphQLBatchRequest::from_request(req, &()).await {
+                    Ok(batch_request) => batch_request.into_inner(),
+                    Err(GraphQLRejection(err)) => {
+                        return graphql_error_response(
+                            graphql_parse_error_status(&err),
+                            err.to_string(),
+                        );
+                    }
+                };
 
-            let batch_request = receive_batch_body(
-                content_type,
-                reader,
-                MultipartOptions::default(),
-            )
-            .await;
-
-            match batch_request {
-                Ok(batch_request) => {
-                    let batch_response =
-                        handler.execute_graphql(batch_request).await;
-                    graphql_batch_response(StatusCode::OK, batch_response)
-                }
-                Err(err) => graphql_error_response(
-                    graphql_parse_error_status(&err),
-                    err.to_string(),
-                ),
-            }
+            let batch_response = handler.execute_graphql(batch_request).await;
+            graphql_batch_response(StatusCode::OK, batch_response)
         }
         _ => {
             let mut response = graphql_error_response(

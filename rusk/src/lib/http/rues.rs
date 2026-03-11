@@ -26,12 +26,10 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 use crate::VERSION;
-use super::error::{http_error_category, map_http_error_for_response};
-use super::event::check_rusk_version;
-use super::responses::{
-    api_error_response, http_error_response, method_not_allowed_response,
-    request_parse_error_response,
+use super::error::{
+    ApiError, http_error_category, map_http_error_for_response,
 };
+use super::event::check_rusk_version;
 use super::{
     DataType, EventResponse, ExecutionError, HandleRequest, HttpError,
     RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
@@ -54,27 +52,26 @@ pub(super) enum SubscriptionError {
     NotFound,
 }
 
-fn invalid_rues_path_response() -> AxumResponse {
-    api_error_response(StatusCode::NOT_FOUND, "Invalid URL path")
-        .expect("Invalid path response should be built")
+fn invalid_rues_path_error() -> ApiError {
+    ApiError::new(StatusCode::NOT_FOUND, "Invalid URL path", "invalid_path")
 }
 
-fn invalid_session_id_response() -> AxumResponse {
+fn invalid_session_id_error() -> ApiError {
     // TODO: Keep 424 for current RUES compatibility; revisit whether malformed
     // or missing session identifiers should be normalized to 400.
-    api_error_response(
+    ApiError::new(
         StatusCode::FAILED_DEPENDENCY,
         "Session ID not provided or invalid",
+        "invalid_session",
     )
-    .expect("Invalid session response should be built")
 }
 
-fn failed_consuming_request_response() -> AxumResponse {
-    api_error_response(
+fn failed_consuming_request_error() -> ApiError {
+    ApiError::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Failed consuming request",
+        "internal",
     )
-    .expect("Failed consuming request response should be built")
 }
 
 async fn handle_stream_rues(
@@ -266,14 +263,14 @@ pub(super) async fn handle_request_rues_http<H, B>(
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-) -> Result<AxumResponse, ExecutionError>
+) -> Result<AxumResponse, ApiError>
 where
     H: HandleRequest + ?Sized,
     B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     if let Err(err) = validate_rusk_version_headers(req.headers()) {
-        return http_error_response(&err);
+        return Err(err.into());
     }
 
     if req.method() == Method::POST {
@@ -286,7 +283,7 @@ where
 async fn handle_rues_post_request<H, B>(
     req: Request<B>,
     handler: Arc<H>,
-) -> Result<AxumResponse, ExecutionError>
+) -> Result<AxumResponse, ApiError>
 where
     H: HandleRequest + ?Sized,
     B: HttpBody<Data = Bytes> + Send + 'static,
@@ -295,22 +292,10 @@ where
     let (event, binary_request) =
         match RuesDispatchEvent::from_request(req).await {
             Ok(event) => event,
-            Err(err) => return request_parse_error_response(err),
+            Err(err) => return Err(err.into()),
         };
     let mut resp_headers = event.x_headers();
-    let (responder, mut receiver) = mpsc::unbounded_channel();
-    handle_execution_rues(handler, event, responder).await;
-
-    let execution_response = match receiver.recv().await {
-        Some(response) => response,
-        None => {
-            error!("RUES execution response channel closed unexpectedly");
-            return api_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal server error",
-            );
-        }
-    };
+    let execution_response = handle_execution_rues(handler, event).await;
     resp_headers.extend(execution_response.headers.clone());
     let binary_response = binary_request || execution_response.force_binary;
     let is_empty = execution_response.error.is_none()
@@ -321,12 +306,16 @@ where
     }
 
     for (k, v) in resp_headers {
-        let k = HeaderName::from_str(&k)?;
+        let k = HeaderName::from_str(&k)
+            .map_err(ExecutionError::from)
+            .map_err(ApiError::from)?;
         let v = match v {
             serde_json::Value::String(s) => HeaderValue::from_str(&s),
             serde_json::Value::Null => HeaderValue::from_str(""),
             _ => HeaderValue::from_str(&v.to_string()),
-        }?;
+        }
+        .map_err(ExecutionError::from)
+        .map_err(ApiError::from)?;
         resp.headers_mut().append(k, v);
     }
 
@@ -344,16 +333,12 @@ async fn handle_rues_subscription_request<B>(
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-) -> Result<AxumResponse, ExecutionError>
+) -> Result<AxumResponse, ApiError>
 where
     B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
-    let context =
-        match parse_subscription_request_context(req, sockets_map).await {
-            Ok(context) => context,
-            Err(response) => return Ok(response),
-        };
+    let context = parse_subscription_request_context(req, sockets_map).await?;
     dispatch_subscription_action(context).await
 }
 
@@ -362,20 +347,20 @@ async fn parse_subscription_request_context<B>(
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-) -> Result<SubscriptionRequestContext, AxumResponse> {
+) -> Result<SubscriptionRequestContext, ApiError> {
     let sid = match SessionId::parse_from_req(&req) {
-        None => return Err(invalid_session_id_response()),
+        None => return Err(invalid_session_id_error()),
         Some(sid) => sid,
     };
 
     let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
-        None => return Err(invalid_rues_path_response()),
+        None => return Err(invalid_rues_path_error()),
         Some(s) => s,
     };
 
     let action_sender = match sockets_map.read().await.get(&sid) {
         Some(sender) => sender.clone(),
-        None => return Err(invalid_session_id_response()),
+        None => return Err(invalid_session_id_error()),
     };
 
     Ok(SubscriptionRequestContext {
@@ -387,7 +372,7 @@ async fn parse_subscription_request_context<B>(
 
 async fn dispatch_subscription_action(
     context: SubscriptionRequestContext,
-) -> Result<AxumResponse, ExecutionError> {
+) -> Result<AxumResponse, ApiError> {
     let method = context.method;
     let action_sender = context.action_sender;
 
@@ -413,22 +398,24 @@ async fn dispatch_subscription_action(
             )
         }
         _ => {
-            return method_not_allowed_response("GET, DELETE");
+            return Err(ApiError::method_not_allowed("GET, DELETE"));
         }
     };
 
     if action_sender.send(action).await.is_err() {
-        return Ok(failed_consuming_request_response());
+        return Err(failed_consuming_request_error());
     }
 
     match reply.await {
-        Ok(Ok(())) => response(StatusCode::OK, ""),
-        Ok(Err(SubscriptionError::NotFound)) => {
-            api_error_response(StatusCode::NOT_FOUND, "Subscription not found")
-        }
+        Ok(Ok(())) => response(StatusCode::OK, "").map_err(ApiError::from),
+        Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "Subscription not found",
+            "not_found",
+        )),
         // TODO: consider returning 424 instead of 500 for reply channel
         // closure during session teardown
-        Err(_) => Ok(failed_consuming_request_response()),
+        Err(_) => Err(failed_consuming_request_error()),
     }
 }
 
@@ -451,8 +438,8 @@ fn validate_rusk_version_headers(headers: &HeaderMap) -> Result<(), HttpError> {
 async fn handle_execution_rues<H>(
     sources: Arc<H>,
     event: RuesDispatchEvent,
-    responder: mpsc::UnboundedSender<EventResponse>,
-) where
+) -> EventResponse
+where
     H: HandleRequest + ?Sized,
 {
     let mut rsp = sources
@@ -495,5 +482,5 @@ async fn handle_execution_rues<H>(
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
-    let _ = responder.send(rsp);
+    rsp
 }

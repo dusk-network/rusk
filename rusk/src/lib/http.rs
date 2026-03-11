@@ -16,7 +16,6 @@ mod graphql;
 mod policy;
 #[cfg(feature = "prover")]
 mod prover;
-mod responses;
 mod rues;
 #[cfg(feature = "chain")]
 mod rusk;
@@ -268,6 +267,7 @@ mod tests {
     use std::{fs, thread};
 
     use super::*;
+    use axum::response::IntoResponse;
 
     #[cfg(feature = "chain")]
     use async_graphql::{
@@ -577,6 +577,46 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "chain")]
+    async fn assert_graphql_ping_response(response: reqwest::Response) {
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[cfg(feature = "http-wasm")]
+    async fn assert_wasm_response(response: reqwest::Response, path: &str) {
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response_header(&response, "Content-Type"),
+            "application/wasm",
+        );
+        assert_eq!(
+            response_header(&response, "Cache-Control"),
+            "public, max-age=31536000, immutable",
+        );
+        let body = response
+            .bytes()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            !body.is_empty(),
+            "WASM response body should not be empty for {path}"
+        );
+    }
+
+    fn response_header(response: &reqwest::Response, header: &str) -> String {
+        response
+            .headers()
+            .get(header)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string()
+    }
+
     fn assert_retry_after_positive_integer(response: &reqwest::Response) {
         let retry_after = response
             .headers()
@@ -722,49 +762,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn configured_headers_are_added_to_policy_forbidden_responses() {
-        let mut headers = HeaderMap::new();
-        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
-
-        let mut policy = HttpPolicyConfig::default();
-        policy.acl.rules.push(policy::HttpPolicyAclRule {
-            id: "deny-test-echo".to_string(),
-            enabled: true,
-            action: policy::HttpPolicyAclAction::Deny,
-            path: "/on/test/echo".to_string(),
-            method: vec!["POST".to_string()],
-            headers: HashMap::new(),
-        });
-
-        let (_server, local_addr, _event_sender) =
-            bind_test_server_with_options(
-                TestHandle,
-                TestServerOptions {
-                    headers,
-                    policy,
-                    ..Default::default()
-                },
-            )
-            .await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .post(format!("http://{local_addr}/on/test/echo"))
-            .body("hello")
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_eq!(response.status(), StatusCode::FORBIDDEN);
-        let header = response
-            .headers()
-            .get("x-test-header")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-        assert_eq!(header, "test-value");
-    }
-
-    #[tokio::test]
     async fn policy_graphql_class_rate_limit_rejects_with_too_many_requests() {
         let mut policy = HttpPolicyConfig::default();
         policy.global_limits.classes.graphql = policy::HttpPolicyClassLimit {
@@ -840,12 +837,43 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn configured_headers_are_added_to_policy_rate_limited_responses() {
+    async fn configured_headers_are_added_to_policy_rejections() {
         let mut headers = HeaderMap::new();
         headers.insert("x-test-header", HeaderValue::from_static("test-value"));
 
-        let mut policy = HttpPolicyConfig::default();
-        policy.global_limits.classes.other_http =
+        let mut forbidden_policy = HttpPolicyConfig::default();
+        forbidden_policy.acl.rules.push(policy::HttpPolicyAclRule {
+            id: "deny-test-echo".to_string(),
+            enabled: true,
+            action: policy::HttpPolicyAclAction::Deny,
+            path: "/on/test/echo".to_string(),
+            method: vec!["POST".to_string()],
+            headers: HashMap::new(),
+        });
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    headers: headers.clone(),
+                    policy: forbidden_policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let forbidden = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+        assert_eq!(forbidden.status(), StatusCode::FORBIDDEN);
+        assert_eq!(response_header(&forbidden, "x-test-header"), "test-value");
+
+        let mut rate_limited_policy = HttpPolicyConfig::default();
+        rate_limited_policy.global_limits.classes.other_http =
             policy::HttpPolicyClassLimit {
                 rps: 1,
                 burst: 1,
@@ -857,13 +885,12 @@ mod tests {
                 TestHandle,
                 TestServerOptions {
                     headers,
-                    policy,
+                    policy: rate_limited_policy,
                     ..Default::default()
                 },
             )
             .await;
 
-        let client = reqwest::Client::new();
         let first = client
             .get(format!("http://{local_addr}/unknown"))
             .send()
@@ -876,14 +903,8 @@ mod tests {
             .send()
             .await
             .expect("Second request should complete");
-
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
-        let header = second
-            .headers()
-            .get("x-test-header")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-        assert_eq!(header, "test-value");
+        assert_eq!(response_header(&second, "x-test-header"), "test-value");
         assert_retry_after_positive_integer(&second);
     }
 
@@ -1053,12 +1074,10 @@ mod tests {
 
     #[tokio::test]
     async fn request_parse_other_http_internal_is_sanitized() {
-        let response = responses::request_parse_error_response(
-            event::RequestParseError::Other(
-                HttpError::internal("sensitive details").into(),
-            ),
-        )
-        .expect("response should be built");
+        let response = error::ApiError::from(event::RequestParseError::Other(
+            HttpError::internal("sensitive details").into(),
+        ))
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
@@ -1174,150 +1193,89 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_rues_without_session_id_returns_failed_dependency() {
+    async fn rues_session_and_path_validation_matrix() {
+        struct Case {
+            method: reqwest::Method,
+            path: String,
+            session_id: Option<&'static str>,
+            expected_status: StatusCode,
+            expected_error: &'static str,
+        }
+
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
         let contract_id_hex = hex::encode(ContractId::from_bytes([8; 32]));
-        let path =
-            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
-        let response = client
-            .get(path)
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            response,
-            StatusCode::FAILED_DEPENDENCY,
-            "Session ID not provided or invalid",
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    async fn get_rues_root_path_without_session_id_returns_failed_dependency() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
+        let topic_path = format!("/on/contracts:{contract_id_hex}/topic");
         let client = reqwest::Client::new();
-        let response = client
-            .get(format!("http://{local_addr}/on"))
-            .send()
-            .await
-            .expect("Requesting should succeed");
 
-        assert_status_contains(
-            response,
-            StatusCode::FAILED_DEPENDENCY,
-            "Session ID not provided or invalid",
-        )
-        .await;
-    }
+        let cases = vec![
+            Case {
+                method: reqwest::Method::GET,
+                path: topic_path.clone(),
+                session_id: None,
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/on".to_string(),
+                session_id: None,
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/on".to_string(),
+                session_id: Some("00112233445566778899aabbccddeeff"),
+                expected_status: StatusCode::NOT_FOUND,
+                expected_error: "Invalid URL path",
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: topic_path.clone(),
+                session_id: Some("invalid-session-id"),
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::DELETE,
+                path: topic_path.clone(),
+                session_id: Some("invalid-session-id"),
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::PUT,
+                path: topic_path,
+                session_id: None,
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::PUT,
+                path: "/on".to_string(),
+                session_id: Some("00112233445566778899aabbccddeeff"),
+                expected_status: StatusCode::NOT_FOUND,
+                expected_error: "Invalid URL path",
+            },
+        ];
 
-    #[tokio::test]
-    async fn get_rues_root_path_with_session_id_returns_not_found() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .get(format!("http://{local_addr}/on"))
-            .header("Rusk-Session-Id", "00112233445566778899aabbccddeeff")
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            response,
-            StatusCode::NOT_FOUND,
-            "Invalid URL path",
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    async fn get_delete_rues_invalid_session_id_returns_failed_dependency() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
-        let contract_id_hex = hex::encode(ContractId::from_bytes([9; 32]));
-        let path =
-            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
-
-        let get_response = client
-            .get(path.clone())
-            .header("Rusk-Session-Id", "invalid-session-id")
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            get_response,
-            StatusCode::FAILED_DEPENDENCY,
-            "Session ID not provided or invalid",
-        )
-        .await;
-
-        let delete_response = client
-            .delete(path)
-            .header("Rusk-Session-Id", "invalid-session-id")
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            delete_response,
-            StatusCode::FAILED_DEPENDENCY,
-            "Session ID not provided or invalid",
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    async fn put_rues_without_session_id_returns_failed_dependency() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
-        let contract_id_hex = hex::encode(ContractId::from_bytes([7; 32]));
-        let path =
-            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
-        let response = client
-            .put(path)
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            response,
-            StatusCode::FAILED_DEPENDENCY,
-            "Session ID not provided or invalid",
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    async fn put_rues_root_path_with_session_id_returns_not_found() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .put(format!("http://{local_addr}/on"))
-            .header("Rusk-Session-Id", "00112233445566778899aabbccddeeff")
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_status_contains(
-            response,
-            StatusCode::NOT_FOUND,
-            "Invalid URL path",
-        )
-        .await;
+        for case in cases {
+            let mut req = client.request(
+                case.method.clone(),
+                format!("http://{local_addr}{}", case.path),
+            );
+            if let Some(session_id) = case.session_id {
+                req = req.header("Rusk-Session-Id", session_id);
+            }
+            let response = req.send().await.expect("Requesting should succeed");
+            assert_status_contains(
+                response,
+                case.expected_status,
+                case.expected_error,
+            )
+            .await;
+        }
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -1833,177 +1791,118 @@ mod tests {
 
     #[tokio::test]
     #[cfg(feature = "chain")]
-    async fn graphql_get_query_returns_ok() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+    async fn graphql_route_behavior_matrix() {
+        struct Case {
+            method: reqwest::Method,
+            path: &'static str,
+            configure_handler: bool,
+            request_body: Option<&'static str>,
+            expected_status: StatusCode,
+            expected_error: Option<&'static str>,
+            expected_allow: Option<&'static str>,
+            expect_ping: bool,
+        }
 
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .get(format!("http://{local_addr}/graphql?query=%7Bping%7D"))
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let payload_bytes =
-            response.bytes().await.expect("Response should have body");
-        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
-            .expect("Response should be JSON");
-        assert_eq!(payload["data"]["ping"], "pong");
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "chain")]
-    async fn graphql_get_missing_query_returns_bad_request() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
-
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .get(format!("http://{local_addr}/graphql"))
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_graphql_error_contains(
-            response,
-            StatusCode::BAD_REQUEST,
-            "require a query parameter",
-        )
-        .await;
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "chain")]
-    async fn graphql_put_returns_method_not_allowed_with_allow_header() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
-
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .put(format!("http://{local_addr}/graphql"))
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        let allow_header = response
-            .headers()
-            .get(ALLOW)
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default()
-            .to_string();
-
-        assert_graphql_error_contains(
-            response,
-            StatusCode::METHOD_NOT_ALLOWED,
-            "Method not allowed",
-        )
-        .await;
-        assert_eq!(allow_header, "GET, POST");
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "chain")]
-    async fn graphql_not_configured_returns_not_found() {
-        let handler = DataSources::default();
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+        let cases = [
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql?query=%7Bping%7D",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::OK,
+                expected_error: None,
+                expected_allow: None,
+                expect_ping: true,
+            },
+            Case {
+                method: reqwest::Method::POST,
+                path: "/graphql/",
+                configure_handler: true,
+                request_body: Some(r#"{"query":"{ ping }"}"#),
+                expected_status: StatusCode::OK,
+                expected_error: None,
+                expected_allow: None,
+                expect_ping: true,
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::BAD_REQUEST,
+                expected_error: Some("require a query parameter"),
+                expected_allow: None,
+                expect_ping: false,
+            },
+            Case {
+                method: reqwest::Method::PUT,
+                path: "/graphql",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::METHOD_NOT_ALLOWED,
+                expected_error: Some("Method not allowed"),
+                expected_allow: Some("GET, POST"),
+                expect_ping: false,
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql?query=%7Bping%7D",
+                configure_handler: false,
+                request_body: None,
+                expected_status: StatusCode::NOT_FOUND,
+                expected_error: Some("GraphQL endpoint not configured"),
+                expected_allow: None,
+                expect_ping: false,
+            },
+        ];
 
         let client = reqwest::Client::new();
-        let response = client
-            .get(format!("http://{local_addr}/graphql?query=%7Bping%7D"))
-            .send()
-            .await
-            .expect("Requesting should succeed");
+        for case in cases {
+            let mut handler = DataSources::default();
+            if case.configure_handler {
+                handler.set_graphql_handler(TestGraphqlHandler);
+            }
+            let (_server, local_addr, _event_sender) =
+                bind_test_server(handler).await;
 
-        assert_graphql_error_contains(
-            response,
-            StatusCode::NOT_FOUND,
-            "GraphQL endpoint not configured",
-        )
-        .await;
-    }
+            let mut request = client.request(
+                case.method.clone(),
+                format!("http://{local_addr}{}", case.path),
+            );
+            if let Some(body) = case.request_body {
+                request = request
+                    .header("Content-Type", "application/json")
+                    .body(body.to_string());
+            }
+            let response =
+                request.send().await.expect("Requesting should succeed");
+            let allow_header = response_header(&response, ALLOW.as_str());
 
-    #[tokio::test]
-    #[cfg(feature = "chain")]
-    async fn graphql_trailing_slash_path_works() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+            if case.expect_ping {
+                assert_graphql_ping_response(response).await;
+            } else {
+                assert_graphql_error_contains(
+                    response,
+                    case.expected_status,
+                    case.expected_error.unwrap_or_default(),
+                )
+                .await;
+            }
 
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .post(format!("http://{local_addr}/graphql/"))
-            .header("Content-Type", "application/json")
-            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let payload_bytes =
-            response.bytes().await.expect("Response should have body");
-        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
-            .expect("Response should be JSON");
-        assert_eq!(payload["data"]["ping"], "pong");
+            if let Some(expected_allow) = case.expected_allow {
+                assert_eq!(allow_header, expected_allow);
+            }
+        }
     }
 
     #[tokio::test]
     #[cfg(feature = "http-wasm")]
-    async fn http_wasm_wallet_core_alias_returns_wasm_with_cache_headers() {
-        let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
-
-        let client = reqwest::Client::new();
-        let response = client
-            .get(format!(
-                "http://{local_addr}/static/drivers/wallet-core.wasm"
-            ))
-            .send()
-            .await
-            .expect("Requesting should succeed");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let content_type = response
-            .headers()
-            .get("Content-Type")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default()
-            .to_string();
-        let cache_control = response
-            .headers()
-            .get("Cache-Control")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default()
-            .to_string();
-        let body = response
-            .bytes()
-            .await
-            .expect("Reading response body should succeed");
-
-        assert_eq!(content_type, "application/wasm");
-        assert_eq!(cache_control, "public, max-age=31536000, immutable");
-        assert!(!body.is_empty(), "WASM response body should not be empty");
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "http-wasm")]
-    async fn http_wasm_versioned_paths_return_wasm() {
+    async fn http_wasm_paths_return_wasm_with_cache_headers() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
 
         let paths = [
+            "/static/drivers/wallet-core.wasm",
             "/static/drivers/wallet-core-1.0.1.wasm",
             "/static/drivers/wallet-core-1.3.0.wasm",
             "/static/drivers/wallet-core-1.6.0.wasm",
@@ -2016,36 +1915,12 @@ mod tests {
                 .send()
                 .await
                 .expect("Requesting should succeed");
-
-            assert_eq!(response.status(), StatusCode::OK);
-            let content_type = response
-                .headers()
-                .get("Content-Type")
-                .and_then(|value| value.to_str().ok())
-                .unwrap_or_default()
-                .to_string();
-            let cache_control = response
-                .headers()
-                .get("Cache-Control")
-                .and_then(|value| value.to_str().ok())
-                .unwrap_or_default()
-                .to_string();
-            let body = response
-                .bytes()
-                .await
-                .expect("Reading response body should succeed");
-
-            assert_eq!(content_type, "application/wasm");
-            assert_eq!(cache_control, "public, max-age=31536000, immutable");
-            assert!(
-                !body.is_empty(),
-                "WASM response body should not be empty for {path}"
-            );
+            assert_wasm_response(response, path).await;
         }
     }
 
     #[tokio::test]
-    async fn configured_headers_are_added_to_success_responses() {
+    async fn configured_headers_are_added_to_success_and_error_responses() {
         let mut headers = HeaderMap::new();
         headers.insert("x-test-header", HeaderValue::from_static("test-value"));
 
@@ -2053,47 +1928,25 @@ mod tests {
             bind_test_server_with_headers(TestHandle, headers).await;
 
         let client = reqwest::Client::new();
-        let response = client
+        let success = client
             .post(format!("http://{local_addr}/on/test/echo"))
             .body("hello")
             .send()
             .await
             .expect("Requesting should succeed");
+        assert_eq!(success.status(), StatusCode::OK);
+        assert_eq!(response_header(&success, "x-test-header"), "test-value");
 
-        assert_eq!(response.status(), StatusCode::OK);
-        let header = response
-            .headers()
-            .get("x-test-header")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-        assert_eq!(header, "test-value");
-    }
-
-    #[tokio::test]
-    async fn configured_headers_are_added_to_error_responses() {
-        let mut headers = HeaderMap::new();
-        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
-
-        let (_server, local_addr, _event_sender) =
-            bind_test_server_with_headers(TestHandle, headers).await;
-
-        let client = reqwest::Client::new();
-        let response = client
+        let error = client
             .post(format!("http://{local_addr}/on/test/unsupported"))
             .send()
             .await
             .expect("Requesting should succeed");
 
-        let header = response
-            .headers()
-            .get("x-test-header")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default()
-            .to_string();
-        assert_eq!(header, "test-value");
+        assert_eq!(response_header(&error, "x-test-header"), "test-value");
 
         assert_status_contains(
-            response,
+            error,
             StatusCode::NOT_IMPLEMENTED,
             "Unsupported operation",
         )
