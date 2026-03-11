@@ -326,7 +326,9 @@ enum BaseStateSource {
     File(PathBuf),
 }
 
-fn classify_base_state_url(url: Url) -> Result<BaseStateSource, Box<dyn Error>> {
+fn classify_base_state_url(
+    url: Url,
+) -> Result<BaseStateSource, Box<dyn Error>> {
     match url.scheme() {
         "https" => Ok(BaseStateSource::Https(url)),
         "file" => Ok(BaseStateSource::File(PathBuf::from(url.path()))),
@@ -386,10 +388,7 @@ mod tests {
                 "http://example.com/state.tar",
                 Err("Refusing insecure http://"),
             ),
-            (
-                "ftp://example.com/state.tar",
-                Err("Unsupported scheme"),
-            ),
+            ("ftp://example.com/state.tar", Err("Unsupported scheme")),
         ];
 
         for (raw, expected) in cases {
