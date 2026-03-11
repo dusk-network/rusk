@@ -8,13 +8,13 @@
 
 use std::path::PathBuf;
 
+use axum::http::HeaderMap;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_rusk_test::{RuskVmConfig, TestContext};
-use hyper::HeaderMap;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger};

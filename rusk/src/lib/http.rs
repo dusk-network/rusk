@@ -27,6 +27,7 @@ pub(crate) use driver::DriverExecutor;
 pub(crate) use event::{
     DataType, ExecutionError, MessageResponse as EventResponse,
 };
+
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -36,42 +37,29 @@ use std::sync::Arc;
 #[cfg(feature = "chain")]
 use async_graphql::{BatchRequest, BatchResponse};
 use async_trait::async_trait;
-use axum::body::Body as AxumBody;
+use axum::body::{Body as AxumBody, Bytes};
+#[cfg(test)]
+use axum::http::HeaderValue;
+#[cfg(test)]
+use axum::http::header::{ALLOW, CONTENT_TYPE};
+use axum::http::{HeaderMap, Response, StatusCode};
 #[cfg(test)]
 use http_body_util::BodyExt;
-use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
-#[cfg(test)]
-use hyper::header::ALLOW;
-#[cfg(test)]
-use hyper::header::CONTENT_TYPE;
-use hyper::http::HeaderValue;
-use hyper::{
-    HeaderMap, Request, Response, StatusCode,
-    body::{Bytes, Incoming},
-};
-use hyper_util::rt::TokioIo;
-use hyper_util::server::conn::auto::Builder as HttpBuilder;
-use hyper_util::service::TowerToHyperService;
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
+use tokio::sync::{Mutex, RwLock, broadcast};
 use tokio::task::JoinError;
 use tokio::{io, task};
-use tower::{ServiceBuilder, service_fn};
-use tower_http::trace::TraceLayer;
+use tower::Layer;
+use tower_http::normalize_path::NormalizePathLayer;
 use tracing::info;
-
-use crate::http::event::FullOrStreamBody;
 
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
 pub use policy::HttpPolicyConfig;
 
-use self::axum_app::{AxumRequestContext, RouteDispatchPlan};
-use self::error::{log_execution_service_error, map_execution_error};
+use self::axum_app::{HttpAppState, build_app};
 use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::policy::HttpRequestPolicy;
-use self::rues::SubscriptionAction;
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -87,8 +75,7 @@ pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
 pub(crate) const MAX_GRAPHQL_REQUEST_BODY_BYTES: usize = 256 * 1024;
 /// Cap for a single inbound WebSocket message on the RUES subscription socket.
 pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
-/// Cap for a single inbound WebSocket frame payload on the RUES subscription
-/// socket.
+/// Cap for a single inbound WebSocket frame payload on the RUES subscription socket.
 pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
 
 pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
@@ -210,19 +197,6 @@ impl HandleRequest for DataSources {
     }
 }
 
-#[derive(Clone)]
-struct TokioExecutor;
-
-impl<F> hyper::rt::Executor<F> for TokioExecutor
-where
-    F: Future + Send + 'static,
-    F::Output: Send + 'static,
-{
-    fn execute(&self, fut: F) {
-        task::spawn(fut);
-    }
-}
-
 async fn listening_loop<H>(
     handler: H,
     listener: Listener,
@@ -234,154 +208,31 @@ async fn listening_loop<H>(
 ) where
     H: HandleRequest,
 {
-    let sources: Arc<dyn HandleRequest> = Arc::new(handler);
-    let sockets_map = Arc::new(RwLock::new(HashMap::new()));
-    let route_dispatch = Arc::new(RouteDispatchPlan::new());
-    let dispatch_context = DispatchContext {
-        sources: sources.clone(),
-        sockets_map: sockets_map.clone(),
-        route_dispatch: route_dispatch.clone(),
-        events: events.resubscribe(),
-        shutdown: shutdown.resubscribe(),
+    let app = build_app(HttpAppState {
+        sources: Arc::new(handler),
+        sockets_map: Arc::new(RwLock::new(HashMap::new())),
+        events: Arc::new(Mutex::new(events)),
+        shutdown: Arc::new(Mutex::new(shutdown.resubscribe())),
         ws_event_channel_cap,
-    };
-    let policy = Arc::new(HttpRequestPolicy::new(policy));
-    let headers = Arc::new(headers);
-    let service = {
-        let dispatch_context = dispatch_context.clone();
-        let policy = policy.clone();
-        let headers = headers.clone();
+        policy: Arc::new(HttpRequestPolicy::new(policy)),
+        headers: Arc::new(headers),
+    });
 
-        ServiceBuilder::new()
-            .layer(TraceLayer::new_for_http())
-            .service(service_fn(move |req: Request<Incoming>| {
-                let dispatch_context = dispatch_context.clone();
-                let policy = policy.clone();
-                let headers = headers.clone();
+    // NormalizePathLayer strips trailing slashes so `/graphql/`
+    // is served by the `/graphql` route without duplication.
+    // It wraps the entire router so normalisation happens before
+    // any routing or middleware runs.
+    let app = NormalizePathLayer::trim_trailing_slash().layer(app);
+    let make_svc =
+        axum::ServiceExt::<axum::http::Request<axum::body::Body>>::into_make_service(app);
 
-                async move {
-                    let method = req.method().clone();
-                    let path = req.uri().path().to_string();
-                    let request_id = rand::random::<u64>();
-
-                    let request_policy_permit = match policy.enforce(&req) {
-                        Ok(permit) => permit,
-                        Err(rejection) => {
-                            let mut rsp = full_or_stream_to_axum_body(
-                                policy_rejection_response(rejection),
-                            );
-                            rsp.headers_mut().extend(headers.as_ref().clone());
-                            return Ok::<Response<AxumBody>, Infallible>(rsp);
-                        }
-                    };
-
-                    let rsp = dispatch_context
-                        .route_dispatch
-                        .handle_axum(
-                            req,
-                            AxumRequestContext {
-                                sources: dispatch_context.sources.clone(),
-                                sockets_map: dispatch_context
-                                    .sockets_map
-                                    .clone(),
-                                events: Arc::new(Mutex::new(
-                                    dispatch_context.events.resubscribe(),
-                                )),
-                                shutdown: Arc::new(Mutex::new(
-                                    dispatch_context.shutdown.resubscribe(),
-                                )),
-                                ws_event_channel_cap: dispatch_context
-                                    .ws_event_channel_cap,
-                            },
-                        )
-                        .await;
-                    drop(request_policy_permit);
-
-                    let mut rsp = match rsp {
-                        Ok(rsp) => rsp,
-                        Err(error) => {
-                            log_execution_service_error(
-                                request_id, &method, &path, &error,
-                            );
-                            full_or_stream_to_axum_body(
-                                execution_error_response(&error)
-                                    .expect("Failed to build response"),
-                            )
-                        }
-                    };
-                    rsp.headers_mut().extend(headers.as_ref().clone());
-                    Ok::<Response<AxumBody>, Infallible>(rsp)
-                }
-            }))
+    let shutdown_signal = async move {
+        let _ = shutdown.recv().await;
     };
 
-    loop {
-        tokio::select! {
-            _ = shutdown.recv() => {
-                break;
-            }
-            r = listener.accept() => {
-                let stream = match r {
-                    Ok(stream) => stream,
-                    Err(_) => break,
-                };
-
-                let http = HttpBuilder::new(TokioExecutor);
-
-                let stream = TokioIo::new(stream);
-                let service = TowerToHyperService::new(service.clone());
-
-                task::spawn(async move {
-                    let conn = http.serve_connection_with_upgrades(stream, service);
-                    conn.await
-                });
-            }
-        }
-    }
-}
-
-struct DispatchContext {
-    sources: Arc<dyn HandleRequest>,
-    sockets_map:
-        Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    route_dispatch: Arc<RouteDispatchPlan>,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
-}
-
-impl Clone for DispatchContext {
-    fn clone(&self) -> Self {
-        Self {
-            sources: self.sources.clone(),
-            sockets_map: self.sockets_map.clone(),
-            route_dispatch: self.route_dispatch.clone(),
-            events: self.events.resubscribe(),
-            shutdown: self.shutdown.resubscribe(),
-            ws_event_channel_cap: self.ws_event_channel_cap,
-        }
-    }
-}
-
-fn policy_rejection_response(
-    rejection: policy::PolicyRejection,
-) -> Response<FullOrStreamBody> {
-    let mut rsp = response(rejection.status, rejection.body)
-        .expect("Failed to build policy response");
-    if let Some(retry_after_seconds) = rejection.retry_after_seconds
-        && let Ok(retry_after) =
-            HeaderValue::from_str(&retry_after_seconds.to_string())
-    {
-        rsp.headers_mut().insert("Retry-After", retry_after);
-    }
-    rsp
-}
-
-fn full_or_stream_to_axum_body(
-    response: Response<FullOrStreamBody>,
-) -> Response<AxumBody> {
-    let (parts, body) = response.into_parts();
-    Response::from_parts(parts, AxumBody::new(body))
+    let _ = axum::serve(listener, make_svc)
+        .with_graceful_shutdown(shutdown_signal)
+        .await;
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -390,19 +241,12 @@ fn full_or_stream_to_axum_body(
 pub(super) fn response(
     status: StatusCode,
     body: impl Into<Bytes>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<Response<AxumBody>, ExecutionError> {
     Ok(Response::builder()
         .status(status)
         .header(RUSK_VERSION_HEADER, crate::VERSION.as_str())
-        .body(Full::new(body.into()).into())
+        .body(AxumBody::from(body.into()))
         .expect("Failed to build response"))
-}
-
-fn execution_error_response(
-    error: &ExecutionError,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    let (status, message, _category) = map_execution_error(error);
-    responses::api_error_response(status, message)
 }
 
 #[async_trait]
@@ -420,8 +264,10 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
-    use std::net::{SocketAddr, TcpStream};
+    use std::net::SocketAddr;
     use std::{fs, thread};
+
+    use super::*;
 
     #[cfg(feature = "chain")]
     use async_graphql::{
@@ -431,9 +277,9 @@ mod tests {
     use dusk_core::abi::ContractId;
     use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
-    use tungstenite::{Message, client};
-
-    use super::*;
+    use std::net::TcpStream;
+    use tungstenite::Message;
+    use tungstenite::client;
 
     /// A [`HandleRequest`] implementation that returns the same data
     struct TestHandle;

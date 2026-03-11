@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use hyper::HeaderMap;
+use axum::http::HeaderMap;
 use rusk::http::HttpPolicyConfig;
 use serde::de::{self, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -120,7 +120,7 @@ impl HttpConfig {
 mod vec_header_map {
     use std::fmt;
 
-    use hyper::header::{HeaderName, HeaderValue};
+    use axum::http::header::{HeaderName, HeaderValue};
     use serde::de::{Deserializer, Error as _, SeqAccess, Visitor};
     use serde::ser::{Error as _, SerializeSeq, Serializer};
 
@@ -194,7 +194,7 @@ mod vec_header_map {
 
 #[cfg(test)]
 mod tests {
-    use hyper::http::HeaderValue;
+    use axum::http::HeaderValue;
 
     use super::*;
 

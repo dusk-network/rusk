@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use hyper::header::{ALLOW, CONTENT_TYPE};
-use hyper::http::HeaderValue;
-use hyper::{Response, StatusCode};
+use axum::body::Body as AxumBody;
+use axum::http::header::{ALLOW, CONTENT_TYPE};
+use axum::http::{HeaderValue, Response, StatusCode};
 use tracing::{debug, error};
 
 use super::error::map_http_error_for_response;
@@ -20,7 +20,7 @@ use crate::http::event::FullOrStreamBody;
 pub(super) fn api_error_response(
     status: StatusCode,
     message: impl Into<String>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<Response<AxumBody>, ExecutionError> {
     let mut response = response(
         status,
         serde_json::json!({ "error": message.into() }).to_string(),
@@ -33,7 +33,7 @@ pub(super) fn api_error_response(
 
 pub(super) fn http_error_response(
     error: &HttpError,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<Response<AxumBody>, ExecutionError> {
     let (status, message) = map_http_error_for_response(error);
     let status = StatusCode::from_u16(status)
         .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
@@ -42,7 +42,7 @@ pub(super) fn http_error_response(
 
 pub(super) fn method_not_allowed_response(
     allow: &'static str,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<Response<AxumBody>, ExecutionError> {
     let mut response = api_error_response(
         StatusCode::METHOD_NOT_ALLOWED,
         "Method not allowed",
@@ -55,7 +55,7 @@ pub(super) fn method_not_allowed_response(
 
 pub(super) fn request_parse_error_response(
     error: RequestParseError,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+) -> Result<Response<AxumBody>, ExecutionError> {
     let (status, message, category) = match error {
         RequestParseError::InvalidPath => (
             StatusCode::NOT_FOUND,

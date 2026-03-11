@@ -60,8 +60,6 @@ dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
 pin-project = { workspace = true }
 tungstenite = { workspace = true }
-hyper = { workspace = true, features = ["server", "http1", "http2"] }
-hyper-util = { workspace = true, features = ["server", "http1", "http2", "service"] }
 http-body-util = { workspace = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
@@ -70,7 +68,7 @@ rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true, features = ["ws"] }
 tower = { workspace = true }
-tower-http = { workspace = true, features = ["trace"] }
+tower-http = { workspace = true, features = ["normalize-path", "trace"] }
 
 dusk-core = { workspace = true, features = ["zk"] }
 dusk-vm = { workspace = true }
@@ -85,6 +83,7 @@ node-data = { workspace = true, optional = true }
 
 ## GraphQL deps
 async-graphql = { workspace = true }
+async-graphql-axum = { workspace = true }
 
 ## RUES deps
 reqwest = { workspace = true }

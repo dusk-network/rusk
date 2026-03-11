@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use hyper::body::Incoming;
-use hyper::{HeaderMap, Request, StatusCode};
+use axum::http::{HeaderMap, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::warn;
@@ -192,9 +191,9 @@ impl HttpRequestPolicy {
     ///
     /// Returns a permit that must be held for the lifetime of request
     /// execution, or a policy rejection that should be returned to the client.
-    pub fn enforce(
+    pub fn enforce<B>(
         &self,
-        req: &Request<Incoming>,
+        req: &Request<B>,
     ) -> Result<PolicyPermit, PolicyRejection> {
         if !self.enabled {
             return Ok(PolicyPermit::none());

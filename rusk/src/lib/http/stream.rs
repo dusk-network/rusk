@@ -11,6 +11,7 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};
@@ -19,6 +20,7 @@ use tokio_rustls::TlsAcceptor;
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::server::TlsStream;
+use tracing::error;
 
 pub struct Listener {
     acceptor: Option<TlsAcceptor>,
@@ -73,8 +75,8 @@ impl Listener {
         })
     }
 
-    pub async fn accept(&self) -> io::Result<Stream> {
-        let (stream, _) = self.inner.accept().await?;
+    async fn accept_with_addr(&self) -> io::Result<(Stream, SocketAddr)> {
+        let (stream, addr) = self.inner.accept().await?;
 
         let stream = match &self.acceptor {
             None => Stream::Raw(stream),
@@ -84,12 +86,48 @@ impl Listener {
             }
         };
 
-        Ok(stream)
+        Ok((stream, addr))
     }
 
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.inner.local_addr()
     }
+}
+
+impl axum::serve::Listener for Listener {
+    type Io = Stream;
+    type Addr = SocketAddr;
+
+    async fn accept(&mut self) -> (Self::Io, Self::Addr) {
+        loop {
+            match self.accept_with_addr().await {
+                Ok(tup) => return tup,
+                Err(err) => handle_accept_error(err).await,
+            }
+        }
+    }
+
+    fn local_addr(&self) -> io::Result<Self::Addr> {
+        self.inner.local_addr()
+    }
+}
+
+async fn handle_accept_error(err: io::Error) {
+    if is_connection_error(&err) {
+        return;
+    }
+
+    error!("accept error: {err}");
+    tokio::time::sleep(Duration::from_secs(1)).await;
+}
+
+fn is_connection_error(err: &io::Error) -> bool {
+    matches!(
+        err.kind(),
+        io::ErrorKind::ConnectionRefused
+            | io::ErrorKind::ConnectionAborted
+            | io::ErrorKind::ConnectionReset
+    )
 }
 
 // TlsStream is inherently larger than TcpStream; boxing would add

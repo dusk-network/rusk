@@ -10,28 +10,27 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Body;
-use axum::extract::{FromRequestParts, ws::WebSocketUpgrade};
-use axum::http::StatusCode;
+use axum::extract::{FromRequestParts, State, ws::WebSocketUpgrade};
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
-use axum::http::{Request, Response};
+use axum::http::{HeaderMap, HeaderValue, Request, Response, StatusCode};
+use axum::middleware::{Next, from_fn_with_state};
 use axum::response::IntoResponse;
 use axum::response::Json;
 use axum::routing::any;
-#[cfg(feature = "chain")]
-use hyper::StatusCode as HyperStatusCode;
-use hyper::body::Incoming;
 use serde_json::json;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 use tower::ServiceExt;
+use tower_http::trace::TraceLayer;
 
-use super::SubscriptionAction;
 use super::error::map_execution_error;
-use super::event::FullOrStreamBody;
 #[cfg(feature = "chain")]
 use super::graphql;
+use super::policy;
+use super::policy::HttpRequestPolicy;
 use super::responses;
 use super::rues;
+use super::rues::SubscriptionAction;
 use super::{ExecutionError, HandleRequest, RuesEvent, SessionId};
 
 #[cfg(feature = "http-wasm")]
@@ -49,56 +48,25 @@ const WASM_CONTENT_TYPE: &str = "application/wasm";
 const WASM_CACHE_CONTROL: &str = "public, max-age=31536000, immutable";
 
 #[derive(Clone)]
-pub(super) struct AxumRequestContext {
+pub(super) struct HttpAppState {
     pub(super) sources: Arc<dyn HandleRequest>,
     pub(super) sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
     pub(super) events: Arc<Mutex<broadcast::Receiver<RuesEvent>>>,
     pub(super) shutdown: Arc<Mutex<broadcast::Receiver<Infallible>>>,
     pub(super) ws_event_channel_cap: usize,
+    pub(super) policy: Arc<HttpRequestPolicy>,
+    pub(super) headers: Arc<HeaderMap>,
 }
 
-#[derive(Clone)]
-pub(super) struct RouteDispatchPlan {
-    router: Router,
-}
-
-impl RouteDispatchPlan {
-    pub(super) fn new() -> Self {
-        let router = build_router();
-        Self { router }
-    }
-
-    pub(super) async fn handle_axum(
-        &self,
-        req: Request<Incoming>,
-        context: AxumRequestContext,
-    ) -> Result<Response<Body>, ExecutionError> {
-        let mut req = req.map(Body::new);
-        req.extensions_mut().insert(context);
-        Ok(match self.router.clone().oneshot(req).await {
-            Ok(response) => response,
-            Err(err) => match err {},
-        })
-    }
-}
-
-impl Default for RouteDispatchPlan {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-fn build_router() -> Router {
+pub(super) fn build_app(state: HttpAppState) -> Router {
     let router = Router::new();
     let router = router
         .route("/on", any(rues_route))
         .route("/on/{*path}", any(rues_route));
 
     #[cfg(feature = "chain")]
-    let router = router
-        .route("/graphql", any(graphql_route))
-        .route("/graphql/", any(graphql_route));
+    let router = router.route("/graphql", any(graphql_route));
 
     #[cfg(feature = "http-wasm")]
     let router = router
@@ -107,52 +75,79 @@ fn build_router() -> Router {
         .route(WALLET_CORE_1_3_0_PATH, any(wallet_core_1_3_0))
         .route(WALLET_CORE_1_6_0_PATH, any(wallet_core_1_6_0));
 
-    router.fallback(not_found)
+    router
+        .fallback(not_found)
+        .layer(from_fn_with_state(
+            state.clone(),
+            policy_and_headers_middleware,
+        ))
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
 }
 
 fn execution_error_to_axum_response(error: &ExecutionError) -> Response<Body> {
     let (status, message, _category) = map_execution_error(error);
-    let response = responses::api_error_response(status, message)
-        .expect("Failed to build execution error response");
-    full_or_stream_to_axum(response)
+    responses::api_error_response(status, message)
+        .expect("Failed to build execution error response")
 }
 
-fn full_or_stream_to_axum(
-    response: Response<FullOrStreamBody>,
+fn policy_rejection_response(
+    rejection: policy::PolicyRejection,
 ) -> Response<Body> {
-    let (parts, body) = response.into_parts();
-    Response::from_parts(parts, Body::new(body))
+    let mut response = super::response(rejection.status, rejection.body)
+        .expect("Failed to build policy response");
+    if let Some(retry_after_seconds) = rejection.retry_after_seconds
+        && let Ok(retry_after) =
+            HeaderValue::from_str(&retry_after_seconds.to_string())
+    {
+        response.headers_mut().insert("Retry-After", retry_after);
+    }
+    response
 }
 
-async fn rues_route(mut req: Request<Body>) -> Response<Body> {
-    let context = req
-        .extensions_mut()
-        .remove::<AxumRequestContext>()
-        .expect("axum request context should be present");
+async fn policy_and_headers_middleware(
+    State(state): State<HttpAppState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response<Body> {
+    let mut response = match state.policy.enforce(&req) {
+        Ok(permit) => {
+            let response = next.run(req).await;
+            drop(permit);
+            response
+        }
+        Err(rejection) => policy_rejection_response(rejection),
+    };
 
-    let events = context.events.lock().await.resubscribe();
-    let shutdown = context.shutdown.lock().await.resubscribe();
+    response
+        .headers_mut()
+        .extend(state.headers.as_ref().clone());
+    response
+}
+
+async fn rues_route(
+    State(state): State<HttpAppState>,
+    req: Request<Body>,
+) -> Response<Body> {
+    let events = state.events.lock().await.resubscribe();
+    let shutdown = state.shutdown.lock().await.resubscribe();
 
     let (mut parts, body) = req.into_parts();
     if let Ok(ws) = WebSocketUpgrade::from_request_parts(&mut parts, &()).await
     {
         return rues::handle_request_rues_ws(
             ws,
-            context.sockets_map,
+            state.sockets_map.clone(),
             events,
             shutdown,
-            context.ws_event_channel_cap,
+            state.ws_event_channel_cap,
         )
         .await;
     }
     let req = Request::from_parts(parts, body);
 
-    match rues::handle_request_rues_http(
-        req,
-        context.sources,
-        context.sockets_map,
-    )
-    .await
+    match rues::handle_request_rues_http(req, state.sources, state.sockets_map)
+        .await
     {
         Ok(response) => response,
         Err(error) => execution_error_to_axum_response(&error),
@@ -160,17 +155,15 @@ async fn rues_route(mut req: Request<Body>) -> Response<Body> {
 }
 
 #[cfg(feature = "chain")]
-async fn graphql_route(mut req: Request<Body>) -> Response<Body> {
-    let context = req
-        .extensions_mut()
-        .remove::<AxumRequestContext>()
-        .expect("axum request context should be present");
-
-    let handler = match context.sources.graphql_handler() {
+async fn graphql_route(
+    State(state): State<HttpAppState>,
+    req: Request<Body>,
+) -> Response<Body> {
+    let handler = match state.sources.graphql_handler() {
         Some(handler) => handler,
         None => {
             return graphql::handle_graphql_http_error(
-                HyperStatusCode::NOT_FOUND,
+                StatusCode::NOT_FOUND,
                 "GraphQL endpoint not configured",
             )
             .expect("GraphQL error response should be built");
@@ -228,15 +221,58 @@ mod tests {
     use axum::http::header::CONTENT_TYPE;
     use axum::http::{Request, StatusCode};
     use serde_json::Value;
+    use std::collections::HashMap;
+    use std::convert::Infallible;
+    use std::sync::Arc;
+    use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
     use tower::ServiceExt;
 
-    use super::RouteDispatchPlan;
+    use super::rues::SubscriptionAction;
+    use super::{HttpAppState, HttpRequestPolicy, build_app};
+    use crate::http::{HandleRequest, HttpPolicyConfig};
+    use crate::http::{
+        HttpResult, ResponseData, RuesDispatchEvent, RuesEvent, SessionId,
+    };
+
+    struct NoopHandle;
+
+    #[async_trait::async_trait]
+    impl HandleRequest for NoopHandle {
+        fn can_handle_rues(&self, _request: &RuesDispatchEvent) -> bool {
+            false
+        }
+
+        async fn handle_rues(
+            &self,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Err(crate::http::HttpError::Unsupported)
+        }
+    }
+
+    fn test_state() -> HttpAppState {
+        let (_events_tx, events_rx) = broadcast::channel::<RuesEvent>(1);
+        let (_shutdown_tx, shutdown_rx) = broadcast::channel::<Infallible>(1);
+        HttpAppState {
+            sources: Arc::new(NoopHandle),
+            sockets_map: Arc::new(RwLock::new(HashMap::<
+                SessionId,
+                mpsc::Sender<SubscriptionAction>,
+            >::new())),
+            events: Arc::new(Mutex::new(events_rx)),
+            shutdown: Arc::new(Mutex::new(shutdown_rx)),
+            ws_event_channel_cap: 1,
+            policy: Arc::new(HttpRequestPolicy::new(
+                HttpPolicyConfig::default(),
+            )),
+            headers: Arc::new(axum::http::HeaderMap::new()),
+        }
+    }
 
     #[tokio::test]
     async fn router_fallback_returns_json_not_found() {
-        let dispatch = RouteDispatchPlan::new();
-        let response = dispatch
-            .router
+        let app = build_app(test_state());
+        let response = app
             .clone()
             .oneshot(
                 Request::builder()

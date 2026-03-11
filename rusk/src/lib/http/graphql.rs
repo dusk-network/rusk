@@ -11,26 +11,20 @@ use async_graphql::{
     BatchRequest, BatchResponse, ParseRequestError,
     Response as GraphqlResponse, ServerError,
 };
-use axum::body::Body as AxumBody;
 use axum::response::Response as AxumResponse;
+use axum::{
+    body::{Bytes, HttpBody},
+    http::{
+        Method, Request, StatusCode,
+        header::{ALLOW, CONTENT_TYPE, HeaderName, HeaderValue},
+    },
+};
 use futures_util::io::Cursor;
-use hyper::body::{Body, Bytes};
-use hyper::header::{ALLOW, CONTENT_TYPE};
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::{Method, Request, Response, StatusCode};
 
 use super::event::{LimitedBodyError, collect_limited_body};
 use super::{
     ExecutionError, GraphqlHandler, MAX_GRAPHQL_REQUEST_BODY_BYTES, response,
 };
-use crate::http::event::FullOrStreamBody;
-
-fn full_or_stream_to_axum(
-    response: Response<FullOrStreamBody>,
-) -> AxumResponse {
-    let (parts, body) = response.into_parts();
-    AxumResponse::from_parts(parts, AxumBody::new(body))
-}
 
 // ExecutionError is intentionally large; boxing it would add complexity
 // without meaningful benefit here.
@@ -48,7 +42,7 @@ fn graphql_batch_response(
         let value = HeaderValue::from_bytes(value.as_bytes())?;
         headers.append(name, value);
     }
-    Ok(full_or_stream_to_axum(response))
+    Ok(response)
 }
 
 // ExecutionError is intentionally large; boxing it would add complexity
@@ -86,7 +80,7 @@ pub(super) async fn handle_graphql_http<B>(
     req: Request<B>,
 ) -> Result<AxumResponse, ExecutionError>
 where
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     match *req.method() {

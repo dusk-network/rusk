@@ -9,19 +9,23 @@ use std::convert::Infallible;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use axum::body::Body as AxumBody;
 use axum::extract::ws::{
     CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
 };
 use axum::response::Response as AxumResponse;
-use hyper::body::{Body, Bytes};
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::{HeaderMap, Method, Request, Response, StatusCode};
+use axum::{
+    body::{Bytes, HttpBody},
+    http::{
+        HeaderMap, Method, Request, StatusCode,
+        header::{HeaderName, HeaderValue},
+    },
+};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
+use crate::VERSION;
 use super::error::{http_error_category, map_http_error_for_response};
 use super::event::check_rusk_version;
 use super::responses::{
@@ -33,8 +37,6 @@ use super::{
     RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
     RuesEvent, RuesEventUri, SessionId, response,
 };
-use crate::VERSION;
-use crate::http::event::FullOrStreamBody;
 
 pub(super) enum SubscriptionAction {
     Subscribe {
@@ -52,16 +54,8 @@ pub(super) enum SubscriptionError {
     NotFound,
 }
 
-fn full_or_stream_to_axum(
-    response: Response<FullOrStreamBody>,
-) -> AxumResponse {
-    let (parts, body) = response.into_parts();
-    AxumResponse::from_parts(parts, AxumBody::new(body))
-}
-
 fn invalid_rues_path_response() -> AxumResponse {
     api_error_response(StatusCode::NOT_FOUND, "Invalid URL path")
-        .map(full_or_stream_to_axum)
         .expect("Invalid path response should be built")
 }
 
@@ -72,7 +66,6 @@ fn invalid_session_id_response() -> AxumResponse {
         StatusCode::FAILED_DEPENDENCY,
         "Session ID not provided or invalid",
     )
-    .map(full_or_stream_to_axum)
     .expect("Invalid session response should be built")
 }
 
@@ -81,7 +74,6 @@ fn failed_consuming_request_response() -> AxumResponse {
         StatusCode::INTERNAL_SERVER_ERROR,
         "Failed consuming request",
     )
-    .map(full_or_stream_to_axum)
     .expect("Failed consuming request response should be built")
 }
 
@@ -277,11 +269,11 @@ pub(super) async fn handle_request_rues_http<H, B>(
 ) -> Result<AxumResponse, ExecutionError>
 where
     H: HandleRequest + ?Sized,
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     if let Err(err) = validate_rusk_version_headers(req.headers()) {
-        return http_error_response(&err).map(full_or_stream_to_axum);
+        return http_error_response(&err);
     }
 
     if req.method() == Method::POST {
@@ -297,16 +289,13 @@ async fn handle_rues_post_request<H, B>(
 ) -> Result<AxumResponse, ExecutionError>
 where
     H: HandleRequest + ?Sized,
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     let (event, binary_request) =
         match RuesDispatchEvent::from_request(req).await {
             Ok(event) => event,
-            Err(err) => {
-                return request_parse_error_response(err)
-                    .map(full_or_stream_to_axum);
-            }
+            Err(err) => return request_parse_error_response(err),
         };
     let mut resp_headers = event.x_headers();
     let (responder, mut receiver) = mpsc::unbounded_channel();
@@ -319,8 +308,7 @@ where
             return api_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error",
-            )
-            .map(full_or_stream_to_axum);
+            );
         }
     };
     resp_headers.extend(execution_response.headers.clone());
@@ -342,7 +330,7 @@ where
         resp.headers_mut().append(k, v);
     }
 
-    Ok(full_or_stream_to_axum(resp))
+    Ok(resp)
 }
 
 struct SubscriptionRequestContext {
@@ -358,7 +346,7 @@ async fn handle_rues_subscription_request<B>(
     >,
 ) -> Result<AxumResponse, ExecutionError>
 where
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     let context =
@@ -425,8 +413,7 @@ async fn dispatch_subscription_action(
             )
         }
         _ => {
-            return method_not_allowed_response("GET, DELETE")
-                .map(full_or_stream_to_axum);
+            return method_not_allowed_response("GET, DELETE");
         }
     };
 
@@ -435,10 +422,9 @@ async fn dispatch_subscription_action(
     }
 
     match reply.await {
-        Ok(Ok(())) => response(StatusCode::OK, "").map(full_or_stream_to_axum),
+        Ok(Ok(())) => response(StatusCode::OK, ""),
         Ok(Err(SubscriptionError::NotFound)) => {
             api_error_response(StatusCode::NOT_FOUND, "Subscription not found")
-                .map(full_or_stream_to_axum)
         }
         // TODO: consider returning 424 instead of 500 for reply channel
         // closure during session teardown

@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use hyper::{Method, StatusCode};
-use tracing::{debug, error};
+use axum::http::StatusCode;
 
 use super::event::ExecutionError;
 
@@ -170,7 +169,6 @@ pub(super) fn map_execution_error(
 ) -> (StatusCode, String, &'static str) {
     match error {
         ExecutionError::Http(_)
-        | ExecutionError::Hyper(_)
         | ExecutionError::Json(_)
         | ExecutionError::Protocol(_)
         | ExecutionError::Tungstenite(_)
@@ -206,22 +204,4 @@ pub(super) fn http_error_category(error: &Error) -> &'static str {
         Error::Verification(_) => "verification",
         Error::Internal(_) => "internal",
     }
-}
-
-pub(super) fn log_execution_service_error(
-    request_id: u64,
-    method: &Method,
-    path: &str,
-    error: &ExecutionError,
-) {
-    let (status, _message, category) = map_execution_error(error);
-    error!(
-        request_id,
-        %method,
-        %path,
-        %status,
-        error_category = category,
-        error = %error,
-        "HTTP request handling failed"
-    );
 }

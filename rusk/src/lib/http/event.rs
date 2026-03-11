@@ -11,14 +11,12 @@ use std::str::FromStr;
 use std::sync::mpsc;
 use std::task::{Context, Poll};
 
+use axum::body::{Body as AxumBody, Bytes, HttpBody};
+use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
+use axum::http::{HeaderMap, Request, Response, StatusCode};
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
-use http_body_util::{
-    BodyExt, Either, Full, LengthLimitError, Limited, StreamBody,
-};
-use hyper::body::{Body, Bytes, Frame};
-use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{HeaderMap, Request, Response};
+use http_body_util::{BodyExt, LengthLimitError, Limited};
 use pin_project::pin_project;
 use rand::Rng;
 use rand::distributions::{Distribution, Standard};
@@ -26,7 +24,6 @@ use semver::{Prerelease, Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::hex::Hex;
-use tungstenite::http::HeaderValue;
 
 use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
 
@@ -52,18 +49,18 @@ impl MessageResponse {
     pub fn into_http(
         self,
         is_binary: bool,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    ) -> Result<Response<AxumBody>, ExecutionError> {
         if let Some((error, code)) = self.error {
-            let code = hyper::StatusCode::from_u16(code)
-                .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
+            let code = StatusCode::from_u16(code)
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
             let error_body = serde_json::json!({ "error": error }).to_string();
-            return Ok(hyper::Response::builder()
+            return Ok(Response::builder()
                 .status(code)
                 .header(
                     CONTENT_TYPE,
                     HeaderValue::from_static(CONTENT_TYPE_JSON),
                 )
-                .body(Full::new(error_body.into()).into())?);
+                .body(AxumBody::from(error_body))?);
         }
 
         let mut headers = HashMap::new();
@@ -75,39 +72,33 @@ impl MessageResponse {
                         true => wrapper.inner,
                         false => hex::encode(wrapper.inner).as_bytes().to_vec(),
                     };
-                    Full::from(Bytes::from(data)).into()
+                    AxumBody::from(data)
                 }
-                DataType::Text(text) => Full::from(Bytes::from(text)).into(),
+                DataType::Text(text) => AxumBody::from(text),
                 DataType::Json(value) => {
                     headers.insert(
                         CONTENT_TYPE,
                         HeaderValue::from_static(CONTENT_TYPE_JSON),
                     );
-                    Full::from(Bytes::from(value.to_string())).into()
+                    AxumBody::from(value.to_string())
                 }
-                DataType::Channel(receiver) => FullOrStreamBody {
-                    either: Either::Right(StreamBody::new(
-                        BinaryOrTextStream {
-                            hex: !is_binary,
-                            stream: stream::iter(receiver),
-                        },
-                    )),
-                },
+                DataType::Channel(receiver) => {
+                    AxumBody::from_stream(BinaryOrTextStream {
+                        hex: !is_binary,
+                        stream: stream::iter(receiver),
+                    })
+                }
                 DataType::JsonChannel(receiver) => {
                     headers.insert(
                         CONTENT_TYPE,
                         HeaderValue::from_static(CONTENT_TYPE_JSON),
                     );
-                    FullOrStreamBody {
-                        either: Either::Right(StreamBody::new(
-                            BinaryOrTextStream {
-                                hex: false,
-                                stream: stream::iter(receiver),
-                            },
-                        )),
-                    }
+                    AxumBody::from_stream(BinaryOrTextStream {
+                        hex: false,
+                        stream: stream::iter(receiver),
+                    })
                 }
-                DataType::None => Full::new(Bytes::new()).into(),
+                DataType::None => AxumBody::from(Bytes::new()),
             }
         };
         let mut response = Response::new(body);
@@ -134,35 +125,6 @@ impl MessageResponse {
 }
 
 #[pin_project]
-pub struct FullOrStreamBody {
-    #[pin]
-    either: Either<Full<Bytes>, StreamBody<BinaryOrTextStream>>,
-}
-
-impl From<Full<Bytes>> for FullOrStreamBody {
-    fn from(body: Full<Bytes>) -> Self {
-        Self {
-            either: Either::Left(body),
-        }
-    }
-}
-
-impl Body for FullOrStreamBody {
-    type Data =
-        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Data;
-    type Error =
-        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Error;
-
-    fn poll_frame(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
-        let this = self.project();
-        this.either.poll_frame(cx)
-    }
-}
-
-#[pin_project]
 pub struct BinaryOrTextStream {
     hex: bool,
     #[pin]
@@ -170,7 +132,7 @@ pub struct BinaryOrTextStream {
 }
 
 impl Stream for BinaryOrTextStream {
-    type Item = Result<Frame<Bytes>, std::convert::Infallible>;
+    type Item = Result<Bytes, std::convert::Infallible>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -179,10 +141,8 @@ impl Stream for BinaryOrTextStream {
         let this = self.project();
         this.stream.poll_next(cx).map(|next| {
             next.map(|x| match this.hex {
-                true => Ok(Frame::data(Bytes::from(
-                    hex::encode(x).as_bytes().to_vec(),
-                ))),
-                false => Ok(Frame::data(Bytes::from(x))),
+                true => Ok(Bytes::from(hex::encode(x).as_bytes().to_vec())),
+                false => Ok(Bytes::from(x)),
             })
         })
     }
@@ -364,9 +324,7 @@ const CONTENT_TYPE_JSON: &str = "application/json";
 #[derive(Debug, thiserror::Error)]
 pub enum ExecutionError {
     #[error("{0}")]
-    Http(#[from] hyper::http::Error),
-    #[error("{0}")]
-    Hyper(#[from] hyper::Error),
+    Http(#[from] axum::http::Error),
     #[error("{0}")]
     Json(#[from] serde_json::Error),
     #[error("{0}")]
@@ -649,7 +607,7 @@ impl RuesDispatchEvent {
         req: Request<B>,
     ) -> Result<(Self, bool), RequestParseError>
     where
-        B: Body<Data = Bytes> + Send + 'static,
+        B: HttpBody<Data = Bytes> + Send + 'static,
         B::Error: std::error::Error + Send + Sync + 'static,
     {
         let (parts, body) = req.into_parts();
@@ -729,7 +687,7 @@ pub(super) async fn collect_limited_body<B>(
     max_body_bytes: usize,
 ) -> Result<Vec<u8>, LimitedBodyError>
 where
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     Limited::new(body, max_body_bytes)
@@ -750,7 +708,7 @@ async fn collect_limited_request_body<B>(
     max_body_bytes: usize,
 ) -> Result<Vec<u8>, RequestParseError>
 where
-    B: Body<Data = Bytes> + Send + 'static,
+    B: HttpBody<Data = Bytes> + Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     collect_limited_body(body, max_body_bytes)
@@ -928,7 +886,7 @@ pub fn check_rusk_version(
 
 #[cfg(test)]
 mod tests {
-    use tungstenite::http::HeaderValue;
+    use axum::http::HeaderValue;
 
     use super::{
         DataType, RequestParseError, RuesEvent, RuesEventUri,
