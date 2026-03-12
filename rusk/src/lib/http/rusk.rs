@@ -439,9 +439,14 @@ impl Rusk {
                 Ok(ResponseData::new(receiver))
             }
         } else {
-            let raw_output = self
-                .query_raw(contract_id, &fn_name, call_arg)
-                .map_err(|e| RuskApiError::vm(e.to_string()))?;
+            let result = self.query_raw(contract_id, &fn_name, call_arg);
+            if let Err(crate::Error::Vm(dusk_vm::Error::MissingFeed)) = result {
+                return Err(RuskApiError::invalid_input(
+                    "rusk-feeder header is missing",
+                ));
+            }
+            let raw_output =
+                result.map_err(|e| RuskApiError::vm(e.to_string()))?;
             let response = if let Some(driver) = driver {
                 match driver.decode_output_fn(&fn_name, &raw_output) {
                     Ok(json) => ResponseData::new(json),
