@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add hardfork-governed transaction format selection for ledger replay and
+  ingress decoding.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed

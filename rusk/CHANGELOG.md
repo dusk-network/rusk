@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
+  decoding.
+
 ### Changed
 
 - Consolidate node config resolution and chain-upgrade policy into a single internal path.
+- Gate the Boreas deploy gas sufficiency rule behind feature activation so
+  pre-fork replay semantics remain unchanged.
 - Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
 - Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
 - Enforce HTTP ingress policy with ACL and endpoint-class global limits (`http.policy`), returning `403` on ACL deny and `429` with `Retry-After` on limit rejections.

@@ -1756,11 +1756,11 @@ mod tests {
         let aegis_activation_height = 10;
         set_aegis_activation_height(aegis_activation_height);
         assert_eq!(
-            hard_fork_at_with_activation(9, aegis_activation_height),
+            hard_fork_at_with_activation(9, aegis_activation_height, u64::MAX),
             HardFork::PreFork
         );
         assert_eq!(
-            hard_fork_at_with_activation(10, aegis_activation_height),
+            hard_fork_at_with_activation(10, aegis_activation_height, u64::MAX),
             HardFork::Aegis
         );
 

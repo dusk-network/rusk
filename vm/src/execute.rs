@@ -197,10 +197,12 @@ fn clear_session(session: &mut Session, config: &Config) {
 
 // Contract deployment will fail and charge full gas limit in the
 // following cases:
-// 1) Transaction gas limit is smaller than deploy charge plus gas used for
-//    spending funds.
-// 2) Transaction's bytecode's bytes are not consistent with bytecode's hash.
-// 3) Deployment fails for deploy-specific reasons like e.g.:
+// 1) Pre-Boreas: transaction gas limit is smaller than deploy charge plus gas
+//    used for spending funds.
+// 2) Boreas+: remaining gas after spending funds is smaller than deploy
+//    charge.
+// 3) Transaction's bytecode's bytes are not consistent with bytecode's hash.
+// 4) Deployment fails for deploy-specific reasons like e.g.:
 //      - contract already deployed
 //      - corrupted bytecode
 //      - sufficient gas to spend funds yet insufficient for deployment
@@ -214,12 +216,16 @@ fn contract_deploy(
         let gas_per_deploy_byte = config.gas_per_deploy_byte;
         let min_deploy_points = config.min_deploy_points;
 
-        let gas_left = tx.gas_limit() - receipt.gas_spent;
+        let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
         if receipt.data.is_ok() {
             let deploy_charge =
                 tx.deploy_charge(gas_per_deploy_byte, min_deploy_points);
-            let min_gas_limit = receipt.gas_spent + deploy_charge;
-            if gas_left < min_gas_limit {
+            if !is_deploy_gas_sufficient(
+                tx.gas_limit(),
+                receipt.gas_spent,
+                deploy_charge,
+                config.deploy_remaining_gas_check,
+            ) {
                 receipt.data = Err(ContractError::OutOfGas);
             } else if !verify_bytecode_hash(&deploy.bytecode) {
                 receipt.data = Err(ContractError::Panic(
@@ -247,6 +253,23 @@ fn contract_deploy(
                 }
             }
         }
+    }
+}
+
+fn is_deploy_gas_sufficient(
+    gas_limit: u64,
+    gas_spent: u64,
+    deploy_charge: u64,
+    deploy_remaining_gas_check: bool,
+) -> bool {
+    let gas_left = gas_limit.saturating_sub(gas_spent);
+
+    if deploy_remaining_gas_check {
+        gas_left >= deploy_charge
+    } else {
+        gas_spent
+            .checked_add(deploy_charge)
+            .is_some_and(|required| gas_left >= required)
     }
 }
 
@@ -326,5 +349,26 @@ mod tests {
                 135, 74, 23, 224, 119, 133
             ]
         );
+    }
+
+    #[test]
+    fn deploy_gas_check_matches_prefork_and_boreas_rules() {
+        for (gas_limit, gas_spent, deploy_charge, boreas, expected) in [
+            (10_000_000, 3_000_000, 5_000_000, false, false),
+            (10_000_000, 3_000_000, 5_000_000, true, true),
+            (7_000_000, 3_000_000, 5_000_000, false, false),
+            (7_000_000, 3_000_000, 5_000_000, true, false),
+            (u64::MAX, u64::MAX, 1, false, false),
+        ] {
+            assert_eq!(
+                is_deploy_gas_sufficient(
+                    gas_limit,
+                    gas_spent,
+                    deploy_charge,
+                    boreas,
+                ),
+                expected,
+            );
+        }
     }
 }

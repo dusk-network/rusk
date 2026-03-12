@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `secp256k1_recover` ABI host query (EVM `ecrecover` primitive) [#4012]
 - Add `transfer::phoenix_fee_check`
 - Add `phoenix_refund_check` for fee stealth address binding
+- Add hardfork-governed protocol transaction format versioning for legacy and
+  future explicit transaction encodings.
 
 ### Changed
 

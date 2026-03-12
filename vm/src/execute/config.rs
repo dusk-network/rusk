@@ -35,6 +35,10 @@ pub struct Config {
 
     /// Enforce phoenix fee refund stealth address matches change note
     pub phoenix_refund_check: bool,
+
+    /// Enforce the Boreas deploy gas rule that compares deploy charge against
+    /// remaining gas only.
+    pub deploy_remaining_gas_check: bool,
 }
 
 impl Default for Config {
@@ -56,5 +60,6 @@ impl Config {
         disable_wasm32: false,
         disable_3rd_party: false,
         phoenix_refund_check: false,
+        deploy_remaining_gas_check: false,
     };
 }

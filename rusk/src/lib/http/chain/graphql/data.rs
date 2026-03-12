@@ -277,7 +277,7 @@ impl SpentTransaction {
 #[Object]
 impl Transaction<'_> {
     pub async fn raw(&self) -> String {
-        hex::encode(self.0.inner.to_var_bytes())
+        hex::encode(self.0.protocol_bytes())
     }
 
     pub async fn json(&self) -> String {

@@ -59,6 +59,7 @@ pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
     pub const FEATURE_HARDFORK_AEGIS: &str = "HARDFORK_AEGIS";
+    pub const FEATURE_HARDFORK_BOREAS: &str = "HARDFORK_BOREAS";
     pub const FEATURE_PLONK_V2: &str = "PLONK_V2";
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
@@ -143,6 +144,8 @@ impl Config {
         );
         let phoenix_refund_check = self
             .feature_active_at(feature::FEATURE_HARDFORK_AEGIS, block_height);
+        let deploy_remaining_gas_check = self
+            .feature_active_at(feature::FEATURE_HARDFORK_BOREAS, block_height);
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -154,6 +157,7 @@ impl Config {
             disable_wasm32,
             disable_3rd_party,
             phoenix_refund_check,
+            deploy_remaining_gas_check,
         }
     }
 

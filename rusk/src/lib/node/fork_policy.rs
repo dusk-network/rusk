@@ -9,7 +9,10 @@ use dusk_core::signatures::bls::BlsVersion;
 use dusk_vm::{FeatureActivation, host_queries};
 use node_data::hard_fork::{self, HardFork};
 
-use super::{FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, RuskVmConfig};
+use super::{
+    FEATURE_HARDFORK_AEGIS, FEATURE_HARDFORK_BOREAS, FEATURE_PLONK_V2,
+    RuskVmConfig,
+};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Fork-coupled execution policy resolved at a specific block height.
@@ -27,6 +30,10 @@ pub(super) fn set_hard_fork_activations(vm_config: &RuskVmConfig) {
     hard_fork::set_aegis_activation_height(feature_activation_start(
         vm_config,
         FEATURE_HARDFORK_AEGIS,
+    ));
+    hard_fork::set_boreas_activation_height(feature_activation_start(
+        vm_config,
+        FEATURE_HARDFORK_BOREAS,
     ));
 }
 
@@ -53,7 +60,7 @@ pub(super) fn policy_at(
 pub(super) fn host_hard_fork(hard_fork: HardFork) -> host_queries::HardFork {
     match hard_fork {
         HardFork::PreFork => host_queries::HardFork::PreFork,
-        HardFork::Aegis => host_queries::HardFork::Aegis,
+        HardFork::Aegis | HardFork::Boreas => host_queries::HardFork::Aegis,
     }
 }
 
@@ -82,7 +89,7 @@ fn plonk_version_at(
                 PlonkVersion::V1
             }
         }
-        HardFork::Aegis => PlonkVersion::V3,
+        HardFork::Aegis | HardFork::Boreas => PlonkVersion::V3,
     }
 }
 
@@ -122,6 +129,10 @@ mod tests {
         );
         assert_eq!(
             plonk_version_at(&vm_config, 200, HardFork::Aegis),
+            PlonkVersion::V3
+        );
+        assert_eq!(
+            plonk_version_at(&vm_config, 300, HardFork::Boreas),
             PlonkVersion::V3
         );
     }

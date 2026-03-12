@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Select the active protocol transaction format when encoding propagated
+  transactions and decoding archived transaction bytes.
 - Add full-screen TUI mode as the default interactive wallet experience
 - Add startup sync gate screen in TUI with cycle stage, progress bar, status stream, and block-height feedback
 - Add chain tip height polling and display in TUI overview status

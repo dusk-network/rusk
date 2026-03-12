@@ -3969,7 +3969,7 @@ dependencies = [
 [[package]]
 name = "phoenix-circuits"
 version = "0.8.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3#492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3"
+source = "git+https://github.com/dusk-network/phoenix-private.git?rev=0908187#09081870f8338c1ee5d6de409c5be15c14a67de8"
 dependencies = [
  "dusk-bls12_381",
  "dusk-bytes",
@@ -3985,7 +3985,7 @@ dependencies = [
 [[package]]
 name = "phoenix-core"
 version = "0.35.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3#492fcff8e5c9ee6b8ab25ead2005e6d89e099bb3"
+source = "git+https://github.com/dusk-network/phoenix-private.git?rev=0908187#09081870f8338c1ee5d6de409c5be15c14a67de8"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
