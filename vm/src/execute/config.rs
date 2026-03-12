@@ -39,6 +39,10 @@ pub struct Config {
     /// Enforce the Boreas deploy gas rule that compares deploy charge against
     /// remaining gas only.
     pub deploy_remaining_gas_check: bool,
+
+    /// Charge gas consumed by the contract's `init` function during
+    /// deployment.
+    pub charge_init_gas: bool,
 }
 
 impl Default for Config {
@@ -61,5 +65,6 @@ impl Config {
         disable_3rd_party: false,
         phoenix_refund_check: false,
         deploy_remaining_gas_check: false,
+        charge_init_gas: false,
     };
 }

@@ -216,7 +216,6 @@ fn contract_deploy(
         let gas_per_deploy_byte = config.gas_per_deploy_byte;
         let min_deploy_points = config.min_deploy_points;
 
-        let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
         if receipt.data.is_ok() {
             let deploy_charge =
                 tx.deploy_charge(gas_per_deploy_byte, min_deploy_points);
@@ -232,6 +231,12 @@ fn contract_deploy(
                     "failed bytecode hash check".into(),
                 ))
             } else {
+                let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
+                let init_budget = if config.charge_init_gas {
+                    gas_left.saturating_sub(deploy_charge)
+                } else {
+                    gas_left
+                };
                 let result = session.deploy_raw(
                     Some(gen_contract_id(
                         &deploy.bytecode.bytes,
@@ -241,11 +246,21 @@ fn contract_deploy(
                     deploy.bytecode.bytes.as_slice(),
                     deploy.init_args.clone(),
                     deploy.owner.clone(),
-                    gas_left,
+                    init_budget,
                 );
                 match result {
-                    // Should the gas spent by the INIT method charged too?
-                    Ok(_) => receipt.gas_spent += deploy_charge,
+                    Ok((_, init_receipt)) => {
+                        receipt.gas_spent =
+                            receipt.gas_spent.saturating_add(deploy_charge);
+                        if config.charge_init_gas {
+                            if let Some(init_receipt) = init_receipt {
+                                receipt.gas_spent = receipt
+                                    .gas_spent
+                                    .saturating_add(init_receipt.gas_spent);
+                                receipt.events.extend(init_receipt.events);
+                            }
+                        }
+                    }
                     Err(err) => {
                         let msg = format!("failed deployment: {err:?}");
                         receipt.data = Err(ContractError::Panic(msg))
