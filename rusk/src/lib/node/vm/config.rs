@@ -144,8 +144,10 @@ impl Config {
         );
         let phoenix_refund_check = self
             .feature_active_at(feature::FEATURE_HARDFORK_AEGIS, block_height);
-        let deploy_remaining_gas_check = self
+        let boreas_active = self
             .feature_active_at(feature::FEATURE_HARDFORK_BOREAS, block_height);
+        let deploy_remaining_gas_check = boreas_active;
+        let charge_init_gas = boreas_active;
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -158,6 +160,7 @@ impl Config {
             disable_3rd_party,
             phoenix_refund_check,
             deploy_remaining_gas_check,
+            charge_init_gas,
         }
     }
 
