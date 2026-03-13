@@ -148,6 +148,7 @@ impl Config {
             .feature_active_at(feature::FEATURE_HARDFORK_BOREAS, block_height);
         let deploy_remaining_gas_check = boreas_active;
         let charge_init_gas = boreas_active;
+        let withdrawal_nullifier_check = boreas_active;
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -161,6 +162,7 @@ impl Config {
             phoenix_refund_check,
             deploy_remaining_gas_check,
             charge_init_gas,
+            withdrawal_nullifier_check,
         }
     }
 
