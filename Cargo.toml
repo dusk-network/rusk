@@ -186,7 +186,7 @@ dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = 
 bls12_381-bls = { git = "https://github.com/dusk-network/bls12_381-bls-private.git", rev = "2bbf457d31d83df92f3afeca8e9fc72c3d33545b" }
 dusk-jubjub = { git = "https://github.com/dusk-network/jubjub-private.git", rev = "6e2b63f59edac8afa4f81a28b12d88529af37cdb" }
 jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", rev = "1f0d481fb29282c69fdc0063a0404cb89a53bd10" }
-piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "e76983146053b9cea2e3cdb32fa96b3e5ec52af2" }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "e76983146053b9cea2e3cdb32fa96b3e5ec52af2" }
+piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "bd9835a7df622d7298e94c6d3e4906272c6b1aab" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "bd9835a7df622d7298e94c6d3e4906272c6b1aab" }
 phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
 phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
