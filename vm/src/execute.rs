@@ -11,8 +11,10 @@ use blake2b_simd::Params;
 use dusk_core::abi::{CONTRACT_ID_BYTES, ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::withdraw::{Withdraw, WithdrawReplayToken};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use piecrust::{CallReceipt, Error, Session};
+use rkyv::Deserialize;
 use wasmparser::*;
 
 pub use config::Config;
@@ -130,6 +132,24 @@ pub fn execute(
 
     let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
 
+    // Register a call hook to enforce that Phoenix withdrawal replay tokens
+    // carry exactly the same number of nullifiers as the encapsulating
+    // transaction. This is a defense-in-depth measure against audit finding
+    // P1.6-3 (subset-vs-equality in mint_withdrawal).
+    //
+    // Gated behind the Boreas hard fork activation height.
+    if config.withdrawal_nullifier_check && tx.call().is_some() {
+        let tx_nullifier_count = tx.nullifiers().len();
+        session.set_call_hook(Box::new(move |callee, fn_name, fn_args| {
+            check_withdrawal_nullifiers(
+                callee,
+                fn_name,
+                fn_args,
+                tx_nullifier_count,
+            )
+        }));
+    }
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session
@@ -193,6 +213,36 @@ fn clear_session(session: &mut Session, config: &Config) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
     }
+}
+
+/// Checks that a withdrawal's Phoenix replay token nullifier count matches the
+/// encapsulating transaction's nullifier count.
+///
+/// Returns `false` when the nullifier count mismatches or the arguments
+/// cannot be deserialized (fail-closed). Returns `true` for non-withdrawal
+/// calls, Moonlight tokens, or matching counts.
+fn check_withdrawal_nullifiers(
+    callee: &dusk_core::abi::ContractId,
+    fn_name: &str,
+    fn_args: &[u8],
+    tx_nullifier_count: usize,
+) -> bool {
+    if *callee != TRANSFER_CONTRACT || fn_name != "withdraw" {
+        return true;
+    }
+    let Ok(root) = rkyv::check_archived_root::<Withdraw>(fn_args) else {
+        return false;
+    };
+    let withdraw: Withdraw = match root.deserialize(&mut rkyv::Infallible) {
+        Ok(w) => w,
+        Err(infallible) => match infallible {},
+    };
+    if let WithdrawReplayToken::Phoenix(nullifiers) = withdraw.token() {
+        if nullifiers.len() != tx_nullifier_count {
+            return false;
+        }
+    }
+    true
 }
 
 // Contract deployment will fail and charge full gas limit in the
@@ -339,7 +389,148 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
 
+    use dusk_core::BlsScalar;
+
     use super::*;
+
+    #[test]
+    fn check_withdrawal_nullifiers_matching_count_passes() {
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let note_sk = dusk_core::signatures::schnorr::SecretKey::random(rng);
+        let note_pk = dusk_core::signatures::schnorr::PublicKey::from(&note_sk);
+        let address =
+            dusk_core::transfer::phoenix::StealthAddress::from_raw_unchecked(
+                *note_pk.as_ref(),
+                note_pk,
+            );
+
+        let nullifiers = vec![BlsScalar::from(1), BlsScalar::from(2)];
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &note_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Phoenix(address),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Phoenix(
+                nullifiers.clone(),
+            ),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        assert!(check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &args,
+            nullifiers.len(),
+        ));
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_mismatched_count_rejects() {
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let note_sk = dusk_core::signatures::schnorr::SecretKey::random(rng);
+        let note_pk = dusk_core::signatures::schnorr::PublicKey::from(&note_sk);
+        let address =
+            dusk_core::transfer::phoenix::StealthAddress::from_raw_unchecked(
+                *note_pk.as_ref(),
+                note_pk,
+            );
+
+        let nullifiers = vec![BlsScalar::from(1), BlsScalar::from(2)];
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &note_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Phoenix(address),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Phoenix(
+                nullifiers,
+            ),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        // Mismatched count: 2 nullifiers in token, but tx has 3
+        assert!(!check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &args,
+            3,
+        ));
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_ignores_non_withdraw_calls() {
+        assert!(check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "refund",
+            &[],
+            5,
+        ));
+
+        assert!(check_withdrawal_nullifiers(
+            &ContractId::from_bytes([0xAA; 32]),
+            "withdraw",
+            &[],
+            5,
+        ));
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_rejects_garbage_args() {
+        // Garbage bytes that cannot be deserialized as a Withdraw must
+        // be rejected (fail-closed).
+        assert!(!check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &[0xDE, 0xAD, 0xBE, 0xEF],
+            2,
+        ));
+
+        // Empty args must also be rejected.
+        assert!(!check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &[],
+            1,
+        ));
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_ignores_moonlight_token() {
+        let rng = &mut StdRng::seed_from_u64(0xdead);
+
+        let moonlight_sk = dusk_core::signatures::bls::SecretKey::random(rng);
+        let moonlight_pk =
+            dusk_core::signatures::bls::PublicKey::from(&moonlight_sk);
+
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &moonlight_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Moonlight(
+                moonlight_pk,
+            ),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Moonlight(42),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        // Moonlight token — should return true even with mismatched count
+        assert!(check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &args,
+            999,
+        ));
+    }
 
     #[test]
     fn test_gen_contract_id() {

@@ -14,7 +14,7 @@ edition.workspace = true
 bytecheck = { workspace = true }
 dusk-core = { workspace = true, features = ["zk", "kzg"] }
 dusk-bytes = { workspace = true }
-piecrust = { workspace = true }
+piecrust = { workspace = true, features = ["call-hook"] }
 lru = { workspace = true }
 blake2b_simd = { workspace = true }
 blake3 = { workspace = true }
