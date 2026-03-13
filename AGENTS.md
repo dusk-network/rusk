@@ -106,38 +106,50 @@ make run-dev-archive           # With archive storage
 Work on these with extra diligence.
 
 ### Consensus (`consensus/`)
+
 - Understand the safety invariant before changing
 - **Verify**: `make -C consensus test` + `make -C consensus testbed` + `make -C node test`
 - **Watch**: fork choice, voting, timing, quorum
 
 ### Proof/Signature Verification (`verifier.rs`, `host_queries.rs`, `signatures/*`)
+
 - Trace the verification flow
 - **Verify**: `make -C vm test` + `make -C rusk test`
 - **Watch**: accepting invalid or rejecting valid proofs/sigs
 
 ### Wire Formats (`node-data/src/ledger/*`, `message.rs`, `encoding.rs`)
+
 - Check if type crosses network/storage boundaries
 - **Verify**: `make -C node-data test` + `make -C node test` + `make -C rusk test`
 - **Watch**: field reordering, type changes, removed fields
 
 ### Contract Execution (`vm/src/execute*`)
+
 - Understand host function exposure
 - **Verify**: `make -C vm test` + contract tests
 - **Watch**: gas metering, host behavior, state access
 
 ### Genesis Contracts (`contracts/stake/`, `contracts/transfer/`)
+
 - Understand ABI and wallet/SDK interactions
 - **Verify**: `make -C contracts/<name> wasm` + `make -C contracts/<name> test`
 - **Watch**: on-chain state interpretation, breaking callers
 
 ### Secrets (`wallet-core/`, consensus keys)
+
 - Identify sensitive data flow
 - **Verify**: `make -C wallet-core test` + review for logging
 - **Watch**: logging secrets, missing zeroization
 
 ### Circuit/Prover Keys (`rusk-profile/`, `rusk-prover/`)
+>
 > Rare and high-impact. Coordinate with maintainers first.
+
 - **Verify**: `make -C rusk-prover test` + `make -C rusk test`
+
+### Submodules (`contracts/`)
+
+Do not change the `contracts/` submodule pointer unless explicitly instructed. Moving the pointer changes which version of the genesis contracts rusk builds and tests against — this must be a deliberate decision.
 
 ## Workflows
 
@@ -148,13 +160,16 @@ When a bug is reported, start by adding a test that reproduces it (it should fai
 1. Reproduce → 2. Locate → 3. Read surrounding code → 4. Smallest fix → 5. Test → 6. `cargo fmt --all` → 7. Clippy
 
 ### New Feature
+
 1. Find patterns → 2. Design minimal API → 3. Implement → 4. Add tests → 5. `cargo fmt --all` → 6. Clippy
 
 ### Contract Change
+
 1. `make setup-compiler` → 2. Modify → 3. `make -C contracts/<name> wasm` → 4. Test
 5. If ABI changed: update `core/`, `data-drivers/`, `wallet-core/`
 
 ### Frontend/SDK
+
 ```bash
 cd w3sper.js && deno task test
 ```
@@ -164,6 +179,7 @@ cd w3sper.js && deno task test
 See [PR Minimum](#pr-minimum) in Commands.
 
 ### Expand When
+
 - Package is widely depended on (`core/`, `node-data/`) → test dependents
 - Elevated care zone → follow zone-specific verification
 - Multi-crate → `make clippy`, consider `make test`
@@ -171,6 +187,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 ## Decision Guidelines
 
 ### Do Without Asking
+
 - Localized bug fixes
 - Test improvements
 - Doc/comment fixes in files you're modifying
@@ -180,6 +197,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 - Lockfile changes from manifest updates
 
 ### Ask First
+
 - Ambiguous requirements
 - Architectural decisions
 - Multi-subsystem impact (3+ crates, Rust/JS boundary)
@@ -189,6 +207,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 - Adding deps to core crates
 
 ### When to Stop
+
 If you can't understand the invariant, structure, or what would break — ask rather than guess.
 
 ## Integration Points
