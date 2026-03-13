@@ -254,4 +254,49 @@ cargo clean -p <crate> && cargo build -p <crate> --release
 
 **Branches**: `<package>/<description>` from `master` (e.g., `rusk/add-rpc-endpoint`). Don't push to `master` directly.
 
-**Commits**: `<package>: Description` (e.g., `rusk: Add block query endpoint`). Use `ci`, `docs`, `chore` for cross-cutting.
+### Commit messages
+
+Format: `<scope>: <Description>` — imperative mood, capitalize first word after colon.
+
+**One commit per crate per concern.** Each commit touches exactly one crate and one logical concern. Never bundle changes to different crates in one commit, and don't mix unrelated changes within the same crate either (e.g. a dependency API adaptation and a new feature are separate commits even if both touch `vm/`). Order commits bottom-up through the dependency chain (e.g. `core` → `vm` → `rusk`).
+
+Canonical scopes — exactly one prefix per crate:
+
+| Scope | Directory |
+|-------|-----------|
+| `core` | `core/` |
+| `node-data` | `node-data/` |
+| `node` | `node/` |
+| `consensus` | `consensus/` |
+| `vm` | `vm/` |
+| `rusk` | `rusk/` (the main binary crate) |
+| `rusk-wallet` | `rusk-wallet/` |
+| `rusk-recovery` | `rusk-recovery/` |
+| `rusk-prover` | `rusk-prover/` |
+| `rusk-profile` | `rusk-profile/` |
+| `rusk-test` | `rusk-test/` |
+| `wallet-core` | `wallet-core/` |
+| `data-driver` | `data-drivers/` |
+| `w3sper` | `w3sper.js/` |
+| `contracts` | `contracts/` submodule pointer updates |
+
+Cross-cutting (not crate-scoped):
+
+| Scope | When |
+|-------|------|
+| `workspace` | Root `Cargo.toml`, cross-crate dependency bumps, Makefile recipes |
+| `ci` | `.github/workflows/` |
+| `docs` | Documentation-only changes |
+| `chore` | Housekeeping (submodule URLs, repo splits, etc.) |
+| `docker` | Docker files |
+
+Examples:
+- `core: Add sha256 ABI host query`
+- `vm: Add withdrawal replay call hook`
+- `rusk: Gate new host queries behind Boreas activation`
+- `workspace: Update dusk dependencies`
+
+Do not:
+- Bundle changes to multiple crates in one commit
+- Use `WIP` or `fixup` commits (squash before push)
+- Use generic messages like `fix typo` or `update code` without context
