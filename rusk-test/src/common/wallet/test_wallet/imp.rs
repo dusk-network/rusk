@@ -11,9 +11,9 @@ use dusk_bytes::Error as BytesError;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use dusk_core::stake::StakeData;
+use dusk_core::stake::{self, STAKE_CONTRACT, StakeData};
 use dusk_core::transfer::Transaction;
-use dusk_core::transfer::data::TransactionData;
+use dusk_core::transfer::data::{ContractCall, TransactionData};
 use dusk_core::transfer::moonlight::{
     AccountData, Transaction as MoonlightTransaction,
 };
@@ -21,7 +21,11 @@ use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::{BlsScalar, Error as ExecutionError};
+use dusk_core::transfer::withdraw::{
+    Withdraw as TransferWithdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use dusk_core::{BlsScalar, Error as ExecutionError, JubJubScalar};
+use ff::Field;
 use rand::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
     AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
@@ -574,6 +578,108 @@ where
             gas_limit,
             gas_price,
             chain_id,
+            &LocalProver,
+        )?;
+
+        stake_sk.zeroize();
+        phoenix_sender_sk.zeroize();
+
+        Ok(tx)
+    }
+
+    /// Creates a Phoenix unstake transaction with a tampered replay token
+    /// that has fewer nullifiers than the transaction, for testing the
+    /// withdrawal replay nullifier-count hook.
+    pub fn phoenix_unstake_bad_replay_token<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u8,
+        staker_index: u8,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let mut phoenix_sender_sk = self.phoenix_secret_key(sender_index)?;
+        let mut stake_sk = self.account_secret_key(staker_index)?;
+
+        let stake_pk = BlsPublicKey::from(&stake_sk);
+
+        let inputs = self.input_notes_openings_nullifiers(
+            &phoenix_sender_sk,
+            gas_limit * gas_price,
+        )?;
+
+        let root = self.state.fetch_root().map_err(Error::from_state_err)?;
+
+        let stake = self
+            .state
+            .fetch_stake(&stake_pk)
+            .map_err(Error::from_state_err)?;
+
+        let staked_amount = stake
+            .amount
+            .ok_or(Error::NotStaked {
+                key: stake_pk,
+                stake,
+            })?
+            .value;
+
+        let chain_id =
+            self.state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        // Split inputs into notes+openings and nullifiers
+        let mut nullifiers = Vec::with_capacity(inputs.len());
+        let note_inputs: Vec<_> = inputs
+            .into_iter()
+            .map(|(note, opening, nullifier)| {
+                nullifiers.push(nullifier);
+                (note, opening)
+            })
+            .collect();
+
+        // Create a replay token with one fewer nullifier than the transaction
+        let truncated_nullifiers = nullifiers[..nullifiers.len() - 1].to_vec();
+        let bad_token = WithdrawReplayToken::Phoenix(truncated_nullifiers);
+
+        // Construct the Withdraw and StakeWithdraw manually
+        let phoenix_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+        let withdraw_address =
+            phoenix_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+        let mut withdraw_note_sk =
+            phoenix_sender_sk.gen_note_sk(&withdraw_address);
+
+        let transfer_withdraw = TransferWithdraw::new(
+            rng,
+            &withdraw_note_sk,
+            STAKE_CONTRACT,
+            staked_amount,
+            WithdrawReceiver::Phoenix(withdraw_address),
+            bad_token,
+        );
+        withdraw_note_sk.zeroize();
+
+        let unstake =
+            stake::Withdraw::new(&stake_sk, &stake_sk, transfer_withdraw);
+
+        let contract_call =
+            ContractCall::new(STAKE_CONTRACT, "unstake").with_args(&unstake)?;
+
+        let phoenix_refund_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+        let phoenix_receiver_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+        let tx = phoenix_transaction(
+            rng,
+            &phoenix_sender_sk,
+            &phoenix_refund_pk,
+            &phoenix_receiver_pk,
+            note_inputs,
+            root,
+            0,
+            false,
+            0,
+            gas_limit,
+            gas_price,
+            chain_id,
+            Some(contract_call),
             &LocalProver,
         )?;
 
