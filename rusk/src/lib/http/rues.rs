@@ -295,12 +295,12 @@ async fn handle_rues_post_request(
             Err(err) => return Err(err.into()),
         };
     let mut resp_headers = event.x_headers();
-    let execution_response = handle_execution_rues(handler, event).await;
+    let mut execution_response = handle_execution_rues(handler, event).await;
     resp_headers.extend(execution_response.headers.clone());
-    let binary_response = binary_request || execution_response.force_binary;
+    execution_response.force_binary |= binary_request;
     let is_empty = execution_response.error.is_none()
         && matches!(execution_response.data, DataType::None);
-    let mut resp = execution_response.into_http(binary_response);
+    let mut resp = execution_response.into_response();
     if is_empty {
         *resp.status_mut() = StatusCode::ACCEPTED;
     }

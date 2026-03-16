@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::pin::Pin;
 use std::str::FromStr;
@@ -42,8 +41,8 @@ pub struct MessageResponse {
     pub force_binary: bool,
 }
 
-impl MessageResponse {
-    pub fn into_http(self, is_binary: bool) -> Response<AxumBody> {
+impl IntoResponse for MessageResponse {
+    fn into_response(self) -> Response<AxumBody> {
         if let Some((error, code)) = self.error {
             let code = StatusCode::from_u16(code)
                 .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
@@ -56,52 +55,39 @@ impl MessageResponse {
                 .into_response();
         }
 
-        let mut headers = HashMap::new();
-
-        let body = {
-            match self.data {
-                DataType::Binary(wrapper) => {
-                    let data = match is_binary {
-                        true => wrapper.inner,
-                        false => hex::encode(wrapper.inner).as_bytes().to_vec(),
-                    };
-                    AxumBody::from(data)
-                }
-                DataType::Text(text) => AxumBody::from(text),
-                DataType::Json(value) => {
-                    headers.insert(
-                        CONTENT_TYPE,
-                        HeaderValue::from_static(CONTENT_TYPE_JSON),
-                    );
-                    AxumBody::from(value.to_string())
-                }
-                DataType::Channel(receiver) => {
-                    AxumBody::from_stream(BinaryOrTextStream {
-                        hex: !is_binary,
-                        stream: stream::iter(receiver),
-                    })
-                }
-                DataType::JsonChannel(receiver) => {
-                    headers.insert(
-                        CONTENT_TYPE,
-                        HeaderValue::from_static(CONTENT_TYPE_JSON),
-                    );
-                    AxumBody::from_stream(BinaryOrTextStream {
-                        hex: false,
-                        stream: stream::iter(receiver),
-                    })
-                }
-                DataType::None => AxumBody::from(Bytes::new()),
+        match self.data {
+            DataType::Binary(wrapper) => {
+                let data = if self.force_binary {
+                    wrapper.inner
+                } else {
+                    hex::encode(wrapper.inner).as_bytes().to_vec()
+                };
+                Response::new(AxumBody::from(data))
             }
-        };
-        let mut response = Response::new(body);
-        for (k, v) in headers {
-            response.headers_mut().insert(k, v);
+            DataType::Text(text) => Response::new(AxumBody::from(text)),
+            DataType::Json(value) => {
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], value.to_string())
+                    .into_response()
+            }
+            DataType::Channel(receiver) => {
+                Response::new(AxumBody::from_stream(BinaryOrTextStream {
+                    hex: !self.force_binary,
+                    stream: stream::iter(receiver),
+                }))
+            }
+            DataType::JsonChannel(receiver) => {
+                let body = AxumBody::from_stream(BinaryOrTextStream {
+                    hex: false,
+                    stream: stream::iter(receiver),
+                });
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], body).into_response()
+            }
+            DataType::None => Response::default(),
         }
-
-        response
     }
+}
 
+impl MessageResponse {
     pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
         // search for the key in a case-insensitive way
         let v = self
