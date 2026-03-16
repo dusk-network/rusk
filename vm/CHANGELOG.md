@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `secp256k1_recover` host query (EVM `ecrecover` primitive) [#4012]
 - Add phoenix fee check
 - Add phoenix refund check to execution pipeline
+- Add init function gas charge during contract deployment
 
 ### Changed
 

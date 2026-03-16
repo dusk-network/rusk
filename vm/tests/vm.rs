@@ -70,8 +70,8 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let mut session = vm.genesis_session(CHAIN_ID);
 
-    let contract_id = session
-        .deploy(
+    let (contract_id, _) = session
+        .deploy::<_, (), _>(
             bytecode,
             ContractData::builder().owner(get_owner().to_bytes()),
             POINT_LIMIT,

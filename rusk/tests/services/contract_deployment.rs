@@ -47,7 +47,7 @@ async fn initial_state(deploy_bob: bool) -> Result<TestContext> {
             include_bytes!("../../../contracts/bin/alice.wasm");
 
         session
-            .deploy(
+            .deploy::<_, (), _>(
                 alice_bytecode,
                 ContractData::builder()
                     .owner(OWNER)
@@ -61,7 +61,7 @@ async fn initial_state(deploy_bob: bool) -> Result<TestContext> {
                 include_bytes!("../../../contracts/bin/bob.wasm");
 
             session
-                .deploy(
+                .deploy::<_, (), _>(
                     bob_bytecode,
                     ContractData::builder()
                         .owner(OWNER)

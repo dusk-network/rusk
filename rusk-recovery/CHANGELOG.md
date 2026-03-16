@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Adapt genesis contract deployment calls to piecrust's updated `Session::deploy` return type.
+
 ### Fixed
 
 - Reject unsafe ZIP entry paths during state recovery extraction to prevent path traversal writes

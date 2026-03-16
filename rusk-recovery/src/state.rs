@@ -165,7 +165,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let owner = snapshot.owner_or(dusk_key);
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
-    session.deploy(
+    session.deploy::<_, (), _>(
         transfer_code,
         ContractData::builder()
             .owner(owner)
@@ -174,7 +174,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     )?;
 
     info!("{} Genesis Stake Contract", theme.action("Deploying"));
-    session.deploy(
+    session.deploy::<_, (), _>(
         stake_code,
         ContractData::builder()
             .owner(owner)

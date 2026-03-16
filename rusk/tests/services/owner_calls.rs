@@ -54,7 +54,7 @@ impl Fixture {
             RuskVmConfig::new(),
             |session| {
                 session
-                    .deploy(bob_bytecode, deploy_data, POINT_LIMIT)
+                    .deploy::<_, (), _>(bob_bytecode, deploy_data, POINT_LIMIT)
                     .expect("Deploying the bob contract should succeed");
             },
         )

@@ -190,7 +190,7 @@ pub async fn test_isolated() -> Result<(), Error> {
     // deploy alice
     let alice_bytecode = include_bytes!("../../../contracts/bin/alice.wasm");
     session
-        .deploy(
+        .deploy::<_, (), _>(
             alice_bytecode,
             ContractData::builder()
                 .owner(NON_BLS_OWNER.as_ref())
@@ -204,7 +204,7 @@ pub async fn test_isolated() -> Result<(), Error> {
     let charlie_bytecode =
         include_bytes!("../../../contracts/bin/charlie.wasm");
     session
-        .deploy(
+        .deploy::<_, (), _>(
             charlie_bytecode,
             ContractData::builder()
                 .owner(NON_BLS_OWNER.as_ref())
