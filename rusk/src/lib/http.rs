@@ -989,10 +989,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn post_rues_invalid_path_returns_not_found() {
+    async fn post_rues_on_without_path_rejected() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
 
+        // POST to /on (WS-only endpoint) is rejected by axum because
+        // the WebSocketUpgrade extractor requires an upgrade request.
         let client = reqwest::Client::new();
         let response = client
             .post(format!("http://{local_addr}/on"))
@@ -1001,12 +1003,7 @@ mod tests {
             .await
             .expect("Requesting should succeed");
 
-        assert_status_contains(
-            response,
-            StatusCode::NOT_FOUND,
-            "Invalid URL path",
-        )
-        .await;
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
     }
 
     #[tokio::test]
@@ -1170,20 +1167,9 @@ mod tests {
                 expected_status: StatusCode::FAILED_DEPENDENCY,
                 expected_error: "Session ID not provided or invalid",
             },
-            Case {
-                method: reqwest::Method::GET,
-                path: "/on".to_string(),
-                session_id: None,
-                expected_status: StatusCode::FAILED_DEPENDENCY,
-                expected_error: "Session ID not provided or invalid",
-            },
-            Case {
-                method: reqwest::Method::GET,
-                path: "/on".to_string(),
-                session_id: Some("00112233445566778899aabbccddeeff"),
-                expected_status: StatusCode::NOT_FOUND,
-                expected_error: "Invalid URL path",
-            },
+            // Non-WS requests to /on (without subpath) are rejected by
+            // axum's WebSocketUpgrade extractor (400). Only /on/{*path}
+            // cases are validated here.
             Case {
                 method: reqwest::Method::GET,
                 path: topic_path.clone(),
@@ -1193,25 +1179,15 @@ mod tests {
             },
             Case {
                 method: reqwest::Method::DELETE,
-                path: topic_path.clone(),
+                path: topic_path,
                 session_id: Some("invalid-session-id"),
                 expected_status: StatusCode::FAILED_DEPENDENCY,
                 expected_error: "Session ID not provided or invalid",
             },
-            Case {
-                method: reqwest::Method::PUT,
-                path: topic_path,
-                session_id: None,
-                expected_status: StatusCode::FAILED_DEPENDENCY,
-                expected_error: "Session ID not provided or invalid",
-            },
-            Case {
-                method: reqwest::Method::PUT,
-                path: "/on".to_string(),
-                session_id: Some("00112233445566778899aabbccddeeff"),
-                expected_status: StatusCode::NOT_FOUND,
-                expected_error: "Invalid URL path",
-            },
+            // Non-WS requests to /on are rejected by axum's
+            // WebSocketUpgrade extractor (400 Bad Request). Tests for
+            // /on/{*path} method routing live in
+            // put_rues_returns_method_not_allowed.
         ];
 
         for case in cases {
@@ -1232,22 +1208,24 @@ mod tests {
         }
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn put_rues_returns_method_not_allowed() {
         let (_server, local_addr, _event_sender) =
             bind_test_server(TestHandle).await;
-        let (_stream, sid) = connect_ws(local_addr);
 
+        // Axum's method router rejects PUT at the routing layer — no WS
+        // session needed.
         let client = reqwest::Client::new();
         let contract_id_hex = hex::encode(ContractId::from_bytes([7; 32]));
         let path =
             format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
         let response = client
             .put(path)
-            .header("Rusk-Session-Id", sid.to_string())
             .send()
             .await
             .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 
         let allow_header = response
             .headers()
@@ -1256,13 +1234,19 @@ mod tests {
             .unwrap_or_default()
             .to_string();
 
-        assert_status_contains(
-            response,
-            StatusCode::METHOD_NOT_ALLOWED,
-            "Method not allowed",
-        )
-        .await;
-        assert_eq!(allow_header, "GET, DELETE");
+        // Axum lists all registered methods for the route.
+        assert!(
+            allow_header.contains("DELETE"),
+            "Allow header should include DELETE: {allow_header}"
+        );
+        assert!(
+            allow_header.contains("GET"),
+            "Allow header should include GET: {allow_header}"
+        );
+        assert!(
+            allow_header.contains("POST"),
+            "Allow header should include POST: {allow_header}"
+        );
     }
 
     #[tokio::test]
@@ -1794,8 +1778,8 @@ mod tests {
                 configure_handler: true,
                 request_body: None,
                 expected_status: StatusCode::METHOD_NOT_ALLOWED,
-                expected_error: Some("Method not allowed"),
-                expected_allow: Some("GET, POST"),
+                expected_error: None,
+                expected_allow: None,
                 expect_ping: false,
             },
             Case {
@@ -1834,13 +1818,15 @@ mod tests {
 
             if case.expect_ping {
                 assert_graphql_ping_response(response).await;
-            } else {
+            } else if let Some(expected_error) = case.expected_error {
                 assert_graphql_error_contains(
                     response,
                     case.expected_status,
-                    case.expected_error.unwrap_or_default(),
+                    expected_error,
                 )
                 .await;
+            } else {
+                assert_eq!(response.status(), case.expected_status);
             }
 
             if let Some(expected_allow) = case.expected_allow {

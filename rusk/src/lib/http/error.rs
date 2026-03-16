@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use axum::http::StatusCode;
-use axum::http::header::{ALLOW, CONTENT_TYPE};
+use axum::http::header::CONTENT_TYPE;
 use axum::http::{HeaderValue, Response};
 use axum::response::IntoResponse;
 use tracing::{debug, error};
@@ -182,7 +182,6 @@ pub(super) struct ApiError {
     status: StatusCode,
     message: String,
     category: &'static str,
-    allow: Option<&'static str>,
     retry_after_seconds: Option<u64>,
 }
 
@@ -196,17 +195,6 @@ impl ApiError {
             status,
             message: message.into(),
             category,
-            allow: None,
-            retry_after_seconds: None,
-        }
-    }
-
-    pub(super) fn method_not_allowed(allow: &'static str) -> Self {
-        Self {
-            status: StatusCode::METHOD_NOT_ALLOWED,
-            message: "Method not allowed".to_string(),
-            category: "method_not_allowed",
-            allow: Some(allow),
             retry_after_seconds: None,
         }
     }
@@ -242,11 +230,6 @@ impl IntoResponse for ApiError {
         response
             .headers_mut()
             .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        if let Some(allow) = self.allow {
-            response
-                .headers_mut()
-                .insert(ALLOW, HeaderValue::from_static(allow));
-        }
         if let Some(retry_after) = self.retry_after_seconds
             && let Ok(value) = HeaderValue::from_str(&retry_after.to_string())
         {
@@ -265,7 +248,6 @@ impl From<Error> for ApiError {
             status,
             message,
             category: http_error_category(&value),
-            allow: None,
             retry_after_seconds: None,
         }
     }
@@ -278,7 +260,6 @@ impl From<ExecutionError> for ApiError {
             status,
             message,
             category,
-            allow: None,
             retry_after_seconds: None,
         }
     }

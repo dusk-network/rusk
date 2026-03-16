@@ -12,8 +12,7 @@ use async_graphql::{
 use async_graphql_axum::{GraphQLBatchRequest, rejection::GraphQLRejection};
 use axum::body::Body as AxumBody;
 use axum::extract::FromRequest;
-use axum::http::Method;
-use axum::http::header::{ALLOW, CONTENT_TYPE, HeaderName, HeaderValue};
+use axum::http::header::{CONTENT_TYPE, HeaderName, HeaderValue};
 use axum::http::{Request, StatusCode};
 use axum::response::Response as AxumResponse;
 
@@ -68,58 +67,48 @@ fn graphql_parse_error_status(error: &ParseRequestError) -> StatusCode {
     }
 }
 
-pub(super) async fn handle_graphql_http(
+pub(super) async fn handle_graphql_get(
     handler: &dyn GraphqlHandler,
     req: Request<AxumBody>,
 ) -> Result<AxumResponse, ExecutionError> {
-    match *req.method() {
-        Method::GET => {
-            let query = req.uri().query().unwrap_or_default();
-            if query.is_empty() {
-                return graphql_error_response(
-                    StatusCode::BAD_REQUEST,
-                    "GraphQL GET requests require a query parameter",
-                );
-            }
-
-            let request = match parse_query_string(query) {
-                Ok(request) => request,
-                Err(err) => {
-                    return graphql_error_response(
-                        graphql_parse_error_status(&err),
-                        err.to_string(),
-                    );
-                }
-            };
-
-            let batch_response =
-                handler.execute_graphql(BatchRequest::Single(request)).await;
-            graphql_batch_response(StatusCode::OK, batch_response)
-        }
-        Method::POST => {
-            let batch_request =
-                match GraphQLBatchRequest::from_request(req, &()).await {
-                    Ok(batch_request) => batch_request.into_inner(),
-                    Err(GraphQLRejection(err)) => {
-                        return graphql_error_response(
-                            graphql_parse_error_status(&err),
-                            err.to_string(),
-                        );
-                    }
-                };
-
-            let batch_response = handler.execute_graphql(batch_request).await;
-            graphql_batch_response(StatusCode::OK, batch_response)
-        }
-        _ => {
-            let mut response = graphql_error_response(
-                StatusCode::METHOD_NOT_ALLOWED,
-                "Method not allowed",
-            )?;
-            response
-                .headers_mut()
-                .insert(ALLOW, HeaderValue::from_static("GET, POST"));
-            Ok(response)
-        }
+    let query = req.uri().query().unwrap_or_default();
+    if query.is_empty() {
+        return graphql_error_response(
+            StatusCode::BAD_REQUEST,
+            "GraphQL GET requests require a query parameter",
+        );
     }
+
+    let request = match parse_query_string(query) {
+        Ok(request) => request,
+        Err(err) => {
+            return graphql_error_response(
+                graphql_parse_error_status(&err),
+                err.to_string(),
+            );
+        }
+    };
+
+    let batch_response =
+        handler.execute_graphql(BatchRequest::Single(request)).await;
+    graphql_batch_response(StatusCode::OK, batch_response)
+}
+
+pub(super) async fn handle_graphql_post(
+    handler: &dyn GraphqlHandler,
+    req: Request<AxumBody>,
+) -> Result<AxumResponse, ExecutionError> {
+    let batch_request = match GraphQLBatchRequest::from_request(req, &()).await
+    {
+        Ok(batch_request) => batch_request.into_inner(),
+        Err(GraphQLRejection(err)) => {
+            return graphql_error_response(
+                graphql_parse_error_status(&err),
+                err.to_string(),
+            );
+        }
+    };
+
+    let batch_response = handler.execute_graphql(batch_request).await;
+    graphql_batch_response(StatusCode::OK, batch_response)
 }

@@ -9,6 +9,7 @@ use std::convert::Infallible;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use axum::extract::State;
 use axum::extract::ws::{
     CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
 };
@@ -16,7 +17,7 @@ use axum::response::Response as AxumResponse;
 use axum::{
     body::Body,
     http::{
-        HeaderMap, Method, Request, StatusCode,
+        Request, StatusCode,
         header::{HeaderName, HeaderValue},
     },
 };
@@ -26,6 +27,7 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 use crate::VERSION;
+use super::axum_app::HttpAppState;
 use super::error::{
     ApiError, http_error_category, map_http_error_for_response,
 };
@@ -219,19 +221,16 @@ fn close_frame(code: u16, reason: &'static str) -> CloseFrame {
     }
 }
 
-pub(super) async fn handle_request_rues_ws(
-    websocket: WebSocketUpgrade,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
+pub(super) async fn handle_rues_ws(
+    State(state): State<HttpAppState>,
+    ws: WebSocketUpgrade,
 ) -> AxumResponse {
+    let events = state.events.subscribe();
+    let shutdown = state.shutdown.subscribe();
     let (subscription_sender, subscriptions) =
-        mpsc::channel(ws_event_channel_cap);
+        mpsc::channel(state.ws_event_channel_cap);
 
-    let mut sockets = sockets_map.write().await;
+    let mut sockets = state.sockets_map.write().await;
 
     // This is a new WebSocket connection, so we generate a new random ID
     // and create a new channel for it.
@@ -242,8 +241,7 @@ pub(super) async fn handle_request_rues_ws(
     sockets.insert(sid, subscription_sender);
     drop(sockets);
 
-    websocket
-        .max_message_size(super::MAX_WS_INBOUND_MESSAGE_BYTES)
+    ws.max_message_size(super::MAX_WS_INBOUND_MESSAGE_BYTES)
         .max_frame_size(super::MAX_WS_INBOUND_FRAME_BYTES)
         .on_upgrade(move |socket| {
             handle_stream_rues(
@@ -252,39 +250,45 @@ pub(super) async fn handle_request_rues_ws(
                 events,
                 subscriptions,
                 shutdown,
-                sockets_map,
+                state.sockets_map,
             )
         })
 }
 
-pub(super) async fn handle_request_rues_http<H>(
+pub(super) async fn handle_rues_post(
+    State(state): State<HttpAppState>,
+    _version: RuskVersionCheck,
     req: Request<Body>,
-    handler: Arc<H>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-) -> Result<AxumResponse, ApiError>
-where
-    H: HandleRequest + ?Sized,
-{
-    if let Err(err) = validate_rusk_version_headers(req.headers()) {
-        return Err(err.into());
-    }
-
-    if req.method() == Method::POST {
-        return handle_rues_post_request(req, handler).await;
-    }
-
-    handle_rues_subscription_request(req, sockets_map).await
+) -> Result<AxumResponse, ApiError> {
+    handle_rues_post_request(req, state.sources).await
 }
 
-async fn handle_rues_post_request<H>(
+pub(super) async fn handle_rues_subscribe(
+    State(state): State<HttpAppState>,
+    session_id: SessionId,
+    _version: RuskVersionCheck,
     req: Request<Body>,
-    handler: Arc<H>,
-) -> Result<AxumResponse, ApiError>
-where
-    H: HandleRequest + ?Sized,
-{
+) -> Result<AxumResponse, ApiError> {
+    let context =
+        parse_subscription_context(session_id, req, state.sockets_map).await?;
+    dispatch_subscribe(context).await
+}
+
+pub(super) async fn handle_rues_unsubscribe(
+    State(state): State<HttpAppState>,
+    session_id: SessionId,
+    _version: RuskVersionCheck,
+    req: Request<Body>,
+) -> Result<AxumResponse, ApiError> {
+    let context =
+        parse_subscription_context(session_id, req, state.sockets_map).await?;
+    dispatch_unsubscribe(context).await
+}
+
+async fn handle_rues_post_request(
+    req: Request<Body>,
+    handler: Arc<dyn HandleRequest>,
+) -> Result<AxumResponse, ApiError> {
     let (event, binary_request) =
         match RuesDispatchEvent::from_request(req).await {
             Ok(event) => event,
@@ -319,32 +323,17 @@ where
 }
 
 struct SubscriptionRequestContext {
-    method: Method,
     uri: RuesEventUri,
     action_sender: mpsc::Sender<SubscriptionAction>,
 }
 
-async fn handle_rues_subscription_request(
-    req: Request<Body>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-) -> Result<AxumResponse, ApiError> {
-    let context = parse_subscription_request_context(req, sockets_map).await?;
-    dispatch_subscription_action(context).await
-}
-
-async fn parse_subscription_request_context(
+async fn parse_subscription_context(
+    sid: SessionId,
     req: Request<Body>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
 ) -> Result<SubscriptionRequestContext, ApiError> {
-    let sid = match SessionId::parse_from_req(&req) {
-        None => return Err(invalid_session_id_error()),
-        Some(sid) => sid,
-    };
-
     let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
         None => return Err(invalid_rues_path_error()),
         Some(s) => s,
@@ -355,85 +344,90 @@ async fn parse_subscription_request_context(
         None => return Err(invalid_session_id_error()),
     };
 
-    Ok(SubscriptionRequestContext {
-        method: req.method().clone(),
-        uri,
-        action_sender,
-    })
+    Ok(SubscriptionRequestContext { uri, action_sender })
 }
 
-async fn dispatch_subscription_action(
+async fn dispatch_subscribe(
     context: SubscriptionRequestContext,
 ) -> Result<AxumResponse, ApiError> {
-    let method = context.method;
-    let action_sender = context.action_sender;
-
-    let (action, reply) = match method {
-        Method::GET => {
-            let (reply, receiver) = oneshot::channel();
-            (
-                SubscriptionAction::Subscribe {
-                    uri: context.uri,
-                    reply,
-                },
-                receiver,
-            )
-        }
-        Method::DELETE => {
-            let (reply, receiver) = oneshot::channel();
-            (
-                SubscriptionAction::Unsubscribe {
-                    uri: context.uri,
-                    reply,
-                },
-                receiver,
-            )
-        }
-        _ => {
-            return Err(ApiError::method_not_allowed("GET, DELETE"));
-        }
+    let (reply, receiver) = oneshot::channel();
+    let action = SubscriptionAction::Subscribe {
+        uri: context.uri,
+        reply,
     };
 
-    if action_sender.send(action).await.is_err() {
+    if context.action_sender.send(action).await.is_err() {
         return Err(failed_consuming_request_error());
     }
 
-    match reply.await {
+    match receiver.await {
         Ok(Ok(())) => response(StatusCode::OK, "").map_err(ApiError::from),
         Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
             StatusCode::NOT_FOUND,
             "Subscription not found",
             "not_found",
         )),
-        // TODO: consider returning 424 instead of 500 for reply channel
-        // closure during session teardown
         Err(_) => Err(failed_consuming_request_error()),
     }
 }
 
-fn validate_rusk_version_headers(headers: &HeaderMap) -> Result<(), HttpError> {
-    let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
-    let version = match headers.get(RUSK_VERSION_HEADER) {
-        Some(value) => {
-            let value_str = value.to_str().map_err(|_| {
-                HttpError::VersionMismatch(
-                    "Invalid Rusk-Version header encoding".to_string(),
-                )
-            })?;
-            Some(serde_json::Value::String(value_str.to_owned()))
-        }
-        None => None,
+async fn dispatch_unsubscribe(
+    context: SubscriptionRequestContext,
+) -> Result<AxumResponse, ApiError> {
+    let (reply, receiver) = oneshot::channel();
+    let action = SubscriptionAction::Unsubscribe {
+        uri: context.uri,
+        reply,
     };
-    check_rusk_version(version.as_ref(), strict)
+
+    if context.action_sender.send(action).await.is_err() {
+        return Err(failed_consuming_request_error());
+    }
+
+    match receiver.await {
+        Ok(Ok(())) => response(StatusCode::OK, "").map_err(ApiError::from),
+        Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "Subscription not found",
+            "not_found",
+        )),
+        Err(_) => Err(failed_consuming_request_error()),
+    }
 }
 
-async fn handle_execution_rues<H>(
-    sources: Arc<H>,
+/// Zero-sized extractor that validates `Rusk-Version` /
+/// `Rusk-Version-Strict` headers before the handler runs.
+pub(super) struct RuskVersionCheck;
+
+impl axum::extract::FromRequestParts<HttpAppState> for RuskVersionCheck {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &HttpAppState,
+    ) -> Result<Self, Self::Rejection> {
+        let headers = &parts.headers;
+        let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
+        let version = match headers.get(RUSK_VERSION_HEADER) {
+            Some(value) => {
+                let value_str = value.to_str().map_err(|_| {
+                    HttpError::VersionMismatch(
+                        "Invalid Rusk-Version header encoding".to_string(),
+                    )
+                })?;
+                Some(serde_json::Value::String(value_str.to_owned()))
+            }
+            None => None,
+        };
+        check_rusk_version(version.as_ref(), strict)?;
+        Ok(Self)
+    }
+}
+
+async fn handle_execution_rues(
+    sources: Arc<dyn HandleRequest>,
     event: RuesDispatchEvent,
-) -> EventResponse
-where
-    H: HandleRequest + ?Sized,
-{
+) -> EventResponse {
     let mut rsp = sources
         .handle_rues(&event)
         .await

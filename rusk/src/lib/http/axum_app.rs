@@ -10,14 +10,16 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Body;
-use axum::extract::{FromRequestParts, State, ws::WebSocketUpgrade};
+use axum::extract::State;
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
 use axum::middleware::{Next, from_fn_with_state};
 use axum::response::IntoResponse;
 use axum::response::Json;
-use axum::routing::any;
+#[cfg(any(feature = "chain", feature = "http-wasm"))]
+use axum::routing::get;
+use axum::routing::{any, post};
 use serde_json::json;
 use tokio::sync::{RwLock, broadcast, mpsc};
 use tower::ServiceExt;
@@ -63,16 +65,19 @@ pub(super) struct HttpAppState {
 
 pub(super) fn build_app(state: HttpAppState) -> Router {
     let router = Router::new();
-    let router = router
-        .route("/on", any(rues_route))
-        .route("/on/{*path}", any(rues_route));
+    let router = router.route("/on", any(rues::handle_rues_ws)).route(
+        "/on/{*path}",
+        post(rues::handle_rues_post)
+            .get(rues::handle_rues_subscribe)
+            .delete(rues::handle_rues_unsubscribe),
+    );
 
     #[cfg(feature = "chain")]
     let router = router.route(
         "/graphql",
-        any(graphql_route).layer(RequestBodyLimitLayer::new(
-            MAX_GRAPHQL_REQUEST_BODY_BYTES,
-        )),
+        get(graphql_get_route)
+            .post(graphql_post_route)
+            .layer(RequestBodyLimitLayer::new(MAX_GRAPHQL_REQUEST_BODY_BYTES)),
     );
 
     #[cfg(feature = "http-wasm")]
@@ -127,32 +132,8 @@ async fn configured_headers_middleware(
     response
 }
 
-async fn rues_route(
-    State(state): State<HttpAppState>,
-    req: Request<Body>,
-) -> Result<Response<Body>, ApiError> {
-    let events = state.events.subscribe();
-    let shutdown = state.shutdown.subscribe();
-
-    let (mut parts, body) = req.into_parts();
-    if let Ok(ws) = WebSocketUpgrade::from_request_parts(&mut parts, &()).await
-    {
-        return Ok(rues::handle_request_rues_ws(
-            ws,
-            state.sockets_map.clone(),
-            events,
-            shutdown,
-            state.ws_event_channel_cap,
-        )
-        .await);
-    }
-    let req = Request::from_parts(parts, body);
-
-    rues::handle_request_rues_http(req, state.sources, state.sockets_map).await
-}
-
 #[cfg(feature = "chain")]
-async fn graphql_route(
+async fn graphql_get_route(
     State(state): State<HttpAppState>,
     req: Request<Body>,
 ) -> Result<Response<Body>, ApiError> {
@@ -167,7 +148,28 @@ async fn graphql_route(
         }
     };
 
-    graphql::handle_graphql_http(handler, req)
+    graphql::handle_graphql_get(handler, req)
+        .await
+        .map_err(ApiError::from)
+}
+
+#[cfg(feature = "chain")]
+async fn graphql_post_route(
+    State(state): State<HttpAppState>,
+    req: Request<Body>,
+) -> Result<Response<Body>, ApiError> {
+    let handler = match state.sources.graphql_handler() {
+        Some(handler) => handler,
+        None => {
+            return Ok(graphql::handle_graphql_http_error(
+                StatusCode::NOT_FOUND,
+                "GraphQL endpoint not configured",
+            )
+            .expect("GraphQL error response should be built"));
+        }
+    };
+
+    graphql::handle_graphql_post(handler, req)
         .await
         .map_err(ApiError::from)
 }

@@ -366,17 +366,6 @@ impl Distribution<SessionId> for Standard {
 }
 
 impl SessionId {
-    /// Parses a session ID from a request. The session ID is expected to be
-    /// stored in the `Rusk-Session-Id` header.
-    pub fn parse_from_req<B>(req: &Request<B>) -> Option<Self> {
-        let headers = req.headers();
-
-        let header_value = headers.get("Rusk-Session-Id")?;
-        let text = header_value.to_str().ok()?;
-
-        Self::parse(text)
-    }
-
     pub fn parse(text: &str) -> Option<Self> {
         let bytes = hex::decode(text).ok()?;
 
@@ -387,6 +376,33 @@ impl SessionId {
 
         session_id_bytes.copy_from_slice(&bytes);
         Some(SessionId(u128::from_le_bytes(session_id_bytes)))
+    }
+}
+
+impl axum::extract::FromRequestParts<super::axum_app::HttpAppState>
+    for SessionId
+{
+    type Rejection = super::error::ApiError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &super::axum_app::HttpAppState,
+    ) -> Result<Self, Self::Rejection> {
+        let header_value = parts
+            .headers
+            .get("Rusk-Session-Id")
+            .and_then(|v| v.to_str().ok());
+        match header_value.and_then(Self::parse) {
+            Some(sid) => Ok(sid),
+            // TODO: Keep 424 for current RUES compatibility; revisit whether
+            // malformed or missing session identifiers should be normalized to
+            // 400.
+            None => Err(super::error::ApiError::new(
+                StatusCode::FAILED_DEPENDENCY,
+                "Session ID not provided or invalid",
+                "invalid_session",
+            )),
+        }
     }
 }
 
