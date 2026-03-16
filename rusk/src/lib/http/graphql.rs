@@ -11,15 +11,11 @@ use async_graphql::{
 };
 use async_graphql_axum::{GraphQLBatchRequest, rejection::GraphQLRejection};
 use axum::body::Body as AxumBody;
+use axum::extract::FromRequest;
+use axum::http::Method;
+use axum::http::header::{ALLOW, CONTENT_TYPE, HeaderName, HeaderValue};
+use axum::http::{Request, StatusCode};
 use axum::response::Response as AxumResponse;
-use axum::{
-    body::{Bytes, HttpBody},
-    extract::FromRequest,
-    http::{
-        Method, Request, StatusCode,
-        header::{ALLOW, CONTENT_TYPE, HeaderName, HeaderValue},
-    },
-};
 
 use super::{ExecutionError, GraphqlHandler, response};
 
@@ -72,14 +68,10 @@ fn graphql_parse_error_status(error: &ParseRequestError) -> StatusCode {
     }
 }
 
-pub(super) async fn handle_graphql_http<B>(
+pub(super) async fn handle_graphql_http(
     handler: &dyn GraphqlHandler,
-    req: Request<B>,
-) -> Result<AxumResponse, ExecutionError>
-where
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
-{
+    req: Request<AxumBody>,
+) -> Result<AxumResponse, ExecutionError> {
     match *req.method() {
         Method::GET => {
             let query = req.uri().query().unwrap_or_default();
@@ -105,7 +97,6 @@ where
             graphql_batch_response(StatusCode::OK, batch_response)
         }
         Method::POST => {
-            let req = req.map(AxumBody::new);
             let batch_request =
                 match GraphQLBatchRequest::from_request(req, &()).await {
                     Ok(batch_request) => batch_request.into_inner(),
