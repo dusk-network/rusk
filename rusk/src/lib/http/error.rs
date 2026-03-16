@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use axum::http::StatusCode;
 use axum::http::header::CONTENT_TYPE;
-use axum::http::{HeaderValue, Response};
+use axum::http::{HeaderValue, Response, StatusCode};
 use axum::response::IntoResponse;
 use tracing::{debug, error};
 
@@ -222,14 +221,14 @@ impl IntoResponse for ApiError {
                 "HTTP request rejected"
             );
         }
-        let mut response = super::response(
-            self.status,
-            serde_json::json!({ "error": self.message }).to_string(),
-        )
-        .expect("API error response should be buildable");
-        response
-            .headers_mut()
-            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        let error_body =
+            serde_json::json!({ "error": self.message }).to_string();
+        let builder = Response::builder()
+            .status(self.status)
+            .header(CONTENT_TYPE, "application/json");
+        let mut response = builder
+            .body(axum::body::Body::from(error_body))
+            .expect("API error response should be buildable");
         if let Some(retry_after) = self.retry_after_seconds
             && let Ok(value) = HeaderValue::from_str(&retry_after.to_string())
         {

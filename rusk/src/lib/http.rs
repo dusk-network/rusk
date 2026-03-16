@@ -21,12 +21,6 @@ mod rues;
 mod rusk;
 mod stream;
 
-#[cfg(feature = "chain")]
-pub(crate) use driver::DriverExecutor;
-pub(crate) use event::{
-    DataType, ExecutionError, MessageResponse as EventResponse,
-};
-
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -36,12 +30,18 @@ use std::sync::Arc;
 #[cfg(feature = "chain")]
 use async_graphql::{BatchRequest, BatchResponse};
 use async_trait::async_trait;
-use axum::body::{Body as AxumBody, Bytes};
+use axum::http::HeaderMap;
 #[cfg(test)]
 use axum::http::HeaderValue;
 #[cfg(test)]
 use axum::http::header::{ALLOW, CONTENT_TYPE};
-use axum::http::{HeaderMap, Response, StatusCode};
+#[cfg(feature = "chain")]
+pub(crate) use driver::DriverExecutor;
+pub use error::Error as HttpError;
+pub(crate) use event::{
+    DataType, ExecutionError, MessageResponse as EventResponse,
+};
+pub use policy::HttpPolicyConfig;
 use tokio::sync::{RwLock, broadcast};
 use tokio::task::JoinError;
 use tokio::{io, task};
@@ -49,11 +49,8 @@ use tower::Layer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tracing::info;
 
-pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
-pub use error::Error as HttpError;
-pub use policy::HttpPolicyConfig;
-
 use self::axum_app::{HttpAppState, build_app};
+pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::policy::HttpRequestPolicy;
 use self::stream::Listener;
@@ -71,7 +68,8 @@ pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
 pub(crate) const MAX_GRAPHQL_REQUEST_BODY_BYTES: usize = 256 * 1024;
 /// Cap for a single inbound WebSocket message on the RUES subscription socket.
 pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
-/// Cap for a single inbound WebSocket frame payload on the RUES subscription socket.
+/// Cap for a single inbound WebSocket frame payload on the RUES subscription
+/// socket.
 pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
 
 pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
@@ -119,6 +117,13 @@ impl HttpServer {
 
         info!("Starting HTTP Listener to {local_addr}");
 
+        let mut headers = config.headers;
+        headers.insert(
+            RUSK_VERSION_HEADER,
+            axum::http::HeaderValue::from_str(crate::VERSION.as_str())
+                .expect("version should be a valid header value"),
+        );
+
         let app = build_app(HttpAppState {
             sources: Arc::new(handler),
             sockets_map: Arc::new(RwLock::new(HashMap::new())),
@@ -126,7 +131,7 @@ impl HttpServer {
             shutdown: shutdown_sender.clone(),
             ws_event_channel_cap: config.ws_event_channel_cap,
             policy: Arc::new(HttpRequestPolicy::new(config.policy)),
-            headers: Arc::new(config.headers),
+            headers: Arc::new(headers),
         });
 
         // NormalizePathLayer strips trailing slashes so `/graphql/`
@@ -203,21 +208,6 @@ impl HandleRequest for DataSources {
     }
 }
 
-
-// ExecutionError is intentionally large; boxing it would add complexity
-// without meaningful benefit here.
-#[allow(clippy::result_large_err)]
-pub(super) fn response(
-    status: StatusCode,
-    body: impl Into<Bytes>,
-) -> Result<Response<AxumBody>, ExecutionError> {
-    Ok(Response::builder()
-        .status(status)
-        .header(RUSK_VERSION_HEADER, crate::VERSION.as_str())
-        .body(AxumBody::from(body.into()))
-        .expect("Failed to build response"))
-}
-
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
@@ -233,23 +223,22 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
-    use std::net::SocketAddr;
+    use std::net::{SocketAddr, TcpStream};
     use std::{fs, thread};
-
-    use super::*;
-    use axum::response::IntoResponse;
 
     #[cfg(feature = "chain")]
     use async_graphql::{
         BatchRequest, BatchResponse, Context, EmptyMutation, EmptySubscription,
         Object, Schema,
     };
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
     use dusk_core::abi::ContractId;
     use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
-    use std::net::TcpStream;
-    use tungstenite::Message;
-    use tungstenite::client;
+    use tungstenite::{Message, client};
+
+    use super::*;
 
     /// A [`HandleRequest`] implementation that returns the same data
     struct TestHandle;

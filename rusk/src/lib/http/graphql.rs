@@ -9,14 +9,15 @@ use async_graphql::{
     BatchRequest, BatchResponse, ParseRequestError,
     Response as GraphqlResponse, ServerError,
 };
-use async_graphql_axum::{GraphQLBatchRequest, rejection::GraphQLRejection};
+use async_graphql_axum::GraphQLBatchRequest;
+use async_graphql_axum::rejection::GraphQLRejection;
 use axum::body::Body as AxumBody;
 use axum::extract::FromRequest;
 use axum::http::header::{CONTENT_TYPE, HeaderName, HeaderValue};
-use axum::http::{Request, StatusCode};
+use axum::http::{Request, Response, StatusCode};
 use axum::response::Response as AxumResponse;
 
-use super::{ExecutionError, GraphqlHandler, response};
+use super::{ExecutionError, GraphqlHandler};
 
 // ExecutionError is intentionally large; boxing it would add complexity
 // without meaningful benefit here.
@@ -26,7 +27,10 @@ fn graphql_batch_response(
     batch_response: BatchResponse,
 ) -> Result<AxumResponse, ExecutionError> {
     let body = serde_json::to_vec(&batch_response)?;
-    let mut response = response(status, body)?;
+    let mut response = Response::builder()
+        .status(status)
+        .body(AxumBody::from(body))
+        .expect("response should be buildable");
     let headers = response.headers_mut();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     for (name, value) in batch_response.http_headers_iter() {

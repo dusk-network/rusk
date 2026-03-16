@@ -13,7 +13,7 @@ use axum::extract::State;
 use axum::extract::ws::{
     CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
 };
-use axum::response::Response as AxumResponse;
+use axum::response::{IntoResponse, Response as AxumResponse};
 use axum::{
     body::Body,
     http::{
@@ -35,7 +35,7 @@ use super::event::check_rusk_version;
 use super::{
     DataType, EventResponse, ExecutionError, HandleRequest, HttpError,
     RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
-    RuesEvent, RuesEventUri, SessionId, response,
+    RuesEvent, RuesEventUri, SessionId,
 };
 
 pub(super) enum SubscriptionAction {
@@ -361,7 +361,7 @@ async fn dispatch_subscribe(
     }
 
     match receiver.await {
-        Ok(Ok(())) => response(StatusCode::OK, "").map_err(ApiError::from),
+        Ok(Ok(())) => Ok(StatusCode::OK.into_response()),
         Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
             StatusCode::NOT_FOUND,
             "Subscription not found",
@@ -385,7 +385,7 @@ async fn dispatch_unsubscribe(
     }
 
     match receiver.await {
-        Ok(Ok(())) => response(StatusCode::OK, "").map_err(ApiError::from),
+        Ok(Ok(())) => Ok(StatusCode::OK.into_response()),
         Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
             StatusCode::NOT_FOUND,
             "Subscription not found",
