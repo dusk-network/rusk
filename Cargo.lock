@@ -1956,7 +1956,6 @@ dependencies = [
  "ff",
  "futures-util",
  "hex",
- "http-body-util",
  "humantime-serde",
  "kadcast",
  "parking_lot",

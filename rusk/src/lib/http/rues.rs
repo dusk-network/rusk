@@ -14,7 +14,7 @@ use axum::extract::ws::{
 };
 use axum::response::Response as AxumResponse;
 use axum::{
-    body::{Bytes, HttpBody},
+    body::Body,
     http::{
         HeaderMap, Method, Request, StatusCode,
         header::{HeaderName, HeaderValue},
@@ -257,8 +257,8 @@ pub(super) async fn handle_request_rues_ws(
         })
 }
 
-pub(super) async fn handle_request_rues_http<H, B>(
-    req: Request<B>,
+pub(super) async fn handle_request_rues_http<H>(
+    req: Request<Body>,
     handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
@@ -266,8 +266,6 @@ pub(super) async fn handle_request_rues_http<H, B>(
 ) -> Result<AxumResponse, ApiError>
 where
     H: HandleRequest + ?Sized,
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
 {
     if let Err(err) = validate_rusk_version_headers(req.headers()) {
         return Err(err.into());
@@ -280,14 +278,12 @@ where
     handle_rues_subscription_request(req, sockets_map).await
 }
 
-async fn handle_rues_post_request<H, B>(
-    req: Request<B>,
+async fn handle_rues_post_request<H>(
+    req: Request<Body>,
     handler: Arc<H>,
 ) -> Result<AxumResponse, ApiError>
 where
     H: HandleRequest + ?Sized,
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
 {
     let (event, binary_request) =
         match RuesDispatchEvent::from_request(req).await {
@@ -328,22 +324,18 @@ struct SubscriptionRequestContext {
     action_sender: mpsc::Sender<SubscriptionAction>,
 }
 
-async fn handle_rues_subscription_request<B>(
-    req: Request<B>,
+async fn handle_rues_subscription_request(
+    req: Request<Body>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
-) -> Result<AxumResponse, ApiError>
-where
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
-{
+) -> Result<AxumResponse, ApiError> {
     let context = parse_subscription_request_context(req, sockets_map).await?;
     dispatch_subscription_action(context).await
 }
 
-async fn parse_subscription_request_context<B>(
-    req: Request<B>,
+async fn parse_subscription_request_context(
+    req: Request<Body>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,

@@ -42,8 +42,6 @@ use axum::http::HeaderValue;
 #[cfg(test)]
 use axum::http::header::{ALLOW, CONTENT_TYPE};
 use axum::http::{HeaderMap, Response, StatusCode};
-#[cfg(test)]
-use http_body_util::BodyExt;
 use tokio::net::ToSocketAddrs;
 use tokio::sync::{Mutex, RwLock, broadcast};
 use tokio::task::JoinError;
@@ -1081,12 +1079,9 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
-        let body = response
-            .into_body()
-            .collect()
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .expect("body should be readable")
-            .to_bytes();
+            .expect("body should be readable");
         let body = String::from_utf8(body.to_vec())
             .expect("response body should be utf-8 json");
 

@@ -11,13 +11,12 @@ use std::str::FromStr;
 use std::sync::mpsc;
 use std::task::{Context, Poll};
 
-use axum::body::{Body as AxumBody, Bytes, HttpBody};
+use axum::body::{Body as AxumBody, Bytes};
 use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
 use axum::response::IntoResponse;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
-use http_body_util::{BodyExt, LengthLimitError, Limited};
 use pin_project::pin_project;
 use rand::Rng;
 use rand::distributions::{Distribution, Standard};
@@ -597,13 +596,9 @@ impl RuesDispatchEvent {
         )
     }
 
-    pub async fn from_request<B>(
-        req: Request<B>,
-    ) -> Result<(Self, bool), RequestParseError>
-    where
-        B: HttpBody<Data = Bytes> + Send + 'static,
-        B::Error: std::error::Error + Send + Sync + 'static,
-    {
+    pub async fn from_request(
+        req: Request<AxumBody>,
+    ) -> Result<(Self, bool), RequestParseError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
@@ -676,35 +671,28 @@ fn parse_rues_request_meta(
     Ok((uri, headers, binary_request, binary_response))
 }
 
-pub(super) async fn collect_limited_body<B>(
-    body: B,
+pub(super) async fn collect_limited_body(
+    body: AxumBody,
     max_body_bytes: usize,
-) -> Result<Vec<u8>, LimitedBodyError>
-where
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
-{
-    Limited::new(body, max_body_bytes)
-        .collect()
+) -> Result<Vec<u8>, LimitedBodyError> {
+    axum::body::to_bytes(body, max_body_bytes)
         .await
+        .map(|bytes| bytes.to_vec())
         .map_err(|e| {
-            if e.downcast_ref::<LengthLimitError>().is_some() {
+            // axum::body::to_bytes uses http_body_util::Limited internally,
+            // which surfaces "length limit exceeded" when the cap is hit.
+            if e.to_string() == "length limit exceeded" {
                 LimitedBodyError::TooLarge
             } else {
                 LimitedBodyError::Other(anyhow::Error::msg(e.to_string()))
             }
         })
-        .map(|collected| collected.to_bytes().to_vec())
 }
 
-async fn collect_limited_request_body<B>(
-    body: B,
+async fn collect_limited_request_body(
+    body: AxumBody,
     max_body_bytes: usize,
-) -> Result<Vec<u8>, RequestParseError>
-where
-    B: HttpBody<Data = Bytes> + Send + 'static,
-    B::Error: std::error::Error + Send + Sync + 'static,
-{
+) -> Result<Vec<u8>, RequestParseError> {
     collect_limited_body(body, max_body_bytes)
         .await
         .map_err(|err| match err {
