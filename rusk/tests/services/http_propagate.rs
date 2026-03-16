@@ -6,9 +6,6 @@
 
 #![cfg(all(feature = "chain", feature = "recovery-state"))]
 
-use std::path::PathBuf;
-
-use axum::http::HeaderMap;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
@@ -18,7 +15,7 @@ use dusk_rusk_test::{RuskVmConfig, TestContext};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger};
-use rusk::http::{HttpPolicyConfig, HttpServer};
+use rusk::http::{HttpPolicyConfig, HttpServer, HttpServerConfig};
 use rusk::node::RuskNode;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
@@ -93,11 +90,14 @@ async fn propagate_rejects_tx_that_fails_preverify() {
     let (_server, local_addr) = HttpServer::bind(
         node,
         event_receiver,
-        16,
-        "127.0.0.1:0",
-        HeaderMap::new(),
-        HttpPolicyConfig::default(),
-        None::<(PathBuf, PathBuf)>,
+        HttpServerConfig {
+            address: "127.0.0.1:0".to_string(),
+            cert: None,
+            key: None,
+            headers: Default::default(),
+            ws_event_channel_cap: 16,
+            policy: HttpPolicyConfig::default(),
+        },
     )
     .await
     .expect("binding test HTTP server should succeed");

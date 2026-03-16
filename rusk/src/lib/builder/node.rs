@@ -291,23 +291,8 @@ impl RuskNodeBuilder {
             #[cfg(feature = "prover")]
             handler.sources.push(Box::new(rusk_prover::LocalProver));
 
-            let cert_and_key = match (http.cert, http.key) {
-                (Some(cert), Some(key)) => Some((cert, key)),
-                _ => None,
-            };
-
-            _ws_server = Some(
-                HttpServer::bind(
-                    handler,
-                    rues_receiver,
-                    http.ws_event_channel_cap,
-                    http.address,
-                    http.headers,
-                    http.policy,
-                    cert_and_key,
-                )
-                .await?,
-            );
+            _ws_server =
+                Some(HttpServer::bind(handler, rues_receiver, http).await?);
         }
 
         node.inner().initialize(&mut service_list).await?;

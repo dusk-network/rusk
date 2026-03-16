@@ -30,7 +30,7 @@ pub(crate) use event::{
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[cfg(feature = "chain")]
@@ -42,7 +42,6 @@ use axum::http::HeaderValue;
 #[cfg(test)]
 use axum::http::header::{ALLOW, CONTENT_TYPE};
 use axum::http::{HeaderMap, Response, StatusCode};
-use tokio::net::ToSocketAddrs;
 use tokio::sync::{Mutex, RwLock, broadcast};
 use tokio::task::JoinError;
 use tokio::{io, task};
@@ -101,41 +100,51 @@ impl HttpServer {
         self.handle.await
     }
 
-    pub async fn bind<A, H, P1, P2>(
-        handler: H,
+    pub async fn bind(
+        handler: impl HandleRequest,
         event_receiver: broadcast::Receiver<RuesEvent>,
-        ws_event_channel_cap: usize,
-        addr: A,
-        headers: HeaderMap,
-        policy: HttpPolicyConfig,
-        cert_and_key: Option<(P1, P2)>,
-    ) -> io::Result<(Self, SocketAddr)>
-    where
-        A: ToSocketAddrs,
-        H: HandleRequest,
-        P1: AsRef<Path>,
-        P2: AsRef<Path>,
-    {
+        config: HttpServerConfig,
+    ) -> io::Result<(Self, SocketAddr)> {
+        let cert_and_key = match (config.cert, config.key) {
+            (Some(cert), Some(key)) => Some((cert, key)),
+            _ => None,
+        };
         let listener = match cert_and_key {
-            Some(cert_and_key) => Listener::bind_tls(addr, cert_and_key).await,
-            None => Listener::bind(addr).await,
+            Some(ck) => Listener::bind_tls(&config.address, ck).await,
+            None => Listener::bind(&config.address).await,
         }?;
 
-        let (shutdown_sender, shutdown_receiver) = broadcast::channel(1);
-
+        let (shutdown_sender, mut shutdown_receiver) = broadcast::channel(1);
         let local_addr = listener.local_addr()?;
 
         info!("Starting HTTP Listener to {local_addr}");
 
-        let handle = task::spawn(listening_loop(
-            handler,
-            listener,
-            event_receiver,
-            shutdown_receiver,
-            headers,
-            policy,
-            ws_event_channel_cap,
-        ));
+        let app = build_app(HttpAppState {
+            sources: Arc::new(handler),
+            sockets_map: Arc::new(RwLock::new(HashMap::new())),
+            events: Arc::new(Mutex::new(event_receiver)),
+            shutdown: Arc::new(Mutex::new(shutdown_receiver.resubscribe())),
+            ws_event_channel_cap: config.ws_event_channel_cap,
+            policy: Arc::new(HttpRequestPolicy::new(config.policy)),
+            headers: Arc::new(config.headers),
+        });
+
+        // NormalizePathLayer strips trailing slashes so `/graphql/`
+        // is served by the `/graphql` route without duplication.
+        // It wraps the entire router so normalisation happens before
+        // any routing or middleware runs.
+        let app = NormalizePathLayer::trim_trailing_slash().layer(app);
+        let make_svc =
+            axum::ServiceExt::<axum::http::Request<axum::body::Body>>::into_make_service(app);
+
+        let handle = task::spawn(async move {
+            let shutdown_signal = async move {
+                let _ = shutdown_receiver.recv().await;
+            };
+            let _ = axum::serve(listener, make_svc)
+                .with_graceful_shutdown(shutdown_signal)
+                .await;
+        });
 
         let server = Self {
             handle,
@@ -194,43 +203,6 @@ impl HandleRequest for DataSources {
     }
 }
 
-async fn listening_loop<H>(
-    handler: H,
-    listener: Listener,
-    events: broadcast::Receiver<RuesEvent>,
-    mut shutdown: broadcast::Receiver<Infallible>,
-    headers: HeaderMap,
-    policy: HttpPolicyConfig,
-    ws_event_channel_cap: usize,
-) where
-    H: HandleRequest,
-{
-    let app = build_app(HttpAppState {
-        sources: Arc::new(handler),
-        sockets_map: Arc::new(RwLock::new(HashMap::new())),
-        events: Arc::new(Mutex::new(events)),
-        shutdown: Arc::new(Mutex::new(shutdown.resubscribe())),
-        ws_event_channel_cap,
-        policy: Arc::new(HttpRequestPolicy::new(policy)),
-        headers: Arc::new(headers),
-    });
-
-    // NormalizePathLayer strips trailing slashes so `/graphql/`
-    // is served by the `/graphql` route without duplication.
-    // It wraps the entire router so normalisation happens before
-    // any routing or middleware runs.
-    let app = NormalizePathLayer::trim_trailing_slash().layer(app);
-    let make_svc =
-        axum::ServiceExt::<axum::http::Request<axum::body::Body>>::into_make_service(app);
-
-    let shutdown_signal = async move {
-        let _ = shutdown.recv().await;
-    };
-
-    let _ = axum::serve(listener, make_svc)
-        .with_graceful_shutdown(shutdown_signal)
-        .await;
-}
 
 // ExecutionError is intentionally large; boxing it would add complexity
 // without meaningful benefit here.
@@ -450,31 +422,19 @@ mod tests {
         handler: H,
         options: TestServerOptions,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        bind_test_server_with_headers_and_tls(
-            handler,
-            options.headers,
-            options.cert_and_key,
-            options.policy,
-        )
-        .await
-    }
-
-    async fn bind_test_server_with_headers_and_tls<H: HandleRequest>(
-        handler: H,
-        headers: HeaderMap,
-        cert_and_key: Option<(&'static str, &'static str)>,
-        policy: HttpPolicyConfig,
-    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
         let (event_sender, event_receiver) =
             broadcast::channel(EVENT_CHANNEL_CAP);
         let (_server, local_addr) = HttpServer::bind(
             handler,
             event_receiver,
-            WS_EVENT_CHANNEL_CAP,
-            "localhost:0",
-            headers,
-            policy,
-            cert_and_key,
+            HttpServerConfig {
+                address: "localhost:0".to_string(),
+                cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),
+                key: options.cert_and_key.map(|(_, k)| PathBuf::from(k)),
+                headers: options.headers,
+                ws_event_channel_cap: WS_EVENT_CHANNEL_CAP,
+                policy: options.policy,
+            },
         )
         .await
         .expect("Binding the server to the address should succeed");
