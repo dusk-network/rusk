@@ -9,24 +9,19 @@ use std::convert::Infallible;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use axum::body::Body;
 use axum::extract::State;
 use axum::extract::ws::{
     CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
 };
+use axum::http::header::{HeaderName, HeaderValue};
+use axum::http::{Request, StatusCode};
 use axum::response::{IntoResponse, Response as AxumResponse};
-use axum::{
-    body::Body,
-    http::{
-        Request, StatusCode,
-        header::{HeaderName, HeaderValue},
-    },
-};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
-use crate::VERSION;
 use super::axum_app::HttpAppState;
 use super::error::{
     ApiError, http_error_category, map_http_error_for_response,
@@ -37,6 +32,7 @@ use super::{
     RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
     RuesEvent, RuesEventUri, SessionId,
 };
+use crate::VERSION;
 
 pub(super) enum SubscriptionAction {
     Subscribe {

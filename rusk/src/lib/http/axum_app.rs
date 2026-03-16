@@ -15,14 +15,12 @@ use axum::extract::State;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
 use axum::middleware::{Next, from_fn_with_state};
-use axum::response::IntoResponse;
-use axum::response::Json;
+use axum::response::{IntoResponse, Json};
 #[cfg(any(feature = "chain", feature = "http-wasm"))]
 use axum::routing::get;
 use axum::routing::{any, post};
 use serde_json::json;
 use tokio::sync::{RwLock, broadcast, mpsc};
-use tower::ServiceExt;
 #[cfg(feature = "chain")]
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
@@ -33,18 +31,8 @@ use super::error::ApiError;
 #[cfg(feature = "chain")]
 use super::graphql;
 use super::policy::HttpRequestPolicy;
-use super::rues;
 use super::rues::SubscriptionAction;
-use super::{HandleRequest, RuesEvent, SessionId};
-
-#[cfg(feature = "http-wasm")]
-const WALLET_CORE_ALIAS_PATH: &str = "/static/drivers/wallet-core.wasm";
-#[cfg(feature = "http-wasm")]
-const WALLET_CORE_1_0_1_PATH: &str = "/static/drivers/wallet-core-1.0.1.wasm";
-#[cfg(feature = "http-wasm")]
-const WALLET_CORE_1_3_0_PATH: &str = "/static/drivers/wallet-core-1.3.0.wasm";
-#[cfg(feature = "http-wasm")]
-const WALLET_CORE_1_6_0_PATH: &str = "/static/drivers/wallet-core-1.6.0.wasm";
+use super::{HandleRequest, RuesEvent, SessionId, rues};
 
 #[cfg(feature = "http-wasm")]
 const WASM_CONTENT_TYPE: &str = "application/wasm";
@@ -81,11 +69,7 @@ pub(super) fn build_app(state: HttpAppState) -> Router {
     );
 
     #[cfg(feature = "http-wasm")]
-    let router = router
-        .route(WALLET_CORE_ALIAS_PATH, any(wallet_core_alias))
-        .route(WALLET_CORE_1_0_1_PATH, any(wallet_core_1_0_1))
-        .route(WALLET_CORE_1_3_0_PATH, any(wallet_core_1_3_0))
-        .route(WALLET_CORE_1_6_0_PATH, any(wallet_core_1_6_0));
+    let router = router.route("/static/drivers/{file}", get(wasm_driver_route));
 
     router
         .fallback(not_found)
@@ -182,54 +166,58 @@ async fn not_found() -> impl IntoResponse {
 }
 
 #[cfg(feature = "http-wasm")]
-async fn wallet_core_alias() -> impl IntoResponse {
-    wasm_response(include_bytes!("../../assets/wallet_core-1.0.1.wasm"))
-}
+async fn wasm_driver_route(
+    axum::extract::Path(file): axum::extract::Path<String>,
+) -> Response<Body> {
+    let bytes: Option<&'static [u8]> = match file.as_str() {
+        "wallet-core.wasm" | "wallet-core-1.0.1.wasm" => {
+            Some(include_bytes!("../../assets/wallet_core-1.0.1.wasm"))
+        }
+        "wallet-core-1.3.0.wasm" => {
+            Some(include_bytes!("../../assets/wallet_core-1.3.0.wasm"))
+        }
+        "wallet-core-1.6.0.wasm" => {
+            Some(include_bytes!("../../assets/wallet_core-1.6.0.wasm"))
+        }
+        _ => None,
+    };
 
-#[cfg(feature = "http-wasm")]
-async fn wallet_core_1_0_1() -> impl IntoResponse {
-    wasm_response(include_bytes!("../../assets/wallet_core-1.0.1.wasm"))
-}
-
-#[cfg(feature = "http-wasm")]
-async fn wallet_core_1_3_0() -> impl IntoResponse {
-    wasm_response(include_bytes!("../../assets/wallet_core-1.3.0.wasm"))
-}
-
-#[cfg(feature = "http-wasm")]
-async fn wallet_core_1_6_0() -> impl IntoResponse {
-    wasm_response(include_bytes!("../../assets/wallet_core-1.6.0.wasm"))
-}
-
-#[cfg(feature = "http-wasm")]
-fn wasm_response(bytes: &'static [u8]) -> impl IntoResponse {
-    (
-        StatusCode::OK,
-        [
-            (CONTENT_TYPE, WASM_CONTENT_TYPE),
-            (CACHE_CONTROL, WASM_CACHE_CONTROL),
-        ],
-        bytes,
-    )
+    match bytes {
+        Some(wasm) => (
+            StatusCode::OK,
+            [
+                (CONTENT_TYPE, WASM_CONTENT_TYPE),
+                (CACHE_CONTROL, WASM_CACHE_CONTROL),
+            ],
+            wasm,
+        )
+            .into_response(),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Path not found" })),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::convert::Infallible;
+    use std::sync::Arc;
+
     use axum::body::{Body, to_bytes};
     use axum::http::header::CONTENT_TYPE;
     use axum::http::{Request, StatusCode};
     use serde_json::Value;
-    use std::collections::HashMap;
-    use std::convert::Infallible;
-    use std::sync::Arc;
     use tokio::sync::{RwLock, broadcast, mpsc};
     use tower::ServiceExt;
 
     use super::rues::SubscriptionAction;
     use super::{HttpAppState, HttpRequestPolicy, build_app};
-    use crate::http::{HandleRequest, HttpPolicyConfig};
     use crate::http::{
-        HttpResult, ResponseData, RuesDispatchEvent, RuesEvent, SessionId,
+        HandleRequest, HttpPolicyConfig, HttpResult, ResponseData,
+        RuesDispatchEvent, RuesEvent, SessionId,
     };
 
     struct NoopHandle;
