@@ -19,7 +19,7 @@ use axum::response::IntoResponse;
 use axum::response::Json;
 use axum::routing::any;
 use serde_json::json;
-use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
+use tokio::sync::{RwLock, broadcast, mpsc};
 use tower::ServiceExt;
 #[cfg(feature = "chain")]
 use tower_http::limit::RequestBodyLimitLayer;
@@ -54,8 +54,8 @@ pub(super) struct HttpAppState {
     pub(super) sources: Arc<dyn HandleRequest>,
     pub(super) sockets_map:
         Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    pub(super) events: Arc<Mutex<broadcast::Receiver<RuesEvent>>>,
-    pub(super) shutdown: Arc<Mutex<broadcast::Receiver<Infallible>>>,
+    pub(super) events: broadcast::Sender<RuesEvent>,
+    pub(super) shutdown: broadcast::Sender<Infallible>,
     pub(super) ws_event_channel_cap: usize,
     pub(super) policy: Arc<HttpRequestPolicy>,
     pub(super) headers: Arc<HeaderMap>,
@@ -131,8 +131,8 @@ async fn rues_route(
     State(state): State<HttpAppState>,
     req: Request<Body>,
 ) -> Result<Response<Body>, ApiError> {
-    let events = state.events.lock().await.resubscribe();
-    let shutdown = state.shutdown.lock().await.resubscribe();
+    let events = state.events.subscribe();
+    let shutdown = state.shutdown.subscribe();
 
     let (mut parts, body) = req.into_parts();
     if let Ok(ws) = WebSocketUpgrade::from_request_parts(&mut parts, &()).await
@@ -220,7 +220,7 @@ mod tests {
     use std::collections::HashMap;
     use std::convert::Infallible;
     use std::sync::Arc;
-    use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
+    use tokio::sync::{RwLock, broadcast, mpsc};
     use tower::ServiceExt;
 
     use super::rues::SubscriptionAction;
@@ -247,16 +247,16 @@ mod tests {
     }
 
     fn test_state() -> HttpAppState {
-        let (_events_tx, events_rx) = broadcast::channel::<RuesEvent>(1);
-        let (_shutdown_tx, shutdown_rx) = broadcast::channel::<Infallible>(1);
+        let (events_tx, _events_rx) = broadcast::channel::<RuesEvent>(1);
+        let (shutdown_tx, _shutdown_rx) = broadcast::channel::<Infallible>(1);
         HttpAppState {
             sources: Arc::new(NoopHandle),
             sockets_map: Arc::new(RwLock::new(HashMap::<
                 SessionId,
                 mpsc::Sender<SubscriptionAction>,
             >::new())),
-            events: Arc::new(Mutex::new(events_rx)),
-            shutdown: Arc::new(Mutex::new(shutdown_rx)),
+            events: events_tx,
+            shutdown: shutdown_tx,
             ws_event_channel_cap: 1,
             policy: Arc::new(HttpRequestPolicy::new(
                 HttpPolicyConfig::default(),

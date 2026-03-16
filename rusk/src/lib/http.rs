@@ -42,7 +42,7 @@ use axum::http::HeaderValue;
 #[cfg(test)]
 use axum::http::header::{ALLOW, CONTENT_TYPE};
 use axum::http::{HeaderMap, Response, StatusCode};
-use tokio::sync::{Mutex, RwLock, broadcast};
+use tokio::sync::{RwLock, broadcast};
 use tokio::task::JoinError;
 use tokio::{io, task};
 use tower::Layer;
@@ -102,7 +102,7 @@ impl HttpServer {
 
     pub async fn bind(
         handler: impl HandleRequest,
-        event_receiver: broadcast::Receiver<RuesEvent>,
+        event_sender: broadcast::Sender<RuesEvent>,
         config: HttpServerConfig,
     ) -> io::Result<(Self, SocketAddr)> {
         let cert_and_key = match (config.cert, config.key) {
@@ -122,8 +122,8 @@ impl HttpServer {
         let app = build_app(HttpAppState {
             sources: Arc::new(handler),
             sockets_map: Arc::new(RwLock::new(HashMap::new())),
-            events: Arc::new(Mutex::new(event_receiver)),
-            shutdown: Arc::new(Mutex::new(shutdown_receiver.resubscribe())),
+            events: event_sender,
+            shutdown: shutdown_sender.clone(),
             ws_event_channel_cap: config.ws_event_channel_cap,
             policy: Arc::new(HttpRequestPolicy::new(config.policy)),
             headers: Arc::new(config.headers),
@@ -422,11 +422,11 @@ mod tests {
         handler: H,
         options: TestServerOptions,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        let (event_sender, event_receiver) =
+        let (event_sender, _event_receiver) =
             broadcast::channel(EVENT_CHANNEL_CAP);
         let (_server, local_addr) = HttpServer::bind(
             handler,
-            event_receiver,
+            event_sender.clone(),
             HttpServerConfig {
                 address: "localhost:0".to_string(),
                 cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),

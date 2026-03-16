@@ -86,10 +86,10 @@ async fn propagate_rejects_tx_that_fails_preverify() {
         archive,
     );
 
-    let (event_sender, event_receiver) = broadcast::channel(1);
+    let (event_sender, _event_receiver) = broadcast::channel(1);
     let (_server, local_addr) = HttpServer::bind(
         node,
-        event_receiver,
+        event_sender.clone(),
         HttpServerConfig {
             address: "127.0.0.1:0".to_string(),
             cert: None,
