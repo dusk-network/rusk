@@ -11,7 +11,6 @@ use axum::response::IntoResponse;
 use tracing::{debug, error};
 
 use super::event::ExecutionError;
-use super::event::RequestParseError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -24,6 +23,9 @@ pub enum Error {
     /// Invalid UTF-8 in request body
     #[error("Invalid request encoding: {0}")]
     InvalidEncoding(String),
+    /// Invalid request payload (malformed body, bad encoding)
+    #[error("Invalid payload: {0}")]
+    InvalidPayload(String),
     /// Request payload too large
     #[error("Payload too large: {0}")]
     PayloadTooLarge(String),
@@ -71,6 +73,7 @@ impl Error {
             Error::InvalidInput(_)
             | Error::VersionMismatch(_)
             | Error::InvalidEncoding(_) => 400,
+            Error::InvalidPayload(_) => 422,
             Error::PayloadTooLarge(_) => 413,
             Error::NotFound(_) => 404,
             Error::Forbidden(_) => 403,
@@ -132,6 +135,10 @@ impl Error {
     pub fn payload_too_large<T: AsRef<str>>(msg: T) -> Self {
         Error::PayloadTooLarge(msg.as_ref().to_string())
     }
+
+    pub fn invalid_payload<T: AsRef<str>>(msg: T) -> Self {
+        Error::InvalidPayload(msg.as_ref().to_string())
+    }
 }
 
 impl From<dusk_data_driver::Error> for Error {
@@ -152,6 +159,7 @@ pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
         Error::InvalidInput(_)
         | Error::VersionMismatch(_)
         | Error::InvalidEncoding(_)
+        | Error::InvalidPayload(_)
         | Error::PayloadTooLarge(_)
         | Error::NotFound(_)
         | Error::Forbidden(_)
@@ -276,44 +284,6 @@ impl From<ExecutionError> for ApiError {
     }
 }
 
-impl From<RequestParseError> for ApiError {
-    fn from(value: RequestParseError) -> Self {
-        match value {
-            RequestParseError::InvalidPath => Self::new(
-                StatusCode::NOT_FOUND,
-                "Invalid URL path",
-                "invalid_path",
-            ),
-            RequestParseError::InvalidPayload(message) => Self::new(
-                StatusCode::UNPROCESSABLE_ENTITY,
-                message,
-                "invalid_payload",
-            ),
-            RequestParseError::Other(err) => {
-                if let Some(http_err) = err.downcast_ref::<Error>() {
-                    let (status, message) =
-                        map_http_error_for_response(http_err);
-                    let status = StatusCode::from_u16(status)
-                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-                    return Self {
-                        status,
-                        message,
-                        category: http_error_category(http_err),
-                        allow: None,
-                        retry_after_seconds: None,
-                    };
-                }
-                error!(error = %err, "Failed parsing RUES dispatch request");
-                Self::new(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed parsing request",
-                    "internal",
-                )
-            }
-        }
-    }
-}
-
 pub(super) fn map_execution_error(
     error: &ExecutionError,
 ) -> (StatusCode, String, &'static str) {
@@ -340,6 +310,7 @@ pub(super) fn http_error_category(error: &Error) -> &'static str {
         Error::InvalidInput(_) => "invalid_input",
         Error::VersionMismatch(_) => "version_mismatch",
         Error::InvalidEncoding(_) => "invalid_encoding",
+        Error::InvalidPayload(_) => "invalid_payload",
         Error::PayloadTooLarge(_) => "payload_too_large",
         Error::NotFound(_) => "not_found",
         Error::Forbidden(_) => "forbidden",

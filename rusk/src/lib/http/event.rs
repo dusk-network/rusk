@@ -529,22 +529,6 @@ pub struct RuesDispatchEvent {
     pub data: RequestData,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum RequestParseError {
-    #[error("Invalid URL path")]
-    InvalidPath,
-    #[error("{0}")]
-    InvalidPayload(String),
-    #[error("{0}")]
-    Other(anyhow::Error),
-}
-
-#[derive(Debug)]
-pub(super) enum LimitedBodyError {
-    TooLarge,
-    Other(anyhow::Error),
-}
-
 impl RuesDispatchEvent {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
@@ -584,7 +568,7 @@ impl RuesDispatchEvent {
         path: &str,
         request_headers: &HeaderMap,
         body_bytes: Vec<u8>,
-    ) -> Result<(Self, bool), RequestParseError> {
+    ) -> Result<(Self, bool), super::HttpError> {
         let (uri, headers, binary_request, binary_response) =
             parse_rues_request_meta(path, request_headers)?;
         Self::from_parsed_parts(
@@ -598,14 +582,14 @@ impl RuesDispatchEvent {
 
     pub async fn from_request(
         req: Request<AxumBody>,
-    ) -> Result<(Self, bool), RequestParseError> {
+    ) -> Result<(Self, bool), super::HttpError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(RequestParseError::InvalidPath)?;
+            .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
 
         let max_body_bytes = super::max_rues_request_body_bytes(&uri);
-        let bytes = collect_limited_request_body(body, max_body_bytes).await?;
+        let bytes = collect_limited_body(body, max_body_bytes).await?;
 
         Self::from_path_headers_and_body(
             parts.uri.path(),
@@ -620,7 +604,7 @@ impl RuesDispatchEvent {
         body_bytes: Vec<u8>,
         binary_request: bool,
         binary_response: bool,
-    ) -> Result<(Self, bool), RequestParseError> {
+    ) -> Result<(Self, bool), super::HttpError> {
         let data = parse_request_data(body_bytes, binary_request)?;
         let ret = RuesDispatchEvent { headers, data, uri };
         Ok((ret, binary_response))
@@ -637,10 +621,10 @@ fn parse_rues_request_meta(
         bool,
         bool,
     ),
-    RequestParseError,
+    super::HttpError,
 > {
     let uri = RuesEventUri::parse_from_path(path)
-        .ok_or(RequestParseError::InvalidPath)?;
+        .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
 
     let headers =
         request_headers
@@ -651,7 +635,7 @@ fn parse_rues_request_meta(
             })
             .collect::<Result<
                 serde_json::Map<String, serde_json::Value>,
-                RequestParseError,
+                super::HttpError,
             >>()?;
 
     let content_type = request_headers
@@ -674,7 +658,7 @@ fn parse_rues_request_meta(
 pub(super) async fn collect_limited_body(
     body: AxumBody,
     max_body_bytes: usize,
-) -> Result<Vec<u8>, LimitedBodyError> {
+) -> Result<Vec<u8>, super::HttpError> {
     axum::body::to_bytes(body, max_body_bytes)
         .await
         .map(|bytes| bytes.to_vec())
@@ -682,41 +666,25 @@ pub(super) async fn collect_limited_body(
             // axum::body::to_bytes uses http_body_util::Limited internally,
             // which surfaces "length limit exceeded" when the cap is hit.
             if e.to_string() == "length limit exceeded" {
-                LimitedBodyError::TooLarge
-            } else {
-                LimitedBodyError::Other(anyhow::Error::msg(e.to_string()))
-            }
-        })
-}
-
-async fn collect_limited_request_body(
-    body: AxumBody,
-    max_body_bytes: usize,
-) -> Result<Vec<u8>, RequestParseError> {
-    collect_limited_body(body, max_body_bytes)
-        .await
-        .map_err(|err| match err {
-            LimitedBodyError::TooLarge => RequestParseError::Other(
                 super::HttpError::payload_too_large(format!(
                     "Request body exceeds {max_body_bytes} bytes"
                 ))
-                .into(),
-            ),
-            LimitedBodyError::Other(err) => RequestParseError::Other(err),
+            } else {
+                super::HttpError::internal(e.to_string())
+            }
         })
 }
 
 fn parse_request_data(
     bytes: Vec<u8>,
     binary_request: bool,
-) -> Result<RequestData, RequestParseError> {
+) -> Result<RequestData, super::HttpError> {
     if binary_request {
         return Ok(bytes.into());
     }
 
-    let text = String::from_utf8(bytes).map_err(|_| {
-        RequestParseError::InvalidPayload("Invalid utf8".into())
-    })?;
+    let text = String::from_utf8(bytes)
+        .map_err(|_| super::HttpError::invalid_payload("Invalid utf8"))?;
     if let Some(hex) = text.strip_prefix("0x") {
         if let Ok(bytes) = hex::decode(hex) {
             Ok(bytes.into())
@@ -731,13 +699,13 @@ fn parse_request_data(
 fn parse_request_header_value(
     key: &str,
     value: &HeaderValue,
-) -> Result<serde_json::Value, RequestParseError> {
+) -> Result<serde_json::Value, super::HttpError> {
     if value.is_empty() {
         return Ok(serde_json::Value::Null);
     }
 
     let as_str = value.to_str().map_err(|_| {
-        RequestParseError::InvalidPayload(format!(
+        super::HttpError::invalid_payload(format!(
             "Invalid header encoding for {key}",
         ))
     })?;
@@ -871,8 +839,7 @@ mod tests {
     use axum::http::HeaderValue;
 
     use super::{
-        DataType, RequestParseError, RuesEvent, RuesEventUri,
-        parse_request_header_value,
+        DataType, RuesEvent, RuesEventUri, parse_request_header_value,
     };
 
     const DUMMY_ENTITY: &str = "abc123";
@@ -1000,7 +967,7 @@ mod tests {
                         .expect_err("invalid header should fail");
                     assert!(matches!(
                         err,
-                        RequestParseError::InvalidPayload(_)
+                        crate::http::HttpError::InvalidPayload(_)
                     ));
                 }
             }

@@ -1032,10 +1032,9 @@ mod tests {
 
     #[tokio::test]
     async fn request_parse_other_http_internal_is_sanitized() {
-        let response = error::ApiError::from(event::RequestParseError::Other(
-            HttpError::internal("sensitive details").into(),
-        ))
-        .into_response();
+        let response =
+            error::ApiError::from(HttpError::internal("sensitive details"))
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
