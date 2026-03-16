@@ -419,9 +419,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         let consensus_task = self.task.read().await;
-        // If we are syncing our chain, we blindly repropagate everything
-        // beacuse we cannot verify any future message but do not want to affect
-        // propagation
+        // While syncing, consensus messages cannot be verified (future-round
+        // committees are unknown), but dropping them would make this node a
+        // dead end in the Kadcast relay graph. With K_BETA = 3, even a modest
+        // fraction of syncing dead-end nodes sharply degrades full-network
+        // coverage for time-sensitive consensus messages.
+        //
+        // Blind rebroadcast keeps syncing nodes as functional relays at the
+        // cost of propagating unverified messages — a deliberate
+        // liveness-over-strictness trade-off.
         if !consensus_task.is_running() {
             broadcast(&self.network, &msg).await;
             // We return here because if Consensus is not running we can't
