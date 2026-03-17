@@ -213,6 +213,7 @@ fn clear_session(session: &mut Session, config: &Config) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
     }
+    session.clear_call_hook();
 }
 
 /// Checks that a withdrawal's Phoenix replay token nullifier count matches the
