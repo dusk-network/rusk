@@ -26,10 +26,8 @@ mod error;
 pub use error::{Error, TxPreconditionError};
 
 mod dusk;
-pub use dusk::{Dusk, LUX, dusk, from_dusk};
-
 use blake2b_simd as _; // Required to satisfy unused_crate_dependencies
-
+pub use dusk::{Dusk, LUX, dusk, from_dusk};
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
 pub use dusk_jubjub::{
@@ -146,14 +144,15 @@ pub mod plonk {
 /// Groth16 circuitry
 #[cfg(feature = "groth16")]
 pub mod groth16 {
-    pub use ark_bn254 as bn254;
     pub use ark_groth16::{
         Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
         data_structures, generator, prepare_verifying_key, prover, r1cs_to_qap,
         verifier,
     };
-    pub use ark_relations as relations;
-    pub use ark_serialize as serialize;
+    pub use {
+        ark_bn254 as bn254, ark_relations as relations,
+        ark_serialize as serialize,
+    };
 }
 
 #[inline]

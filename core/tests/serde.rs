@@ -12,11 +12,11 @@ use bls12_381_bls::{
 use dusk_core::stake::{
     Reward, RewardReason, SlashEvent, StakeEvent, StakeFundOwner, StakeKeys,
 };
-use dusk_core::transfer::WithdrawEvent;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::{
     ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
     DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
+    WithdrawEvent,
 };
 use dusk_core::{BlsScalar, JubJubScalar};
 use ff::Field;
@@ -24,9 +24,8 @@ use phoenix_core::{
     Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
 };
 use piecrust_uplink::{CONTRACT_ID_BYTES, ContractId};
-use rand::Rng;
 use rand::rngs::StdRng;
-use rand::{RngCore, SeedableRng};
+use rand::{Rng, RngCore, SeedableRng};
 use serde::Serialize;
 
 fn assert_canonical_json<T>(
