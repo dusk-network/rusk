@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
 use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 

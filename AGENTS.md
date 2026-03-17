@@ -106,38 +106,50 @@ make run-dev-archive           # With archive storage
 Work on these with extra diligence.
 
 ### Consensus (`consensus/`)
+
 - Understand the safety invariant before changing
 - **Verify**: `make -C consensus test` + `make -C consensus testbed` + `make -C node test`
 - **Watch**: fork choice, voting, timing, quorum
 
 ### Proof/Signature Verification (`verifier.rs`, `host_queries.rs`, `signatures/*`)
+
 - Trace the verification flow
 - **Verify**: `make -C vm test` + `make -C rusk test`
 - **Watch**: accepting invalid or rejecting valid proofs/sigs
 
 ### Wire Formats (`node-data/src/ledger/*`, `message.rs`, `encoding.rs`)
+
 - Check if type crosses network/storage boundaries
 - **Verify**: `make -C node-data test` + `make -C node test` + `make -C rusk test`
 - **Watch**: field reordering, type changes, removed fields
 
 ### Contract Execution (`vm/src/execute*`)
+
 - Understand host function exposure
 - **Verify**: `make -C vm test` + contract tests
 - **Watch**: gas metering, host behavior, state access
 
 ### Genesis Contracts (`contracts/stake/`, `contracts/transfer/`)
+
 - Understand ABI and wallet/SDK interactions
 - **Verify**: `make -C contracts/<name> wasm` + `make -C contracts/<name> test`
 - **Watch**: on-chain state interpretation, breaking callers
 
 ### Secrets (`wallet-core/`, consensus keys)
+
 - Identify sensitive data flow
 - **Verify**: `make -C wallet-core test` + review for logging
 - **Watch**: logging secrets, missing zeroization
 
 ### Circuit/Prover Keys (`rusk-profile/`, `rusk-prover/`)
+>
 > Rare and high-impact. Coordinate with maintainers first.
+
 - **Verify**: `make -C rusk-prover test` + `make -C rusk test`
+
+### Submodules (`contracts/`)
+
+Do not change the `contracts/` submodule pointer unless explicitly instructed. Moving the pointer changes which version of the genesis contracts rusk builds and tests against — this must be a deliberate decision.
 
 ## Workflows
 
@@ -148,13 +160,16 @@ When a bug is reported, start by adding a test that reproduces it (it should fai
 1. Reproduce → 2. Locate → 3. Read surrounding code → 4. Smallest fix → 5. Test → 6. `cargo fmt --all` → 7. Clippy
 
 ### New Feature
+
 1. Find patterns → 2. Design minimal API → 3. Implement → 4. Add tests → 5. `cargo fmt --all` → 6. Clippy
 
 ### Contract Change
+
 1. `make setup-compiler` → 2. Modify → 3. `make -C contracts/<name> wasm` → 4. Test
 5. If ABI changed: update `core/`, `data-drivers/`, `wallet-core/`
 
 ### Frontend/SDK
+
 ```bash
 cd w3sper.js && deno task test
 ```
@@ -164,6 +179,7 @@ cd w3sper.js && deno task test
 See [PR Minimum](#pr-minimum) in Commands.
 
 ### Expand When
+
 - Package is widely depended on (`core/`, `node-data/`) → test dependents
 - Elevated care zone → follow zone-specific verification
 - Multi-crate → `make clippy`, consider `make test`
@@ -171,6 +187,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 ## Decision Guidelines
 
 ### Do Without Asking
+
 - Localized bug fixes
 - Test improvements
 - Doc/comment fixes in files you're modifying
@@ -180,6 +197,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 - Lockfile changes from manifest updates
 
 ### Ask First
+
 - Ambiguous requirements
 - Architectural decisions
 - Multi-subsystem impact (3+ crates, Rust/JS boundary)
@@ -189,6 +207,7 @@ See [PR Minimum](#pr-minimum) in Commands.
 - Adding deps to core crates
 
 ### When to Stop
+
 If you can't understand the invariant, structure, or what would break — ask rather than guess.
 
 ## Integration Points
@@ -235,4 +254,49 @@ cargo clean -p <crate> && cargo build -p <crate> --release
 
 **Branches**: `<package>/<description>` from `master` (e.g., `rusk/add-rpc-endpoint`). Don't push to `master` directly.
 
-**Commits**: `<package>: Description` (e.g., `rusk: Add block query endpoint`). Use `ci`, `docs`, `chore` for cross-cutting.
+### Commit messages
+
+Format: `<scope>: <Description>` — imperative mood, capitalize first word after colon.
+
+**One commit per crate per concern.** Each commit touches exactly one crate and one logical concern. Never bundle changes to different crates in one commit, and don't mix unrelated changes within the same crate either (e.g. a dependency API adaptation and a new feature are separate commits even if both touch `vm/`). Order commits bottom-up through the dependency chain (e.g. `core` → `vm` → `rusk`).
+
+Canonical scopes — exactly one prefix per crate:
+
+| Scope | Directory |
+|-------|-----------|
+| `core` | `core/` |
+| `node-data` | `node-data/` |
+| `node` | `node/` |
+| `consensus` | `consensus/` |
+| `vm` | `vm/` |
+| `rusk` | `rusk/` (the main binary crate) |
+| `rusk-wallet` | `rusk-wallet/` |
+| `rusk-recovery` | `rusk-recovery/` |
+| `rusk-prover` | `rusk-prover/` |
+| `rusk-profile` | `rusk-profile/` |
+| `rusk-test` | `rusk-test/` |
+| `wallet-core` | `wallet-core/` |
+| `data-driver` | `data-drivers/` |
+| `w3sper` | `w3sper.js/` |
+| `contracts` | `contracts/` submodule pointer updates |
+
+Cross-cutting (not crate-scoped):
+
+| Scope | When |
+|-------|------|
+| `workspace` | Root `Cargo.toml`, cross-crate dependency bumps, Makefile recipes |
+| `ci` | `.github/workflows/` |
+| `docs` | Documentation-only changes |
+| `chore` | Housekeeping (submodule URLs, repo splits, etc.) |
+| `docker` | Docker files |
+
+Examples:
+- `core: Add sha256 ABI host query`
+- `vm: Add withdrawal replay call hook`
+- `rusk: Gate new host queries behind Boreas activation`
+- `workspace: Update dusk dependencies`
+
+Do not:
+- Bundle changes to multiple crates in one commit
+- Use `WIP` or `fixup` commits (squash before push)
+- Use generic messages like `fix typo` or `update code` without context

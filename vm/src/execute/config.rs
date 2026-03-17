@@ -43,6 +43,10 @@ pub struct Config {
     /// Charge gas consumed by the contract's `init` function during
     /// deployment.
     pub charge_init_gas: bool,
+
+    /// Enforce that Phoenix withdrawal replay tokens carry exactly the same
+    /// number of nullifiers as the encapsulating transaction.
+    pub withdrawal_nullifier_check: bool,
 }
 
 impl Default for Config {
@@ -66,5 +70,6 @@ impl Config {
         phoenix_refund_check: false,
         deploy_remaining_gas_check: false,
         charge_init_gas: false,
+        withdrawal_nullifier_check: false,
     };
 }
