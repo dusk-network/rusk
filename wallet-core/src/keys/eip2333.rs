@@ -58,15 +58,14 @@
 //!  - `HKDF-Extract`: defined in RFC5869, instantiated with SHA256
 //!  - `HKDF-Expand`: defined in RFC5869, instantiated with SHA256
 
-use dusk_core::BlsScalar;
-use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
-
-use hkdf::Hkdf;
-use sha2::{Digest, Sha256};
-
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use alloc::{format, vec};
+
+use dusk_core::BlsScalar;
+use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
+use hkdf::Hkdf;
+use sha2::{Digest, Sha256};
 
 const SHA256_DIGEST_SIZE: usize = 32;
 const HKDF_DIGESTS: usize = 255;
@@ -487,11 +486,12 @@ pub fn derive_bls_sk(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bip39::{Language, Mnemonic, Seed};
     use dusk_bytes::Serializable;
     use hex::decode;
     use num_bigint::BigUint;
+
+    use super::*;
 
     struct TestCase {
         seed: &'static str,
@@ -589,7 +589,8 @@ mod tests {
                 "m/0",
                 "20397789859736650942317412262472558107875392172444076792671091975210932703118",
             ),
-            // This case has no external reference and only serves as flag for potential breaking changes
+            // This case has no external reference and only serves as flag for
+            // potential breaking changes
             (
                 "m/12381/3600/0/0/0",
                 "1438960529079439298020003172973761593698584351192884838483126814052706935030",
