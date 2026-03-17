@@ -22,14 +22,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
-use indexmap as _; // Required to satisfy unused_crate_dependencies
-use native_tls as _;
 use node_data::message::payload::Inv;
 use node_data::message::{AsyncQueue, Message};
 use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
-use tracing::{error, info, warn}; // Required to satisfy unused_crate_dependencies
+use tracing::{error, info, warn};
 
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.
@@ -259,7 +257,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 
 #[cfg(test)]
 mod tests {
-    // need to add the benchmark dep here so that the
-    // `unused_crate_dependencies` lint is satisfied
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
     use criterion as _;
 }
