@@ -7,7 +7,6 @@
 //! The host-queries registered on the Dusk VM
 
 use alloc::vec::Vec;
-
 use core::cell::Cell;
 use std::sync::LazyLock;
 
@@ -33,7 +32,8 @@ use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Serialize};
-use secp256k1::{Message, Secp256k1, ecdsa::RecoverableSignature};
+use secp256k1::ecdsa::RecoverableSignature;
+use secp256k1::{Message, Secp256k1};
 use sha2::{Digest as Sha2Digest, Sha256};
 use sha3::Keccak256;
 use tracing::warn;
