@@ -22,13 +22,13 @@ pub fn unzip(buffer: &[u8], output: &Path) -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::io::Write;
 
     use tempfile::tempdir;
     use zip::write::SimpleFileOptions;
     use zip::{CompressionMethod, ZipWriter};
+
+    use super::*;
 
     #[test]
     fn unzip_enforces_entry_path_safety() {
