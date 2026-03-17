@@ -4,15 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, WalletFile};
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
+
 use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;
 use rusk_wallet::Wallet;
 use sha3::{Digest, Sha3_256};
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
+
+use crate::{Error, WalletFile};
 
 /// Uploads the data driver bytecode for a specified contract
 /// Upload message must contain a signature of a bytecode hash.

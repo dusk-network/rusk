@@ -10,15 +10,15 @@ mod io;
 mod settings;
 mod tui;
 
-pub(crate) use command::{Command, RunResult};
-use command::{gen_iv, gen_salt};
-use io::prompt::{Prompter, ask_pwd, derive_key};
-use zeroize::Zeroize;
-
 use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
+pub(crate) use command::{Command, RunResult};
+use command::{gen_iv, gen_salt};
+use config::Config;
+use io::prompt::{Prompter, ask_pwd, derive_key};
+use io::{WalletArgs, prompt, status};
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
@@ -27,11 +27,9 @@ use rusk_wallet::{
     Wallet, WalletPath,
 };
 use tracing::{Level, error, info, warn};
+use zeroize::Zeroize;
 
 use crate::settings::{LogFormat, Settings};
-
-use config::Config;
-use io::{WalletArgs, prompt, status};
 
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {

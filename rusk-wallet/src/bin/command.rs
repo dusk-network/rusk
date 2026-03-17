@@ -17,13 +17,11 @@ mod tests;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
-use std::path::PathBuf;
-
 #[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
+use std::path::PathBuf;
 
-use aes_gcm::AeadCore;
-use aes_gcm::Aes256Gcm;
+use aes_gcm::{AeadCore, Aes256Gcm};
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Subcommand;
 use dusk_core::BlsScalar;
@@ -1097,12 +1095,12 @@ fn create_seed_file(path: &PathBuf) -> std::io::Result<File> {
 
 #[cfg(test)]
 mod unit_tests {
-    use super::create_seed_file;
-
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
 
     use tempfile::tempdir;
+
+    use super::create_seed_file;
 
     #[test]
     #[cfg(unix)]

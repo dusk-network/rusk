@@ -9,21 +9,19 @@ mod sync;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use rkyv::Deserialize;
-
 use dusk_bytes::Serializable;
-use dusk_core::BlsScalar;
-use dusk_core::Error as ExecutionCoreError;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{StakeData, StakeFundOwner, StakeKeys};
-use dusk_core::transfer::Transaction;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
+use dusk_core::transfer::{Transaction, TransactionFormat};
+use dusk_core::{BlsScalar, Error as ExecutionCoreError};
 use flume::Receiver;
 use futures::executor::block_on;
+use rkyv::Deserialize;
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tokio::time::{Duration, sleep};
@@ -38,7 +36,6 @@ use super::cache::Cache;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
 use crate::{Address, Error, MAX_PROFILES};
-use dusk_core::transfer::TransactionFormat;
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";

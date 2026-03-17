@@ -8,10 +8,9 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_core::transfer::phoenix::NoteLeaf;
-use dusk_core::{
-    BlsScalar, transfer::phoenix::Note,
-    transfer::phoenix::PublicKey as PhoenixPublicKey,
+use dusk_core::BlsScalar;
+use dusk_core::transfer::phoenix::{
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
 };
 use rkyv::Deserialize;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};

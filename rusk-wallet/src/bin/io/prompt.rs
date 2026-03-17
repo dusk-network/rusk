@@ -7,15 +7,15 @@
 use std::io::{self, BufRead, Write, stdout};
 use std::println;
 
+use bip39::{ErrorKind, Language, Mnemonic};
+use crossterm::ExecutableCommand;
+use crossterm::cursor::Show;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use crossterm::{ExecutableCommand, cursor::Show};
-
-use bip39::{ErrorKind, Language, Mnemonic};
-
-use rusk_wallet::dat::version_without_pre_higher;
-use rusk_wallet::{Error, dat::FileVersion as DatFileVersion};
-use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
+use rusk_wallet::dat::{
+    FileVersion as DatFileVersion, version_without_pre_higher,
+};
+use rusk_wallet::{Error, PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 use thiserror::Error as ThisError;
 use zeroize::{Zeroize, Zeroizing};
