@@ -24,13 +24,14 @@ use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::withdraw::Withdraw;
 use dusk_core::transfer::{
     CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
     ContractToAccount, ContractToAccountEvent, ContractToContract,
     ContractToContractEvent, ConvertEvent, DEPOSIT_TOPIC, DepositEvent,
     MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
     MoonlightTransactionEvent, PHOENIX_TOPIC, PhoenixTransactionEvent,
-    WITHDRAW_TOPIC, WithdrawEvent, withdraw::Withdraw,
+    WITHDRAW_TOPIC, WithdrawEvent,
 };
 use dusk_data_driver::{
     ConvertibleContract, Error, JsonValue, from_rkyv, json_to_rkyv,

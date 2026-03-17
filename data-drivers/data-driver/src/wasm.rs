@@ -137,7 +137,8 @@ pub unsafe extern "C" fn get_last_error(
     out_buf_size: usize,
 ) -> ErrorCode {
     let err = take_last_error().unwrap_or_default();
-    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size`
+    // bytes.
     match unsafe { write_to_wasm_buffer(err.as_bytes(), out_ptr, out_buf_size) }
     {
         Ok(()) => ErrorCode::Ok,
@@ -280,7 +281,8 @@ pub unsafe extern "C" fn get_schema(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size`
+    // bytes.
     unsafe {
         run_wasm_export(out_ptr, out_buf_size, |driver| {
             Ok(driver.get_schema().into_bytes())
@@ -298,7 +300,8 @@ pub unsafe extern "C" fn get_version(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size`
+    // bytes.
     unsafe {
         run_wasm_export(out_ptr, out_buf_size, |driver| {
             Ok(driver.get_version().to_string().into_bytes())
