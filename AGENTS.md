@@ -37,30 +37,30 @@ make setup-compiler            # Dusk contract compiler (cargo +dusk)
 
 ```bash
 make                           # Everything
-cargo build -p dusk-rusk       # Node binary (add --release for prod)
-cargo check -p <crate>         # Fast compile check
+make rusk                      # Node binary
+make check                     # Type-check all crates
+make -C <dir> clippy           # Lint a single crate (also compiles)
 ```
 
 ### Test
 
 ```bash
-make test                              # Full suite (slow)
-cargo test -p <crate> --release        # Single crate
-make -C <dir> test                     # Crate via Makefile
+make test                      # Full suite (slow)
+make -C <dir> test             # Single crate
 ```
 
 ### Lint
 
 ```bash
 make clippy                    # All crates (warnings = errors)
-cargo fmt --all                # Format
+make fmt                       # Format (uses nightly)
 ```
 
 ### PR Minimum
 
 ```bash
 make -C <dir> test
-cargo fmt --all
+make fmt
 make -C <dir> clippy
 ```
 
@@ -126,14 +126,14 @@ Work on these with extra diligence.
 ### Contract Execution (`vm/src/execute*`)
 
 - Understand host function exposure
-- **Verify**: `make -C vm test` + contract tests
+- **Verify**: `make -C vm test` + `make -C contracts test`
 - **Watch**: gas metering, host behavior, state access
 
 ### Genesis Contracts (`contracts/stake/`, `contracts/transfer/`)
 
-- Understand ABI and wallet/SDK interactions
-- **Verify**: `make -C contracts/<name> wasm` + `make -C contracts/<name> test`
-- **Watch**: on-chain state interpretation, breaking callers
+- Genesis contracts live in their own repo — do not modify them here
+- The `contracts/` submodule pointer is only updated for hard fork releases
+- **Watch**: if rusk code depends on contract ABI, verify compatibility against the pinned submodule
 
 ### Secrets (`wallet-core/`, consensus keys)
 
@@ -142,31 +142,29 @@ Work on these with extra diligence.
 - **Watch**: logging secrets, missing zeroization
 
 ### Circuit/Prover Keys (`rusk-profile/`, `rusk-prover/`)
->
+
 > Rare and high-impact. Coordinate with maintainers first.
 
 - **Verify**: `make -C rusk-prover test` + `make -C rusk test`
+- **Watch**: key format changes, circuit compatibility
 
 ### Submodules (`contracts/`)
 
-Do not change the `contracts/` submodule pointer unless explicitly instructed. Moving the pointer changes which version of the genesis contracts rusk builds and tests against — this must be a deliberate decision.
+Do not change the `contracts/` submodule pointer unless explicitly instructed. The contracts submodule pins the exact genesis contract code that rusk compiles into the node binary. This code runs on mainnet — moving the pointer changes what gets deployed, so it must be a deliberate versioning decision tied to hard fork planning.
+
+If your work requires contract changes, implement and test them in the `contracts` repo separately. Do not update the submodule pointer to pull in those changes without operator approval.
 
 ## Workflows
 
 ### TDD Bug Fixes
 
-When a bug is reported, start by adding a test that reproduces it (it should fail on the current code). Once the failing test exists, have subagents propose minimal fixes, and only accept a change that makes the test pass (and keeps the rest of the suite green).
+When a bug is reported, start by adding a test that reproduces it (it should fail on the current code). Then propose a minimal fix that makes the test pass without breaking the rest of the suite.
 
-1. Reproduce → 2. Locate → 3. Read surrounding code → 4. Smallest fix → 5. Test → 6. `cargo fmt --all` → 7. Clippy
+1. Reproduce → 2. Locate → 3. Read surrounding code → 4. Smallest fix → 5. Test → 6. `make fmt` → 7. `make clippy`
 
 ### New Feature
 
-1. Find patterns → 2. Design minimal API → 3. Implement → 4. Add tests → 5. `cargo fmt --all` → 6. Clippy
-
-### Contract Change
-
-1. `make setup-compiler` → 2. Modify → 3. `make -C contracts/<name> wasm` → 4. Test
-5. If ABI changed: update `core/`, `data-drivers/`, `wallet-core/`
+1. Find patterns → 2. Design minimal API → 3. Implement → 4. Add tests → 5. `make fmt` → 6. `make clippy`
 
 ### Frontend/SDK
 
@@ -235,11 +233,12 @@ rustup target add wasm32-unknown-unknown
 make prepare-dev
 
 # Build fails
-cargo clean -p <crate> && cargo build -p <crate> --release
+make clean && make -C <dir> build
 ```
 
 ## Conventions
 
+- **Use Makefiles**: every crate has a Makefile — prefer `make -C <dir> <target>` over raw `cargo` commands. Makefiles encode the correct flags, features, and dependencies. Run `make -C <dir> help` to see available targets.
 - **`no_std`**: `contracts/*`, `core/`, `wallet-core/`, `data-drivers/` — don't add `std` imports
 - **Serialization**: `rkyv`/`dusk-bytes` types are compatibility boundaries — don't reorder fields
 - **Errors**: `thiserror` for libraries, `anyhow` at app boundaries
@@ -300,3 +299,13 @@ Do not:
 - Bundle changes to multiple crates in one commit
 - Use `WIP` or `fixup` commits (squash before push)
 - Use generic messages like `fix typo` or `update code` without context
+
+### Changelog
+
+Every PR that changes crate behavior must include a CHANGELOG.md entry:
+
+- Each modified crate with a `CHANGELOG.md` gets an entry under `## [Unreleased]`
+- Use subsections: `### Added`, `### Changed`, `### Fixed`, `### Removed`
+- One bullet per logical change
+- Pure formatting, CI, docs-only, or internal refactors with no behavior change don't need entries
+- Follow standard markdown formatting: separate headings from surrounding content with blank lines, leave a blank line before and after lists, and never have two headings back-to-back without a blank line between them
