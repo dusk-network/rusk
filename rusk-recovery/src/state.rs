@@ -17,13 +17,12 @@ use dusk_core::transfer::phoenix::{Note, Sender};
 pub use dusk_vm::Session;
 use dusk_vm::{ContractData, VM};
 use ff::Field;
-use indexmap as _;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use tracing::info;
 use url::Url;
 
-use crate::Theme; // force the usage of indexmap. version 2.12 requires rustc edition 2024
+use crate::Theme;
 
 mod http;
 mod zip;
