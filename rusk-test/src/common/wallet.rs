@@ -11,26 +11,20 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use crate::common::block::Block as BlockAwait;
-
 use dusk_bytes::Serializable;
-use dusk_core::{
-    BlsScalar,
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::StakeData,
-    transfer::{
-        TRANSFER_CONTRACT,
-        moonlight::AccountData,
-        phoenix::{Note, NoteOpening, ViewKey},
-    },
-};
+use dusk_core::BlsScalar;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::phoenix::{Note, NoteOpening, ViewKey};
 use futures_util::StreamExt;
 use rusk::{Error, Result, Rusk};
+pub use test_wallet::Wallet;
 use test_wallet::{self as wallet, Store};
 use tracing::info;
 
-#[allow(unused_imports)]
-pub use test_wallet::Wallet;
+use crate::common::block::Block as BlockAwait;
 
 #[derive(Debug, Clone)]
 pub struct TestStore;

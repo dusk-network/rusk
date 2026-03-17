@@ -4,18 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::pin::Pin;
+use std::sync::mpsc;
+
+use dusk_bytes::DeserializableSlice;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey};
 use futures_util::Stream;
 use rkyv::Deserialize;
 use rusk::{Error, Result, Rusk};
-use tracing::info;
-
-use dusk_bytes::DeserializableSlice;
-use std::pin::Pin;
-use std::sync::mpsc;
 use tokio::spawn;
-use tracing::error;
+use tracing::{error, info};
 
 pub type StoredNote = (Note, u64);
 pub type GetNotesStream = Pin<Box<dyn Stream<Item = StoredNote> + Send>>;

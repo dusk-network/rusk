@@ -6,32 +6,28 @@
 
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
+use dusk_bytes::Serializable;
+use dusk_consensus::config::{
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
+};
+use dusk_consensus::operations::StateTransitionData;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::Transaction;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
-#[cfg(feature = "archive")]
-use tempfile::tempdir;
-
-use dusk_bytes::Serializable;
-use dusk_consensus::{
-    config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
-    operations::StateTransitionData,
-};
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
-};
 use node::vm::VMExecution;
-use node_data::{
-    bls::PublicKeyBytes,
-    ledger::{
-        Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
-    },
-    message::payload::Vote,
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::{
+    Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
 };
-use rusk::node::{RuskVmConfig, driverstore::DriverStore};
+use node_data::message::payload::Vote;
+use rusk::node::RuskVmConfig;
+use rusk::node::driverstore::DriverStore;
 use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use rusk_recovery_tools::state::{self, Session, Snapshot};
-
-use anyhow::Result;
+#[cfg(feature = "archive")]
+use tempfile::tempdir;
 use tokio::sync::broadcast;
 use tracing::info;
 
