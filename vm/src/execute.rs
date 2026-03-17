@@ -381,13 +381,11 @@ mod tests {
     use alloc::vec;
 
     use dusk_core::BlsScalar;
-    // the `unused_crate_dependencies` lint complains for dev-dependencies
-    // that are only used in integration tests, so adding this
-    // work-around here
-    use ff as _;
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
-    use {hex as _, once_cell as _};
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
+    use {ff as _, hex as _, once_cell as _};
 
     use super::*;
 
