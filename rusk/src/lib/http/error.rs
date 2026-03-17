@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use hyper::{Method, StatusCode};
-
 use tracing::{debug, error};
 
 use super::event::ExecutionError;

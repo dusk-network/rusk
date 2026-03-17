@@ -4,10 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};

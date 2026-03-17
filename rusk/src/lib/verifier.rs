@@ -6,13 +6,13 @@
 
 //! Prover service implementation for the Rusk server.
 
-use crate::Result;
-use crate::error::Error;
-
 use dusk_core::plonk::PlonkVersion;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
 use dusk_vm::host_queries;
+
+use crate::Result;
+use crate::error::Error;
 
 #[cfg(not(feature = "dynamic-verifier"))]
 mod embed {
@@ -37,8 +37,9 @@ use embed::*;
 
 #[cfg(feature = "dynamic-verifier")]
 mod runtime {
-    use rusk_profile::Circuit as CircuitProfile;
     use std::sync::LazyLock;
+
+    use rusk_profile::Circuit as CircuitProfile;
     pub static VD_EXEC_1_2: LazyLock<Vec<u8>> =
         LazyLock::new(|| fetch_verifier("TxCircuitOneTwo"));
 

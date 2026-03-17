@@ -10,24 +10,23 @@ mod block;
 mod data;
 mod tx;
 
-use block::*;
-use data::*;
-use tx::*;
+use std::sync::Arc;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
+use block::*;
+use data::*;
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use node::database::rocksdb::Backend;
 use node::database::{DB, Ledger};
 use node_data::ledger::Label;
+use tokio::sync::RwLock;
+use tx::*;
 #[cfg(feature = "archive")]
 use {
     archive::data::*, archive::events::*, archive::finalized_block::*,
     archive::moonlight::*, node::archive::Archive,
 };
-
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 #[cfg(feature = "archive")]
 pub type DBContext = (Arc<RwLock<Backend>>, Archive);
@@ -312,8 +311,9 @@ impl Query {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+
+    use super::*;
 
     type TestSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 

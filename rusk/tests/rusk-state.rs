@@ -4,22 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_rusk_test::common::{self, *};
-use dusk_rusk_test::{RuskVmConfig, TestContext};
-
 use std::sync::{Arc, mpsc};
 
 use anyhow::Result;
-use dusk_core::{
-    JubJubScalar, LUX,
-    transfer::{
-        TRANSFER_CONTRACT,
-        phoenix::{
-            Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey,
-        },
-    },
+use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::phoenix::{
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey,
 };
+use dusk_core::{JubJubScalar, LUX};
+use dusk_rusk_test::common::{self, *};
+use dusk_rusk_test::{RuskVmConfig, TestContext};
 use dusk_vm::VM;
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
@@ -188,8 +183,9 @@ pub async fn rusk_state_finalized() -> Result<()> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
+
+    use common::wallet::{TestStateClient, TestStore};
 
     common::logger();
 
@@ -251,8 +247,9 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
+
+    use common::wallet::{TestStateClient, TestStore};
 
     common::logger();
 

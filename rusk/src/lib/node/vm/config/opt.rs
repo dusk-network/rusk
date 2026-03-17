@@ -12,7 +12,8 @@ use dusk_vm::FeatureActivation;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use super::{Config, known::WellKnownConfig};
+use super::Config;
+use super::known::WellKnownConfig;
 
 /// Configuration for the execution of a transaction.
 ///

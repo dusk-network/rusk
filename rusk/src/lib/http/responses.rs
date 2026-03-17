@@ -9,11 +9,10 @@ use hyper::http::HeaderValue;
 use hyper::{Response, StatusCode};
 use tracing::{debug, error};
 
-use crate::http::event::FullOrStreamBody;
-
 use super::error::map_http_error_for_response;
 use super::event::RequestParseError;
 use super::{ExecutionError, HttpError, response};
+use crate::http::event::FullOrStreamBody;
 
 // ExecutionError is intentionally large; boxing it would add complexity
 // without meaningful benefit here.
