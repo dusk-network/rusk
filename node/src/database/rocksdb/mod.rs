@@ -405,8 +405,7 @@ impl node_data::Serializable for LightBlock {
 #[cfg(test)]
 mod tests {
     use fake::{Fake, Faker};
-    use node_data::hard_fork;
-    use node_data::ledger;
+    use node_data::{hard_fork, ledger};
 
     use super::*;
 

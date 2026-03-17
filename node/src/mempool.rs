@@ -540,9 +540,8 @@ fn check_tx_serialization(
 #[cfg(test)]
 mod tests {
     use dusk_core::signatures::bls::{PublicKey, SecretKey};
-    use rand::Rng;
     use rand::rngs::StdRng;
-    use rand::{CryptoRng, RngCore, SeedableRng};
+    use rand::{CryptoRng, Rng, RngCore, SeedableRng};
     use wallet_core::transaction::moonlight_deployment;
 
     use super::*;

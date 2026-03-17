@@ -885,7 +885,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: origin,
+            origin,
         }
     }
 
@@ -924,7 +924,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: origin,
+            origin,
         }
     }
 
