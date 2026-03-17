@@ -26,7 +26,6 @@ mod error;
 pub use error::{Error, TxPreconditionError};
 
 mod dusk;
-use blake2b_simd as _; // Required to satisfy unused_crate_dependencies
 pub use dusk::{Dusk, LUX, dusk, from_dusk};
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
@@ -217,7 +216,7 @@ fn read_arr<const N: usize>(buf: &mut &[u8]) -> Result<[u8; N], BytesError> {
 
 #[cfg(test)]
 mod tests {
-    // the `unused_crate_dependencies` lint complains for dev-dependencies that
-    // are only used in integration tests, so adding this work-around here
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
     use serde_json as _;
 }
