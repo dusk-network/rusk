@@ -18,9 +18,8 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use rand::RngCore;
-use rand::SeedableRng;
 use rand::rngs::{OsRng, StdRng};
+use rand::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::base64::Base64;

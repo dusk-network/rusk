@@ -6,7 +6,6 @@
 
 use std::io::{self, Read, Write};
 
-use crate::Serializable;
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
     Attestation, Block, Fault, Header, IterationsInfo, Label, Signature,
@@ -21,6 +20,7 @@ use crate::message::{
 };
 use crate::{
     MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS, MAX_SPENT_TX_ERROR_BYTES,
+    Serializable,
 };
 
 const MAX_TX_LENGTH_BYTES: usize = 2 * 1024 * 1024;

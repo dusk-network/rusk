@@ -15,8 +15,7 @@ use dusk_core::transfer::{
 use serde::Serialize;
 use sha3::Digest;
 
-use crate::Serializable;
-use crate::hard_fork;
+use crate::{Serializable, hard_fork};
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
