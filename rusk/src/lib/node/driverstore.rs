@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
+use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;
 

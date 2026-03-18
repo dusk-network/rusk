@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_rusk_test::{RuskVmConfig, TestContext};
-
 use anyhow::Result;
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
+use dusk_rusk_test::{RuskVmConfig, TestContext};
 use dusk_vm::{ContractData, Error as VMError, gen_contract_id};
 use rand::prelude::*;
 use rand::rngs::StdRng;

@@ -8,6 +8,7 @@ mod config;
 pub mod feature;
 
 use blake2b_simd::Params;
+pub use config::Config;
 use dusk_core::abi::{CONTRACT_ID_BYTES, ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
@@ -16,8 +17,6 @@ use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use piecrust::{CallReceipt, Error, Session};
 use rkyv::Deserialize;
 use wasmparser::*;
-
-pub use config::Config;
 
 /// Executes a transaction in the provided session.
 ///
@@ -250,8 +249,7 @@ fn check_withdrawal_nullifiers(
 // following cases:
 // 1) Pre-Boreas: transaction gas limit is smaller than deploy charge plus gas
 //    used for spending funds.
-// 2) Boreas+: remaining gas after spending funds is smaller than deploy
-//    charge.
+// 2) Boreas+: remaining gas after spending funds is smaller than deploy charge.
 // 3) Transaction's bytecode's bytes are not consistent with bytecode's hash.
 // 4) Deployment fails for deploy-specific reasons like e.g.:
 //      - contract already deployed
@@ -382,15 +380,12 @@ pub fn gen_contract_id(
 mod tests {
     use alloc::vec;
 
-    // the `unused_crate_dependencies` lint complains for dev-dependencies that
-    // are only used in integration tests, so adding this work-around here
-    use ff as _;
-    use hex as _;
-    use once_cell as _;
+    use dusk_core::BlsScalar;
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
-
-    use dusk_core::BlsScalar;
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
+    use {ff as _, hex as _, once_cell as _};
 
     use super::*;
 

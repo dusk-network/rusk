@@ -24,12 +24,6 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::{ptr, slice};
 
-use crate::Seed;
-use crate::keys::{
-    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
-    derive_phoenix_vk,
-};
-use crate::notes::{self, balance, owned, pick};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
@@ -43,12 +37,18 @@ use dusk_core::transfer::phoenix::{
 };
 use dusk_core::transfer::withdraw::WithdrawReplayToken;
 use dusk_core::transfer::{Transaction, phoenix};
+use error::ErrorCode;
 use rand_chacha::ChaCha12Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rkyv::to_bytes;
 use zeroize::Zeroize;
 
-use error::ErrorCode;
+use crate::Seed;
+use crate::keys::{
+    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
+};
+use crate::notes::{self, balance, owned, pick};
 
 #[unsafe(no_mangle)]
 static KEY_SIZE: usize = BlsScalar::SIZE;

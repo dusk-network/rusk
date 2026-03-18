@@ -16,11 +16,10 @@
 //! - Unhappy: a tampered unstake with fewer nullifiers in the replay token is
 //!   rejected by the hook.
 
+use anyhow::Result;
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::data::ContractCall;
-
-use anyhow::Result;
 use dusk_rusk_test::TestContext;
 use rand::SeedableRng;
 use rand::rngs::StdRng;

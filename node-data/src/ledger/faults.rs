@@ -152,7 +152,8 @@ impl Fault {
     /// Get the signers related to the inner FaultDatas.
     fn signers(&self) -> (&PublicKey, &PublicKey) {
         // `DoubleCandidate` carries `FaultData<Hash>` while the other variants
-        // carry `FaultData<Vote>`, so it cannot be merged into the same `|` arm.
+        // carry `FaultData<Vote>`, so it cannot be merged into the same `|`
+        // arm.
         match self {
             Fault::DoubleRatificationVote(a, b)
             | Fault::DoubleValidationVote(a, b) => {

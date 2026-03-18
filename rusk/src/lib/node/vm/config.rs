@@ -7,7 +7,8 @@
 pub mod known;
 pub mod opt;
 
-use std::collections::{HashMap, hash_map::Iter};
+use std::collections::HashMap;
+use std::collections::hash_map::Iter;
 use std::time::Duration;
 
 use dusk_vm::{ExecutionConfig, FeatureActivation};

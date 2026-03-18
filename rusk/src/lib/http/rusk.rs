@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
+use std::sync::mpsc;
+use std::thread;
 
-use crate::BlsPublicKey;
 use dusk_bytes::{DeserializableSlice, ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;
@@ -17,9 +17,9 @@ use event::RequestData;
 use rusk_profile::CRS_17_HASH;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::sync::mpsc;
-use std::thread;
 
+use super::*;
+use crate::BlsPublicKey;
 use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";

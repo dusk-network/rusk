@@ -29,9 +29,6 @@ use tokio::sync::RwLock;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use indexmap as _; // Required to satisfy unused_crate_dependencies
-use native_tls as _; // Required to satisfy unused_crate_dependencies
-
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.
 ///
@@ -260,7 +257,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 
 #[cfg(test)]
 mod tests {
-    // need to add the benchmark dep here so that the
-    // `unused_crate_dependencies` lint is satisfied
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
     use criterion as _;
 }

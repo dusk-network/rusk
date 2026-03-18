@@ -7,30 +7,28 @@
 mod config;
 mod query;
 
+pub use config::Config as RuskVmConfig;
+pub use config::feature::*;
+pub use config::known::WellKnownConfig as WellKnownVmConfig;
+pub use config::opt::OptionalConfig as RuskOptVmConfig;
 use dusk_consensus::errors::StateTransitionError;
-use dusk_core::abi::ContractId;
-use node_data::events::contract::ContractTxEvent;
-use tracing::{debug, info};
-
 use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
+use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
+use tracing::{debug, info};
 
 use super::fork_policy::policy_at;
 use super::{RuesEvent, Rusk};
-pub use config::Config as RuskVmConfig;
-pub use config::feature::*;
-pub use config::known::WellKnownConfig as WellKnownVmConfig;
-pub use config::opt::OptionalConfig as RuskOptVmConfig;
-
 use crate::Error as RuskError;
 
 impl VMExecution for Rusk {

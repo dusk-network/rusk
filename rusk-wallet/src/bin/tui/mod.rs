@@ -31,14 +31,13 @@ use tokio::sync::mpsc;
 use tracing::debug;
 use zeroize::{Zeroize, Zeroizing};
 
+pub use self::action::tui_status;
+use self::action::{AsyncResult, clear_status_channel, init_status_channel};
+use self::app::{App, AppAction, AppScreen, ConnectionStatus};
 use crate::WalletFile;
 use crate::command::{gen_iv, gen_salt};
 use crate::io::prompt;
 use crate::settings::Settings;
-
-pub use self::action::tui_status;
-use self::action::{AsyncResult, clear_status_channel, init_status_channel};
-use self::app::{App, AppAction, AppScreen, ConnectionStatus};
 
 const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
 const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
@@ -317,7 +316,8 @@ async fn run_inner(
                 Some(p) => p.clone(),
                 None => match enter_password(terminal, pwd_error)? {
                     Some(p) => p,
-                    None => return Ok(ExitReason::Quit), // User pressed Esc — quit
+                    None => return Ok(ExitReason::Quit), /* User pressed Esc
+                                                          * — quit */
                 },
             };
 

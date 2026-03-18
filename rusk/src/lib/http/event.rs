@@ -4,6 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::pin::Pin;
+use std::str::FromStr;
+use std::sync::mpsc;
+use std::task::{Context, Poll};
+
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
 use http_body_util::{
@@ -19,12 +26,6 @@ use semver::{Prerelease, Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::hex::Hex;
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-use std::pin::Pin;
-use std::str::FromStr;
-use std::sync::mpsc;
-use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
 
 use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
@@ -843,11 +844,12 @@ pub fn check_rusk_version(
 
 #[cfg(test)]
 mod tests {
+    use tungstenite::http::HeaderValue;
+
     use super::{
         DataType, RequestParseError, RuesEvent, RuesEventUri,
         parse_request_header_value,
     };
-    use tungstenite::http::HeaderValue;
 
     const DUMMY_ENTITY: &str = "abc123";
 

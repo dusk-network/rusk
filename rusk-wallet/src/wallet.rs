@@ -8,14 +8,11 @@ mod address;
 mod file;
 mod transaction;
 
-pub use address::{Address, Profile};
-#[allow(clippy::module_name_repetitions)]
-pub use file::{Secure as SecureWalletFile, WalletPath};
-
 use std::fmt::Debug;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub use address::{Address, Profile};
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
@@ -28,6 +25,8 @@ use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
+#[allow(clippy::module_name_repetitions)]
+pub use file::{Secure as SecureWalletFile, WalletPath};
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
@@ -835,9 +834,8 @@ mod tests {
     use rand::rngs::OsRng;
     use tempfile::tempdir;
 
-    use crate::{IV_SIZE, SALT_SIZE};
-
     use super::*;
+    use crate::{IV_SIZE, SALT_SIZE};
 
     const TEST_ADDR: &str = "2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
 

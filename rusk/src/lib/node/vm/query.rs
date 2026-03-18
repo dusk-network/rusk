@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Result;
-use crate::node::Rusk;
-
 use std::sync::mpsc;
 
 use bytecheck::CheckBytes;
@@ -16,6 +13,9 @@ use dusk_vm::Error::ContractDoesNotExist;
 use node::vm::VMExecution;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+
+use crate::Result;
+use crate::node::Rusk;
 
 impl Rusk {
     pub fn query_metadata(

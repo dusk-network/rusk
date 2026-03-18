@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use serde::{Deserialize, Serialize};
 use std::fmt::Formatter;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Copy, Debug, Clone)]
 #[serde(default)]

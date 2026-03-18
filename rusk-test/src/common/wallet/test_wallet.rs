@@ -26,13 +26,11 @@ use dusk_core::transfer::phoenix::{
     Note, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use zeroize::Zeroize;
-
+pub use imp::Wallet;
 pub use wallet_core::keys::{
     derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
 };
-
-pub use imp::Wallet;
+use zeroize::Zeroize;
 
 /// Stores the cryptographic material necessary to derive cryptographic keys.
 pub trait Store {

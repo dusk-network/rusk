@@ -19,13 +19,10 @@ use dusk_vm::{ContractData, VM};
 use ff::Field;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-
 use tracing::info;
 use url::Url;
 
 use crate::Theme;
-
-use indexmap as _; // force the usage of indexmap. version 2.12 requires rustc edition 2024
 
 mod http;
 mod zip;

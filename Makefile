@@ -93,4 +93,13 @@ rusk: keys state ## Build rusk binary
 rusk-wallet: ## build the rusk wallet binary
 	$(MAKE) -C ./rusk-wallet build 
 
-.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet data-drivers
+fmt: ## Format code
+	@cargo +nightly fmt --all
+
+check: ## Type-check all crates
+	@cargo check --workspace
+
+clean: ## Clean build artifacts
+	@cargo clean
+
+.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet data-drivers fmt check clean

@@ -11,8 +11,7 @@ use kadcast::config::Config as KadcastConfig;
 #[cfg(feature = "archive")]
 use node::archive::conf::Params as ArchiveParam;
 use node::chain::ChainSrv;
-use node::database::rocksdb;
-use node::database::{DB, DatabaseOptions};
+use node::database::{DB, DatabaseOptions, rocksdb};
 use node::databroker::DataBrokerSrv;
 use node::databroker::conf::Params as BrokerParam;
 use node::mempool::MempoolSrv;
@@ -20,7 +19,6 @@ use node::mempool::conf::Params as MempoolParam;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
-
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]

@@ -13,15 +13,15 @@ use async_graphql::{
 };
 use futures_util::io::Cursor;
 use http_body_util::{BodyExt, LengthLimitError, Limited};
+use hyper::body::Incoming;
 use hyper::header::{ALLOW, CONTENT_TYPE};
 use hyper::http::{HeaderName, HeaderValue};
-use hyper::{Method, Request, Response, StatusCode, body::Incoming};
-
-use crate::http::event::FullOrStreamBody;
+use hyper::{Method, Request, Response, StatusCode};
 
 use super::{
     ExecutionError, GraphqlHandler, MAX_GRAPHQL_REQUEST_BODY_BYTES, response,
 };
+use crate::http::event::FullOrStreamBody;
 
 pub(super) fn is_graphql_path(path: &str) -> bool {
     matches!(path, "/graphql" | "/graphql/")

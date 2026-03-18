@@ -14,12 +14,14 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use dusk_core::{Dusk, dusk};
-
+pub use driverstore::DriverStore;
 use dusk_core::abi::ContractId;
-use dusk_vm::VM;
-use dusk_vm::host_queries;
+use dusk_core::{Dusk, dusk};
+use dusk_vm::{VM, host_queries};
+pub(crate) use events::ChainEventStreamer;
 use node::LongLivedService;
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use parking_lot::RwLock;
@@ -27,10 +29,6 @@ use tokio::sync::broadcast;
 pub use vm::*;
 
 use crate::http::{DriverExecutor, RuesEvent};
-pub use driverstore::DriverStore;
-pub(crate) use events::ChainEventStreamer;
-#[cfg(feature = "archive")]
-use node::archive::Archive;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {

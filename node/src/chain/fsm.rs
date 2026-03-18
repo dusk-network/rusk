@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::{Result, anyhow};
 use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
 use node_data::ledger::{Attestation, Block, to_str};
@@ -28,8 +29,6 @@ use self::stalled::StalledChainFSM;
 use super::acceptor::{Acceptor, RevertTarget};
 use crate::database::{ConsensusStorage, Ledger};
 use crate::{Network, database, vm};
-
-use anyhow::{Result, anyhow};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 

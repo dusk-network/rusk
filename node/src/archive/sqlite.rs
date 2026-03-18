@@ -18,8 +18,7 @@ use sqlx::sqlite::{
 use sqlx::{Pool, Sqlite, SqliteConnection};
 use tracing::{error, info, warn};
 
-use crate::archive::Archive;
-use crate::archive::transformer;
+use crate::archive::{Archive, transformer};
 
 /// The name of the archive SQLite database.
 const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";

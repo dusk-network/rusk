@@ -10,22 +10,21 @@ pub mod graphql;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_graphql::{
+    BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Name,
+    Schema, Variables,
+};
 use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_vm::execute;
+use graphql::Query;
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, DB, Ledger, LightBlock, Mempool, Metadata};
 use node::mempool::{MempoolSrv, TxAcceptanceError};
 use node::vm::VMExecution;
 use node_data::ledger::{SpendingId, Transaction};
-
-use async_graphql::{
-    BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Name,
-    Schema, Variables,
-};
-use graphql::Query;
 use serde_json::{Map, Value, json};
 use tracing::{error, warn};
 
@@ -638,8 +637,9 @@ async fn load_tip<DB: database::DB>(
 
 #[cfg(test)]
 mod tests {
-    use super::{ChainError, HttpError, map_check_tx_error};
     use node::mempool::TxAcceptanceError;
+
+    use super::{ChainError, HttpError, map_check_tx_error};
 
     #[test]
     fn chain_error_variant_mapping_is_stable() {

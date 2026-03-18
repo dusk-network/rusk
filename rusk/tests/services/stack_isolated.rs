@@ -16,9 +16,10 @@ use dusk_core::stake::{
     DEFAULT_MINIMUM_STAKE, STAKE_CONTRACT, Stake, StakeAmount, StakeData,
     StakeKeys,
 };
-use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::data::ContractCall;
+use dusk_core::transfer::{
+    TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
+};
 use dusk_vm::ContractData;
 use node_data::ledger::Transaction as NodeTransaction;
 use rusk::node::{
@@ -34,8 +35,9 @@ use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
+use crate::common::wallet::test_wallet::Wallet;
 use crate::common::wallet::{
-    TestStateClient, TestStore, test_wallet as wallet, test_wallet::Wallet,
+    TestStateClient, TestStore, test_wallet as wallet,
 };
 
 const GAS_LIMIT: u64 = 0x10000000;

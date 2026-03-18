@@ -15,12 +15,11 @@ use rusk_wallet::currency::Dusk;
 use rusk_wallet::{Address, MAX_PROFILES, Profile, Wallet};
 use wallet_core::BalanceInfo;
 
+use super::action::AsyncResult;
+use super::forms::{self, FormId, FormState};
 use crate::command::TransactionHistory;
 use crate::settings::Settings;
 use crate::{Command, WalletFile};
-
-use super::action::AsyncResult;
-use super::forms::{self, FormId, FormState};
 
 /// Cached balance data for a profile.
 #[derive(Debug, Clone, Default)]

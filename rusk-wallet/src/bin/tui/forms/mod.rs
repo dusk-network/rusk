@@ -15,9 +15,8 @@ use rusk_wallet::gas::{
 };
 use rusk_wallet::{Address, MAX_FUNCTION_NAME_SIZE, Profile};
 
-use crate::Command;
-
 use self::field::FormField;
+use crate::Command;
 
 /// Identifiers for the different form types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -14,6 +14,12 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use dusk_poseidon::{Domain, Hash};
 use ff::Field;
+// phoenix types
+pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
+pub use phoenix_core::{
+    Error as CoreError, NOTE_VAL_ENC_SIZE, Note, OUTPUT_NOTES, PublicKey,
+    SecretKey, Sender, StealthAddress, TxSkeleton, ViewKey, value_commitment,
+};
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -25,13 +31,6 @@ use crate::transfer::data::{
     TransactionData,
 };
 use crate::{BlsScalar, Error, JubJubAffine, JubJubScalar};
-
-// phoenix types
-pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
-pub use phoenix_core::{
-    Error as CoreError, NOTE_VAL_ENC_SIZE, Note, OUTPUT_NOTES, PublicKey,
-    SecretKey, Sender, StealthAddress, TxSkeleton, ViewKey, value_commitment,
-};
 
 /// The depth of the merkle tree of notes stored in the transfer-contract.
 pub const NOTES_TREE_DEPTH: usize = 17;

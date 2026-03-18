@@ -80,8 +80,9 @@ impl HandleRequest for LocalProver {
 
 #[cfg(test)]
 mod tests {
-    use super::{HttpError, ProverApiError, map_prove_error};
     use dusk_core::Error as CoreError;
+
+    use super::{HttpError, ProverApiError, map_prove_error};
 
     #[test]
     fn prover_api_error_variant_mapping_is_stable() {

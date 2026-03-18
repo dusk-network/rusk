@@ -8,7 +8,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use hyper::{HeaderMap, Request, StatusCode, body::Incoming};
+use hyper::body::Incoming;
+use hyper::{HeaderMap, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::warn;

@@ -6,11 +6,13 @@
 
 //! Module for GraphQL that relates to stored events in the archive.
 
+use async_graphql::{Context, FieldError};
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as B64;
+use dusk_core::abi::CONTRACT_ID_BYTES;
+
 use super::data::ContractEvents;
 use crate::http::chain::graphql::{DBContext, OptResult};
-use async_graphql::{Context, FieldError};
-use base64::{Engine, engine::general_purpose::STANDARD as B64};
-use dusk_core::abi::CONTRACT_ID_BYTES;
 
 const DEFAULT_LIMIT: i64 = 50;
 const MAX_LIMIT: i64 = 200;

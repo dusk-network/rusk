@@ -17,12 +17,11 @@ mod faults;
 pub use faults::{Fault, InvalidFault, Slash, SlashType};
 
 mod attestation;
+use std::io::{self, Read, Write};
+
 pub use attestation::{
     Attestation, IterationInfo, IterationsInfo, Signature, StepVotes,
 };
-
-use std::io::{self, Read, Write};
-
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
 use sha3::Digest;

@@ -25,22 +25,19 @@ use std::env;
 use std::path::Path;
 use std::str::FromStr;
 
+#[cfg(feature = "chain")]
+use rusk::node::RuskOptVmConfig;
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "archive")]
 use self::archive::ArchiveConfig;
+use self::http::HttpConfig;
 #[cfg(feature = "chain")]
 use self::{
     blob::BlobConfig, chain::ChainConfig, databroker::DataBrokerConfig,
     kadcast::KadcastConfig, mempool::MempoolConfig, telemetry::TelemetryConfig,
 };
-
-#[cfg(feature = "chain")]
-use rusk::node::RuskOptVmConfig;
-
-use serde::{Deserialize, Serialize};
-
 use crate::args::Args;
-
-use self::http::HttpConfig;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Config {

@@ -6,18 +6,16 @@
 
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
+use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::ContractCall;
+use dusk_rusk_test::{
+    BlsPublicKey, BlsSecretKey, Result, RuskVmConfig, TestContext,
+};
+use dusk_vm::{ContractData, gen_contract_id};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
-
-use dusk_rusk_test::{
-    BlsPublicKey, BlsSecretKey, Result, RuskVmConfig, TestContext,
-};
-
-use dusk_core::abi::ContractId;
-use dusk_vm::{ContractData, gen_contract_id};
 use tracing::info;
 
 use crate::common::logger;

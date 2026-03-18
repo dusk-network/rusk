@@ -11,8 +11,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use futures_util::SinkExt;
+use hyper::body::Incoming;
 use hyper::http::{HeaderName, HeaderValue};
-use hyper::{HeaderMap, Method, Request, Response, StatusCode, body::Incoming};
+use hyper::{HeaderMap, Method, Request, Response, StatusCode};
 use hyper_tungstenite::{HyperWebsocket, tungstenite};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 use tokio::task;
@@ -21,9 +22,6 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
-
-use crate::VERSION;
-use crate::http::event::FullOrStreamBody;
 
 use super::error::{http_error_category, map_http_error_for_response};
 use super::event::check_rusk_version;
@@ -36,6 +34,8 @@ use super::{
     RUES_LOCATION_PREFIX, RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER,
     RuesDispatchEvent, RuesEvent, RuesEventUri, SessionId, response,
 };
+use crate::VERSION;
+use crate::http::event::FullOrStreamBody;
 
 pub(super) enum SubscriptionAction {
     Subscribe {

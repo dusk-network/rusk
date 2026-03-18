@@ -5,10 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use anyhow::Result;
-use dusk_core::transfer::{
-    TRANSFER_CONTRACT,
-    data::{ContractCall, TransactionData},
-};
+use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::data::{ContractCall, TransactionData};
 use dusk_rusk_test::TestContext;
 use rand::prelude::*;
 use rand::rngs::StdRng;

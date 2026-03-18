@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{Metadata, into_array};
 use tracing::error;
+
+use super::*;
 
 pub async fn block_by_height(
     ctx: &Context<'_>,

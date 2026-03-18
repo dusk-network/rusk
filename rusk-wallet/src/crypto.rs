@@ -62,9 +62,8 @@ mod tests {
     use rand::RngCore;
     use rand::rngs::OsRng;
 
-    use crate::IV_SIZE;
-
     use super::*;
+    use crate::IV_SIZE;
 
     #[test]
     fn encrypt_and_decrypt() {

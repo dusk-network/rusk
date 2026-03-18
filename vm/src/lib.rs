@@ -13,12 +13,13 @@
 
 extern crate alloc;
 
-pub use self::execute::feature::Activation as FeatureActivation;
-pub use self::execute::{Config as ExecutionConfig, execute, gen_contract_id};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
 };
+
+pub use self::execute::feature::Activation as FeatureActivation;
+pub use self::execute::{Config as ExecutionConfig, execute, gen_contract_id};
 
 /// Contract Metadata
 pub struct ContractMetadata {

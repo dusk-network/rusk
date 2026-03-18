@@ -7,6 +7,8 @@
 #![deny(unused_crate_dependencies)]
 #![deny(unused_extern_crates)]
 
+// Dev-dependencies only used in integration tests trigger the
+// unused_crate_dependencies lint, so we re-import them here.
 #[cfg(test)]
 use tempfile as _;
 
