@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add call hook to enforce Phoenix withdrawal replay token nullifier count (P1.6-3)
+- Add call hook to enforce Phoenix withdrawal replay token nullifier count
 
 ### Fixed
 

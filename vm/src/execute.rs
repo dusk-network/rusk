@@ -218,20 +218,20 @@ fn clear_session(session: &mut Session, config: &Config) {
 /// Checks that a withdrawal's Phoenix replay token nullifier count matches the
 /// encapsulating transaction's nullifier count.
 ///
-/// Returns `false` when the nullifier count mismatches or the arguments
-/// cannot be deserialized (fail-closed). Returns `true` for non-withdrawal
+/// Returns `Err` when the nullifier count mismatches or the arguments
+/// cannot be deserialized (fail-closed). Returns `Ok(())` for non-withdrawal
 /// calls, Moonlight tokens, or matching counts.
 fn check_withdrawal_nullifiers(
     callee: &dusk_core::abi::ContractId,
     fn_name: &str,
     fn_args: &[u8],
     tx_nullifier_count: usize,
-) -> bool {
+) -> Result<(), String> {
     if *callee != TRANSFER_CONTRACT || fn_name != "withdraw" {
-        return true;
+        return Ok(());
     }
     let Ok(root) = rkyv::check_archived_root::<Withdraw>(fn_args) else {
-        return false;
+        return Err("failed to deserialize withdrawal arguments".into());
     };
     let withdraw: Withdraw = match root.deserialize(&mut rkyv::Infallible) {
         Ok(w) => w,
@@ -239,10 +239,14 @@ fn check_withdrawal_nullifiers(
     };
     if let WithdrawReplayToken::Phoenix(nullifiers) = withdraw.token() {
         if nullifiers.len() != tx_nullifier_count {
-            return false;
+            return Err(format!(
+                "nullifier count mismatch: withdrawal has {}, transaction has {}",
+                nullifiers.len(),
+                tx_nullifier_count,
+            ));
         }
     }
-    true
+    Ok(())
 }
 
 // Contract deployment will fail and charge full gas limit in the
@@ -416,12 +420,15 @@ mod tests {
         let args =
             rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
 
-        assert!(check_withdrawal_nullifiers(
-            &TRANSFER_CONTRACT,
-            "withdraw",
-            &args,
-            nullifiers.len(),
-        ));
+        assert!(
+            check_withdrawal_nullifiers(
+                &TRANSFER_CONTRACT,
+                "withdraw",
+                &args,
+                nullifiers.len(),
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -452,49 +459,54 @@ mod tests {
             rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
 
         // Mismatched count: 2 nullifiers in token, but tx has 3
-        assert!(!check_withdrawal_nullifiers(
+        let err = check_withdrawal_nullifiers(
             &TRANSFER_CONTRACT,
             "withdraw",
             &args,
             3,
-        ));
+        )
+        .unwrap_err();
+        assert!(
+            err.contains("nullifier count mismatch"),
+            "expected mismatch message, got: {err}"
+        );
+        assert!(err.contains("2") && err.contains("3"));
     }
 
     #[test]
     fn check_withdrawal_nullifiers_ignores_non_withdraw_calls() {
-        assert!(check_withdrawal_nullifiers(
-            &TRANSFER_CONTRACT,
-            "refund",
-            &[],
-            5,
-        ));
+        assert!(
+            check_withdrawal_nullifiers(&TRANSFER_CONTRACT, "refund", &[], 5,)
+                .is_ok()
+        );
 
-        assert!(check_withdrawal_nullifiers(
-            &ContractId::from_bytes([0xAA; 32]),
-            "withdraw",
-            &[],
-            5,
-        ));
+        assert!(
+            check_withdrawal_nullifiers(
+                &ContractId::from_bytes([0xAA; 32]),
+                "withdraw",
+                &[],
+                5,
+            )
+            .is_ok()
+        );
     }
 
     #[test]
     fn check_withdrawal_nullifiers_rejects_garbage_args() {
         // Garbage bytes that cannot be deserialized as a Withdraw must
         // be rejected (fail-closed).
-        assert!(!check_withdrawal_nullifiers(
+        let err = check_withdrawal_nullifiers(
             &TRANSFER_CONTRACT,
             "withdraw",
             &[0xDE, 0xAD, 0xBE, 0xEF],
             2,
-        ));
+        )
+        .unwrap_err();
+        assert!(err.contains("deserialize"));
 
         // Empty args must also be rejected.
-        assert!(!check_withdrawal_nullifiers(
-            &TRANSFER_CONTRACT,
-            "withdraw",
-            &[],
-            1,
-        ));
+        check_withdrawal_nullifiers(&TRANSFER_CONTRACT, "withdraw", &[], 1)
+            .unwrap_err();
     }
 
     #[test]
@@ -519,13 +531,16 @@ mod tests {
         let args =
             rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
 
-        // Moonlight token — should return true even with mismatched count
-        assert!(check_withdrawal_nullifiers(
-            &TRANSFER_CONTRACT,
-            "withdraw",
-            &args,
-            999,
-        ));
+        // Moonlight token — should return Ok even with mismatched count
+        assert!(
+            check_withdrawal_nullifiers(
+                &TRANSFER_CONTRACT,
+                "withdraw",
+                &args,
+                999,
+            )
+            .is_ok()
+        );
     }
 
     #[test]
