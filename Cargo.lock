@@ -591,7 +591,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "proc-macro2",
@@ -1324,7 +1324,7 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.4.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=995e5e5#995e5e510d9f2eedc4490a4f109f5417716db786"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
 dependencies = [
  "libc",
  "rangemap",
@@ -4010,7 +4010,7 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.30.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=995e5e5#995e5e510d9f2eedc4490a4f109f5417716db786"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4032,7 +4032,7 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.20.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=995e5e5#995e5e510d9f2eedc4490a4f109f5417716db786"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
 dependencies = [
  "bytecheck",
  "dlmalloc",
@@ -6453,7 +6453,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
