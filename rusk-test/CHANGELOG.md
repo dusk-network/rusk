@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Build ledger transactions in test helpers through the explicit canonical
+  transaction constructors.
+
 ## [1.6.0] - 2026-02-27
 
 ## [1.4.4-rc.0] - 2026-02-11
