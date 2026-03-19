@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Map invalid transaction ingress format rejections to HTTP invalid-input errors instead of failing exhaustiveness checks in preverify handling
 
 
+### Changed
+
+- Route transaction ingress and node execution through explicit canonical
+  ledger transaction boundaries.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed

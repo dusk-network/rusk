@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::signatures::bls;
-use node_data::ledger::Transaction;
+use node_data::ledger::LedgerTransaction;
 use rusk::node::{
     DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
     RuskVmConfig,
@@ -184,7 +184,10 @@ pub async fn test_mainnet_2710377() -> Result<(), Error> {
     let stake_tx = dusk_core::transfer::Transaction::from_slice(&stake_tx)
         .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))
         .unwrap();
-    let txs = vec![Transaction::from(activate_tx), Transaction::from(stake_tx)];
+    let txs = vec![
+        LedgerTransaction::from_protocol_for_ledger(activate_tx, 2710377),
+        LedgerTransaction::from_protocol_for_ledger(stake_tx, 2710377),
+    ];
     let (spent, _discarded, _) = f
         .rusk
         .create_state_transition(&data, txs.into_iter())

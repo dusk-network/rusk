@@ -25,7 +25,7 @@ use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, DB, Ledger, LightBlock, Mempool, Metadata};
 use node::mempool::{MempoolSrv, TxAcceptanceError};
 use node::vm::VMExecution;
-use node_data::ledger::{SpendingId, Transaction};
+use node_data::ledger::{CanonicalTransaction, LedgerTransaction, SpendingId};
 use serde_json::{Map, Value, json};
 use tracing::{error, warn};
 
@@ -95,24 +95,29 @@ impl From<ChainError> for HttpError {
 async fn preverify_tx(
     node: &RuskNode,
     data: &[u8],
-) -> ChainResult<Transaction> {
-    let tx = decode_ingress_tx(node, data).await?;
+) -> ChainResult<LedgerTransaction> {
+    let tip_height = load_tip_height(node).await?;
+    let tx = decode_ingress_tx(data, tip_height)?;
     let db = node.inner().database();
     let vm = node.inner().vm_handler();
 
-    MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
-        .await
-        .map_err(|e| map_check_tx_error(hex::encode(tx.id()), e))?;
+    let tx_id = hex::encode(tx.id());
+    let tx = MempoolSrv::check_canonical_tx_at_tip(
+        &db,
+        &vm,
+        &tx,
+        tip_height,
+        usize::MAX,
+    )
+    .await
+    .map_err(|e| map_check_tx_error(tx_id, e))?;
 
     Ok(tx)
 }
 
-async fn decode_ingress_tx(
-    node: &RuskNode,
-    data: &[u8],
-) -> ChainResult<Transaction> {
-    let db = node.inner().database();
-    let tip_height = db
+async fn load_tip_height(node: &RuskNode) -> ChainResult<u64> {
+    node.inner()
+        .database()
         .read()
         .await
         .view(|db| db.latest_block())
@@ -120,13 +125,16 @@ async fn decode_ingress_tx(
             ChainError::database(format!(
                 "Failed to load the latest block for tx decoding: {e}"
             ))
-        })?
-        .header
-        .height;
-    let tx =
-        Transaction::decode_for_ingress(data, tip_height.saturating_add(1))
-            .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?;
-    Ok(tx)
+        })
+        .map(|tip| tip.header.height)
+}
+
+fn decode_ingress_tx(
+    data: &[u8],
+    tip_height: u64,
+) -> ChainResult<CanonicalTransaction> {
+    CanonicalTransaction::decode_for_ingress(data, tip_height.saturating_add(1))
+        .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))
 }
 
 async fn forward_rues_events(
@@ -375,18 +383,28 @@ impl RuskNode {
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
-        let tx = decode_ingress_tx(self, tx).await?;
+        let tip_height = load_tip_height(self).await?;
+        let tx = decode_ingress_tx(tx, tip_height)?;
         let db = self.inner().database();
         let vm = self.inner().vm_handler();
 
-        match MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX).await {
-            Ok(_) => {
+        match MempoolSrv::check_canonical_tx_at_tip(
+            &db,
+            &vm,
+            &tx,
+            tip_height,
+            usize::MAX,
+        )
+        .await
+        {
+            Ok(tx) => {
                 let network = self.network();
                 network.read().await.route_internal(tx.into());
             }
             Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
                 let tx_id = hex::encode(tx.id());
-                let tx_message = tx.into();
+                let tx_message: LedgerTransaction = tx.clone().into();
+                let tx_message = tx_message.into();
                 let (events, result) = self
                     .future_nonce_retry_queue()
                     .enqueue_message_report(&tx_message)
@@ -505,13 +523,13 @@ impl RuskNode {
                     ChainError::database("Could not find the tip")
                 })?;
             let height = tip.header.height.saturating_add(1);
-            let tx =
-                Transaction::decode_for_ingress(tx, height).map_err(|e| {
+            let tx = CanonicalTransaction::decode_for_ingress(tx, height)
+                .map_err(|e| {
                     ChainError::invalid_input(format!(
                         "Invalid transaction: {e:?}"
                     ))
                 })?;
-            if tx.inner.gas_limit() > vm_handler.get_block_gas_limit() {
+            if tx.protocol().gas_limit() > vm_handler.get_block_gas_limit() {
                 return Err(ChainError::invalid_input(
                     "Gas limit is too high.",
                 ));
@@ -530,7 +548,7 @@ impl RuskNode {
             // `execute()` completes.
             (config, session, _host_query_policy_guard, tx)
         };
-        let receipt = execute(&mut session, &tx.inner, &config);
+        let receipt = execute(&mut session, tx.protocol(), &config);
         let resp = match receipt {
             Ok(receipt) => json!({
                 "gas-spent": receipt.gas_spent,

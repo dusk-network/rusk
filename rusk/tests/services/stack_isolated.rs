@@ -21,7 +21,7 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
 };
 use dusk_vm::ContractData;
-use node_data::ledger::Transaction as NodeTransaction;
+use node_data::ledger::LedgerTransaction;
 use rusk::node::{
     DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
     RuskVmConfig,
@@ -341,8 +341,8 @@ pub async fn test_isolated() -> Result<(), Error> {
     };
 
     let txs = vec![
-        NodeTransaction::from(stake_activate_tx),
-        NodeTransaction::from(withdraw_tx),
+        LedgerTransaction::from_protocol_for_ledger(stake_activate_tx, 2710377),
+        LedgerTransaction::from_protocol_for_ledger(withdraw_tx, 2710377),
     ];
 
     let (spent, _discarded, _) = f

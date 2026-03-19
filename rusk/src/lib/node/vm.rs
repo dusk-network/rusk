@@ -24,7 +24,9 @@ use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
+use node_data::ledger::{
+    Block, CanonicalTransaction, Header, LedgerTransaction, SpentTransaction,
+};
 use tracing::{debug, info};
 
 use super::fork_policy::policy_at;
@@ -32,14 +34,14 @@ use super::{RuesEvent, Rusk};
 use crate::Error as RuskError;
 
 impl VMExecution for Rusk {
-    fn create_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -140,11 +142,11 @@ impl VMExecution for Rusk {
 
     fn preverify(
         &self,
-        tx: &Transaction,
+        tx: &CanonicalTransaction,
         tip_height: u64,
     ) -> anyhow::Result<PreverificationResult> {
         info!("Received preverify request");
-        let tx = &tx.inner;
+        let tx = tx.protocol();
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {

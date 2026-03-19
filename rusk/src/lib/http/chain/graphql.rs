@@ -106,7 +106,7 @@ impl Query {
                         .filter(|t| {
                             let tx_contract =
                                 t.0.inner
-                                    .inner
+                                    .protocol()
                                     .call()
                                     .map(|c| c.contract)
                                     .unwrap_or(TRANSFER_CONTRACT);

@@ -85,7 +85,7 @@ fn wallet_transfer(tc: &TestContext, amount: u64, block_height: u64) {
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
-    let fee = gas_spent * tx.inner.inner.gas_price();
+    let fee = gas_spent * tx.inner.protocol().gas_price();
 
     assert_eq!(
         sender_initial_balance - amount - fee,

@@ -19,7 +19,6 @@ use dusk_rusk_test::common::state::{
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger, Mempool};
 use node::mempool::conf::Params as MempoolParams;
-use node_data::ledger::Transaction as LedgerTransaction;
 use rusk::http::{
     HttpHandlers, HttpPolicyConfig, HttpServer, HttpServerConfig,
 };
@@ -165,8 +164,7 @@ async fn future_nonce_http_propagate_emits_deferred_rues_event() {
     )
     .expect("creating tx should succeed");
     let future_tx = ProtocolTransaction::Moonlight(future_tx);
-    let expected_entity =
-        hex::encode(LedgerTransaction::from(future_tx.clone()).id());
+    let expected_entity = hex::encode(future_tx.hash().to_bytes());
 
     let client = reqwest::Client::new();
     let response = client

@@ -35,7 +35,9 @@ use dusk_vm::{
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
+use node_data::ledger::{
+    Block, LedgerTransaction, Slash, SpentTransaction, to_str,
+};
 use parking_lot::RwLock;
 use rkyv::Deserialize;
 use rusk_profile::to_rusk_state_id_path;
@@ -112,14 +114,14 @@ impl Rusk {
         })
     }
 
-    pub fn create_state_transition<I: Iterator<Item = Transaction>>(
+    pub fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mut mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -165,7 +167,7 @@ impl Rusk {
                 for spent_tx in spent_txs {
                     execute(
                         &mut session,
-                        &spent_tx.inner.inner,
+                        spent_tx.inner.protocol(),
                         &execution_config,
                     )
                     .map_err(|err| {
@@ -189,8 +191,10 @@ impl Rusk {
         // it is added to the unblocked list to be processed immediately.
         // Unblocked transactions have priority over other transactions in the
         // mempool.
-        let mut pending_txs: BTreeMap<[u8; 193], BTreeMap<u64, Transaction>> =
-            BTreeMap::new();
+        let mut pending_txs: BTreeMap<
+            [u8; 193],
+            BTreeMap<u64, LedgerTransaction>,
+        > = BTreeMap::new();
 
         let mut unblocked_txs = VecDeque::new();
 
@@ -231,7 +235,11 @@ impl Rusk {
                 continue;
             }
 
-            match execute(&mut session, &unspent_tx.inner, &execution_config) {
+            match execute(
+                &mut session,
+                unspent_tx.protocol(),
+                &execution_config,
+            ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -260,11 +268,11 @@ impl Rusk {
                     event_bloom.add_events(&receipt.events);
 
                     gas_left -= gas_spent;
-                    let gas_price = unspent_tx.inner.gas_price();
+                    let gas_price = unspent_tx.gas_price();
                     dusk_spent += gas_spent * gas_price;
 
                     if let ProtocolTransaction::Moonlight(tx) =
-                        &unspent_tx.inner
+                        unspent_tx.protocol()
                     {
                         // Check if the current transaction unblocks any
                         // transaction from the same in the pending list.
@@ -311,7 +319,7 @@ impl Rusk {
                     // valid (i.e., all transactions with
                     // the missing nonces are executed in this loop).
                     if let ProtocolTransaction::Moonlight(tx) =
-                        &unspent_tx.inner
+                        unspent_tx.protocol()
                     {
                         let nonce = tx.nonce();
                         pending_txs
@@ -684,7 +692,7 @@ impl Rusk {
 
         // Execute transactions
         for unspent_tx in txs {
-            let tx = &unspent_tx.inner;
+            let tx = unspent_tx.protocol();
             let tx_id = unspent_tx.id();
             let receipt = execute(&mut session, tx, &execution_config)
                 .map_err(|err| {
