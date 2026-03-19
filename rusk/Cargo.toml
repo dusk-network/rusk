@@ -91,6 +91,9 @@ reqwest = { workspace = true }
 tempfile = { workspace = true, optional = true }
 rusk-recovery = { workspace = true, optional = true }
 
+## Override transitive dependencies do to compiling constraints
+raptorq = { version = "=2.0.0" } # 2.0.1 requires rustc 1.94 
+
 
 [dev-dependencies]
 wallet-core = { workspace = true }
