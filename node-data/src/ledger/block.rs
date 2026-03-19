@@ -14,7 +14,7 @@ pub type Bloom = [u8; 256];
 #[derive(Default, Debug, Clone)]
 pub struct Block {
     header: Header,
-    txs: Vec<Transaction>,
+    txs: Vec<LedgerTransaction>,
     faults: Vec<Fault>,
 }
 
@@ -30,7 +30,7 @@ impl Block {
     /// Creates a new block and calculates block hash, if missing.
     pub fn new(
         header: Header,
-        txs: Vec<Transaction>,
+        txs: Vec<LedgerTransaction>,
         faults: Vec<Fault>,
     ) -> io::Result<Self> {
         let mut b = Block {
@@ -58,7 +58,7 @@ impl Block {
     pub fn header(&self) -> &Header {
         &self.header
     }
-    pub fn txs(&self) -> &Vec<Transaction> {
+    pub fn txs(&self) -> &Vec<LedgerTransaction> {
         &self.txs
     }
     pub fn faults(&self) -> &Vec<Fault> {

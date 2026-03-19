@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use dusk_core::transfer::RefundAddress;
 
 use super::*;
-use crate::ledger::{Hash, SpentTransaction, Transaction};
+use crate::ledger::{Hash, LedgerTransaction, SpentTransaction};
 
 /// Represents events related to transactions.
 ///
@@ -34,7 +34,7 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 ///   This event is triggered when a transaction is removed from the mempool
 ///   or discarded from the mempool.
 ///
-/// - `Included(&'t Transaction)`
+/// - `Included(&'t LedgerTransaction)`
 ///
 ///     A transaction has been included in the mempool.
 ///
@@ -52,7 +52,7 @@ pub enum TransactionEvent<'t> {
     Deferred(Hash, &'static str),
     Dropped(Hash, &'static str),
     Removed(Hash),
-    Included(&'t Transaction),
+    Included(&'t LedgerTransaction),
     Executed(&'t SpentTransaction),
 }
 
@@ -95,13 +95,13 @@ use dusk_bytes::Serializable;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-impl Serialize for Transaction {
+impl Serialize for LedgerTransaction {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut state = serializer.serialize_struct("Transaction", 1)?;
-        match &self.inner {
+        match self.protocol() {
             ProtocolTransaction::Phoenix(p) => {
                 state.serialize_field("type", "phoenix")?;
 
@@ -133,11 +133,12 @@ impl Serialize for Transaction {
             }
         }
 
-        let tx = &self.inner;
+        let tx = self.protocol();
 
         state.serialize_field("deposit", &tx.deposit())?;
 
-        let notes: Vec<Note> = tx.outputs().iter().map(|n| n.into()).collect();
+        let notes: Vec<Note<'_>> =
+            tx.outputs().iter().map(Note::from).collect();
 
         if !notes.is_empty() {
             state.serialize_field("outputs", &notes)?;

@@ -11,7 +11,9 @@ mod block;
 pub use block::*;
 
 mod transaction;
-pub use transaction::{SpendingId, SpentTransaction, Transaction};
+pub use transaction::{
+    CanonicalTransaction, LedgerTransaction, SpendingId, SpentTransaction,
+};
 
 mod faults;
 pub use faults::{Fault, InvalidFault, Slash, SlashType};

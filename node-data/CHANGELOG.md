@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ingress decoding.
 - Add a regression test covering historical pre-Aegis transaction decoding in
   block serialization.
+- Add explicit `CanonicalTransaction` and `LedgerTransaction`
+  boundaries to separate canonical transaction data from persisted ledger
+  envelopes.
+
+### Fixed
+
+- Re-encode canonical transaction bytes from semantic transaction data during
+  hashing and serialization instead of preserving stale decoded input bytes
+
+### Changed
+
+- Make canonical transaction construction infallible, remove the test-only ingress helper, and move ledger reformatting onto `LedgerTransaction`
 
 ## [1.6.0] - 2026-02-27
 
