@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use dusk_core::transfer::data::BlobData;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, Transaction, to_str};
+use node_data::ledger::{Block, LedgerTransaction, to_str};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -195,8 +195,8 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 /// - Each blob's hash matches the commitment in the sidecar.
 ///
 /// If the transaction is not a blob transaction, it returns `Ok(())`.
-pub fn validate_blob_sidecars(tx: &Transaction) -> Result<(), BlobError> {
-    if let Some(blobs) = tx.inner.blob() {
+pub fn validate_blob_sidecars(tx: &LedgerTransaction) -> Result<(), BlobError> {
+    if let Some(blobs) = tx.protocol().blob() {
         for blob in blobs {
             // Check sidecar is present
             let sidecar = blob
