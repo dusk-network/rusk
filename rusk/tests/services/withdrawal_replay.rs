@@ -104,11 +104,12 @@ pub async fn mismatched_nullifier_count_rejected_by_hook() -> Result<()> {
         tx_nullifiers - 1
     );
 
-    // The hook returns false on mismatch. The spending part of the
+    // The hook returns Err on mismatch. The spending part of the
     // transaction succeeds, but the inter-contract call to `withdraw`
-    // fails with "call hook rejected". The transaction is still included
-    // in the block (executed, not discarded), but with an error — the
-    // full gas limit is consumed and the withdrawal has no effect.
+    // fails with the hook's error message. The transaction is still
+    // included in the block (executed, not discarded), but with an
+    // error — the full gas limit is consumed and the withdrawal has no
+    // effect.
     let spent_txs = generator_procedure(
         tc.rusk(),
         &[tx],
@@ -125,8 +126,8 @@ pub async fn mismatched_nullifier_count_rejected_by_hook() -> Result<()> {
     assert_eq!(spent_txs.len(), 1, "tx should be included in the block");
     let err = spent_txs[0].err.as_ref().expect("tx should have an error");
     assert!(
-        err.contains("call hook rejected"),
-        "error should mention call hook rejection, got: {err}",
+        err.contains("nullifier count mismatch"),
+        "error should mention nullifier count mismatch, got: {err}",
     );
 
     // Stake must remain intact since the withdrawal failed.
@@ -179,8 +180,8 @@ pub async fn garbage_withdraw_args_rejected_by_hook() -> Result<()> {
     assert_eq!(spent_txs.len(), 1, "tx should be included in the block");
     let err = spent_txs[0].err.as_ref().expect("tx should have an error");
     assert!(
-        err.contains("call hook rejected"),
-        "error should mention call hook rejection, got: {err}",
+        err.contains("failed to deserialize withdrawal arguments"),
+        "error should mention deserialization failure, got: {err}",
     );
 
     Ok(())
