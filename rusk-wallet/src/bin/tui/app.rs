@@ -553,7 +553,7 @@ impl<'a> App<'a> {
                     .settings
                     .explorer
                     .as_ref()
-                    .map(|e| format!("{}{}", e, tx_hash));
+                    .map(|e| format!("{e}{tx_hash}"));
                 self.screen = AppScreen::Result {
                     info: ResultInfo::TxSent {
                         tx_hash,
@@ -568,7 +568,7 @@ impl<'a> App<'a> {
                     .settings
                     .explorer
                     .as_ref()
-                    .map(|e| format!("{}{}", e, tx_hash));
+                    .map(|e| format!("{e}{tx_hash}"));
                 self.screen = AppScreen::Result {
                     info: ResultInfo::DeployTxSent {
                         tx_hash,

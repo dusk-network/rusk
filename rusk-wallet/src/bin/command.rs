@@ -1003,7 +1003,7 @@ impl fmt::Display for RunResult<'_> {
                     .collect::<Vec<String>>()
                     .join("\n");
 
-                write!(f, "{}", profiles_string,)
+                write!(f, "{profiles_string}")
             }
             Tx(hash) => {
                 let hash = hex::encode(hash.to_bytes());

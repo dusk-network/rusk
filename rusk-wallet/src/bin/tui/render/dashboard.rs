@@ -299,7 +299,7 @@ fn status_line(
             ));
             spans.push(Span::styled("  \u{00b7}  ", theme::dim()));
             let msg = if e.len() > 20 {
-                format!("Err: {:.20}\u{2026}", e)
+                format!("Err: {e:.20}\u{2026}")
             } else {
                 format!("Err: {e}")
             };
@@ -348,15 +348,14 @@ fn render_menu(
         if i == selected {
             // Full-width highlight bar with arrow indicator
             let pad = width.saturating_sub(7); // "  ▸ " (4) + " X " (3)
-            let text =
-                format!("  \u{25b8} {static_label:<pad$} {key} ", pad = pad);
+            let text = format!("  \u{25b8} {static_label:<pad$} {key} ");
             lines.push(Line::from(Span::styled(text, theme::menu_selected())));
         } else {
             let pad = width.saturating_sub(7);
             lines.push(Line::from(vec![
                 Span::raw("    "),
                 Span::styled(
-                    format!("{static_label:<pad$}", pad = pad),
+                    format!("{static_label:<pad$}"),
                     theme::menu_item(),
                 ),
                 Span::styled(format!(" {key} "), theme::menu_hotkey()),

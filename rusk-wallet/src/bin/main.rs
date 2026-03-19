@@ -277,7 +277,7 @@ async fn run_command_or_enter_loop(
                     }
                 }
                 RunResult::MoonlightBalance(balance) => {
-                    println!("Total: {}", balance);
+                    println!("Total: {balance}")
                 }
                 RunResult::Profile((profile_idx, profile)) => {
                     println!(
@@ -365,9 +365,7 @@ async fn run_command_or_enter_loop(
                         );
                     }
                 }
-                RunResult::ContractId(id) => {
-                    println!("Contract ID: {:?}", id);
-                }
+                RunResult::ContractId(id) => println!("Contract ID: {id:?}"),
                 RunResult::Settings() => {}
                 RunResult::Create() | RunResult::Restore() => {}
                 RunResult::DriverDeployResult(_) => {}
