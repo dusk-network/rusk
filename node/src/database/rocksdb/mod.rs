@@ -15,7 +15,8 @@ use anyhow::Result;
 use dusk_core::transfer::data::BlobSidecar;
 use node_data::Serializable;
 use node_data::ledger::{
-    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
+    Block, Fault, Header, Label, LedgerTransaction, SpendingId,
+    SpentTransaction,
 };
 use node_data::message::{ConsensusHeader, payload};
 use rocksdb::{
@@ -556,7 +557,7 @@ mod tests {
     fn test_add_mempool_tx() {
         TestWrapper::new("test_add_tx").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
-            let t: Transaction = Faker.fake();
+            let t: LedgerTransaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.store_mempool_tx(&t, 0) }).is_ok());
 
@@ -594,7 +595,7 @@ mod tests {
             let _rng = rand::thread_rng();
             db.update(|txn| {
                 for _i in 0..10u32 {
-                    let t: Transaction = Faker.fake();
+                    let t: LedgerTransaction = Faker.fake();
                     txn.store_mempool_tx(&t, 0)?;
                 }
                 Ok(())
@@ -725,12 +726,16 @@ mod tests {
 
     fn to_spent_txs(
         block_height: u64,
-        txs: &[Transaction],
+        txs: &[LedgerTransaction],
     ) -> Vec<SpentTransaction> {
         let format = hard_fork::ledger_tx_format_at(block_height);
         txs.iter()
             .map(|t| SpentTransaction {
-                inner: t.clone().with_format(format),
+                inner: LedgerTransaction::from_protocol_with_format(
+                    t.protocol().clone(),
+                    format,
+                )
+                .expect("test tx should canonicalize"),
                 block_height,
                 gas_spent: 0,
                 err: None,

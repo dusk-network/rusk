@@ -225,7 +225,7 @@ impl<DB: DBAccess> ConsensusStorage for DBTransaction<'_, DB> {
 impl<DB: DBAccess> Mempool for DBTransaction<'_, DB> {
     fn store_mempool_tx(
         &mut self,
-        tx: &Transaction,
+        tx: &LedgerTransaction,
         timestamp: u64,
     ) -> Result<()> {
         // Map Hash to serialized transaction
@@ -256,13 +256,15 @@ impl<DB: DBAccess> Mempool for DBTransaction<'_, DB> {
         Ok(())
     }
 
-    fn mempool_tx(&self, hash: [u8; 32]) -> Result<Option<Transaction>> {
+    fn mempool_tx(&self, hash: [u8; 32]) -> Result<Option<LedgerTransaction>> {
         let data = self.inner.get_cf(self.mempool_cf, hash)?;
 
         match data {
             // None has a meaning key not found
             None => Ok(None),
-            Some(blob) => Ok(Some(Transaction::read(&mut &blob.to_vec()[..])?)),
+            Some(blob) => {
+                Ok(Some(LedgerTransaction::read(&mut &blob.to_vec()[..])?))
+            }
         }
     }
 
@@ -340,7 +342,7 @@ impl<DB: DBAccess> Mempool for DBTransaction<'_, DB> {
 
     fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Box<dyn Iterator<Item = Transaction> + '_> {
+    ) -> Box<dyn Iterator<Item = LedgerTransaction> + '_> {
         let iter = MemPoolIterator::new(&self.inner, self.fees_cf, self);
 
         Box::new(iter)
@@ -436,7 +438,7 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 }
 
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
-    type Item = Transaction;
+    type Item = LedgerTransaction;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|(_, tx_id)| {
             self.mempool.mempool_tx(tx_id).ok().flatten()

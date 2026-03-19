@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use node_data::events::{Event, TransactionEvent};
-use node_data::ledger::{SpendingId, Transaction};
+use node_data::ledger::{LedgerTransaction, SpendingId};
 use node_data::message::{Message, Payload};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex as AsyncMutex, RwLock};
@@ -222,13 +222,6 @@ impl FutureNonceRetryHandle {
         }
     }
 
-    pub async fn enqueue_message(
-        &self,
-        msg: &Message,
-    ) -> Result<(), TxAcceptanceError> {
-        self.inner.lock().await.enqueue(msg).map(|_| ())
-    }
-
     pub async fn enqueue_message_report(
         &self,
         msg: &Message,
@@ -281,7 +274,7 @@ fn emit_tx_event(event_sender: &Sender<Event>, event: TransactionEvent<'_>) {
 
 fn emit_prequeue_dropped(
     event_sender: &Sender<Event>,
-    tx: &Transaction,
+    tx: &LedgerTransaction,
     reason: &'static str,
 ) {
     emit_tx_event(event_sender, TransactionEvent::Dropped(tx.id(), reason));
@@ -289,7 +282,7 @@ fn emit_prequeue_dropped(
 
 pub(super) fn handle_enqueue_outcome(
     event_sender: &Sender<Event>,
-    tx: &Transaction,
+    tx: &LedgerTransaction,
     outcome: Result<EnqueueOutcome, TxAcceptanceError>,
 ) -> Result<(), TxAcceptanceError> {
     let (events, result) = enqueue_outcome_report(tx, outcome);
@@ -302,7 +295,7 @@ pub(super) fn handle_enqueue_outcome(
 }
 
 fn enqueue_outcome_report(
-    tx: &Transaction,
+    tx: &LedgerTransaction,
     outcome: Result<EnqueueOutcome, TxAcceptanceError>,
 ) -> (Vec<Event>, Result<(), TxAcceptanceError>) {
     let mut events = Vec::new();
@@ -501,7 +494,7 @@ pub(super) async fn drain_unblocked_chain<
     network: &Arc<RwLock<N>>,
     db: &Arc<RwLock<DB>>,
     vm: &Arc<RwLock<VM>>,
-    accepted_tx: &Transaction,
+    accepted_tx: &LedgerTransaction,
 ) {
     let ctx = PrequeueProcessCtx {
         prequeue,
@@ -539,14 +532,14 @@ pub(super) async fn drain_unblocked_chain<
     }
 }
 
-fn pending_tx(msg: &Message) -> Option<&Transaction> {
+fn pending_tx(msg: &Message) -> Option<&LedgerTransaction> {
     let Payload::Transaction(tx) = &msg.payload else {
         return None;
     };
     Some(tx)
 }
 
-fn prequeue_key(tx: &Transaction) -> Option<PrequeueKey> {
+fn prequeue_key(tx: &LedgerTransaction) -> Option<PrequeueKey> {
     let spend_ids = tx.to_spend_ids();
     let [SpendingId::AccountNonce(account, nonce)] = spend_ids.as_slice()
     else {
@@ -555,17 +548,18 @@ fn prequeue_key(tx: &Transaction) -> Option<PrequeueKey> {
     Some((account.to_raw_bytes().to_vec(), *nonce))
 }
 
-pub(super) fn account_nonce_key(tx: &Transaction) -> Option<PrequeueKey> {
+pub(super) fn account_nonce_key(tx: &LedgerTransaction) -> Option<PrequeueKey> {
     prequeue_key(tx)
 }
 
 fn should_replace_queued_tx(
-    existing: &Transaction,
-    incoming: &Transaction,
+    existing: &LedgerTransaction,
+    incoming: &LedgerTransaction,
 ) -> bool {
     incoming.gas_price() > existing.gas_price()
         || (incoming.gas_price() == existing.gas_price()
-            && incoming.inner.gas_limit() > existing.inner.gas_limit())
+            && incoming.protocol().gas_limit()
+                > existing.protocol().gas_limit())
 }
 
 fn decrement_account_count(

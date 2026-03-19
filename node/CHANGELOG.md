@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reject historical transaction formats during live mempool admission while
   preserving ledger replay compatibility
 
+### Changed
+
+- Extract transaction admission checks from the mempool service and validate
+  canonical transactions without re-encoding ledger envelopes on the hot path.
+
 ## [1.6.0] - 2026-02-27
 
 ### Added
