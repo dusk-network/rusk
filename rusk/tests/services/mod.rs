@@ -21,6 +21,7 @@ pub mod multi_transfer;
 pub mod owner_calls;
 pub mod phoenix_stake;
 pub mod sequential_nonce;
+pub mod shade_module;
 pub mod transfer;
 pub mod unspendable;
 pub mod withdrawal_replay;

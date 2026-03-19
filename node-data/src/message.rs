@@ -988,7 +988,7 @@ pub mod payload {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
-                InvParam::Height(height) => write!(f, "Height: {}", height),
+                InvParam::Height(height) => write!(f, "Height: {height}"),
                 InvParam::Iteration(ch) => {
                     write!(
                         f,

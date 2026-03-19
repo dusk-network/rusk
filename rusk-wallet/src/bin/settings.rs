@@ -260,7 +260,7 @@ impl fmt::Display for Settings {
                 "[Not set]"
             }
         )?;
-        writeln!(f, "{}", separator)?;
+        writeln!(f, "{separator}")?;
         if let Some(network_name) = &self.network_name {
             writeln!(f, "network: {network_name}")?;
         }

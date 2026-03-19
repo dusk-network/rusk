@@ -21,5 +21,5 @@ pub async fn check_finalized_block(
     archive
         .match_finalized_block_height_hash(block_height, &hex_block_hash)
         .await
-        .map_err(|e| FieldError::new(format!("Cannot check block: {}", e)))
+        .map_err(|e| FieldError::new(format!("Cannot check block: {e}")))
 }

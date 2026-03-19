@@ -56,12 +56,11 @@ mod runtime {
         let circuit_profile = CircuitProfile::from_name(circuit_name)
             .unwrap_or_else(|_| {
                 panic!(
-                    "There should be circuit data stored for {}",
-                    circuit_name
+                    "There should be circuit data stored for {circuit_name}",
                 )
             });
         circuit_profile.get_verifier().unwrap_or_else(|_| {
-            panic!("there should be a verifier key stored for {}", circuit_name)
+            panic!("there should be a verifier key stored for {circuit_name}")
         })
     }
 }
