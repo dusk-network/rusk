@@ -83,6 +83,9 @@ pub enum Error {
     /// Invalid address
     #[error("Invalid address")]
     BadAddress,
+    /// Insecure transport was requested without explicit opt-in
+    #[error("Refusing insecure HTTP connection to {0}")]
+    InsecureTransport(String),
     /// Address does not belong to this wallet
     #[error("Address does not belong to this wallet")]
     AddressNotOwned,

@@ -66,12 +66,21 @@ async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
         // Suppress Ctrl+C / Esc from password prompts
         if err.downcast_ref::<prompt::PromptAbort>().is_none() {
-            eprintln!("{err}");
+            eprintln!("{}", render_cli_error(&err));
         }
         // give cursor back to the user
         io::prompt::show_cursor()?;
     }
     Ok(())
+}
+
+fn render_cli_error(err: &anyhow::Error) -> String {
+    match err.downcast_ref::<Error>() {
+        Some(err @ Error::InsecureTransport(_)) => format!(
+            "{err}. Use --allow-insecure only for trusted development setups"
+        ),
+        _ => err.to_string(),
+    }
 }
 
 async fn connect<F>(
@@ -167,9 +176,7 @@ async fn exec() -> anyhow::Result<()> {
     wallet_path.set_network_name(settings_builder.args.network.clone());
 
     // Finally complete the settings by setting the network
-    let mut settings = settings_builder
-        .network(cfg.network)
-        .map_err(|_| rusk_wallet::Error::NetworkNotFound)?;
+    let mut settings = settings_builder.network(cfg.network)?;
 
     // generate a subscriber with the desired log level
     //
@@ -203,6 +210,13 @@ async fn exec() -> anyhow::Result<()> {
             tracing::subscriber::set_global_default(subscriber)?;
         }
     };
+
+    for (name, url) in settings.nonlocal_insecure_endpoints() {
+        warn!(
+            "{name} endpoint uses insecure HTTP transport: {url}. \
+             Use this only for trusted local or development setups."
+        );
+    }
 
     if let Some(Command::Settings) = cmd {
         println!("{}", &settings);
