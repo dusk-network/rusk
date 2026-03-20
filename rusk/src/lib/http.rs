@@ -360,13 +360,11 @@ where
                         .expect("Failed to build policy response");
                     if let Some(retry_after_seconds) =
                         rejection.retry_after_seconds
-                    {
-                        if let Ok(retry_after) = HeaderValue::from_str(
+                        && let Ok(retry_after) = HeaderValue::from_str(
                             &retry_after_seconds.to_string(),
-                        ) {
-                            rsp.headers_mut()
-                                .insert("Retry-After", retry_after);
-                        }
+                        )
+                    {
+                        rsp.headers_mut().insert("Retry-After", retry_after);
                     }
                     return Ok(rsp);
                 }
