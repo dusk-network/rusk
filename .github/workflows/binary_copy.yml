@@ -13,30 +13,55 @@ permissions:
   contents: read
 
 jobs:
-  # Job to run change detection
   build:
     name: Make rusk
     runs-on: core
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          clean: false
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Rust toolchain
-        uses: dsherret/rust-toolchain-file@v1
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
 
       - name: Configure git auth for private dependencies
-        run: git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GIT_CONFIG_GLOBAL="${WORKDIR}/.gitconfig"
+          echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
-      - name: Setting up Node 24.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          scope: "@dusk-network"
-
-      - name: Build node
-        run: make all
+      - name: Build rusk
+        working-directory: ${{ env.WORKDIR }}/repo
+        run: make rusk
 
       - name: sccache stats
         if: always()
@@ -49,9 +74,14 @@ jobs:
           mkdir -p /var/opt/rusk-artifacts
           
           # Check if the rusk artifact exists before copying
-          if [ -f ./target/release/rusk ]; then
+          if [ -f "${WORKDIR}/repo/target/release/rusk" ]; then
             echo "Rusk artifact found. Copying to host."
-            cp ./target/release/rusk /var/opt/rusk-artifacts
+            cp "${WORKDIR}/repo/target/release/rusk" /var/opt/rusk-artifacts
           else
             echo "Rusk artifact not found. Skipping copy."
           fi
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true

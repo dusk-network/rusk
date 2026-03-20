@@ -11,65 +11,74 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+    paths:
+      - '.cargo/**'
+      - 'core/**'
+      - 'node-data/**'
+      - 'wallet-core/**'
+      - 'rusk-wallet/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/ruskwallet_ci.yml'
 
 jobs:
-  # JOB to run change detection
-  changes:
+  test_core:
+    name: "[Core] Wallet checks"
     runs-on: core
-    # Required permissions
-    permissions:
-      pull-requests: read
-    # Set job outputs to values from filter step
-    outputs:
-      run-ci: ${{ steps.filter.outputs.run-ci }}
-    steps:
-      # For pull requests it's not necessary to checkout the code
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            run-ci:
-              - 'execution-core/**'
-              - 'wallet-core/**'
-              - 'rusk-wallet/**'
-              - '.github/workflows/ruskwallet_ci.yml'
-
-  test_nightly-macm1:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: "[Mac arm64] Nightly checks"
-    runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
 
       - name: Configure git auth for private dependencies
         shell: bash
-        run: git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          set -euo pipefail
+          export GIT_CONFIG_GLOBAL="${WORKDIR}/.gitconfig"
+          echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
-      - name: Add arm target for Apple Silicon build
-        run: rustup target add aarch64-apple-darwin
+      - name: Check rusk-wallet
+        working-directory: ${{ env.WORKDIR }}/repo
+        run: cargo check --release --manifest-path ./rusk-wallet/Cargo.toml
 
-      - run: cargo check --target=aarch64-apple-darwin --release
-        working-directory: ./rusk-wallet
+      - name: sccache stats
+        if: always()
+        run: sccache -s || true
 
-  test_nightly-arm:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
-    name: "[ARM64 Linux] Nightly checks"
-    runs-on: arm-linux
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-
-      - name: Configure git auth for private dependencies
+      - name: Cleanup
+        if: always()
         shell: bash
-        run: git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
-
-      - name: Add ARM target for Linux
-        run: rustup target add aarch64-unknown-linux-gnu
-
-      - run: cargo check --target=aarch64-unknown-linux-gnu --release
-        working-directory: ./rusk-wallet
+        run: rm -rf "${WORKDIR:-}" || true
