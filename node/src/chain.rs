@@ -221,10 +221,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     // Handle quorum messages from Consensus layer.
                     // If the associated candidate block already exists,
                     // the winner block will be compiled and redirected to the Acceptor.
-                    if let Payload::Quorum(quorum) = &msg.payload {
-                      if let RatificationResult::Success(_) = quorum.att.result {
-                          fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
-                      }
+                                        if let Payload::Quorum(quorum) = &msg.payload
+                                            && let RatificationResult::Success(_) = quorum.att.result {
+                                                    fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
                     }
 
                     if let Payload::GetResource(res) = &msg.payload {

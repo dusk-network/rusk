@@ -12,12 +12,12 @@ use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind};
 /// Returns `None` if no event is available within the timeout.
 /// Filters to only KeyPress events (crossterm 0.28 emits Press/Release/Repeat).
 pub fn poll_event(timeout: Duration) -> std::io::Result<Option<KeyEvent>> {
-    if event::poll(timeout)? {
-        if let CrosstermEvent::Key(key) = event::read()? {
-            // Only handle key press events, not release/repeat
-            if key.kind == KeyEventKind::Press {
-                return Ok(Some(key));
-            }
+    if event::poll(timeout)?
+        && let CrosstermEvent::Key(key) = event::read()?
+    {
+        // Only handle key press events, not release/repeat
+        if key.kind == KeyEventKind::Press {
+            return Ok(Some(key));
         }
     }
     Ok(None)

@@ -429,11 +429,10 @@ impl<'a> App<'a> {
                     AppScreen::Result {
                         info: ResultInfo::Error { .. }
                     }
-                ) {
-                    if let Some(form) = self.last_form.take() {
-                        self.screen = AppScreen::Form { form };
-                        return;
-                    }
+                ) && let Some(form) = self.last_form.take()
+                {
+                    self.screen = AppScreen::Form { form };
+                    return;
                 }
                 self.screen = AppScreen::Dashboard;
             }
@@ -493,10 +492,10 @@ impl<'a> App<'a> {
                 }
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                if let AppScreen::History { entries } = &self.screen {
-                    if self.history_selected + 1 < entries.len() {
-                        self.history_selected += 1;
-                    }
+                if let AppScreen::History { entries } = &self.screen
+                    && self.history_selected + 1 < entries.len()
+                {
+                    self.history_selected += 1;
                 }
             }
             _ => {}

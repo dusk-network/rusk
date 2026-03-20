@@ -212,11 +212,9 @@ impl FormState {
 
         if let Some(field) =
             self.fields.iter_mut().find(|field| field.name == "amount")
+            && let field::FieldKind::Amount { max: field_max } = &mut field.kind
         {
-            if let field::FieldKind::Amount { max: field_max } = &mut field.kind
-            {
-                *field_max = max;
-            }
+            *field_max = max;
         }
     }
 

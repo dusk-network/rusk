@@ -209,17 +209,16 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     async fn on_heartbeat_in_stalled(&mut self) {
-        if let State::Stalled(timestamp) = self.state {
-            if timestamp + STALLED_TIMEOUT < node_data::get_current_timestamp()
-            {
-                let _ = self.request_missing_blocks().await.map_err(|e| {
-                    error!("Error in request_missing_blocks: {:?}", e);
-                });
+        if let State::Stalled(timestamp) = self.state
+            && timestamp + STALLED_TIMEOUT < node_data::get_current_timestamp()
+        {
+            let _ = self.request_missing_blocks().await.map_err(|e| {
+                error!("Error in request_missing_blocks: {:?}", e);
+            });
 
-                self.state_transition(State::Stalled(
-                    node_data::get_current_timestamp(),
-                ));
-            }
+            self.state_transition(State::Stalled(
+                node_data::get_current_timestamp(),
+            ));
         }
     }
 

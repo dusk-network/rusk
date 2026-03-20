@@ -651,10 +651,10 @@ impl Transaction {
     /// Returns an error if the transaction is a Phoenix transaction and
     /// the fee's stealth address does not match `outputs[1]`.
     pub fn phoenix_refund_check(&self) -> Result<(), TxPreconditionError> {
-        if let Transaction::Phoenix(tx) = self {
-            if tx.fee().stealth_address != *tx.outputs()[1].stealth_address() {
-                return Err(TxPreconditionError::PhoenixFeeRefundMismatch);
-            }
+        if let Transaction::Phoenix(tx) = self
+            && tx.fee().stealth_address != *tx.outputs()[1].stealth_address()
+        {
+            return Err(TxPreconditionError::PhoenixFeeRefundMismatch);
         }
         Ok(())
     }
@@ -717,10 +717,10 @@ impl Transaction {
         }
 
         let min_charge = self.blob_charge(gas_per_blob);
-        if let Some(min_charge) = min_charge {
-            if self.gas_limit() < min_charge {
-                return Err(TxPreconditionError::BlobLowLimit(min_charge));
-            }
+        if let Some(min_charge) = min_charge
+            && self.gas_limit() < min_charge
+        {
+            return Err(TxPreconditionError::BlobLowLimit(min_charge));
         }
         Ok(min_charge)
     }
