@@ -9,40 +9,77 @@ use std::time::Duration;
 use dusk_core::abi::ContractId;
 use reqwest::{Body, Response};
 use rkyv::Archive;
+use url::Url;
 
 use crate::Error;
 
 /// Supported Rusk version
 const REQUIRED_RUSK_VERSION: &str = "1.0.0-rc.0";
+const GRAPHQL_ACCEPT: &str =
+    "application/graphql-response+json, application/json";
+const GRAPHQL_PING_QUERY: &str = "query { __typename }";
 
 /// Target for contracts
 pub const CONTRACTS_TARGET: &str = "contracts";
+
+fn normalize_base_node_url(uri: &str) -> Result<Url, Error> {
+    let mut url = Url::parse(uri)
+        .map_err(|_| Error::Rusk("Invalid base node URI".into()))?;
+    url.set_query(None);
+    url.set_fragment(None);
+
+    let path = url.path().trim_end_matches('/');
+    let path = if path.is_empty() {
+        "/".to_string()
+    } else {
+        format!("{path}/")
+    };
+    url.set_path(&path);
+    Ok(url)
+}
+
+fn has_graphql_errors(errors: &serde_json::Value) -> bool {
+    match errors {
+        serde_json::Value::Array(entries) => !entries.is_empty(),
+        serde_json::Value::Null => false,
+        _ => true,
+    }
+}
 
 #[derive(Clone)]
 /// Rusk HTTP Binary Client
 pub struct HttpClient {
     client: reqwest::Client,
-    uri: String,
+    base_url: Url,
 }
 
 impl HttpClient {
     /// Create a new HTTP Client
     ///
+    /// # Arguments
+    /// - `uri` - Base node URL, for example `http://127.0.0.1:8080`, `http://127.0.0.1:8080/`,
+    ///   or `https://proxy.example.com/rusk`.
+    ///
     /// # Errors
     /// This method errors if a TLS backend cannot be initialized, or the
     /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(uri: S) -> Result<Self, Error> {
+        let uri = uri.into();
+        let base_url = normalize_base_node_url(&uri)?;
         let client = reqwest::ClientBuilder::new()
             .connect_timeout(Duration::from_secs(30))
             .build();
 
         match client {
-            Ok(client) => Ok(Self {
-                uri: uri.into(),
-                client,
-            }),
+            Ok(client) => Ok(Self { client, base_url }),
             Err(_) => Err(Error::HttpClient),
         }
+    }
+
+    fn endpoint(&self, path: &str) -> Result<Url, Error> {
+        self.base_url
+            .join(path)
+            .map_err(|_| Error::Rusk("Invalid node endpoint path".into()))
     }
 
     /// Utility for querying the rusk VM
@@ -76,9 +113,18 @@ impl HttpClient {
     /// # Errors
     /// This method errors if there was an error while sending the request.
     pub async fn check_connection(&self) -> Result<(), reqwest::Error> {
-        self.client.post(&self.uri).send().await?;
+        self.client.post(self.base_url.clone()).send().await?;
 
         Ok(())
+    }
+
+    /// Check GraphQL connection through the standard `/graphql` endpoint.
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the request,
+    /// or if GraphQL returned an error response.
+    pub async fn check_graphql_connection(&self) -> Result<(), Error> {
+        self.graphql_query(GRAPHQL_PING_QUERY).await.map(|_| ())
     }
 
     /// Send a `RuskRequest` to a specific target.
@@ -120,13 +166,12 @@ impl HttpClient {
     where
         E: Into<Option<&'static str>>,
     {
-        let uri = &self.uri;
         let entity = entity.into().map(|e| format!(":{e}")).unwrap_or_default();
-
-        let rues_prefix = if uri.ends_with('/') { "on" } else { "/on" };
+        let endpoint =
+            self.endpoint(&format!("on/{target}{entity}/{topic}"))?;
         let mut request = self
             .client
-            .post(format!("{uri}{rues_prefix}/{target}{entity}/{topic}"))
+            .post(endpoint)
             .body(Body::from(data.to_vec()))
             .header("Content-Type", "application/octet-stream")
             .header("rusk-version", REQUIRED_RUSK_VERSION);
@@ -168,19 +213,13 @@ impl HttpClient {
         contract_id: &ContractId,
         signature: impl AsRef<[u8]>,
     ) -> Result<Vec<u8>, Error> {
-        let uri = &self.uri;
-        let client = reqwest::Client::new();
-        let target = "contract";
-        let entity = hex::encode(contract_id.as_bytes());
-        let entity = if entity.is_empty() {
-            entity.clone()
-        } else {
-            format!(":{entity}")
-        };
-        let topic = "upload_driver";
-        let rues_prefix = if uri.ends_with('/') { "on" } else { "/on" };
-        let request = client
-            .post(format!("{uri}{rues_prefix}/{target}{entity}/{topic}"))
+        let endpoint = self.endpoint(&format!(
+            "on/contract:{}/upload_driver",
+            hex::encode(contract_id.as_bytes())
+        ))?;
+        let request = self
+            .client
+            .post(endpoint)
             .body(Body::from(driver_bytecode.as_ref().to_vec()))
             .header("Content-Type", "application/octet-stream")
             .header("rusk-version", REQUIRED_RUSK_VERSION)
@@ -202,5 +241,108 @@ impl HttpClient {
             let data = response.bytes().await?;
             Ok(data.to_vec())
         }
+    }
+
+    /// Send a GraphQL query to the `/graphql` endpoint and return
+    /// the unwrapped `data` payload.
+    ///
+    /// # Errors
+    ///
+    /// This method errors if there was an error while sending the request, if
+    /// the response body is not in JSON format, if the GraphQL response
+    /// contains an `errors` field, or if the `data` field is missing from
+    /// the GraphQL response.
+    pub async fn graphql_query(&self, query: &str) -> Result<Vec<u8>, Error> {
+        let endpoint = self.endpoint("graphql")?;
+        let query = if query.trim().is_empty() {
+            GRAPHQL_PING_QUERY
+        } else {
+            query
+        };
+
+        let response = self
+            .client
+            .post(endpoint)
+            .header("Accept", GRAPHQL_ACCEPT)
+            .header("Content-Type", "application/json")
+            .header("rusk-version", REQUIRED_RUSK_VERSION)
+            .body(serde_json::json!({ "query": query }).to_string())
+            .send()
+            .await?;
+
+        let status = response.status();
+        let body = response.bytes().await?;
+
+        if status.is_client_error() || status.is_server_error() {
+            let error = String::from_utf8(body.to_vec())
+                .unwrap_or_else(|_| "unparsable error".into());
+            return Err(Error::Rusk(error));
+        }
+
+        let payload: serde_json::Value = serde_json::from_slice(&body)?;
+        if let Some(errors) = payload.get("errors")
+            && has_graphql_errors(errors)
+        {
+            return Err(Error::Rusk(errors.to_string()));
+        }
+
+        match payload.get("data") {
+            Some(data) => serde_json::to_vec(data).map_err(Error::from),
+            None => Err(Error::Rusk("GraphQL response missing data".into())),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{HttpClient, has_graphql_errors, normalize_base_node_url};
+
+    #[test]
+    fn normalize_base_node_url_accepts_root_paths() {
+        let url = normalize_base_node_url("http://127.0.0.1:8080").unwrap();
+        assert_eq!(url.as_str(), "http://127.0.0.1:8080/");
+
+        let url = normalize_base_node_url("http://127.0.0.1:8080/").unwrap();
+        assert_eq!(url.as_str(), "http://127.0.0.1:8080/");
+    }
+
+    #[test]
+    fn http_client_derives_prefixed_graphql_and_rues_endpoints() {
+        let url = normalize_base_node_url("https://example.com/rusk").unwrap();
+        assert_eq!(url.as_str(), "https://example.com/rusk/");
+
+        let url = normalize_base_node_url("https://example.com/rusk/").unwrap();
+        assert_eq!(url.as_str(), "https://example.com/rusk/");
+
+        let client = HttpClient::new("https://example.com/rusk").unwrap();
+
+        assert_eq!(client.base_url.as_str(), "https://example.com/rusk/");
+        assert_eq!(
+            client.endpoint("graphql").unwrap().as_str(),
+            "https://example.com/rusk/graphql"
+        );
+        assert_eq!(
+            client
+                .endpoint("on/contracts:deadbeef/query")
+                .unwrap()
+                .as_str(),
+            "https://example.com/rusk/on/contracts:deadbeef/query"
+        );
+    }
+
+    #[test]
+    fn has_graphql_errors_ignores_empty_arrays_and_null() {
+        assert!(!has_graphql_errors(&serde_json::json!([])));
+        assert!(!has_graphql_errors(&serde_json::Value::Null));
+    }
+
+    #[test]
+    fn has_graphql_errors_flags_non_empty_values() {
+        assert!(has_graphql_errors(&serde_json::json!([
+            { "message": "boom" }
+        ])));
+        assert!(has_graphql_errors(
+            &serde_json::json!({ "message": "boom" })
+        ));
     }
 }

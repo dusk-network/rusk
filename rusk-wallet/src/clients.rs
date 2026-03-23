@@ -207,12 +207,7 @@ impl State {
 
         let response = self
             .client
-            .call(
-                "graphql",
-                None,
-                "query",
-                br"query { blocks(last: 1) { header { height } } }",
-            )
+            .graphql_query("query { blocks(last: 1) { header { height } } }")
             .await?;
         let response =
             serde_json::from_slice::<LatestBlocksResponse>(&response).map_err(

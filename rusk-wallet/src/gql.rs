@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 //! The graphql endpoint can be queried with this helper struct.
-//! The <node-url>/on/gaphql/query if queried with empty bytes returns the
-//! graphql schema
+//! The helper sends standard GraphQL-over-HTTP requests to
+//! `<node-url>/graphql`.
 
 use dusk_core::abi::ContractId;
 use dusk_core::stake::StakeEvent;
@@ -172,6 +172,11 @@ pub enum TxStatus {
 impl GraphQL {
     /// Create a new GraphQL wallet client
     ///
+    /// # Arguments
+    /// - `state_url` - Base URL of the state node.
+    /// - `archiver_url` - Base URL of the archiver node.
+    /// - `status` - Progress callback used while polling for confirmation.
+    ///
     /// # Errors
     /// This method errors if a TLS backend cannot be initialized, or the
     /// resolver cannot load the system configuration.
@@ -282,13 +287,16 @@ impl GraphQL {
             .ok_or(GraphQLError::BlockInfo.into())
     }
 
-    /// Sends an empty body to url to check if its available
+    /// Checks whether both GraphQL endpoints are reachable.
     ///
     /// # Errors
     /// This method errors if there was an error while sending the query.
     pub async fn check_connection(&self) -> Result<(), Error> {
-        match (self.query_state("").await, self.query_archiver("").await) {
-            (Ok(_), Ok(_)) => Ok(()),
+        match (
+            self.state_client.check_graphql_connection().await,
+            self.archiver_client.check_graphql_connection().await,
+        ) {
+            (Ok(()), Ok(())) => Ok(()),
             (Err(e), _) | (_, Err(e)) => Err(e),
         }
     }
@@ -423,9 +431,7 @@ impl GraphQL {
         client: &RuesHttpClient,
         query: &str,
     ) -> Result<Vec<u8>, Error> {
-        client
-            .call("graphql", None, "query", query.as_bytes())
-            .await
+        client.graphql_query(query).await
     }
 }
 
@@ -437,10 +443,10 @@ async fn test() -> Result<(), Error> {
             println!("{s}");
         },
         state_client: RuesHttpClient::new(
-            "http://testnet.nodes.dusk.network:9500/graphql",
+            "http://testnet.nodes.dusk.network:9500",
         )?,
         archiver_client: RuesHttpClient::new(
-            "http://testnet.nodes.dusk.network:9500/graphql",
+            "http://testnet.nodes.dusk.network:9500",
         )?,
     };
     let _ = gql
