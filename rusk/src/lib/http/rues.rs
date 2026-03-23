@@ -4,38 +4,35 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use futures_util::SinkExt;
-use hyper::body::Incoming;
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::{HeaderMap, Method, Request, Response, StatusCode};
-use hyper_tungstenite::{HyperWebsocket, tungstenite};
+use axum::body::Body;
+use axum::extract::State;
+use axum::extract::ws::{
+    CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
+};
+use axum::http::header::{HeaderName, HeaderValue};
+use axum::http::{Request, StatusCode};
+use axum::response::{IntoResponse, Response as AxumResponse};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
-use tokio::task;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
-use tungstenite::protocol::frame::coding::CloseCode;
-use tungstenite::protocol::{CloseFrame, Message};
 
-use super::error::{http_error_category, map_http_error_for_response};
-use super::event::check_rusk_version;
-use super::responses::{
-    api_error_response, http_error_response, method_not_allowed_response,
-    request_parse_error_response,
+use super::axum_app::HttpAppState;
+use super::error::{
+    ApiError, http_error_category, map_http_error_for_response,
 };
+use super::event::check_rusk_version;
 use super::{
     DataType, EventResponse, ExecutionError, HandleRequest, HttpError,
-    RUES_LOCATION_PREFIX, RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER,
-    RuesDispatchEvent, RuesEvent, RuesEventUri, SessionId, response,
+    RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
+    RuesEvent, RuesEventUri, SessionId,
 };
 use crate::VERSION;
-use crate::http::event::FullOrStreamBody;
 
 pub(super) enum SubscriptionAction {
     Subscribe {
@@ -53,32 +50,31 @@ pub(super) enum SubscriptionError {
     NotFound,
 }
 
-fn invalid_rues_path_response()
--> Result<Response<FullOrStreamBody>, ExecutionError> {
-    api_error_response(StatusCode::NOT_FOUND, "Invalid URL path")
+fn invalid_rues_path_error() -> ApiError {
+    ApiError::new(StatusCode::NOT_FOUND, "Invalid URL path", "invalid_path")
 }
 
-fn invalid_session_id_response()
--> Result<Response<FullOrStreamBody>, ExecutionError> {
+fn invalid_session_id_error() -> ApiError {
     // TODO: Keep 424 for current RUES compatibility; revisit whether malformed
     // or missing session identifiers should be normalized to 400.
-    api_error_response(
+    ApiError::new(
         StatusCode::FAILED_DEPENDENCY,
         "Session ID not provided or invalid",
+        "invalid_session",
     )
 }
 
-fn failed_consuming_request_response()
--> Result<Response<FullOrStreamBody>, ExecutionError> {
-    api_error_response(
+fn failed_consuming_request_error() -> ApiError {
+    ApiError::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Failed consuming request",
+        "internal",
     )
 }
 
 async fn handle_stream_rues(
     sid: SessionId,
-    websocket: HyperWebsocket,
+    mut stream: WebSocket,
     events: broadcast::Receiver<RuesEvent>,
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
     mut shutdown: broadcast::Receiver<Infallible>,
@@ -86,17 +82,16 @@ async fn handle_stream_rues(
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
 ) {
-    let mut stream = match websocket.await {
-        Ok(stream) => stream,
-        Err(_) => return,
-    };
-
-    if stream.send(Message::Text(sid.to_string())).await.is_err() {
+    if stream
+        .send(Message::Text(sid.to_string().into()))
+        .await
+        .is_err()
+    {
         let _ = stream
-            .close(Some(CloseFrame {
-                code: CloseCode::Error,
-                reason: Cow::from("Failed sending session ID"),
-            }))
+            .send(Message::Close(Some(close_frame(
+                close_code::ERROR,
+                "Failed sending session ID",
+            ))))
             .await;
         return;
     }
@@ -110,22 +105,22 @@ async fn handle_stream_rues(
                 match recv {
                     Some(Ok(Message::Close(msg))) => {
                         debug!("Closing stream for {sid} due to {msg:?}");
-                        let _ = stream.close(msg).await;
+                        let _ = stream.send(Message::Close(msg)).await;
                         break;
                     }
                     Some(Err(e)) => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("Internal error"),
-                        })).await;
+                        let _ = stream.send(Message::Close(Some(close_frame(
+                            close_code::ERROR,
+                            "Internal error",
+                        )))).await;
                         warn!("Closing stream for {sid} due to {e}");
                         break;
                     }
                     None => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("No more events"),
-                        })).await;
+                        let _ = stream.send(Message::Close(Some(close_frame(
+                            close_code::ERROR,
+                            "No more events",
+                        )))).await;
                         warn!("Closing stream for {sid} due to no more events");
                         break;
                     }
@@ -133,10 +128,10 @@ async fn handle_stream_rues(
                 }
             }
             _ = shutdown.recv() => {
-                let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Away,
-                    reason: Cow::from("Shutting down"),
-                })).await;
+                let _ = stream.send(Message::Close(Some(close_frame(
+                    close_code::AWAY,
+                    "Shutting down",
+                )))).await;
                 break;
             }
             subscription = subscriptions.recv() => {
@@ -145,10 +140,10 @@ async fn handle_stream_rues(
                     None => {
                         // If the subscription channel is closed, it means the server has stopped
                         // communicating with this loop, so we should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
+                        let _ = stream.send(Message::Close(Some(close_frame(
+                            close_code::AWAY,
+                            "Shutting down",
+                        )))).await;
                         break;
                     },
                 };
@@ -174,10 +169,10 @@ async fn handle_stream_rues(
                         // If the event channel is closed, it means the
                         // server has stopped producing events, so we
                         // should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
+                        let _ = stream.send(Message::Close(Some(close_frame(
+                            close_code::AWAY,
+                            "Shutting down",
+                        )))).await;
                         break;
 
                     }
@@ -199,11 +194,11 @@ async fn handle_stream_rues(
 
                     // If the event fails sending we close the socket on the client
                     // and stop processing further.
-                    if stream.send(Message::Binary(event)).await.is_err() {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("Failed sending event"),
-                        })).await;
+                    if stream.send(Message::Binary(event.into())).await.is_err() {
+                        let _ = stream.send(Message::Close(Some(close_frame(
+                            close_code::ERROR,
+                            "Failed sending event",
+                        )))).await;
                         break;
                     }
                 }
@@ -215,164 +210,220 @@ async fn handle_stream_rues(
     sockets.remove(&sid);
 }
 
-pub(super) async fn handle_request_rues<H: HandleRequest>(
-    mut req: Request<Incoming>,
-    handler: Arc<H>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    if hyper_tungstenite::is_upgrade_request(&req) {
-        let (subscription_sender, subscriptions) =
-            mpsc::channel(ws_event_channel_cap);
-
-        let ws_config = tungstenite::protocol::WebSocketConfig {
-            max_message_size: Some(super::MAX_WS_INBOUND_MESSAGE_BYTES),
-            max_frame_size: Some(super::MAX_WS_INBOUND_FRAME_BYTES),
-            ..Default::default()
-        };
-        let (response, websocket) =
-            hyper_tungstenite::upgrade(&mut req, Some(ws_config))?;
-
-        let mut sockets = sockets_map.write().await;
-
-        // This is a new WebSocket connection, so we generate a new random ID
-        // and create a new channel for it.
-        let mut sid = rand::random();
-        while sockets.contains_key(&sid) {
-            sid = rand::random();
-        }
-        sockets.insert(sid, subscription_sender);
-
-        task::spawn(handle_stream_rues(
-            sid,
-            websocket,
-            events,
-            subscriptions,
-            shutdown,
-            sockets_map.clone(),
-        ));
-
-        Ok(response.map(Into::into))
-    } else if req.method() == Method::POST {
-        if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return http_error_response(&err);
-        }
-
-        let (event, binary_request) =
-            match RuesDispatchEvent::from_request(req).await {
-                Ok(event) => event,
-                Err(err) => return request_parse_error_response(err),
-            };
-        let mut resp_headers = event.x_headers();
-        let (responder, mut receiver) = mpsc::unbounded_channel();
-        handle_execution_rues(handler, event, responder).await;
-
-        let execution_response = match receiver.recv().await {
-            Some(response) => response,
-            None => {
-                error!("RUES execution response channel closed unexpectedly");
-                return api_error_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error",
-                );
-            }
-        };
-        resp_headers.extend(execution_response.headers.clone());
-        let binary_response = binary_request || execution_response.force_binary;
-        let is_empty = execution_response.error.is_none()
-            && matches!(execution_response.data, DataType::None);
-        let mut resp = execution_response.into_http(binary_response)?;
-        if is_empty {
-            *resp.status_mut() = StatusCode::ACCEPTED;
-        }
-
-        for (k, v) in resp_headers {
-            let k = HeaderName::from_str(&k)?;
-            let v = match v {
-                serde_json::Value::String(s) => HeaderValue::from_str(&s),
-                serde_json::Value::Null => HeaderValue::from_str(""),
-                _ => HeaderValue::from_str(&v.to_string()),
-            }?;
-            resp.headers_mut().append(k, v);
-        }
-
-        Ok(resp)
-    } else {
-        if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return http_error_response(&err);
-        }
-
-        let sid = match SessionId::parse_from_req(&req) {
-            None => return invalid_session_id_response(),
-            Some(sid) => sid,
-        };
-
-        let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
-            None => return invalid_rues_path_response(),
-            Some(s) => s,
-        };
-
-        let action_sender = match sockets_map.read().await.get(&sid) {
-            Some(sender) => sender.clone(),
-            None => return invalid_session_id_response(),
-        };
-
-        let (action, reply) = match *req.method() {
-            Method::GET => {
-                let (reply, receiver) = oneshot::channel();
-                (SubscriptionAction::Subscribe { uri, reply }, receiver)
-            }
-            Method::DELETE => {
-                let (reply, receiver) = oneshot::channel();
-                (SubscriptionAction::Unsubscribe { uri, reply }, receiver)
-            }
-            _ => return method_not_allowed_response("GET, DELETE"),
-        };
-
-        if action_sender.send(action).await.is_err() {
-            return failed_consuming_request_response();
-        }
-
-        match reply.await {
-            Ok(Ok(())) => response(StatusCode::OK, ""),
-            Ok(Err(SubscriptionError::NotFound)) => api_error_response(
-                StatusCode::NOT_FOUND,
-                "Subscription not found",
-            ),
-            // TODO: consider returning 424 instead of 500 for reply channel
-            // closure during session teardown
-            Err(_) => failed_consuming_request_response(),
-        }
+fn close_frame(code: u16, reason: &'static str) -> CloseFrame {
+    CloseFrame {
+        code,
+        reason: reason.into(),
     }
 }
 
-fn validate_rusk_version_headers(headers: &HeaderMap) -> Result<(), HttpError> {
-    let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
-    let version = match headers.get(RUSK_VERSION_HEADER) {
-        Some(value) => {
-            let value_str = value.to_str().map_err(|_| {
-                HttpError::VersionMismatch(
-                    "Invalid Rusk-Version header encoding".to_string(),
-                )
-            })?;
-            Some(serde_json::Value::String(value_str.to_owned()))
-        }
-        None => None,
-    };
-    check_rusk_version(version.as_ref(), strict)
+pub(super) async fn handle_rues_ws(
+    State(state): State<HttpAppState>,
+    ws: WebSocketUpgrade,
+) -> AxumResponse {
+    let events = state.events.subscribe();
+    let shutdown = state.shutdown.subscribe();
+    let (subscription_sender, subscriptions) =
+        mpsc::channel(state.ws_event_channel_cap);
+
+    let mut sockets = state.sockets_map.write().await;
+
+    // This is a new WebSocket connection, so we generate a new random ID
+    // and create a new channel for it.
+    let mut sid = rand::random();
+    while sockets.contains_key(&sid) {
+        sid = rand::random();
+    }
+    sockets.insert(sid, subscription_sender);
+    drop(sockets);
+
+    ws.max_message_size(super::MAX_WS_INBOUND_MESSAGE_BYTES)
+        .max_frame_size(super::MAX_WS_INBOUND_FRAME_BYTES)
+        .on_upgrade(move |socket| {
+            handle_stream_rues(
+                sid,
+                socket,
+                events,
+                subscriptions,
+                shutdown,
+                state.sockets_map,
+            )
+        })
 }
 
-async fn handle_execution_rues<H>(
-    sources: Arc<H>,
+pub(super) async fn handle_rues_post(
+    State(state): State<HttpAppState>,
+    _version: RuskVersionCheck,
+    req: Request<Body>,
+) -> Result<AxumResponse, ApiError> {
+    handle_rues_post_request(req, state.sources).await
+}
+
+pub(super) async fn handle_rues_subscribe(
+    State(state): State<HttpAppState>,
+    session_id: SessionId,
+    _version: RuskVersionCheck,
+    req: Request<Body>,
+) -> Result<AxumResponse, ApiError> {
+    let context =
+        parse_subscription_context(session_id, req, state.sockets_map).await?;
+    dispatch_subscribe(context).await
+}
+
+pub(super) async fn handle_rues_unsubscribe(
+    State(state): State<HttpAppState>,
+    session_id: SessionId,
+    _version: RuskVersionCheck,
+    req: Request<Body>,
+) -> Result<AxumResponse, ApiError> {
+    let context =
+        parse_subscription_context(session_id, req, state.sockets_map).await?;
+    dispatch_unsubscribe(context).await
+}
+
+async fn handle_rues_post_request(
+    req: Request<Body>,
+    handler: Arc<dyn HandleRequest>,
+) -> Result<AxumResponse, ApiError> {
+    let (event, binary_request) =
+        match RuesDispatchEvent::from_request(req).await {
+            Ok(event) => event,
+            Err(err) => return Err(err.into()),
+        };
+    let mut resp_headers = event.x_headers();
+    let mut execution_response = handle_execution_rues(handler, event).await;
+    resp_headers.extend(execution_response.headers.clone());
+    execution_response.force_binary |= binary_request;
+    let is_empty = execution_response.error.is_none()
+        && matches!(execution_response.data, DataType::None);
+    let mut resp = execution_response.into_response();
+    if is_empty {
+        *resp.status_mut() = StatusCode::ACCEPTED;
+    }
+
+    for (k, v) in resp_headers {
+        let k = HeaderName::from_str(&k)
+            .map_err(ExecutionError::from)
+            .map_err(ApiError::from)?;
+        let v = match v {
+            serde_json::Value::String(s) => HeaderValue::from_str(&s),
+            serde_json::Value::Null => HeaderValue::from_str(""),
+            _ => HeaderValue::from_str(&v.to_string()),
+        }
+        .map_err(ExecutionError::from)
+        .map_err(ApiError::from)?;
+        resp.headers_mut().append(k, v);
+    }
+
+    Ok(resp)
+}
+
+struct SubscriptionRequestContext {
+    uri: RuesEventUri,
+    action_sender: mpsc::Sender<SubscriptionAction>,
+}
+
+async fn parse_subscription_context(
+    sid: SessionId,
+    req: Request<Body>,
+    sockets_map: Arc<
+        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
+    >,
+) -> Result<SubscriptionRequestContext, ApiError> {
+    let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
+        None => return Err(invalid_rues_path_error()),
+        Some(s) => s,
+    };
+
+    let action_sender = match sockets_map.read().await.get(&sid) {
+        Some(sender) => sender.clone(),
+        None => return Err(invalid_session_id_error()),
+    };
+
+    Ok(SubscriptionRequestContext { uri, action_sender })
+}
+
+async fn dispatch_subscribe(
+    context: SubscriptionRequestContext,
+) -> Result<AxumResponse, ApiError> {
+    let (reply, receiver) = oneshot::channel();
+    let action = SubscriptionAction::Subscribe {
+        uri: context.uri,
+        reply,
+    };
+
+    if context.action_sender.send(action).await.is_err() {
+        return Err(failed_consuming_request_error());
+    }
+
+    match receiver.await {
+        Ok(Ok(())) => Ok(StatusCode::OK.into_response()),
+        Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "Subscription not found",
+            "not_found",
+        )),
+        Err(_) => Err(failed_consuming_request_error()),
+    }
+}
+
+async fn dispatch_unsubscribe(
+    context: SubscriptionRequestContext,
+) -> Result<AxumResponse, ApiError> {
+    let (reply, receiver) = oneshot::channel();
+    let action = SubscriptionAction::Unsubscribe {
+        uri: context.uri,
+        reply,
+    };
+
+    if context.action_sender.send(action).await.is_err() {
+        return Err(failed_consuming_request_error());
+    }
+
+    match receiver.await {
+        Ok(Ok(())) => Ok(StatusCode::OK.into_response()),
+        Ok(Err(SubscriptionError::NotFound)) => Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "Subscription not found",
+            "not_found",
+        )),
+        Err(_) => Err(failed_consuming_request_error()),
+    }
+}
+
+/// Zero-sized extractor that validates `Rusk-Version` /
+/// `Rusk-Version-Strict` headers before the handler runs.
+pub(super) struct RuskVersionCheck;
+
+impl axum::extract::FromRequestParts<HttpAppState> for RuskVersionCheck {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &HttpAppState,
+    ) -> Result<Self, Self::Rejection> {
+        let headers = &parts.headers;
+        let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
+        let version = match headers.get(RUSK_VERSION_HEADER) {
+            Some(value) => {
+                let value_str = value.to_str().map_err(|_| {
+                    HttpError::VersionMismatch(
+                        "Invalid Rusk-Version header encoding".to_string(),
+                    )
+                })?;
+                Some(serde_json::Value::String(value_str.to_owned()))
+            }
+            None => None,
+        };
+        check_rusk_version(version.as_ref(), strict)?;
+        Ok(Self)
+    }
+}
+
+async fn handle_execution_rues(
+    sources: Arc<dyn HandleRequest>,
     event: RuesDispatchEvent,
-    responder: mpsc::UnboundedSender<EventResponse>,
-) where
-    H: HandleRequest,
-{
+) -> EventResponse {
     let mut rsp = sources
         .handle_rues(&event)
         .await
@@ -413,9 +464,5 @@ async fn handle_execution_rues<H>(
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
-    let _ = responder.send(rsp);
-}
-
-pub(super) fn is_rues_path(path: &str) -> bool {
-    path.starts_with(RUES_LOCATION_PREFIX)
+    rsp
 }

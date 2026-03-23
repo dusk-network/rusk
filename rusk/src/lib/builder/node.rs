@@ -183,7 +183,9 @@ impl RuskNodeBuilder {
             .as_ref()
             .map(|h| h.ws_event_channel_cap)
             .unwrap_or(1);
-        let (rues_sender, rues_receiver) = broadcast::channel(channel_cap);
+        // HTTP and chain event streaming create fresh receivers from this
+        // sender.
+        let (rues_sender, _) = broadcast::channel(channel_cap);
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
@@ -280,7 +282,7 @@ impl RuskNodeBuilder {
 
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
-                rues_sender,
+                rues_sender: rues_sender.clone(),
             }));
 
             let mut handler = DataSources::default();
@@ -291,23 +293,8 @@ impl RuskNodeBuilder {
             #[cfg(feature = "prover")]
             handler.sources.push(Box::new(rusk_prover::LocalProver));
 
-            let cert_and_key = match (http.cert, http.key) {
-                (Some(cert), Some(key)) => Some((cert, key)),
-                _ => None,
-            };
-
-            _ws_server = Some(
-                HttpServer::bind(
-                    handler,
-                    rues_receiver,
-                    http.ws_event_channel_cap,
-                    http.address,
-                    http.headers,
-                    http.policy,
-                    cert_and_key,
-                )
-                .await?,
-            );
+            _ws_server =
+                Some(HttpServer::bind(handler, rues_sender, http).await?);
         }
 
         node.inner().initialize(&mut service_list).await?;

@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use hyper::{Method, StatusCode};
+use axum::http::header::CONTENT_TYPE;
+use axum::http::{HeaderValue, Response, StatusCode};
+use axum::response::IntoResponse;
 use tracing::{debug, error};
 
 use super::event::ExecutionError;
@@ -20,6 +22,9 @@ pub enum Error {
     /// Invalid UTF-8 in request body
     #[error("Invalid request encoding: {0}")]
     InvalidEncoding(String),
+    /// Invalid request payload (malformed body, bad encoding)
+    #[error("Invalid payload: {0}")]
+    InvalidPayload(String),
     /// Request payload too large
     #[error("Payload too large: {0}")]
     PayloadTooLarge(String),
@@ -67,6 +72,7 @@ impl Error {
             Error::InvalidInput(_)
             | Error::VersionMismatch(_)
             | Error::InvalidEncoding(_) => 400,
+            Error::InvalidPayload(_) => 422,
             Error::PayloadTooLarge(_) => 413,
             Error::NotFound(_) => 404,
             Error::Forbidden(_) => 403,
@@ -128,6 +134,10 @@ impl Error {
     pub fn payload_too_large<T: AsRef<str>>(msg: T) -> Self {
         Error::PayloadTooLarge(msg.as_ref().to_string())
     }
+
+    pub fn invalid_payload<T: AsRef<str>>(msg: T) -> Self {
+        Error::InvalidPayload(msg.as_ref().to_string())
+    }
 }
 
 impl From<dusk_data_driver::Error> for Error {
@@ -148,6 +158,7 @@ pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
         Error::InvalidInput(_)
         | Error::VersionMismatch(_)
         | Error::InvalidEncoding(_)
+        | Error::InvalidPayload(_)
         | Error::PayloadTooLarge(_)
         | Error::NotFound(_)
         | Error::Forbidden(_)
@@ -165,12 +176,99 @@ pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
     (status, message)
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct ApiError {
+    status: StatusCode,
+    message: String,
+    category: &'static str,
+    retry_after_seconds: Option<u64>,
+}
+
+impl ApiError {
+    pub(super) fn new(
+        status: StatusCode,
+        message: impl Into<String>,
+        category: &'static str,
+    ) -> Self {
+        Self {
+            status,
+            message: message.into(),
+            category,
+            retry_after_seconds: None,
+        }
+    }
+
+    pub(super) fn with_retry_after(mut self, retry_after_seconds: u64) -> Self {
+        self.retry_after_seconds = Some(retry_after_seconds.max(1));
+        self
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response<axum::body::Body> {
+        if self.status.is_server_error() {
+            error!(
+                status = %self.status,
+                error_category = self.category,
+                error_message = %self.message,
+                "HTTP request failed"
+            );
+        } else {
+            debug!(
+                status = %self.status,
+                error_category = self.category,
+                error_message = %self.message,
+                "HTTP request rejected"
+            );
+        }
+        let error_body =
+            serde_json::json!({ "error": self.message }).to_string();
+        let builder = Response::builder()
+            .status(self.status)
+            .header(CONTENT_TYPE, "application/json");
+        let mut response = builder
+            .body(axum::body::Body::from(error_body))
+            .expect("API error response should be buildable");
+        if let Some(retry_after) = self.retry_after_seconds
+            && let Ok(value) = HeaderValue::from_str(&retry_after.to_string())
+        {
+            response.headers_mut().insert("Retry-After", value);
+        }
+        response
+    }
+}
+
+impl From<Error> for ApiError {
+    fn from(value: Error) -> Self {
+        let (status, message) = map_http_error_for_response(&value);
+        let status = StatusCode::from_u16(status)
+            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        Self {
+            status,
+            message,
+            category: http_error_category(&value),
+            retry_after_seconds: None,
+        }
+    }
+}
+
+impl From<ExecutionError> for ApiError {
+    fn from(value: ExecutionError) -> Self {
+        let (status, message, category) = map_execution_error(&value);
+        Self {
+            status,
+            message,
+            category,
+            retry_after_seconds: None,
+        }
+    }
+}
+
 pub(super) fn map_execution_error(
     error: &ExecutionError,
 ) -> (StatusCode, String, &'static str) {
     match error {
         ExecutionError::Http(_)
-        | ExecutionError::Hyper(_)
         | ExecutionError::Json(_)
         | ExecutionError::Protocol(_)
         | ExecutionError::Tungstenite(_)
@@ -179,9 +277,6 @@ pub(super) fn map_execution_error(
             "Internal server error".to_string(),
             "internal",
         ),
-        ExecutionError::NotFound(message) => {
-            (StatusCode::NOT_FOUND, message.clone(), "not_found")
-        }
         ExecutionError::InvalidHeader(_) => (
             StatusCode::UNPROCESSABLE_ENTITY,
             "Invalid header".to_string(),
@@ -195,6 +290,7 @@ pub(super) fn http_error_category(error: &Error) -> &'static str {
         Error::InvalidInput(_) => "invalid_input",
         Error::VersionMismatch(_) => "version_mismatch",
         Error::InvalidEncoding(_) => "invalid_encoding",
+        Error::InvalidPayload(_) => "invalid_payload",
         Error::PayloadTooLarge(_) => "payload_too_large",
         Error::NotFound(_) => "not_found",
         Error::Forbidden(_) => "forbidden",
@@ -208,38 +304,5 @@ pub(super) fn http_error_category(error: &Error) -> &'static str {
         Error::Prover(_) => "prover",
         Error::Verification(_) => "verification",
         Error::Internal(_) => "internal",
-    }
-}
-
-pub(super) fn log_execution_service_error(
-    request_id: u64,
-    method: &Method,
-    path: &str,
-    error: &ExecutionError,
-) {
-    let (status, _message, category) = map_execution_error(error);
-    match error {
-        ExecutionError::NotFound(_) => {
-            debug!(
-                request_id,
-                %method,
-                %path,
-                %status,
-                error_category = category,
-                error = %error,
-                "HTTP request path not found"
-            );
-        }
-        _ => {
-            error!(
-                request_id,
-                %method,
-                %path,
-                %status,
-                error_category = category,
-                error = %error,
-                "HTTP request handling failed"
-            );
-        }
     }
 }

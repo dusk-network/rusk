@@ -4,21 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::mpsc;
 use std::task::{Context, Poll};
 
+use axum::body::{Body as AxumBody, Bytes};
+use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
+use axum::http::{HeaderMap, Request, Response, StatusCode};
+use axum::response::IntoResponse;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
-use http_body_util::{
-    BodyExt, Either, Full, LengthLimitError, Limited, StreamBody,
-};
-use hyper::body::{Body, Bytes, Frame, Incoming};
-use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{Request, Response};
 use pin_project::pin_project;
 use rand::Rng;
 use rand::distributions::{Distribution, Standard};
@@ -26,7 +23,6 @@ use semver::{Prerelease, Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::hex::Hex;
-use tungstenite::http::HeaderValue;
 
 use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
 
@@ -45,79 +41,53 @@ pub struct MessageResponse {
     pub force_binary: bool,
 }
 
-impl MessageResponse {
-    // ExecutionError is intentionally large; boxing it would add complexity
-    // without meaningful benefit here.
-    #[allow(clippy::result_large_err)]
-    pub fn into_http(
-        self,
-        is_binary: bool,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+impl IntoResponse for MessageResponse {
+    fn into_response(self) -> Response<AxumBody> {
         if let Some((error, code)) = self.error {
-            let code = hyper::StatusCode::from_u16(code)
-                .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
+            let code = StatusCode::from_u16(code)
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
             let error_body = serde_json::json!({ "error": error }).to_string();
-            return Ok(hyper::Response::builder()
-                .status(code)
-                .header(
-                    CONTENT_TYPE,
-                    HeaderValue::from_static(CONTENT_TYPE_JSON),
-                )
-                .body(Full::new(error_body.into()).into())?);
+            return (
+                code,
+                [(CONTENT_TYPE, CONTENT_TYPE_JSON)],
+                AxumBody::from(error_body),
+            )
+                .into_response();
         }
 
-        let mut headers = HashMap::new();
-
-        let body = {
-            match self.data {
-                DataType::Binary(wrapper) => {
-                    let data = match is_binary {
-                        true => wrapper.inner,
-                        false => hex::encode(wrapper.inner).as_bytes().to_vec(),
-                    };
-                    Full::from(Bytes::from(data)).into()
-                }
-                DataType::Text(text) => Full::from(Bytes::from(text)).into(),
-                DataType::Json(value) => {
-                    headers.insert(
-                        CONTENT_TYPE,
-                        HeaderValue::from_static(CONTENT_TYPE_JSON),
-                    );
-                    Full::from(Bytes::from(value.to_string())).into()
-                }
-                DataType::Channel(receiver) => FullOrStreamBody {
-                    either: Either::Right(StreamBody::new(
-                        BinaryOrTextStream {
-                            hex: !is_binary,
-                            stream: stream::iter(receiver),
-                        },
-                    )),
-                },
-                DataType::JsonChannel(receiver) => {
-                    headers.insert(
-                        CONTENT_TYPE,
-                        HeaderValue::from_static(CONTENT_TYPE_JSON),
-                    );
-                    FullOrStreamBody {
-                        either: Either::Right(StreamBody::new(
-                            BinaryOrTextStream {
-                                hex: false,
-                                stream: stream::iter(receiver),
-                            },
-                        )),
-                    }
-                }
-                DataType::None => Full::new(Bytes::new()).into(),
+        match self.data {
+            DataType::Binary(wrapper) => {
+                let data = if self.force_binary {
+                    wrapper.inner
+                } else {
+                    hex::encode(wrapper.inner).as_bytes().to_vec()
+                };
+                Response::new(AxumBody::from(data))
             }
-        };
-        let mut response = Response::new(body);
-        for (k, v) in headers {
-            response.headers_mut().insert(k, v);
+            DataType::Text(text) => Response::new(AxumBody::from(text)),
+            DataType::Json(value) => {
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], value.to_string())
+                    .into_response()
+            }
+            DataType::Channel(receiver) => {
+                Response::new(AxumBody::from_stream(BinaryOrTextStream {
+                    hex: !self.force_binary,
+                    stream: stream::iter(receiver),
+                }))
+            }
+            DataType::JsonChannel(receiver) => {
+                let body = AxumBody::from_stream(BinaryOrTextStream {
+                    hex: false,
+                    stream: stream::iter(receiver),
+                });
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], body).into_response()
+            }
+            DataType::None => Response::default(),
         }
-
-        Ok(response)
     }
+}
 
+impl MessageResponse {
     pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
         // search for the key in a case-insensitive way
         let v = self
@@ -134,35 +104,6 @@ impl MessageResponse {
 }
 
 #[pin_project]
-pub struct FullOrStreamBody {
-    #[pin]
-    either: Either<Full<Bytes>, StreamBody<BinaryOrTextStream>>,
-}
-
-impl From<Full<Bytes>> for FullOrStreamBody {
-    fn from(body: Full<Bytes>) -> Self {
-        Self {
-            either: Either::Left(body),
-        }
-    }
-}
-
-impl Body for FullOrStreamBody {
-    type Data =
-        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Data;
-    type Error =
-        <Either<Full<Bytes>, StreamBody<BinaryOrTextStream>> as Body>::Error;
-
-    fn poll_frame(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
-        let this = self.project();
-        this.either.poll_frame(cx)
-    }
-}
-
-#[pin_project]
 pub struct BinaryOrTextStream {
     hex: bool,
     #[pin]
@@ -170,7 +111,7 @@ pub struct BinaryOrTextStream {
 }
 
 impl Stream for BinaryOrTextStream {
-    type Item = Result<Frame<Bytes>, std::convert::Infallible>;
+    type Item = Result<Bytes, std::convert::Infallible>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -179,10 +120,8 @@ impl Stream for BinaryOrTextStream {
         let this = self.project();
         this.stream.poll_next(cx).map(|next| {
             next.map(|x| match this.hex {
-                true => Ok(Frame::data(Bytes::from(
-                    hex::encode(x).as_bytes().to_vec(),
-                ))),
-                false => Ok(Frame::data(Bytes::from(x))),
+                true => Ok(Bytes::from(hex::encode(x).as_bytes().to_vec())),
+                false => Ok(Bytes::from(x)),
             })
         })
     }
@@ -364,9 +303,7 @@ const CONTENT_TYPE_JSON: &str = "application/json";
 #[derive(Debug, thiserror::Error)]
 pub enum ExecutionError {
     #[error("{0}")]
-    Http(#[from] hyper::http::Error),
-    #[error("{0}")]
-    Hyper(#[from] hyper::Error),
+    Http(#[from] axum::http::Error),
     #[error("{0}")]
     Json(#[from] serde_json::Error),
     #[error("{0}")]
@@ -375,8 +312,6 @@ pub enum ExecutionError {
     Tungstenite(#[from] tungstenite::Error),
     #[error("Invalid header: {0}")]
     InvalidHeader(String),
-    #[error("Not found: {0}")]
-    NotFound(String),
     #[error("{0}")]
     Other(String),
 }
@@ -417,17 +352,6 @@ impl Distribution<SessionId> for Standard {
 }
 
 impl SessionId {
-    /// Parses a session ID from a request. The session ID is expected to be
-    /// stored in the `Rusk-Session-Id` header.
-    pub fn parse_from_req<B>(req: &Request<B>) -> Option<Self> {
-        let headers = req.headers();
-
-        let header_value = headers.get("Rusk-Session-Id")?;
-        let text = header_value.to_str().ok()?;
-
-        Self::parse(text)
-    }
-
     pub fn parse(text: &str) -> Option<Self> {
         let bytes = hex::decode(text).ok()?;
 
@@ -438,6 +362,33 @@ impl SessionId {
 
         session_id_bytes.copy_from_slice(&bytes);
         Some(SessionId(u128::from_le_bytes(session_id_bytes)))
+    }
+}
+
+impl axum::extract::FromRequestParts<super::axum_app::HttpAppState>
+    for SessionId
+{
+    type Rejection = super::error::ApiError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &super::axum_app::HttpAppState,
+    ) -> Result<Self, Self::Rejection> {
+        let header_value = parts
+            .headers
+            .get("Rusk-Session-Id")
+            .and_then(|v| v.to_str().ok());
+        match header_value.and_then(Self::parse) {
+            Some(sid) => Ok(sid),
+            // TODO: Keep 424 for current RUES compatibility; revisit whether
+            // malformed or missing session identifiers should be normalized to
+            // 400.
+            None => Err(super::error::ApiError::new(
+                StatusCode::FAILED_DEPENDENCY,
+                "Session ID not provided or invalid",
+                "invalid_session",
+            )),
+        }
     }
 }
 
@@ -580,16 +531,6 @@ pub struct RuesDispatchEvent {
     pub data: RequestData,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum RequestParseError {
-    #[error("Invalid URL path")]
-    InvalidPath,
-    #[error("{0}")]
-    InvalidPayload(String),
-    #[error("{0}")]
-    Other(anyhow::Error),
-}
-
 impl RuesDispatchEvent {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
@@ -624,96 +565,149 @@ impl RuesDispatchEvent {
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_JSON))
             .unwrap_or_default()
     }
+
+    pub(crate) fn from_path_headers_and_body(
+        path: &str,
+        request_headers: &HeaderMap,
+        body_bytes: Vec<u8>,
+    ) -> Result<(Self, bool), super::HttpError> {
+        let (uri, headers, binary_request, binary_response) =
+            parse_rues_request_meta(path, request_headers)?;
+        Self::from_parsed_parts(
+            uri,
+            headers,
+            body_bytes,
+            binary_request,
+            binary_response,
+        )
+    }
+
     pub async fn from_request(
-        req: Request<Incoming>,
-    ) -> Result<(Self, bool), RequestParseError> {
+        req: Request<AxumBody>,
+    ) -> Result<(Self, bool), super::HttpError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(RequestParseError::InvalidPath)?;
+            .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
 
-        let headers = parts
-            .headers
+        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
+        let bytes = collect_limited_body(body, max_body_bytes).await?;
+
+        Self::from_path_headers_and_body(
+            parts.uri.path(),
+            &parts.headers,
+            bytes,
+        )
+    }
+
+    fn from_parsed_parts(
+        uri: RuesEventUri,
+        headers: serde_json::Map<String, serde_json::Value>,
+        body_bytes: Vec<u8>,
+        binary_request: bool,
+        binary_response: bool,
+    ) -> Result<(Self, bool), super::HttpError> {
+        let data = parse_request_data(body_bytes, binary_request)?;
+        let ret = RuesDispatchEvent { headers, data, uri };
+        Ok((ret, binary_response))
+    }
+}
+
+fn parse_rues_request_meta(
+    path: &str,
+    request_headers: &HeaderMap,
+) -> Result<
+    (
+        RuesEventUri,
+        serde_json::Map<String, serde_json::Value>,
+        bool,
+        bool,
+    ),
+    super::HttpError,
+> {
+    let uri = RuesEventUri::parse_from_path(path)
+        .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
+
+    let headers =
+        request_headers
             .iter()
             .map(|(k, v)| {
                 let value = parse_request_header_value(k.as_str(), v)?;
-
                 Ok((k.to_string().to_lowercase(), value))
             })
             .collect::<Result<
                 serde_json::Map<String, serde_json::Value>,
-                RequestParseError,
+                super::HttpError,
             >>()?;
 
-        // HTTP REQUEST
-        let content_type = parts
-            .headers
-            .get(CONTENT_TYPE)
+    let content_type = request_headers
+        .get(CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or_default();
+
+    let binary_request = content_type == CONTENT_TYPE_BINARY;
+
+    let binary_response = binary_request
+        || request_headers
+            .get(ACCEPT)
             .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default();
 
-        let binary_request = content_type == CONTENT_TYPE_BINARY;
+    Ok((uri, headers, binary_request, binary_response))
+}
 
-        let binary_response = binary_request
-            || parts
-                .headers
-                .get(ACCEPT)
-                .and_then(|h| h.to_str().ok())
-                .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
-                .unwrap_or_default();
-
-        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
-        let bytes = Limited::new(body, max_body_bytes)
-            .collect()
-            .await
-            .map_err(|e| {
-                if e.downcast_ref::<LengthLimitError>().is_some() {
-                    RequestParseError::Other(
-                        super::HttpError::payload_too_large(format!(
-                            "Request body exceeds {max_body_bytes} bytes"
-                        ))
-                        .into(),
-                    )
-                } else {
-                    RequestParseError::Other(anyhow::Error::msg(e.to_string()))
-                }
-            })?
-            .to_bytes()
-            .to_vec();
-        let data = match binary_request {
-            true => bytes.into(),
-            _ => {
-                let text = String::from_utf8(bytes).map_err(|_| {
-                    RequestParseError::InvalidPayload("Invalid utf8".into())
-                })?;
-                if let Some(hex) = text.strip_prefix("0x") {
-                    if let Ok(bytes) = hex::decode(hex) {
-                        bytes.into()
-                    } else {
-                        text.into()
-                    }
-                } else {
-                    text.into()
-                }
+pub(super) async fn collect_limited_body(
+    body: AxumBody,
+    max_body_bytes: usize,
+) -> Result<Vec<u8>, super::HttpError> {
+    axum::body::to_bytes(body, max_body_bytes)
+        .await
+        .map(|bytes| bytes.to_vec())
+        .map_err(|e| {
+            // axum::body::to_bytes uses http_body_util::Limited internally,
+            // which surfaces "length limit exceeded" when the cap is hit.
+            if e.to_string() == "length limit exceeded" {
+                super::HttpError::payload_too_large(format!(
+                    "Request body exceeds {max_body_bytes} bytes"
+                ))
+            } else {
+                super::HttpError::internal(e.to_string())
             }
-        };
+        })
+}
 
-        let ret = RuesDispatchEvent { headers, data, uri };
+fn parse_request_data(
+    bytes: Vec<u8>,
+    binary_request: bool,
+) -> Result<RequestData, super::HttpError> {
+    if binary_request {
+        return Ok(bytes.into());
+    }
 
-        Ok((ret, binary_response))
+    let text = String::from_utf8(bytes)
+        .map_err(|_| super::HttpError::invalid_payload("Invalid utf8"))?;
+    if let Some(hex) = text.strip_prefix("0x") {
+        if let Ok(bytes) = hex::decode(hex) {
+            Ok(bytes.into())
+        } else {
+            Ok(text.into())
+        }
+    } else {
+        Ok(text.into())
     }
 }
 
 fn parse_request_header_value(
     key: &str,
     value: &HeaderValue,
-) -> Result<serde_json::Value, RequestParseError> {
+) -> Result<serde_json::Value, super::HttpError> {
     if value.is_empty() {
         return Ok(serde_json::Value::Null);
     }
 
     let as_str = value.to_str().map_err(|_| {
-        RequestParseError::InvalidPayload(format!(
+        super::HttpError::invalid_payload(format!(
             "Invalid header encoding for {key}",
         ))
     })?;
@@ -844,11 +838,10 @@ pub fn check_rusk_version(
 
 #[cfg(test)]
 mod tests {
-    use tungstenite::http::HeaderValue;
+    use axum::http::HeaderValue;
 
     use super::{
-        DataType, RequestParseError, RuesEvent, RuesEventUri,
-        parse_request_header_value,
+        DataType, RuesEvent, RuesEventUri, parse_request_header_value,
     };
 
     const DUMMY_ENTITY: &str = "abc123";
@@ -976,7 +969,7 @@ mod tests {
                         .expect_err("invalid header should fail");
                     assert!(matches!(
                         err,
-                        RequestParseError::InvalidPayload(_)
+                        crate::http::HttpError::InvalidPayload(_)
                     ));
                 }
             }

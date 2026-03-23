@@ -21,8 +21,6 @@ impl RuskHttpBuilder {
     }
 
     pub async fn build_and_run(self) -> anyhow::Result<()> {
-        let (_rues_sender, rues_receiver) = broadcast::channel(1);
-
         let mut _ws_server = None;
         if let Some(http) = self.http {
             info!("Configuring HTTP");
@@ -33,21 +31,11 @@ impl RuskHttpBuilder {
             #[cfg(feature = "prover")]
             handler.sources.push(Box::new(rusk_prover::LocalProver));
 
-            let cert_and_key = match (http.cert, http.key) {
-                (Some(cert), Some(key)) => Some((cert, key)),
-                _ => None,
-            };
-
-            let (server, _) = HttpServer::bind(
-                handler,
-                rues_receiver,
-                http.ws_event_channel_cap,
-                http.address,
-                http.headers,
-                http.policy,
-                cert_and_key,
-            )
-            .await?;
+            // HTTP-only mode still needs a sender so routes can subscribe on
+            // demand.
+            let (rues_sender, _) = broadcast::channel(1);
+            let (server, _) =
+                HttpServer::bind(handler, rues_sender, http).await?;
 
             _ws_server = Some(server);
         }
