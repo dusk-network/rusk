@@ -4,6 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![cfg_attr(
+    not(any(feature = "chain", feature = "prover", test)),
+    allow(dead_code)
+)]
+
 use std::fmt::{Display, Formatter};
 use std::pin::Pin;
 use std::str::FromStr;
@@ -12,7 +17,7 @@ use std::task::{Context, Poll};
 
 use axum::body::{Body as AxumBody, Bytes};
 use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
-use axum::http::{HeaderMap, Request, Response, StatusCode};
+use axum::http::{HeaderMap, Response, StatusCode};
 use axum::response::IntoResponse;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{Stream, stream};
@@ -431,55 +436,21 @@ impl RuesEventUri {
         )
     }
 
-    /// Parses a RUES URI from an URL path.
-    ///
-    /// # Format
-    ///
-    /// `/on/target/topic`
-    ///
-    /// # Rules
-    ///
-    /// - Path must start with `/on`
-    /// - Target component and topic are normalized to lowercase
-    /// - Topic is mandatory and cannot be empty
-    /// - Target is parsed as `component[:entity]`
-    /// - Entity is optional (for blocks & transactions)
-    /// - Entity can contain colons (only first `:` is used as delimiter)
-    /// - `contracts` component requires an entity (contract ID)
-    ///
-    /// # Returns
-    ///
-    /// `None` if parsing fails or validation rules are violated.
-    pub fn parse_from_path(path: &str) -> Option<Self> {
-        // Strip the required prefix, returning None if not present
-        // Note: we already know its present
-        let path = path.strip_prefix(RUES_LOCATION_PREFIX)?;
-
-        let mut segments = path.split('/');
-
-        // Skip the empty segment before first '/' (path starts with "/")
-        segments.next()?;
-
-        // Parse target as "component" or "component:entity"
-        let target = segments.next()?;
-        let (component, entity) = match target.split_once(':') {
-            Some((comp, ent)) => (comp, Some(ent.to_string())),
-            None => (target, None),
-        };
-        if component.is_empty() || entity.as_deref().is_some_and(str::is_empty)
-        {
+    pub fn from_parts(
+        component: &str,
+        entity: Option<String>,
+        topic: &str,
+    ) -> Option<Self> {
+        if component.is_empty() || topic.is_empty() {
             return None;
         }
+        if entity.as_deref().is_some_and(str::is_empty) {
+            return None;
+        }
+
         let component = component.to_lowercase();
-
-        // Parse topic (mandatory, must be non-empty)
-        let topic = segments.next().filter(|t| !t.is_empty())?;
         let topic = topic.to_lowercase();
-        if segments.next().is_some() {
-            return None;
-        }
 
-        // Contracts require an entity (contract ID)
         if component == "contracts" && entity.is_none() {
             return None;
         }
@@ -489,6 +460,15 @@ impl RuesEventUri {
             entity,
             topic,
         })
+    }
+
+    pub fn from_target_and_topic(target: &str, topic: &str) -> Option<Self> {
+        let (component, entity) = match target.split_once(':') {
+            Some((component, entity)) => (component, Some(entity.to_string())),
+            None => (target, None),
+        };
+
+        Self::from_parts(component, entity, topic)
     }
 
     /// Returns `true` if this subscription URI matches the given event.
@@ -566,37 +546,19 @@ impl RuesDispatchEvent {
             .unwrap_or_default()
     }
 
-    pub(crate) fn from_path_headers_and_body(
-        path: &str,
+    pub(crate) fn from_uri_headers_and_body(
+        uri: RuesEventUri,
         request_headers: &HeaderMap,
         body_bytes: Vec<u8>,
     ) -> Result<(Self, bool), super::HttpError> {
-        let (uri, headers, binary_request, binary_response) =
-            parse_rues_request_meta(path, request_headers)?;
+        let (headers, binary_request, binary_response) =
+            parse_rues_request_meta(request_headers)?;
         Self::from_parsed_parts(
             uri,
             headers,
             body_bytes,
             binary_request,
             binary_response,
-        )
-    }
-
-    pub async fn from_request(
-        req: Request<AxumBody>,
-    ) -> Result<(Self, bool), super::HttpError> {
-        let (parts, body) = req.into_parts();
-
-        let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
-
-        let max_body_bytes = super::max_rues_request_body_bytes(&uri);
-        let bytes = collect_limited_body(body, max_body_bytes).await?;
-
-        Self::from_path_headers_and_body(
-            parts.uri.path(),
-            &parts.headers,
-            bytes,
         )
     }
 
@@ -614,20 +576,11 @@ impl RuesDispatchEvent {
 }
 
 fn parse_rues_request_meta(
-    path: &str,
     request_headers: &HeaderMap,
 ) -> Result<
-    (
-        RuesEventUri,
-        serde_json::Map<String, serde_json::Value>,
-        bool,
-        bool,
-    ),
+    (serde_json::Map<String, serde_json::Value>, bool, bool),
     super::HttpError,
 > {
-    let uri = RuesEventUri::parse_from_path(path)
-        .ok_or_else(|| super::HttpError::not_found("Invalid URL path"))?;
-
     let headers =
         request_headers
             .iter()
@@ -654,27 +607,7 @@ fn parse_rues_request_meta(
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default();
 
-    Ok((uri, headers, binary_request, binary_response))
-}
-
-pub(super) async fn collect_limited_body(
-    body: AxumBody,
-    max_body_bytes: usize,
-) -> Result<Vec<u8>, super::HttpError> {
-    axum::body::to_bytes(body, max_body_bytes)
-        .await
-        .map(|bytes| bytes.to_vec())
-        .map_err(|e| {
-            // axum::body::to_bytes uses http_body_util::Limited internally,
-            // which surfaces "length limit exceeded" when the cap is hit.
-            if e.to_string() == "length limit exceeded" {
-                super::HttpError::payload_too_large(format!(
-                    "Request body exceeds {max_body_bytes} bytes"
-                ))
-            } else {
-                super::HttpError::internal(e.to_string())
-            }
-        })
+    Ok((headers, binary_request, binary_response))
 }
 
 fn parse_request_data(
@@ -847,37 +780,37 @@ mod tests {
     const DUMMY_ENTITY: &str = "abc123";
 
     #[test]
-    fn parse_uri_cases() {
+    fn build_uri_from_parts_cases() {
         let valid_cases = [
             (
-                format!("/on/contracts:{DUMMY_ENTITY}/withdraw"),
+                format!("contracts:{DUMMY_ENTITY}"),
                 ("contracts", Some(DUMMY_ENTITY), "withdraw"),
                 "contracts with entity and topic",
             ),
             (
-                "/on/blocks/accepted".to_string(),
+                "blocks".to_string(),
                 ("blocks", None, "accepted"),
                 "blocks without entity",
             ),
             (
-                "/on/transactions/included".to_string(),
+                "transactions".to_string(),
                 ("transactions", None, "included"),
                 "transactions without entity",
             ),
             (
-                "/on/BLOCKS/ACCEPTED".to_string(),
+                "BLOCKS".to_string(),
                 ("blocks", None, "accepted"),
                 "normalizes component/topic to lowercase",
             ),
             (
-                "/on/contracts:entity:with:colons/topic".to_string(),
+                "contracts:entity:with:colons".to_string(),
                 ("contracts", Some("entity:with:colons"), "topic"),
                 "entity can include colons",
             ),
         ];
 
-        for (path, (component, entity, topic), message) in valid_cases {
-            let uri = RuesEventUri::parse_from_path(&path)
+        for (target, (component, entity, topic), message) in valid_cases {
+            let uri = RuesEventUri::from_target_and_topic(&target, topic)
                 .expect("valid URI should parse");
             assert_eq!(uri.component, component, "{message}: component");
             assert_eq!(uri.entity.as_deref(), entity, "{message}: entity");
@@ -886,47 +819,50 @@ mod tests {
 
         let invalid_cases = [
             (
-                "/on/contracts/withdraw".to_string(),
+                "contracts".to_string(),
                 "contracts without entity should fail parsing",
             ),
-            (
-                format!("/on/contracts:{DUMMY_ENTITY}/"),
-                "empty topic should fail parsing",
-            ),
-            (
-                format!("/on/contracts:{DUMMY_ENTITY}"),
-                "missing topic segment should fail parsing",
-            ),
-            (
-                "/on/blocks".to_string(),
-                "component only path should fail parsing",
-            ),
-            (
-                "/on//topic".to_string(),
-                "empty component should fail parsing",
-            ),
-            (
-                "/on/blocks/topic/".to_string(),
-                "trailing slash should fail parsing",
-            ),
-            (
-                "/on/blocks/topic/extra".to_string(),
-                "extra path segment should fail parsing",
-            ),
-            (
-                "/on/contracts:/topic".to_string(),
-                "empty entity should fail parsing",
-            ),
-            (
-                format!("/invalid/contracts:{DUMMY_ENTITY}/topic"),
-                "invalid prefix should fail parsing",
-            ),
+            ("".to_string(), "empty component should fail parsing"),
+            ("contracts:".to_string(), "empty entity should fail parsing"),
         ];
 
-        for (path, message) in invalid_cases {
-            let uri = RuesEventUri::parse_from_path(&path);
+        for (target, message) in invalid_cases {
+            let uri = RuesEventUri::from_target_and_topic(&target, "topic");
             assert!(uri.is_none(), "{message}");
         }
+
+        assert!(
+            RuesEventUri::from_target_and_topic("blocks", "").is_none(),
+            "empty topic should fail parsing"
+        );
+    }
+
+    #[test]
+    fn build_uri_from_target_and_topic_cases() {
+        let uri = RuesEventUri::from_target_and_topic(
+            &format!("contracts:{DUMMY_ENTITY}"),
+            "withdraw",
+        )
+        .expect("contracts target should build");
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity.as_deref(), Some(DUMMY_ENTITY));
+        assert_eq!(uri.topic, "withdraw");
+
+        let uri = RuesEventUri::from_parts("BLOCKS", None, "ACCEPTED")
+            .expect("static component should build");
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "accepted");
+
+        assert!(
+            RuesEventUri::from_target_and_topic("contracts", "withdraw")
+                .is_none(),
+            "contracts without entity should be rejected"
+        );
+        assert!(
+            RuesEventUri::from_parts("blocks", None, "").is_none(),
+            "empty topic should be rejected"
+        );
     }
 
     #[test]

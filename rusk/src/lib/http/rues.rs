@@ -4,18 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![cfg_attr(not(any(feature = "chain", test)), allow(dead_code))]
+
 use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use axum::body::Body;
+use axum::body::Bytes;
 use axum::extract::State;
 use axum::extract::ws::{
     CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code,
 };
-use axum::http::header::{HeaderName, HeaderValue};
-use axum::http::{Request, StatusCode};
+use axum::http::StatusCode;
+use axum::http::header::{HeaderMap, HeaderName, HeaderValue};
 use axum::response::{IntoResponse, Response as AxumResponse};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 use tokio_stream::StreamExt;
@@ -26,11 +28,11 @@ use super::axum_app::HttpAppState;
 use super::error::{
     ApiError, http_error_category, map_http_error_for_response,
 };
-use super::event::check_rusk_version;
+use super::event::{SessionId, check_rusk_version};
 use super::{
-    DataType, EventResponse, ExecutionError, HandleRequest, HttpError,
-    RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER, RuesDispatchEvent,
-    RuesEvent, RuesEventUri, SessionId,
+    DataType, EventResponse, ExecutionError, HttpError, RUSK_VERSION_HEADER,
+    RUSK_VERSION_STRICT_HEADER, ResponseData, RuesDispatchEvent, RuesEvent,
+    RuesEventUri,
 };
 use crate::VERSION;
 
@@ -50,10 +52,6 @@ pub(super) enum SubscriptionError {
     NotFound,
 }
 
-fn invalid_rues_path_error() -> ApiError {
-    ApiError::new(StatusCode::NOT_FOUND, "Invalid URL path", "invalid_path")
-}
-
 fn invalid_session_id_error() -> ApiError {
     // TODO: Keep 424 for current RUES compatibility; revisit whether malformed
     // or missing session identifiers should be normalized to 400.
@@ -71,6 +69,29 @@ fn failed_consuming_request_error() -> ApiError {
         "internal",
     )
 }
+
+pub(super) fn validate_rusk_version_headers(
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
+    let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
+    let version = match headers.get(RUSK_VERSION_HEADER) {
+        Some(value) => {
+            let value_str = value.to_str().map_err(|_| {
+                HttpError::VersionMismatch(
+                    "Invalid Rusk-Version header encoding".to_string(),
+                )
+            })?;
+            Some(serde_json::Value::String(value_str.to_owned()))
+        }
+        None => None,
+    };
+
+    check_rusk_version(version.as_ref(), strict)?;
+    Ok(())
+}
+
+type SocketMap =
+    Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>;
 
 async fn handle_stream_rues(
     sid: SessionId,
@@ -224,7 +245,7 @@ pub(super) async fn handle_rues_ws(
     let events = state.events.subscribe();
     let shutdown = state.shutdown.subscribe();
     let (subscription_sender, subscriptions) =
-        mpsc::channel(state.ws_event_channel_cap);
+        mpsc::channel::<SubscriptionAction>(state.ws_event_channel_cap);
 
     let mut sockets = state.sockets_map.write().await;
 
@@ -251,47 +272,42 @@ pub(super) async fn handle_rues_ws(
         })
 }
 
-pub(super) async fn handle_rues_post(
-    State(state): State<HttpAppState>,
-    _version: RuskVersionCheck,
-    req: Request<Body>,
-) -> Result<AxumResponse, ApiError> {
-    handle_rues_post_request(req, state.sources).await
-}
-
-pub(super) async fn handle_rues_subscribe(
-    State(state): State<HttpAppState>,
-    session_id: SessionId,
-    _version: RuskVersionCheck,
-    req: Request<Body>,
+pub(super) async fn dispatch_rues_subscribe(
+    sid: SessionId,
+    sockets_map: SocketMap,
+    uri: RuesEventUri,
 ) -> Result<AxumResponse, ApiError> {
     let context =
-        parse_subscription_context(session_id, req, state.sockets_map).await?;
+        parse_subscription_context_with_uri(sid, uri, sockets_map).await?;
     dispatch_subscribe(context).await
 }
 
-pub(super) async fn handle_rues_unsubscribe(
-    State(state): State<HttpAppState>,
-    session_id: SessionId,
-    _version: RuskVersionCheck,
-    req: Request<Body>,
+pub(super) async fn dispatch_rues_unsubscribe(
+    sid: SessionId,
+    sockets_map: SocketMap,
+    uri: RuesEventUri,
 ) -> Result<AxumResponse, ApiError> {
     let context =
-        parse_subscription_context(session_id, req, state.sockets_map).await?;
+        parse_subscription_context_with_uri(sid, uri, sockets_map).await?;
     dispatch_unsubscribe(context).await
 }
 
-async fn handle_rues_post_request(
-    req: Request<Body>,
-    handler: Arc<dyn HandleRequest>,
+pub(super) fn parse_rues_post(
+    uri: RuesEventUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<(RuesDispatchEvent, bool), ApiError> {
+    RuesDispatchEvent::from_uri_headers_and_body(uri, &headers, body.to_vec())
+        .map_err(ApiError::from)
+}
+
+pub(super) fn finish_rues_post(
+    event: RuesDispatchEvent,
+    binary_request: bool,
+    result: Result<ResponseData, HttpError>,
 ) -> Result<AxumResponse, ApiError> {
-    let (event, binary_request) =
-        match RuesDispatchEvent::from_request(req).await {
-            Ok(event) => event,
-            Err(err) => return Err(err.into()),
-        };
     let mut resp_headers = event.x_headers();
-    let mut execution_response = handle_execution_rues(handler, event).await;
+    let mut execution_response = handle_execution_rues(&event, result);
     resp_headers.extend(execution_response.headers.clone());
     execution_response.force_binary |= binary_request;
     let is_empty = execution_response.error.is_none()
@@ -323,22 +339,16 @@ struct SubscriptionRequestContext {
     action_sender: mpsc::Sender<SubscriptionAction>,
 }
 
-async fn parse_subscription_context(
+async fn parse_subscription_context_with_uri(
     sid: SessionId,
-    req: Request<Body>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
+    uri: RuesEventUri,
+    sockets_map: SocketMap,
 ) -> Result<SubscriptionRequestContext, ApiError> {
-    let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
-        None => return Err(invalid_rues_path_error()),
-        Some(s) => s,
-    };
-
-    let action_sender = match sockets_map.read().await.get(&sid) {
-        Some(sender) => sender.clone(),
-        None => return Err(invalid_session_id_error()),
-    };
+    let action_sender: mpsc::Sender<SubscriptionAction> =
+        match sockets_map.read().await.get(&sid) {
+            Some(sender) => sender.clone(),
+            None => return Err(invalid_session_id_error()),
+        };
 
     Ok(SubscriptionRequestContext { uri, action_sender })
 }
@@ -391,42 +401,11 @@ async fn dispatch_unsubscribe(
     }
 }
 
-/// Zero-sized extractor that validates `Rusk-Version` /
-/// `Rusk-Version-Strict` headers before the handler runs.
-pub(super) struct RuskVersionCheck;
-
-impl axum::extract::FromRequestParts<HttpAppState> for RuskVersionCheck {
-    type Rejection = ApiError;
-
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        _state: &HttpAppState,
-    ) -> Result<Self, Self::Rejection> {
-        let headers = &parts.headers;
-        let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
-        let version = match headers.get(RUSK_VERSION_HEADER) {
-            Some(value) => {
-                let value_str = value.to_str().map_err(|_| {
-                    HttpError::VersionMismatch(
-                        "Invalid Rusk-Version header encoding".to_string(),
-                    )
-                })?;
-                Some(serde_json::Value::String(value_str.to_owned()))
-            }
-            None => None,
-        };
-        check_rusk_version(version.as_ref(), strict)?;
-        Ok(Self)
-    }
-}
-
-async fn handle_execution_rues(
-    sources: Arc<dyn HandleRequest>,
-    event: RuesDispatchEvent,
+fn handle_execution_rues(
+    event: &RuesDispatchEvent,
+    result: Result<ResponseData, HttpError>,
 ) -> EventResponse {
-    let mut rsp = sources
-        .handle_rues(&event)
-        .await
+    let mut rsp = result
         .map(|data| {
             let (data, mut headers, force_binary) = data.into_inner();
             headers.append(&mut event.x_headers());

@@ -7,7 +7,7 @@
 use tokio::sync::broadcast;
 use tracing::info;
 
-use crate::http::{DataSources, HttpServer, HttpServerConfig};
+use crate::http::{HttpHandlers, HttpServer, HttpServerConfig};
 
 #[derive(Default)]
 pub struct RuskHttpBuilder {
@@ -26,16 +26,16 @@ impl RuskHttpBuilder {
             info!("Configuring HTTP");
 
             #[allow(unused_mut)]
-            let mut handler = DataSources::default();
+            let mut handlers = HttpHandlers::default();
 
             #[cfg(feature = "prover")]
-            handler.sources.push(Box::new(rusk_prover::LocalProver));
+            handlers.set_prover_handler(rusk_prover::LocalProver);
 
             // HTTP-only mode still needs a sender so routes can subscribe on
             // demand.
             let (rues_sender, _) = broadcast::channel(1);
             let (server, _) =
-                HttpServer::bind(handler, rues_sender, http).await?;
+                HttpServer::bind(handlers, rues_sender, http).await?;
 
             _ws_server = Some(server);
         }

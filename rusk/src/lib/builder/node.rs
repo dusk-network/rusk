@@ -24,7 +24,7 @@ use tracing::info;
 #[cfg(feature = "archive")]
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
-use crate::http::{DataSources, HttpServer, HttpServerConfig};
+use crate::http::{HttpHandlers, HttpServer, HttpServerConfig};
 use crate::node::{
     ChainEventStreamer, DriverStore, RuskNode, RuskOptVmConfig, RuskVmConfig,
     Services, WellKnownVmConfig,
@@ -285,16 +285,16 @@ impl RuskNodeBuilder {
                 rues_sender: rues_sender.clone(),
             }));
 
-            let mut handler = DataSources::default();
-            handler.sources.push(Box::new(rusk.clone()));
-            handler.sources.push(Box::new(node.clone()));
-            handler.set_graphql_handler(node.clone());
+            let mut services = HttpHandlers::default();
+            services.set_rusk_handler(rusk.clone());
+            services.set_chain_handler(node.clone());
+            services.set_graphql_handler(node.clone());
 
             #[cfg(feature = "prover")]
-            handler.sources.push(Box::new(rusk_prover::LocalProver));
+            services.set_prover_handler(rusk_prover::LocalProver);
 
             _ws_server =
-                Some(HttpServer::bind(handler, rues_sender, http).await?);
+                Some(HttpServer::bind(services, rues_sender, http).await?);
         }
 
         node.inner().initialize(&mut service_list).await?;
