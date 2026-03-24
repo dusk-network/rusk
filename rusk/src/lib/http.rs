@@ -19,6 +19,7 @@ mod openapi;
 mod policy;
 #[cfg(feature = "prover")]
 mod prover;
+mod routes;
 mod rues;
 #[cfg(feature = "chain")]
 mod rusk;
