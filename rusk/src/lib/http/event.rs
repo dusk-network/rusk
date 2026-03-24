@@ -30,6 +30,7 @@ use serde_with::As;
 use serde_with::hex::Hex;
 
 use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
+use crate::http::HttpAppState;
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
@@ -370,14 +371,12 @@ impl SessionId {
     }
 }
 
-impl axum::extract::FromRequestParts<super::axum_app::HttpAppState>
-    for SessionId
-{
+impl axum::extract::FromRequestParts<crate::http::HttpAppState> for SessionId {
     type Rejection = super::error::ApiError;
 
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
-        _state: &super::axum_app::HttpAppState,
+        _state: &HttpAppState,
     ) -> Result<Self, Self::Rejection> {
         let header_value = parts
             .headers

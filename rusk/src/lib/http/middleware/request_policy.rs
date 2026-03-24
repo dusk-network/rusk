@@ -4,7 +4,7 @@ use axum::http::{Request, Response};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 
-use crate::http::axum_app::HttpAppState;
+use crate::http::app_state::HttpAppState;
 use crate::http::error::ApiError;
 
 pub(crate) async fn request_policy_middleware(

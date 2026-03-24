@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod app_state;
 mod axum_app;
 #[cfg(feature = "chain")]
 mod chain;
@@ -52,10 +53,11 @@ use tower::Layer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tracing::info;
 
-use self::axum_app::{HttpAppState, build_app};
+pub(crate) use self::app_state::HttpAppState;
+use self::axum_app::build_app;
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 use self::event::{ResponseData, RuesEventUri, SessionId};
-use self::policy::HttpRequestPolicy;
+pub(crate) use self::policy::HttpRequestPolicy;
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;

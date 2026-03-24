@@ -9,10 +9,6 @@
     allow(dead_code)
 )]
 
-use std::collections::HashMap;
-use std::convert::Infallible;
-use std::sync::Arc;
-
 use axum::Router;
 use axum::body::Body;
 #[cfg(any(feature = "chain", feature = "prover", test))]
@@ -27,7 +23,6 @@ use axum::middleware::{from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Json};
 use serde::Deserialize;
 use serde_json::json;
-use tokio::sync::{RwLock, broadcast, mpsc};
 #[cfg(any(feature = "chain", feature = "prover", test))]
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
@@ -37,36 +32,22 @@ use utoipa_axum::router::UtoipaMethodRouterExt;
 use utoipa_axum::routes;
 
 #[cfg(feature = "chain")]
-use super::MAX_GRAPHQL_REQUEST_BODY_BYTES;
-use super::error::ApiError;
+use crate::http::MAX_GRAPHQL_REQUEST_BODY_BYTES;
+use crate::http::error::ApiError;
 #[cfg(feature = "chain")]
-use super::graphql;
-use super::middleware::{
-    configured_headers_middleware, request_policy_middleware, rusk_version_middleware,
+use crate::http::graphql;
+use crate::http::middleware::{
+    configured_headers_middleware, request_policy_middleware,
+    rusk_version_middleware,
 };
-use super::policy::HttpRequestPolicy;
-use super::rues::SubscriptionAction;
 #[cfg(any(feature = "chain", feature = "prover", test))]
 use super::{HttpError, ResponseData};
-use super::{HttpHandlers, RuesEvent, RuesEventUri, SessionId, openapi, rues};
+use crate::http::{HttpAppState, RuesEvent, RuesEventUri, SessionId, openapi, rues};
 
 #[cfg(feature = "http-wasm")]
 const WASM_CONTENT_TYPE: &str = "application/wasm";
 #[cfg(feature = "http-wasm")]
 const WASM_CACHE_CONTROL: &str = "public, max-age=31536000, immutable";
-
-#[derive(Clone)]
-pub(super) struct HttpAppState {
-    pub(super) services: HttpHandlers,
-    pub(super) sockets_map:
-        Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    pub(super) events: broadcast::Sender<RuesEvent>,
-    pub(super) shutdown: broadcast::Sender<Infallible>,
-    pub(super) ws_event_channel_cap: usize,
-    pub(super) enable_docs: bool,
-    pub(super) policy: Arc<HttpRequestPolicy>,
-    pub(super) headers: Arc<HeaderMap>,
-}
 
 pub(super) fn build_app(state: HttpAppState) -> Router {
     let enable_docs = state.enable_docs;
@@ -1452,12 +1433,10 @@ mod tests {
     use utoipa_axum::router::OpenApiRouter;
 
     use super::rues::SubscriptionAction;
-    use super::{
-        ApiError, HttpAppState, HttpRequestPolicy, TopicPath, build_app,
-    };
+    use super::{ApiError, TopicPath, build_app};
     use crate::http::{
-        HttpHandlers, HttpPolicyConfig, MAX_RUES_REQUEST_BODY_BYTES, RuesEvent,
-        SessionId,
+        HttpAppState, HttpHandlers, HttpPolicyConfig, HttpRequestPolicy,
+        MAX_RUES_REQUEST_BODY_BYTES, RuesEvent, SessionId,
     };
 
     pub(super) fn with_test_routes(

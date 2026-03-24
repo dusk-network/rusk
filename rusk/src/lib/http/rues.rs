@@ -24,7 +24,6 @@ use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
-use super::axum_app::HttpAppState;
 use super::error::{
     ApiError, http_error_category, map_http_error_for_response,
 };
@@ -35,8 +34,9 @@ use super::{
     RuesEventUri,
 };
 use crate::VERSION;
+use crate::http::HttpAppState;
 
-pub(super) enum SubscriptionAction {
+pub(crate) enum SubscriptionAction {
     Subscribe {
         uri: RuesEventUri,
         reply: oneshot::Sender<Result<(), SubscriptionError>>,
@@ -48,7 +48,7 @@ pub(super) enum SubscriptionAction {
 }
 
 #[derive(Debug)]
-pub(super) enum SubscriptionError {
+pub(crate) enum SubscriptionError {
     NotFound,
 }
 

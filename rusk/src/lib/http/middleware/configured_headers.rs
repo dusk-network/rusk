@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::{Request, Response};
 use axum::middleware::Next;
 
-use crate::http::axum_app::HttpAppState;
+use crate::http::app_state::HttpAppState;
 
 pub(crate) async fn configured_headers_middleware(
     State(state): State<HttpAppState>,

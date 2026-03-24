@@ -177,7 +177,7 @@ pub(super) fn map_http_error_for_response(error: &Error) -> (u16, String) {
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct ApiError {
+pub(crate) struct ApiError {
     status: StatusCode,
     message: String,
     category: &'static str,
