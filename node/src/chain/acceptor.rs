@@ -1400,6 +1400,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
+    /// Aborts the running consensus task and waits for it to terminate
+    pub(crate) async fn abort_consensus(&mut self) {
+        let mut task = self.task.write().await;
+        if task.is_running() {
+            task.abort_with_wait().await;
+            info!(event = "consensus aborted");
+        } else {
+            debug!(event = "consensus abort skipped");
+        }
+    }
+
     /// Spawns consensus algorithm after aborting currently running one
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;

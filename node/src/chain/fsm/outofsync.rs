@@ -187,6 +187,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         self.range = (curr_height + 1, presync.remote_height);
 
+        // Stop consensus.
+        self.acc.write().await.abort_consensus().await;
+
         // add target_block to the pool
         self.drain_pool().await;
         for b in &pool {
