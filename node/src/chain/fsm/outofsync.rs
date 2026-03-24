@@ -21,6 +21,7 @@ use crate::{Network, database, vm};
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;
 const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
+const SYNC_ATTEMPTS: u8 = 3;
 
 /// The `OutOfSyncImpl` struct manages the synchronization state of a node
 /// that is out of sync with the network. It handles the detection of missing
@@ -64,11 +65,12 @@ const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
 ///   with the rest of the network. If the node receives valid blocks from this
 ///   peer, it may reset its timeout to allow more time for synchronization.
 ///
-/// * `attempts: u8` - The number of attempts remaining for requesting missing
-///   blocks before giving up and restarting the consensus process. Each time
-///   the timeout expires without progress, this counter is decremented. When it
-///   reaches zero, the node will stop retrying and may transition back to an
-///   in-sync state as a fallback.
+/// * `retries: u8` - The number of timeout-driven retries already performed
+///   for the current sync cycle. It starts at `0` when entering `OutOfSync`,
+///   is reset to `0` whenever valid block progress is made, and is incremented
+///   each time the timeout expires without progress. When the timeout expires
+///   while `retries == SYNC_ATTEMPTS - 1`, the node stops retrying and may
+///   transition back to an in-sync state as a fallback.
 ///
 /// * `acc: Arc<RwLock<Acceptor<N, DB, VM>>>` - A thread-safe reference to the
 ///   `Acceptor`, which is responsible for handling incoming blocks and managing
@@ -143,7 +145,7 @@ pub(super) struct OutOfSyncImpl<
     start_time: SystemTime,
     pool: BTreeMap<u64, Block>,
     remote_peer: SocketAddr,
-    attempts: u8,
+    retries: u8,
 
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
@@ -171,7 +173,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 Ipv4Addr::new(127, 0, 0, 1),
                 8000,
             )),
-            attempts: 3,
+            retries: 0,
         }
     }
 
@@ -185,6 +187,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let pool = presync.pool;
         let curr_height = self.acc.read().await.get_curr_height().await;
 
+        self.retries = 0;
         self.range = (curr_height + 1, presync.remote_height);
 
         // Stop consensus.
@@ -246,7 +249,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let mut acc = self.acc.write().await;
         let block_height = blk.header().height;
 
-        if self.attempts == 0 && self.is_timeout_expired() {
+        if self.retries == SYNC_ATTEMPTS - 1 && self.is_timeout_expired() {
             acc.restart_consensus().await;
             // Timeout-ed sync-up
             // Transit back to InSync mode
@@ -272,6 +275,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             acc.accept_block(blk, false).await?;
             // reset expiry_time only if we receive a valid block
             self.start_time = SystemTime::now();
+            // Reset the retry counter when a block is accepted: receiving a
+            // valid block means the peer is alive and delivering.
+            self.retries = 0;
             debug!(
                 event = "accepted block",
                 block_height,
@@ -388,15 +394,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
     pub async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         if self.is_timeout_expired() {
-            if self.attempts == 0 {
-                debug!(event = "timer expired", attempts = self.attempts);
+            if self.retries == SYNC_ATTEMPTS - 1 {
+                debug!(event = "timer expired", retries = self.retries);
                 // sync-up has timed out, recover consensus task
                 self.acc.write().await.restart_consensus().await;
 
-                // sync-up timed out for N attempts
+                // sync-up timed out after exhausting all retries
                 // Transit back to InSync mode as a fail-over
                 return Ok(true);
             }
+
+            self.retries += 1;
 
             // Request missing from local_pool blocks
             if let Some(last_request) = self.request_pool_missing_blocks().await
@@ -405,7 +413,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             }
 
             self.start_time = SystemTime::now();
-            self.attempts -= 1;
         }
 
         Ok(false)

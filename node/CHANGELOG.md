@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reject blob transactions whose gas charge overflows during mempool
   admission
 - OutOfSync: stop consensus task on entry
+- OutOfSync: ensure sync attempts do not exceed `SYNC_ATTEMPTS`
 
 ## [1.6.0] - 2026-02-27
 
