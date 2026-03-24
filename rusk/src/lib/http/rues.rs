@@ -90,6 +90,74 @@ pub(super) fn validate_rusk_version_headers(
     Ok(())
 }
 
+fn invalid_rues_path_error() -> ApiError {
+    ApiError::new(StatusCode::NOT_FOUND, "Invalid URL path", "invalid_path")
+}
+
+fn event_uri(
+    component: &str,
+    entity: Option<&str>,
+    topic: &str,
+) -> Result<RuesEventUri, ApiError> {
+    RuesEventUri::from_parts(component, entity.map(ToOwned::to_owned), topic)
+        .ok_or_else(invalid_rues_path_error)
+}
+
+pub(super) struct ParsedRuesRequest {
+    event: RuesDispatchEvent,
+    binary_request: bool,
+}
+
+impl ParsedRuesRequest {
+    pub(super) fn component(
+        component: &str,
+        topic: &str,
+        headers: HeaderMap,
+        body: Bytes,
+    ) -> Result<Self, ApiError> {
+        Self::new(event_uri(component, None, topic)?, headers, body)
+    }
+
+    pub(super) fn entity(
+        component: &str,
+        entity: &str,
+        topic: &str,
+        headers: HeaderMap,
+        body: Bytes,
+    ) -> Result<Self, ApiError> {
+        Self::new(event_uri(component, Some(entity), topic)?, headers, body)
+    }
+
+    fn new(
+        uri: RuesEventUri,
+        headers: HeaderMap,
+        body: Bytes,
+    ) -> Result<Self, ApiError> {
+        let (event, binary_request) =
+            RuesDispatchEvent::from_uri_headers_and_body(
+                uri,
+                &headers,
+                body.to_vec(),
+            )
+            .map_err(ApiError::from)?;
+        Ok(Self {
+            event,
+            binary_request,
+        })
+    }
+
+    pub(super) fn event(&self) -> &RuesDispatchEvent {
+        &self.event
+    }
+
+    pub(super) fn into_response(
+        self,
+        result: Result<ResponseData, HttpError>,
+    ) -> Result<AxumResponse, ApiError> {
+        finish_rues_post(self.event, self.binary_request, result)
+    }
+}
+
 type SocketMap =
     Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>;
 
@@ -290,33 +358,36 @@ pub(super) async fn handle_rues_ws(
         })
 }
 
-pub(super) async fn dispatch_rues_subscribe(
+pub(super) async fn subscribe(
+    component: &str,
+    entity: Option<&str>,
+    topic: &str,
     sid: SessionId,
     sockets_map: SocketMap,
-    uri: RuesEventUri,
 ) -> Result<AxumResponse, ApiError> {
-    let context =
-        parse_subscription_context_with_uri(sid, uri, sockets_map).await?;
+    let context = parse_subscription_context_with_uri(
+        sid,
+        event_uri(component, entity, topic)?,
+        sockets_map,
+    )
+    .await?;
     dispatch_subscribe(context).await
 }
 
-pub(super) async fn dispatch_rues_unsubscribe(
+pub(super) async fn unsubscribe(
+    component: &str,
+    entity: Option<&str>,
+    topic: &str,
     sid: SessionId,
     sockets_map: SocketMap,
-    uri: RuesEventUri,
 ) -> Result<AxumResponse, ApiError> {
-    let context =
-        parse_subscription_context_with_uri(sid, uri, sockets_map).await?;
+    let context = parse_subscription_context_with_uri(
+        sid,
+        event_uri(component, entity, topic)?,
+        sockets_map,
+    )
+    .await?;
     dispatch_unsubscribe(context).await
-}
-
-pub(super) fn parse_rues_post(
-    uri: RuesEventUri,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<(RuesDispatchEvent, bool), ApiError> {
-    RuesDispatchEvent::from_uri_headers_and_body(uri, &headers, body.to_vec())
-        .map_err(ApiError::from)
 }
 
 pub(super) fn finish_rues_post(

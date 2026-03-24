@@ -11,8 +11,6 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
-#[cfg(any(feature = "chain", feature = "prover", test))]
-use std::future::Future;
 use std::sync::Arc;
 
 use axum::Router;
@@ -141,72 +139,6 @@ struct TopicPath {
 struct EntityTopicPath {
     entity: String,
     topic: String,
-}
-
-fn invalid_rues_path_error() -> ApiError {
-    ApiError::new(StatusCode::NOT_FOUND, "Invalid URL path", "invalid_path")
-}
-
-fn component_uri(
-    component: &'static str,
-    topic: &str,
-) -> Result<RuesEventUri, ApiError> {
-    RuesEventUri::from_parts(component, None, topic)
-        .ok_or_else(invalid_rues_path_error)
-}
-
-#[cfg(feature = "chain")]
-fn entity_uri(
-    component: &'static str,
-    entity: &str,
-    topic: &str,
-) -> Result<RuesEventUri, ApiError> {
-    RuesEventUri::from_parts(component, Some(entity.to_string()), topic)
-        .ok_or_else(invalid_rues_path_error)
-}
-
-#[cfg(any(feature = "chain", feature = "prover", test))]
-async fn run_dispatch<F, Fut>(
-    uri: Result<RuesEventUri, ApiError>,
-    headers: HeaderMap,
-    body: Bytes,
-    dispatch: F,
-) -> Result<Response<Body>, ApiError>
-where
-    F: FnOnce(super::RuesDispatchEvent, bool) -> Fut,
-    Fut: Future<
-            Output = (
-                super::RuesDispatchEvent,
-                bool,
-                Result<ResponseData, HttpError>,
-            ),
-        > + Send,
-{
-    let (event, binary_request) = rues::parse_rues_post(uri?, headers, body)?;
-    let (event, binary_request, result) = dispatch(event, binary_request).await;
-    rues::finish_rues_post(event, binary_request, result)
-}
-
-#[cfg(any(feature = "chain", test))]
-async fn run_subscribe(
-    uri: Result<RuesEventUri, ApiError>,
-    session_id: SessionId,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-) -> Result<Response<Body>, ApiError> {
-    rues::dispatch_rues_subscribe(session_id, sockets_map, uri?).await
-}
-
-#[cfg(any(feature = "chain", test))]
-async fn run_unsubscribe(
-    uri: Result<RuesEventUri, ApiError>,
-    session_id: SessionId,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-) -> Result<Response<Body>, ApiError> {
-    rues::dispatch_rues_unsubscribe(session_id, sockets_map, uri?).await
 }
 
 /// This is the router for the WebSocket `/on` endpoints that handle RUES
@@ -366,19 +298,17 @@ async fn transactions_propagate_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("transactions", "propagate"),
+    let request = rues::ParsedRuesRequest::component(
+        "transactions",
+        "propagate",
         headers,
         body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.transactions("propagate", &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    )?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.transactions("propagate", request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Transaction execution endpoints.
@@ -415,19 +345,17 @@ async fn transactions_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("transactions", &topic),
+    let request = rues::ParsedRuesRequest::component(
+        "transactions",
+        &topic,
         headers,
         body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.transactions(&topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    )?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.transactions(&topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Subscribe to transaction event streams.
@@ -455,12 +383,8 @@ async fn transactions_subscribe(
     Path(TopicPath { topic }): Path<TopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_subscribe(
-        component_uri("transactions", &topic),
-        session_id,
-        state.sockets_map,
-    )
-    .await
+    rues::subscribe("transactions", None, &topic, session_id, state.sockets_map)
+        .await
 }
 
 /// Subscribe to transaction events for a specific transaction identifier.
@@ -525,8 +449,10 @@ async fn transactions_unsubscribe(
     Path(TopicPath { topic }): Path<TopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_unsubscribe(
-        component_uri("transactions", &topic),
+    rues::unsubscribe(
+        "transactions",
+        None,
+        &topic,
         session_id,
         state.sockets_map,
     )
@@ -600,19 +526,13 @@ async fn network_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("network", &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.network(&topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request =
+        rues::ParsedRuesRequest::component("network", &topic, headers, body)?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.network(&topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Node information and synchronization state queries.
@@ -646,26 +566,20 @@ async fn node_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("node", &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match topic.as_str() {
-                "info" => match state.services.chain_handler() {
-                    Some(chain) => chain.node(&topic, &event).await,
-                    None => Err(super::HttpError::Unsupported),
-                },
-                "provisioners" | "crs" => match state.services.rusk_handler() {
-                    Some(rusk) => rusk.node(&topic, &event).await,
-                    None => Err(super::HttpError::Unsupported),
-                },
-                _ => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
+    let request =
+        rues::ParsedRuesRequest::component("node", &topic, headers, body)?;
+    let result = match topic.as_str() {
+        "info" => match state.services.chain_handler() {
+            Some(chain) => chain.node(&topic, request.event()).await,
+            None => Err(super::HttpError::Unsupported),
         },
-    )
-    .await
+        "provisioners" | "crs" => match state.services.rusk_handler() {
+            Some(rusk) => rusk.node(&topic, request.event()).await,
+            None => Err(super::HttpError::Unsupported),
+        },
+        _ => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Block-related queries.
@@ -702,19 +616,13 @@ async fn blocks_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("blocks", &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.blocks(&topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request =
+        rues::ParsedRuesRequest::component("blocks", &topic, headers, body)?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.blocks(&topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Subscribe to new block finalization events.
@@ -742,12 +650,7 @@ async fn blocks_subscribe(
     Path(TopicPath { topic }): Path<TopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_subscribe(
-        component_uri("blocks", &topic),
-        session_id,
-        state.sockets_map,
-    )
-    .await
+    rues::subscribe("blocks", None, &topic, session_id, state.sockets_map).await
 }
 
 /// Subscribe to block events for a specific block identifier.
@@ -812,12 +715,8 @@ async fn blocks_unsubscribe(
     Path(TopicPath { topic }): Path<TopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_unsubscribe(
-        component_uri("blocks", &topic),
-        session_id,
-        state.sockets_map,
-    )
-    .await
+    rues::unsubscribe("blocks", None, &topic, session_id, state.sockets_map)
+        .await
 }
 
 /// Unsubscribe from block events for a specific block identifier.
@@ -881,19 +780,13 @@ async fn stats_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("stats", &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.stats(&topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request =
+        rues::ParsedRuesRequest::component("stats", &topic, headers, body)?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.stats(&topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Zero-knowledge proof generation.
@@ -929,20 +822,13 @@ async fn prover_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        component_uri("prover", &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match (topic.as_str(), state.services.prover_handler())
-            {
-                ("prove", Some(prover)) => prover.prove(&event).await,
-                _ => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request =
+        rues::ParsedRuesRequest::component("prover", &topic, headers, body)?;
+    let result = match (topic.as_str(), state.services.prover_handler()) {
+        ("prove", Some(prover)) => prover.prove(request.event()).await,
+        _ => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Account state queries for a specific account.
@@ -974,19 +860,14 @@ async fn account_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("account", &entity, &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.account(&entity, &topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request = rues::ParsedRuesRequest::entity(
+        "account", &entity, &topic, headers, body,
+    )?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.account(&entity, &topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Blob retrieval by commitment or versioned hash.
@@ -1023,19 +904,14 @@ async fn blobs_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("blobs", &entity, &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.chain_handler() {
-                Some(chain) => chain.blobs(&entity, &topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request = rues::ParsedRuesRequest::entity(
+        "blobs", &entity, &topic, headers, body,
+    )?;
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.blobs(&entity, &topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Contract query and call endpoint.
@@ -1082,19 +958,18 @@ async fn contracts_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("contracts", &entity, &topic),
+    let request = rues::ParsedRuesRequest::entity(
+        "contracts",
+        &entity,
+        &topic,
         headers,
         body,
-        |event, binary_request| async move {
-            let result = match state.services.rusk_handler() {
-                Some(rusk) => rusk.contracts(&entity, &topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    )?;
+    let result = match state.services.rusk_handler() {
+        Some(rusk) => rusk.contracts(&entity, &topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Subscribe to contract events and state changes.
@@ -1123,8 +998,10 @@ async fn contracts_entity_subscribe(
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_subscribe(
-        entity_uri("contracts", &entity, &topic),
+    rues::subscribe(
+        "contracts",
+        Some(&entity),
+        &topic,
         session_id,
         state.sockets_map,
     )
@@ -1158,8 +1035,10 @@ async fn contracts_entity_unsubscribe(
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
-    run_unsubscribe(
-        entity_uri("contracts", &entity, &topic),
+    rues::unsubscribe(
+        "contracts",
+        Some(&entity),
+        &topic,
         session_id,
         state.sockets_map,
     )
@@ -1208,19 +1087,14 @@ async fn driver_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("driver", &entity, &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.rusk_handler() {
-                Some(rusk) => rusk.driver(&entity, &topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request = rues::ParsedRuesRequest::entity(
+        "driver", &entity, &topic, headers, body,
+    )?;
+    let result = match state.services.rusk_handler() {
+        Some(rusk) => rusk.driver(&entity, &topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Contract owner lookup.
@@ -1256,21 +1130,20 @@ async fn contract_owner_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("contract_owner", &entity, &topic),
+    let request = rues::ParsedRuesRequest::entity(
+        "contract_owner",
+        &entity,
+        &topic,
         headers,
         body,
-        |event, binary_request| async move {
-            let result = match state.services.rusk_handler() {
-                Some(rusk) => {
-                    rusk.contract_owner(&entity, &topic, &event).await
-                }
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    )?;
+    let result = match state.services.rusk_handler() {
+        Some(rusk) => {
+            rusk.contract_owner(&entity, &topic, request.event()).await
+        }
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Upload a contract WASM driver.
@@ -1310,19 +1183,14 @@ async fn contract_upload_driver_post(
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
     let topic = "upload_driver".to_string();
-    run_dispatch(
-        entity_uri("contract", &entity, &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match state.services.rusk_handler() {
-                Some(rusk) => rusk.contract(&entity, &topic, &event).await,
-                None => Err(super::HttpError::Unsupported),
-            };
-            (event, binary_request, result)
-        },
-    )
-    .await
+    let request = rues::ParsedRuesRequest::entity(
+        "contract", &entity, &topic, headers, body,
+    )?;
+    let result = match state.services.rusk_handler() {
+        Some(rusk) => rusk.contract(&entity, &topic, request.event()).await,
+        None => Err(super::HttpError::Unsupported),
+    };
+    request.into_response(result)
 }
 
 /// Single-contract status, metadata, and driver download endpoint.
@@ -1359,27 +1227,22 @@ async fn contract_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
-    run_dispatch(
-        entity_uri("contract", &entity, &topic),
-        headers,
-        body,
-        |event, binary_request| async move {
-            let result = match topic.as_str() {
-                "status" => match state.services.chain_handler() {
-                    Some(chain) => {
-                        chain.contract(&entity, &topic, &event).await
-                    }
-                    None => Err(super::HttpError::Unsupported),
-                },
-                _ => match state.services.rusk_handler() {
-                    Some(rusk) => rusk.contract(&entity, &topic, &event).await,
-                    None => Err(super::HttpError::Unsupported),
-                },
-            };
-            (event, binary_request, result)
+    let request = rues::ParsedRuesRequest::entity(
+        "contract", &entity, &topic, headers, body,
+    )?;
+    let result = match topic.as_str() {
+        "status" => match state.services.chain_handler() {
+            Some(chain) => {
+                chain.contract(&entity, &topic, request.event()).await
+            }
+            None => Err(super::HttpError::Unsupported),
         },
-    )
-    .await
+        _ => match state.services.rusk_handler() {
+            Some(rusk) => rusk.contract(&entity, &topic, request.event()).await,
+            None => Err(super::HttpError::Unsupported),
+        },
+    };
+    request.into_response(result)
 }
 
 /// Legacy RUES GraphQL query endpoint under `/on`.
@@ -1631,7 +1494,6 @@ mod tests {
     use super::rues::SubscriptionAction;
     use super::{
         ApiError, HttpAppState, HttpRequestPolicy, TopicPath, build_app,
-        component_uri, run_dispatch, run_subscribe, run_unsubscribe,
     };
     use crate::http::{
         HttpHandlers, HttpPolicyConfig, MAX_RUES_REQUEST_BODY_BYTES, RuesEvent,
@@ -1656,19 +1518,14 @@ mod tests {
         headers: HeaderMap,
         body: axum::body::Bytes,
     ) -> Result<Response<Body>, ApiError> {
-        run_dispatch(
-            component_uri("test", &topic),
-            headers,
-            body,
-            |event, binary_request| async move {
-                let result = match state.services.test_handler() {
-                    Some(handler) => handler.handle_test(&topic, &event).await,
-                    None => Err(super::HttpError::Unsupported),
-                };
-                (event, binary_request, result)
-            },
-        )
-        .await
+        let request = super::rues::ParsedRuesRequest::component(
+            "test", &topic, headers, body,
+        )?;
+        let result = match state.services.test_handler() {
+            Some(handler) => handler.handle_test(&topic, request.event()).await,
+            None => Err(crate::http::HttpError::Unsupported),
+        };
+        request.into_response(result)
     }
 
     pub(super) async fn test_subscribe(
@@ -1676,8 +1533,10 @@ mod tests {
         Path(TopicPath { topic }): Path<TopicPath>,
         session_id: SessionId,
     ) -> Result<Response<Body>, ApiError> {
-        run_subscribe(
-            component_uri("test", &topic),
+        super::rues::subscribe(
+            "test",
+            None,
+            &topic,
             session_id,
             state.sockets_map,
         )
@@ -1689,8 +1548,10 @@ mod tests {
         Path(TopicPath { topic }): Path<TopicPath>,
         session_id: SessionId,
     ) -> Result<Response<Body>, ApiError> {
-        run_unsubscribe(
-            component_uri("test", &topic),
+        super::rues::unsubscribe(
+            "test",
+            None,
+            &topic,
             session_id,
             state.sockets_map,
         )
