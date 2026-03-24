@@ -23,7 +23,7 @@ use axum::extract::State;
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
-use axum::middleware::{Next, from_fn, from_fn_with_state};
+use axum::middleware::{from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Json};
 use serde::Deserialize;
 use serde_json::json;
@@ -41,6 +41,9 @@ use super::MAX_GRAPHQL_REQUEST_BODY_BYTES;
 use super::error::ApiError;
 #[cfg(feature = "chain")]
 use super::graphql;
+use super::middleware::{
+    configured_headers_middleware, request_policy_middleware, rusk_version_middleware,
+};
 use super::policy::HttpRequestPolicy;
 use super::rues::SubscriptionAction;
 #[cfg(any(feature = "chain", feature = "prover", test))]
@@ -69,7 +72,7 @@ pub(super) fn build_app(state: HttpAppState) -> Router {
     let enable_docs = state.enable_docs;
     let router = router()
         .fallback(not_found)
-        .layer(from_fn_with_state(state.clone(), policy_middleware))
+        .layer(from_fn_with_state(state.clone(), request_policy_middleware))
         .layer(from_fn_with_state(
             state.clone(),
             configured_headers_middleware,
@@ -1296,49 +1299,6 @@ async fn legacy_rues_graphql_post_route(
     )
     .await
 }
-
-async fn rusk_version_middleware(
-    req: Request<Body>,
-    next: Next,
-) -> Result<Response<Body>, ApiError> {
-    rues::validate_rusk_version_headers(req.headers())?;
-    Ok(next.run(req).await)
-}
-
-async fn policy_middleware(
-    State(state): State<HttpAppState>,
-    req: Request<Body>,
-    next: Next,
-) -> Response<Body> {
-    match state.policy.enforce(&req) {
-        Ok(permit) => {
-            let response = next.run(req).await;
-            drop(permit);
-            response
-        }
-        Err(rejection) => {
-            let mut error =
-                ApiError::new(rejection.status, rejection.message, "policy");
-            if let Some(retry_after) = rejection.retry_after_seconds {
-                error = error.with_retry_after(retry_after);
-            }
-            error.into_response()
-        }
-    }
-}
-
-async fn configured_headers_middleware(
-    State(state): State<HttpAppState>,
-    req: Request<Body>,
-    next: Next,
-) -> Response<Body> {
-    let mut response = next.run(req).await;
-    response
-        .headers_mut()
-        .extend(state.headers.as_ref().clone());
-    response
-}
-
 /// GraphQL HTTP GET endpoint.
 ///
 /// This route documents the standard GraphQL-over-HTTP query-string transport.

@@ -13,6 +13,7 @@ mod error;
 mod event;
 #[cfg(feature = "chain")]
 mod graphql;
+mod middleware;
 mod openapi;
 mod policy;
 #[cfg(feature = "prover")]
