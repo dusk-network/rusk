@@ -25,7 +25,7 @@ use axum::extract::State;
 #[cfg(feature = "http-wasm")]
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{HeaderMap, Request, Response, StatusCode};
-use axum::middleware::{Next, from_fn_with_state};
+use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Json};
 use serde::Deserialize;
 use serde_json::json;
@@ -182,7 +182,6 @@ where
             ),
         > + Send,
 {
-    rues::validate_rusk_version_headers(&headers)?;
     let (event, binary_request) = rues::parse_rues_post(uri?, headers, body)?;
     let (event, binary_request, result) = dispatch(event, binary_request).await;
     rues::finish_rues_post(event, binary_request, result)
@@ -191,26 +190,22 @@ where
 #[cfg(any(feature = "chain", test))]
 async fn run_subscribe(
     uri: Result<RuesEventUri, ApiError>,
-    headers: HeaderMap,
     session_id: SessionId,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
 ) -> Result<Response<Body>, ApiError> {
-    rues::validate_rusk_version_headers(&headers)?;
     rues::dispatch_rues_subscribe(session_id, sockets_map, uri?).await
 }
 
 #[cfg(any(feature = "chain", test))]
 async fn run_unsubscribe(
     uri: Result<RuesEventUri, ApiError>,
-    headers: HeaderMap,
     session_id: SessionId,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
 ) -> Result<Response<Body>, ApiError> {
-    rues::validate_rusk_version_headers(&headers)?;
     rues::dispatch_rues_unsubscribe(session_id, sockets_map, uri?).await
 }
 
@@ -238,7 +233,7 @@ fn rues_router() -> OpenApiRouter<HttpAppState> {
     #[cfg(test)]
     let router = tests::with_test_routes(router);
 
-    router
+    router.route_layer(from_fn(rusk_version_middleware))
 }
 #[cfg(any(feature = "chain", feature = "prover"))]
 fn with_default_rues_body_limit(
@@ -458,12 +453,10 @@ async fn transactions_post(
 async fn transactions_subscribe(
     State(state): State<HttpAppState>,
     Path(TopicPath { topic }): Path<TopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_subscribe(
         component_uri("transactions", &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -530,12 +523,10 @@ async fn transactions_entity_subscribe(
 async fn transactions_unsubscribe(
     State(state): State<HttpAppState>,
     Path(TopicPath { topic }): Path<TopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_unsubscribe(
         component_uri("transactions", &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -749,12 +740,10 @@ async fn blocks_post(
 async fn blocks_subscribe(
     State(state): State<HttpAppState>,
     Path(TopicPath { topic }): Path<TopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_subscribe(
         component_uri("blocks", &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -821,12 +810,10 @@ async fn blocks_entity_subscribe(
 async fn blocks_unsubscribe(
     State(state): State<HttpAppState>,
     Path(TopicPath { topic }): Path<TopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_unsubscribe(
         component_uri("blocks", &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -1134,12 +1121,10 @@ async fn contracts_post(
 async fn contracts_entity_subscribe(
     State(state): State<HttpAppState>,
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_subscribe(
         entity_uri("contracts", &entity, &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -1171,12 +1156,10 @@ async fn contracts_entity_subscribe(
 async fn contracts_entity_unsubscribe(
     State(state): State<HttpAppState>,
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
-    headers: HeaderMap,
     session_id: SessionId,
 ) -> Result<Response<Body>, ApiError> {
     run_unsubscribe(
         entity_uri("contracts", &entity, &topic),
-        headers,
         session_id,
         state.sockets_map,
     )
@@ -1451,6 +1434,14 @@ async fn legacy_rues_graphql_post_route(
     .await
 }
 
+async fn rusk_version_middleware(
+    req: Request<Body>,
+    next: Next,
+) -> Result<Response<Body>, ApiError> {
+    rues::validate_rusk_version_headers(req.headers())?;
+    Ok(next.run(req).await)
+}
+
 async fn policy_middleware(
     State(state): State<HttpAppState>,
     req: Request<Body>,
@@ -1683,12 +1674,10 @@ mod tests {
     pub(super) async fn test_subscribe(
         State(state): State<HttpAppState>,
         Path(TopicPath { topic }): Path<TopicPath>,
-        headers: HeaderMap,
         session_id: SessionId,
     ) -> Result<Response<Body>, ApiError> {
         run_subscribe(
             component_uri("test", &topic),
-            headers,
             session_id,
             state.sockets_map,
         )
@@ -1698,12 +1687,10 @@ mod tests {
     pub(super) async fn test_unsubscribe(
         State(state): State<HttpAppState>,
         Path(TopicPath { topic }): Path<TopicPath>,
-        headers: HeaderMap,
         session_id: SessionId,
     ) -> Result<Response<Body>, ApiError> {
         run_unsubscribe(
             component_uri("test", &topic),
-            headers,
             session_id,
             state.sockets_map,
         )
