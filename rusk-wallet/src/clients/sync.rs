@@ -11,6 +11,8 @@ use dusk_core::transfer::phoenix::{
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
 use futures::StreamExt;
+use rayon::ThreadPoolBuilder;
+use rayon::prelude::*;
 use rkyv::Deserialize;
 use wallet_core::keys::{
     derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
@@ -23,6 +25,13 @@ use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
 
 const SYNC_PROGRESS_BLOCK_STEP: u64 = 100;
+const DEFAULT_OWNERSHIP_CHUNK_SIZE: usize = 512;
+
+#[derive(Clone, Debug, PartialEq)]
+struct OwnedNote {
+    block_height: u64,
+    note: Note,
+}
 
 pub(crate) async fn sync_db(
     client: &RuesHttpClient,
@@ -63,33 +72,35 @@ pub(crate) async fn sync_db(
     let (last_pos, max_block_height, note_data) =
         collect_fresh_notes(client, pos_to_search, &mut keys, status).await?;
 
+    let owned_notes = collect_owned_notes(&keys, note_data.as_slice());
     let mut err = Ok(());
-    'outer: for (sk, vk, pk) in &keys {
+    'outer: for ((sk, _, pk), profile_notes) in keys.iter().zip(&owned_notes) {
         let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
-        for (block_height, note) in &note_data {
-            if vk.owns(note.stealth_address()) {
-                let nullifier = note.gen_nullifier(sk);
-                let result =
-                    fetch_existing_nullifiers_remote(client, &[nullifier])
-                        .await
-                        .and_then(|fetch_res| {
-                            let spent = !fetch_res.is_empty();
-                            let note = (note.clone(), nullifier);
-                            if spent {
-                                cache.insert_spent(
-                                    &pk_bs58,
-                                    *block_height,
-                                    note,
-                                )?;
-                            } else {
-                                cache.insert(&pk_bs58, *block_height, note)?;
-                            }
-                            Ok(())
-                        });
-                if result.is_err() {
-                    err = result;
-                    break 'outer;
-                }
+        for owned_note in profile_notes {
+            let nullifier = owned_note.note.gen_nullifier(sk);
+            let result = fetch_existing_nullifiers_remote(client, &[nullifier])
+                .await
+                .and_then(|fetch_res| {
+                    let spent = !fetch_res.is_empty();
+                    let note = (owned_note.note.clone(), nullifier);
+                    if spent {
+                        cache.insert_spent(
+                            &pk_bs58,
+                            owned_note.block_height,
+                            note,
+                        )?;
+                    } else {
+                        cache.insert(
+                            &pk_bs58,
+                            owned_note.block_height,
+                            note,
+                        )?;
+                    }
+                    Ok(())
+                });
+            if result.is_err() {
+                err = result;
+                break 'outer;
             }
         }
     }
@@ -191,6 +202,68 @@ async fn collect_fresh_notes(
     Ok((last_pos, max_block_height, note_data))
 }
 
+fn collect_owned_notes(
+    keys: &[(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+    note_data: &[(u64, Note)],
+) -> Vec<Vec<OwnedNote>> {
+    if note_data.len() <= DEFAULT_OWNERSHIP_CHUNK_SIZE {
+        return collect_owned_notes_serial(keys, note_data);
+    }
+
+    let thread_pool = ThreadPoolBuilder::new()
+        .num_threads(default_ownership_workers())
+        .build();
+
+    let Ok(thread_pool) = thread_pool else {
+        return collect_owned_notes_serial(keys, note_data);
+    };
+
+    let chunk_results = thread_pool.install(|| {
+        note_data
+            .par_chunks(DEFAULT_OWNERSHIP_CHUNK_SIZE)
+            .map(|chunk| collect_owned_notes_serial(keys, chunk))
+            .collect::<Vec<_>>()
+    });
+
+    let mut owned = vec![Vec::new(); keys.len()];
+    for mut chunk_owned in chunk_results {
+        for (notes, chunk_notes) in owned.iter_mut().zip(chunk_owned.iter_mut())
+        {
+            notes.append(chunk_notes);
+        }
+    }
+
+    owned
+}
+
+fn collect_owned_notes_serial(
+    keys: &[(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+    note_data: &[(u64, Note)],
+) -> Vec<Vec<OwnedNote>> {
+    let mut owned = vec![Vec::new(); keys.len()];
+
+    for (block_height, note) in note_data {
+        for (profile_idx, (_, vk, _)) in keys.iter().enumerate() {
+            if vk.owns(note.stealth_address()) {
+                owned[profile_idx].push(OwnedNote {
+                    block_height: *block_height,
+                    note: note.clone(),
+                });
+                break;
+            }
+        }
+    }
+
+    owned
+}
+
+fn default_ownership_workers() -> usize {
+    std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(1)
+        .max(1)
+}
+
 fn zeroize_secret_keys(
     keys: &mut [(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
 ) {
@@ -223,4 +296,72 @@ pub(crate) async fn fetch_existing_nullifiers_remote(
         .unwrap();
 
     Ok(nullifiers)
+}
+
+#[cfg(test)]
+mod tests {
+    use dusk_core::JubJubScalar;
+    use dusk_core::transfer::phoenix::{
+        Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    };
+    use ff::Field;
+    use rand::rngs::StdRng;
+    use rand::{CryptoRng, RngCore, SeedableRng};
+
+    use super::*;
+
+    fn gen_note<T: RngCore + CryptoRng>(
+        rng: &mut T,
+        owner_pk: &PhoenixPublicKey,
+        value: u64,
+    ) -> Note {
+        let sender_pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+        let value_blinder = JubJubScalar::random(&mut *rng);
+        let sender_blinder = [
+            JubJubScalar::random(&mut *rng),
+            JubJubScalar::random(&mut *rng),
+        ];
+
+        Note::obfuscated(
+            rng,
+            &sender_pk,
+            owner_pk,
+            value,
+            value_blinder,
+            sender_blinder,
+        )
+    }
+
+    #[test]
+    fn parallel_owned_scan_matches_serial() {
+        let mut rng = StdRng::seed_from_u64(0xdab);
+        let seed = [7; 64];
+        let keys: Vec<_> = (0..4u8)
+            .map(|index| {
+                (
+                    derive_phoenix_sk(&seed, index),
+                    derive_phoenix_vk(&seed, index),
+                    derive_phoenix_pk(&seed, index),
+                )
+            })
+            .collect();
+
+        let note_data = (0..2_048)
+            .map(|idx| {
+                let owner_idx = idx % (keys.len() + 1);
+                let fallback_owner =
+                    PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+                let owner_pk = keys
+                    .get(owner_idx)
+                    .map_or(&fallback_owner, |(_, _, pk)| pk);
+
+                (idx as u64, gen_note(&mut rng, owner_pk, idx as u64 + 1))
+            })
+            .collect::<Vec<_>>();
+
+        let serial = collect_owned_notes_serial(&keys, &note_data);
+        let parallel = collect_owned_notes(&keys, &note_data);
+
+        assert_eq!(serial, parallel);
+    }
 }
