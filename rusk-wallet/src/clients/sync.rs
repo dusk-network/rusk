@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashSet;
+
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
 use dusk_core::transfer::phoenix::{
@@ -26,6 +28,8 @@ use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
 
 const SYNC_PROGRESS_BLOCK_STEP: u64 = 100;
 const DEFAULT_OWNERSHIP_CHUNK_SIZE: usize = 512;
+const DEFAULT_NULLIFIER_BATCH_BYTE_BUDGET: usize = 60 * 1024;
+const NULLIFIER_BATCH_LAYOUT_BYTES: usize = u64::SIZE;
 
 #[derive(Clone, Debug, PartialEq)]
 struct OwnedNote {
@@ -73,54 +77,13 @@ pub(crate) async fn sync_db(
         collect_fresh_notes(client, pos_to_search, &mut keys, status).await?;
 
     let owned_notes = collect_owned_notes(&keys, note_data.as_slice());
-    let mut err = Ok(());
-    'outer: for ((sk, _, pk), profile_notes) in keys.iter().zip(&owned_notes) {
-        let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
-        for owned_note in profile_notes {
-            let nullifier = owned_note.note.gen_nullifier(sk);
-            let result = fetch_existing_nullifiers_remote(client, &[nullifier])
-                .await
-                .and_then(|fetch_res| {
-                    let spent = !fetch_res.is_empty();
-                    let note = (owned_note.note.clone(), nullifier);
-                    if spent {
-                        cache.insert_spent(
-                            &pk_bs58,
-                            owned_note.block_height,
-                            note,
-                        )?;
-                    } else {
-                        cache.insert(
-                            &pk_bs58,
-                            owned_note.block_height,
-                            note,
-                        )?;
-                    }
-                    Ok(())
-                });
-            if result.is_err() {
-                err = result;
-                break 'outer;
-            }
-        }
-    }
+    persist_owned_notes(client, cache, &keys, &owned_notes).await?;
 
     zeroize_secret_keys(&mut keys);
-    err?;
 
     // Remove spent nullifiers from live notes
     // zerorize all the secret keys
-    for (_, _, pk) in keys {
-        let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(&pk)?;
-
-        if !nullifiers.is_empty() {
-            let existing =
-                fetch_existing_nullifiers_remote(client, nullifiers.as_slice())
-                    .await?;
-
-            cache.spend_notes(&pk, existing.as_slice())?;
-        }
-    }
+    reconcile_cached_unspent_notes(client, cache, &keys).await?;
 
     // insert last post after the notes has been inserted
     // to prevent false reporting of sync completion
@@ -257,10 +220,85 @@ fn collect_owned_notes_serial(
     owned
 }
 
+async fn persist_owned_notes(
+    client: &RuesHttpClient,
+    cache: &Cache,
+    keys: &[(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+    owned_notes: &[Vec<OwnedNote>],
+) -> Result<(), Error> {
+    let batch_len = nullifier_batch_len();
+
+    for ((sk, _, pk), profile_notes) in keys.iter().zip(owned_notes) {
+        let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
+
+        for notes_batch in profile_notes.chunks(batch_len) {
+            let nullifiers = notes_batch
+                .iter()
+                .map(|owned_note| owned_note.note.gen_nullifier(sk))
+                .collect::<Vec<_>>();
+            let spent_nullifiers =
+                fetch_existing_nullifiers_remote(client, nullifiers.as_slice())
+                    .await?;
+            let spent_lookup = spent_nullifiers
+                .into_iter()
+                .map(|nullifier| nullifier.to_bytes())
+                .collect::<HashSet<_>>();
+
+            for (owned_note, nullifier) in notes_batch.iter().zip(nullifiers) {
+                let note = (owned_note.note.clone(), nullifier);
+                if spent_lookup.contains(&note.1.to_bytes()) {
+                    cache.insert_spent(
+                        &pk_bs58,
+                        owned_note.block_height,
+                        note,
+                    )?;
+                } else {
+                    cache.insert(&pk_bs58, owned_note.block_height, note)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn reconcile_cached_unspent_notes(
+    client: &RuesHttpClient,
+    cache: &Cache,
+    keys: &[(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+) -> Result<(), Error> {
+    let batch_len = nullifier_batch_len();
+
+    for (_, _, pk) in keys {
+        let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(pk)?;
+
+        if nullifiers.is_empty() {
+            continue;
+        }
+
+        for nullifier_batch in nullifiers.chunks(batch_len) {
+            let existing =
+                fetch_existing_nullifiers_remote(client, nullifier_batch)
+                    .await?;
+            cache.spend_notes(pk, existing.as_slice())?;
+        }
+    }
+
+    Ok(())
+}
+
 fn default_ownership_workers() -> usize {
     std::thread::available_parallelism()
         .map(std::num::NonZeroUsize::get)
         .unwrap_or(1)
+        .max(1)
+}
+
+fn nullifier_batch_len() -> usize {
+    DEFAULT_NULLIFIER_BATCH_BYTE_BUDGET
+        .saturating_sub(NULLIFIER_BATCH_LAYOUT_BYTES)
+        .checked_div(BlsScalar::SIZE)
+        .unwrap_or_default()
         .max(1)
 }
 
