@@ -13,6 +13,7 @@ mod error;
 mod event;
 #[cfg(feature = "chain")]
 mod graphql;
+mod openapi;
 mod policy;
 #[cfg(feature = "prover")]
 mod prover;
@@ -87,6 +88,7 @@ pub struct HttpServerConfig {
     pub address: String,
     pub cert: Option<PathBuf>,
     pub key: Option<PathBuf>,
+    pub enable_docs: bool,
     pub headers: HeaderMap,
     pub ws_event_channel_cap: usize,
     pub policy: HttpPolicyConfig,
@@ -129,6 +131,7 @@ impl HttpServer {
             events: event_sender,
             shutdown: shutdown_sender.clone(),
             ws_event_channel_cap: config.ws_event_channel_cap,
+            enable_docs: config.enable_docs,
             policy: Arc::new(HttpRequestPolicy::new(config.policy)),
             headers: Arc::new(headers),
         });
@@ -323,7 +326,7 @@ pub trait TestRequestHandler: Send + Sync + 'static {
 
 impl HttpHandlers {
     #[cfg(feature = "chain")]
-    pub(crate) fn set_chain_handler<T>(&mut self, handler: T)
+    pub fn set_chain_handler<T>(&mut self, handler: T)
     where
         T: ChainRequestHandler,
     {
@@ -336,7 +339,7 @@ impl HttpHandlers {
     }
 
     #[cfg(feature = "chain")]
-    pub(crate) fn set_rusk_handler<T>(&mut self, handler: T)
+    pub fn set_rusk_handler<T>(&mut self, handler: T)
     where
         T: RuskRequestHandler,
     {
@@ -349,7 +352,7 @@ impl HttpHandlers {
     }
 
     #[cfg(feature = "chain")]
-    pub(crate) fn set_graphql_handler<T>(&mut self, handler: T)
+    pub fn set_graphql_handler<T>(&mut self, handler: T)
     where
         T: GraphqlHandler,
     {
@@ -702,6 +705,7 @@ mod tests {
                 address: "localhost:0".to_string(),
                 cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),
                 key: options.cert_and_key.map(|(_, k)| PathBuf::from(k)),
+                enable_docs: false,
                 headers: options.headers,
                 ws_event_channel_cap: WS_EVENT_CHANNEL_CAP,
                 policy: options.policy,

@@ -238,6 +238,24 @@ fn close_frame(code: u16, reason: &'static str) -> CloseFrame {
     }
 }
 
+/// Upgrade endpoint for the RUES WebSocket transport.
+///
+/// This route documents only the HTTP handshake. Swagger UI is not expected to
+/// drive the socket interactively.
+///
+/// After a successful `101` upgrade, the server sends a first text frame which
+/// contains the generated session identifier. HTTP subscription routes under
+/// `/on/*` expect that identifier to be echoed back via the `Rusk-Session-Id`
+/// header.
+#[utoipa::path(
+    get,
+    path = "/on",
+    tag = "RUES",
+    responses(
+        (status = 101, description = "WebSocket upgrade successful, session ID follows"),
+        (status = 400, description = "Invalid WebSocket upgrade request"),
+    )
+)]
 pub(super) async fn handle_rues_ws(
     State(state): State<HttpAppState>,
     ws: WebSocketUpgrade,
