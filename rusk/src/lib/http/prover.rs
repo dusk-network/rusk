@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use async_trait::async_trait;
 use dusk_core::Error as CoreError;
 use rusk_prover::LocalProver;
 

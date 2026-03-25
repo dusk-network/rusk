@@ -7,6 +7,7 @@
 use std::sync::mpsc;
 use std::thread;
 
+use async_trait::async_trait;
 use dusk_bytes::{DeserializableSlice, ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;

@@ -14,6 +14,7 @@ use async_graphql::{
     BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Name,
     Schema, Variables,
 };
+use async_trait::async_trait;
 use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -344,7 +345,6 @@ impl RuskNode {
 
         graphql_legacy_response(schema.execute(gql_query).await)
     }
-
     async fn handle_preverify(&self, data: &[u8]) -> ChainResult<ResponseData> {
         preverify_tx(self, data).await?;
         Ok(ResponseData::new(DataType::None))
