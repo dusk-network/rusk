@@ -43,6 +43,10 @@ pub(crate) struct WalletArgs {
     #[arg(long)]
     pub archiver: Option<String>,
 
+    /// Allow insecure HTTP connections to non-local wallet services
+    #[arg(long)]
+    pub allow_insecure: bool,
+
     /// Output log level
     #[arg(long, value_enum, default_value_t = LogLevel::Info)]
     pub log_level: LogLevel,

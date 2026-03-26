@@ -87,6 +87,7 @@ fn wallet_settings(wallet_dir: &TempDir) -> Settings {
         },
         wallet_dir: wallet_dir.path().to_path_buf(),
         password: None,
+        allow_insecure: true,
     }
 }
 

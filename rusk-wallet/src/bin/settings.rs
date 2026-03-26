@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use rusk_wallet::{Error, RuesHttpClient};
 use serde::Deserialize;
 use tracing::Level;
-use url::Url;
+use url::{Host, Url};
 use zeroize::Zeroize;
 
 use crate::config::Network;
@@ -53,6 +53,7 @@ pub(crate) struct Settings {
     pub(crate) prover: Url,
     pub(crate) archiver: Url,
     pub(crate) explorer: Option<Url>,
+    pub(crate) allow_insecure: bool,
 
     pub(crate) logging: Logging,
 
@@ -81,7 +82,7 @@ impl SettingsBuilder {
                     // err if specified network is not in the list
                     if r.is_none() {
                         args.password.zeroize();
-                        return Err(Error::BadAddress);
+                        return Err(Error::NetworkNotFound);
                     }
 
                     r
@@ -89,7 +90,7 @@ impl SettingsBuilder {
                 // err if no networks are specified but argument is
                 (Some(_), None) => {
                     args.password.zeroize();
-                    return Err(Error::BadAddress);
+                    return Err(Error::NetworkNotFound);
                 }
                 (_, _) => None,
             }
@@ -114,6 +115,14 @@ impl SettingsBuilder {
             .unwrap_or_else(|| network.archiver.unwrap_or(state.clone()));
 
         let explorer = network.explorer;
+        let allow_insecure = args.allow_insecure;
+
+        validate_transport("state", &state, allow_insecure)
+            .inspect_err(|_| args.password.zeroize())?;
+        validate_transport("prover", &prover, allow_insecure)
+            .inspect_err(|_| args.password.zeroize())?;
+        validate_transport("archiver", &archiver, allow_insecure)
+            .inspect_err(|_| args.password.zeroize())?;
 
         let wallet_dir =
             args.wallet_dir.as_ref().cloned().unwrap_or(self.wallet_dir);
@@ -131,10 +140,38 @@ impl SettingsBuilder {
             prover,
             archiver,
             explorer,
+            allow_insecure,
             logging,
             wallet_dir,
             password,
         })
+    }
+}
+
+fn validate_transport(
+    endpoint: &str,
+    url: &Url,
+    allow_insecure: bool,
+) -> Result<(), Error> {
+    if url.scheme() != "http" {
+        return Ok(());
+    }
+
+    if is_local_host(url) || allow_insecure {
+        return Ok(());
+    }
+
+    Err(Error::InsecureTransport(format!(
+        "{endpoint} endpoint {url}"
+    )))
+}
+
+fn is_local_host(url: &Url) -> bool {
+    match url.host() {
+        Some(Host::Domain("localhost")) => true,
+        Some(Host::Ipv4(ip)) => ip.is_loopback() || ip.is_unspecified(),
+        Some(Host::Ipv6(ip)) => ip.is_loopback() || ip.is_unspecified(),
+        _ => false,
     }
 }
 
@@ -176,6 +213,24 @@ impl Settings {
             .check_connection()
             .await
             .map_err(Error::from)
+    }
+
+    pub fn nonlocal_insecure_endpoints(&self) -> Vec<(&'static str, &Url)> {
+        let mut endpoints = Vec::new();
+
+        if self.state.scheme() == "http" && !is_local_host(&self.state) {
+            endpoints.push(("state", &self.state));
+        }
+
+        if self.prover.scheme() == "http" && !is_local_host(&self.prover) {
+            endpoints.push(("prover", &self.prover));
+        }
+
+        if self.archiver.scheme() == "http" && !is_local_host(&self.archiver) {
+            endpoints.push(("archiver", &self.archiver));
+        }
+
+        endpoints
     }
 }
 
@@ -266,6 +321,11 @@ impl fmt::Display for Settings {
         }
         writeln!(f, "state: {}", self.state)?;
         writeln!(f, "prover: {}", self.prover)?;
+        writeln!(
+            f,
+            "allow insecure transport: {}",
+            if self.allow_insecure { "yes" } else { "no" }
+        )?;
 
         if let Some(explorer) = &self.explorer {
             writeln!(f, "explorer: {explorer}")?;
@@ -273,5 +333,161 @@ impl fmt::Display for Settings {
 
         writeln!(f, "{separator}")?;
         writeln!(f, "{}", self.logging)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+    use crate::io::WalletArgs;
+
+    fn wallet_args() -> WalletArgs {
+        WalletArgs {
+            wallet_dir: None,
+            network: None,
+            password: None,
+            state: None,
+            prover: None,
+            archiver: None,
+            allow_insecure: false,
+            log_level: LogLevel::Info,
+            log_type: LogFormat::Coloured,
+            command: None,
+        }
+    }
+
+    fn network(state: &str, prover: &str, archiver: Option<&str>) -> Network {
+        Network {
+            state: Url::parse(state).unwrap(),
+            prover: Url::parse(prover).unwrap(),
+            archiver: archiver.map(|url| Url::parse(url).unwrap()),
+            explorer: None,
+            network: None,
+        }
+    }
+
+    #[test]
+    fn rejects_remote_http_without_opt_in() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let err = builder
+            .network(network(
+                "http://example.com:8080",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InsecureTransport(_)));
+    }
+
+    #[test]
+    fn allows_local_http_without_opt_in() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let settings = builder
+            .network(network(
+                "http://127.0.0.1:8080",
+                "http://0.0.0.0:8080",
+                Some("http://localhost:8080"),
+            ))
+            .unwrap();
+
+        assert!(!settings.allow_insecure);
+    }
+
+    #[test]
+    fn allows_ipv6_loopback_http_without_opt_in() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let settings = builder
+            .network(network(
+                "http://[::1]:8080",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap();
+
+        assert!(!settings.allow_insecure);
+    }
+
+    #[test]
+    fn allows_ipv6_unspecified_http_without_opt_in() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let settings = builder
+            .network(network(
+                "http://[::]:8080",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap();
+
+        assert!(!settings.allow_insecure);
+    }
+
+    #[test]
+    fn allows_remote_http_with_opt_in() {
+        let mut args = wallet_args();
+        args.allow_insecure = true;
+
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args,
+        };
+
+        let settings = builder
+            .network(network(
+                "http://example.com:8080",
+                "http://prover.example.com:8080",
+                Some("http://archiver.example.com:8080"),
+            ))
+            .unwrap();
+
+        assert!(settings.allow_insecure);
+    }
+
+    #[test]
+    fn nonlocal_insecure_endpoints_skip_local_urls() {
+        let wallet_dir = tempdir().unwrap();
+        let settings = Settings {
+            network_name: None,
+            state: Url::parse("http://0.0.0.0:8080").unwrap(),
+            prover: Url::parse("http://prover.example.com:8080").unwrap(),
+            archiver: Url::parse("http://localhost:8080").unwrap(),
+            explorer: None,
+            allow_insecure: true,
+            logging: Logging {
+                level: LogLevel::Info,
+                format: LogFormat::Coloured,
+            },
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            password: None,
+        };
+
+        let endpoints = settings.nonlocal_insecure_endpoints();
+
+        assert_eq!(endpoints.len(), 1);
+        assert_eq!(endpoints[0].0, "prover");
+        assert_eq!(endpoints[0].1.as_str(), "http://prover.example.com:8080/");
     }
 }
