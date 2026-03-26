@@ -53,7 +53,10 @@ use crate::ExecutionError;
 ///
 /// 4. Call the "refund" function on the transfer contract with unlimited gas.
 ///    The amount charged depends on the gas spent by the transaction, and the
-///    optional contract call in steps 2 or 3.
+///    optional contract call in steps 2 or 3. If this fails, a specific error
+///    `FailedRefund` is returned, then the tx should be considered
+///    unspendable/invalid, and the caller SHALL DO a re-execution of previous
+///    transactions.
 ///
 /// Note that deployment transaction will never be re-executed for reasons
 /// related to deployment, as it is either discarded or it charges the
@@ -175,9 +178,9 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
+    // Refund the appropriate amount to the transaction. If this errors, the
+    // transaction must be discarded by the caller who is also responsible to
+    // revert the state applied during the spend_and_execute.
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
@@ -185,7 +188,10 @@ pub fn execute(
             &receipt.gas_spent,
             u64::MAX,
         )
-        .expect("Refunding must succeed");
+        .inspect_err(|_| {
+            clear_session(session, config);
+        })
+        .map_err(ExecutionError::FailedRefund)?;
 
     receipt.events.extend(refund_receipt.events);
 
