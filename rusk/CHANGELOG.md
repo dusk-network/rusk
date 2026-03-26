@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
   decoding.
+- Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.
 
 ### Changed
 
@@ -23,9 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce HTTP ingress policy with ACL and endpoint-class global limits (`http.policy`), returning `403` on ACL deny and `429` with `Retry-After` on limit rejections.
 - Split HTTP server routing into dedicated `graphql_http` and `rues_http` modules while keeping API behavior unchanged.
 
-### Added
+### Fixed
 
-- Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.
+- Fix panic during invalid tx refund processing (P1.2-7)
+
 
 ## [1.6.0] - 2026-02-27
 

@@ -26,11 +26,12 @@ use dusk_core::stake::{
 };
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::{
-    PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
-    Transaction as ProtocolTransaction,
+    TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
+use dusk_vm::{
+    CallReceipt, Error as VMError, ExecutionError, Session, VM, execute,
+};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
@@ -156,6 +157,27 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let execution_config = self.vm_config.to_execution_config(block_height);
+        let replay_spent_txs =
+            |spent_txs: &[SpentTransaction]| -> Result<Session, StateTransitionError> {
+                let mut session =
+                    self.new_block_session(block_height, prev_state)?;
+
+                for spent_tx in spent_txs {
+                    execute(
+                        &mut session,
+                        &spent_tx.inner.inner,
+                        &execution_config,
+                    )
+                    .map_err(|err| {
+                        StateTransitionError::ExecutionError(format!(
+                            "Failed replaying tx {}: {err}",
+                            hex::encode(spent_tx.inner.id())
+                        ))
+                    })?;
+                }
+
+                Ok(session)
+            };
 
         // We always write the faults len in a u32
         let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
@@ -225,19 +247,7 @@ impl Rusk {
                             gas_left
                         );
 
-                        session =
-                            self.new_block_session(block_height, prev_state)?;
-
-                        for spent_tx in &spent_txs {
-                            // We know these transactions were correctly
-                            // executed before, so we don't bother checking.
-                            let _ = execute(
-                                &mut session,
-                                &spent_tx.inner.inner,
-                                &execution_config,
-                            );
-                        }
-
+                        session = replay_spent_txs(&spent_txs)?;
                         continue;
                     }
 
@@ -293,7 +303,7 @@ impl Rusk {
                         err: error,
                     });
                 }
-                Err(VMError::Panic(val)) if val == PANIC_NONCE_NOT_READY => {
+                Err(ExecutionError::NotReady) => {
                     // If the transaction panics due to a not yet valid nonce,
                     // we do not discard it.
                     // Instead, we add it to a list of pending transactions so
@@ -319,8 +329,17 @@ impl Rusk {
                     continue;
                 }
                 Err(error) => {
+                    // If the transaction panics due to a failed refund, we need
+                    // to revert the state to before the
+                    // transaction execution and re-execute
+                    // all spent transactions
+                    if let ExecutionError::FailedRefund(_) = &error {
+                        session = replay_spent_txs(&spent_txs)?;
+                    }
+
                     info!(event = "Tx discarded", tx_id, ?error);
-                    // An unspendable transaction should be discarded
+                    // A transaction that fails as unspendable or precondition
+                    // failure is discarded and does not affect the state.
                     discarded_txs.push(unspent_tx);
                     continue;
                 }

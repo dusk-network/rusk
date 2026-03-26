@@ -11,6 +11,7 @@ pub mod conversion;
 pub mod fee_refund_inflation;
 pub mod fee_refund_overflow;
 pub mod fee_refund_stealth_redirect;
+pub mod fee_refund_unspendable;
 pub mod finalization;
 pub mod gas_behavior;
 pub mod http_propagate;
