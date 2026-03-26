@@ -163,60 +163,99 @@ fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
 }
 
 #[async_trait]
-impl HandleRequest for RuskNode {
-    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match request.uri.inner() {
-            ("graphql", _, "query") => true,
-            ("transactions", _, "preverify") => true,
-            ("transactions", _, "propagate") => true,
-            ("transactions", _, "simulate") => true,
-            ("network", _, "peers") => true,
-            ("network", _, "peers_location") => true,
-            ("node", _, "info") => true,
-            ("account", Some(_), "status") => true,
-            ("contract", Some(_), "status") => true,
-            ("blocks", _, "gas-price") => true,
-            ("blobs", Some(_), "commitment") => true,
-            ("blobs", Some(_), "hash") => true,
-            ("stats", _, "account_count") => true,
-            ("stats", _, "tx_count") => true,
-
-            _ => false,
-        }
-    }
-    async fn handle_rues(
+impl ChainRequestHandler for RuskNode {
+    async fn graphql_query(
         &self,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData> {
-        let response = match request.uri.inner() {
-            ("graphql", _, "query") => {
-                self.handle_gql(&request.data, &request.headers).await
-            }
-            ("transactions", _, "preverify") => {
-                self.handle_preverify(request.data.as_bytes()).await
-            }
-            ("transactions", _, "propagate") => {
-                self.propagate_tx(request.data.as_bytes()).await
-            }
-            ("transactions", _, "simulate") => {
-                self.simulate_tx(request.data.as_bytes()).await
-            }
-            ("network", _, "peers") => {
+        self.handle_gql(&request.data, &request.headers)
+            .await
+            .map_err(HttpError::from)
+    }
+
+    async fn transactions(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "preverify" => self.handle_preverify(request.data.as_bytes()).await,
+            "propagate" => self.propagate_tx(request.data.as_bytes()).await,
+            "simulate" => self.simulate_tx(request.data.as_bytes()).await,
+            _ => Err(ChainError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
+    }
+
+    async fn network(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "peers" => {
                 let amount =
                     request.data.as_string().trim().parse().map_err(|_| {
                         ChainError::invalid_input("invalid amount")
                     })?;
                 self.alive_nodes(amount).await
             }
+            "peers_location" => self.peers_location().await,
+            _ => Err(ChainError::Unsupported),
+        };
 
-            ("network", _, "peers_location") => self.peers_location().await,
-            ("node", _, "info") => self.get_info().await,
-            ("account", Some(pk), "status") => self.get_account(pk).await,
-            ("contract", Some(cid), "status") => {
-                self.get_contract_balance(cid).await
-            }
-            ("blocks", _, "gas-price") => {
+        response.map_err(HttpError::from)
+    }
+
+    async fn node(
+        &self,
+        topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "info" => self.get_info().await,
+            _ => Err(ChainError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
+    }
+
+    async fn account(
+        &self,
+        entity: &str,
+        topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "status" => self.get_account(entity).await,
+            _ => Err(ChainError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
+    }
+
+    async fn contract(
+        &self,
+        entity: &str,
+        topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "status" => self.get_contract_balance(entity).await,
+            _ => Err(ChainError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
+    }
+
+    async fn blocks(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "gas-price" => {
                 let max_transactions = request
                     .data
                     .as_string()
@@ -225,25 +264,47 @@ impl HandleRequest for RuskNode {
                     .unwrap_or(usize::MAX);
                 self.get_gas_price(max_transactions).await
             }
+            _ => Err(ChainError::Unsupported),
+        };
 
-            ("blobs", Some(commitment), "commitment") => {
-                let commitment = hex::decode(commitment).map_err(|_| {
+        response.map_err(HttpError::from)
+    }
+
+    async fn blobs(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "commitment" => {
+                let commitment = hex::decode(entity).map_err(|_| {
                     ChainError::invalid_input("commitment not hex")
                 })?;
                 let hash = BlobData::hash_from_commitment(&commitment);
                 self.blob_by_hash(&hash, request.is_json()).await
             }
-            ("blobs", Some(hash), "hash") => {
-                let hash = hex::decode(hash)
+            "hash" => {
+                let hash = hex::decode(entity)
                     .map_err(|_| ChainError::invalid_input("hash not hex"))?
                     .try_into()
                     .map_err(|_| ChainError::invalid_input("hash length"))?;
                 self.blob_by_hash(&hash, request.is_json()).await
             }
+            _ => Err(ChainError::Unsupported),
+        };
 
-            ("stats", _, "account_count") => self.get_account_count().await,
-            ("stats", _, "tx_count") => self.get_tx_count().await,
+        response.map_err(HttpError::from)
+    }
 
+    async fn stats(
+        &self,
+        topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "account_count" => self.get_account_count().await,
+            "tx_count" => self.get_tx_count().await,
             _ => Err(ChainError::Unsupported),
         };
 
@@ -281,15 +342,7 @@ impl RuskNode {
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);
 
-        let gql_res = schema.execute(gql_query).await;
-        let async_graphql::Response { data, errors, .. } = gql_res;
-        if !errors.is_empty() {
-            return Err(ChainError::internal(
-                serde_json::to_value(&errors)?.to_string(),
-            ));
-        }
-        let data = serde_json::to_value(&data)?;
-        Ok(ResponseData::new(data))
+        graphql_legacy_response(schema.execute(gql_query).await)
     }
 
     async fn handle_preverify(&self, data: &[u8]) -> ChainResult<ResponseData> {
@@ -616,6 +669,21 @@ impl RuskNode {
     }
 }
 
+fn graphql_legacy_response(
+    gql_res: async_graphql::Response,
+) -> ChainResult<ResponseData> {
+    let async_graphql::Response { data, errors, .. } = gql_res;
+    if errors.is_empty() {
+        let data = serde_json::to_value(&data)?;
+        return Ok(ResponseData::new(data));
+    }
+
+    Ok(ResponseData::new(json!({
+        "data": data,
+        "errors": errors,
+    })))
+}
+
 #[async_trait]
 impl GraphqlHandler for RuskNode {
     async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse {
@@ -637,9 +705,13 @@ async fn load_tip<DB: database::DB>(
 
 #[cfg(test)]
 mod tests {
+    use async_graphql::{Response as GraphqlResponse, ServerError, Value};
     use node::mempool::TxAcceptanceError;
 
-    use super::{ChainError, HttpError, map_check_tx_error};
+    use super::{
+        ChainError, DataType, HttpError, graphql_legacy_response,
+        map_check_tx_error,
+    };
 
     #[test]
     fn chain_error_variant_mapping_is_stable() {
@@ -681,5 +753,34 @@ mod tests {
             TxAcceptanceError::GasPriceTooLow(1),
         );
         assert!(matches!(err, ChainError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn graphql_legacy_response_keeps_success_shape() {
+        let response = graphql_legacy_response(GraphqlResponse::new(
+            Value::from_json(serde_json::json!({ "ping": "pong" }))
+                .expect("json should convert to GraphQL value"),
+        ))
+        .expect("graphql legacy response should serialize");
+
+        assert_eq!(
+            response.data(),
+            &DataType::Json(serde_json::json!({ "ping": "pong" })),
+        );
+    }
+
+    #[test]
+    fn graphql_legacy_response_returns_graphql_errors_in_body() {
+        let response =
+            graphql_legacy_response(GraphqlResponse::from_errors(vec![
+                ServerError::new("missing field", None),
+            ]))
+            .expect("graphql legacy response should serialize");
+
+        let DataType::Json(body) = response.data() else {
+            panic!("legacy GraphQL errors should serialize as JSON");
+        };
+        assert!(body["data"].is_null());
+        assert_eq!(body["errors"][0]["message"], "missing field");
     }
 }

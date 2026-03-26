@@ -92,6 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             address: config.http.listen_addr(),
             cert: config.http.cert,
             key: config.http.key,
+            enable_docs: config.http.enable_docs,
             headers: config.http.headers,
             ws_event_channel_cap: config.http.ws_event_channel_cap,
             policy: config.http.policy,

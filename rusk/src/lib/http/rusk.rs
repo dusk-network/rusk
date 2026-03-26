@@ -99,59 +99,75 @@ struct ContractMetadataResponse {
 }
 
 #[async_trait]
-impl HandleRequest for Rusk {
-    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match request.uri.inner() {
-            ("contracts", Some(_), _) => true,
-            ("driver", Some(_), _) => true,
-            ("contract_owner", Some(_), _) => true,
-            ("contract", Some(_), "upload_driver") => true,
-            ("contract", Some(_), "download_driver") => true,
-            ("contract", Some(_), "metadata") => true,
-            ("node", _, "provisioners") => true,
-            ("node", _, "crs") => true,
-            _ => false,
-        }
-    }
-    async fn handle_rues(
+impl RuskRequestHandler for Rusk {
+    async fn node(
         &self,
+        topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "provisioners" => self.get_provisioners(),
+            "crs" => self.get_crs(),
+            _ => Err(RuskApiError::Unsupported),
+        };
+
+        response.map_err(HttpError::from)
+    }
+
+    async fn contracts(
+        &self,
+        entity: &str,
+        topic: &str,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData> {
-        let response = match request.uri.inner() {
-            ("contracts", Some(contract_id), method) => {
-                let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
-                self.handle_contract_query(
-                    contract_id,
-                    method,
-                    &request.data,
-                    feeder,
-                    request.is_json(),
-                )
-            }
-            ("driver", Some(contract_id), method) => {
-                self.handle_data_driver(contract_id, method, &request.data)
-            }
-            ("contract_owner", Some(contract_id), _method) => {
-                self.get_contract_owner(contract_id)
-            }
-            ("contract", Some(contract_id), "upload_driver") => {
+        let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
+        self.handle_contract_query(
+            entity,
+            topic,
+            &request.data,
+            feeder,
+            request.is_json(),
+        )
+        .map_err(HttpError::from)
+    }
+
+    async fn driver(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        self.handle_data_driver(entity, topic, &request.data)
+            .map_err(HttpError::from)
+    }
+
+    async fn contract_owner(
+        &self,
+        entity: &str,
+        _topic: &str,
+        _request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        self.get_contract_owner(entity).map_err(HttpError::from)
+    }
+
+    async fn contract(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData> {
+        let response = match topic {
+            "upload_driver" => {
                 let sign = request
                     .header("sign")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| {
                         RuskApiError::invalid_input("Signature missing")
                     })?;
-                self.upload_driver(contract_id, sign, request.data.as_bytes())
+                self.upload_driver(entity, sign, request.data.as_bytes())
             }
-            ("contract", Some(contract_id), "download_driver") => {
-                self.download_driver(contract_id)
-            }
-            ("contract", Some(contract_id), "metadata") => {
-                self.metadata(contract_id)
-            }
-            ("node", _, "provisioners") => self.get_provisioners(),
-            ("node", _, "crs") => self.get_crs(),
+            "download_driver" => self.download_driver(entity),
+            "metadata" => self.metadata(entity),
             _ => Err(RuskApiError::Unsupported),
         };
 

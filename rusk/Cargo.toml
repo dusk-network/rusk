@@ -69,6 +69,9 @@ axum = { workspace = true, features = ["ws"] }
 tower = { workspace = true, features = ["limit"] }
 tower-http = { workspace = true, features = ["limit", "normalize-path", "trace"] }
 regex = { workspace = true }
+utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
+utoipa-swagger-ui = { workspace = true, features = ["axum"] }
 
 dusk-core = { workspace = true, features = ["zk"] }
 dusk-vm = { workspace = true }

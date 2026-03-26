@@ -5,12 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_core::Error as CoreError;
-use dusk_core::transfer::phoenix::Prove;
 use rusk_prover::LocalProver;
 
 use super::*;
-
-type ProverApiResult<T> = Result<T, ProverApiError>;
 
 #[derive(Debug, thiserror::Error)]
 enum ProverApiError {
@@ -18,8 +15,6 @@ enum ProverApiError {
     InvalidInput(String),
     #[error("Prover error: {0}")]
     Prover(String),
-    #[error("Unsupported operation")]
-    Unsupported,
 }
 
 impl ProverApiError {
@@ -37,7 +32,6 @@ impl From<ProverApiError> for HttpError {
         match value {
             ProverApiError::InvalidInput(msg) => HttpError::invalid_input(msg),
             ProverApiError::Prover(msg) => HttpError::prover(msg),
-            ProverApiError::Unsupported => HttpError::Unsupported,
         }
     }
 }
@@ -56,25 +50,18 @@ fn map_prove_error(error: CoreError) -> ProverApiError {
 }
 
 #[async_trait]
-impl HandleRequest for LocalProver {
-    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
-        matches!(request.uri.inner(), ("prover", _, "prove"))
-    }
-    async fn handle_rues(
+impl ProverRequestHandler for LocalProver {
+    async fn prove(
         &self,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData> {
-        let data = request.data.as_bytes();
-        let response: ProverApiResult<ResponseData> = match request.uri.inner()
-        {
-            ("prover", _, "prove") => LocalProver
-                .prove(data)
-                .map(ResponseData::new)
-                .map_err(map_prove_error),
-            _ => Err(ProverApiError::Unsupported),
-        };
-
-        response.map_err(HttpError::from)
+        dusk_core::transfer::phoenix::Prove::prove(
+            &LocalProver,
+            request.data.as_bytes(),
+        )
+        .map(ResponseData::new)
+        .map_err(map_prove_error)
+        .map_err(HttpError::from)
     }
 }
 
@@ -93,10 +80,6 @@ mod tests {
         assert!(matches!(
             HttpError::from(ProverApiError::prover("prove failed")),
             HttpError::Prover(_)
-        ));
-        assert!(matches!(
-            HttpError::from(ProverApiError::Unsupported),
-            HttpError::Unsupported
         ));
     }
 

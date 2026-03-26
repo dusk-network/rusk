@@ -13,6 +13,7 @@ mod error;
 mod event;
 #[cfg(feature = "chain")]
 mod graphql;
+mod openapi;
 mod policy;
 #[cfg(feature = "prover")]
 mod prover;
@@ -29,6 +30,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "chain")]
 use async_graphql::{BatchRequest, BatchResponse};
+#[cfg(any(feature = "chain", feature = "prover", test))]
 use async_trait::async_trait;
 use axum::http::HeaderMap;
 #[cfg(test)]
@@ -60,8 +62,13 @@ pub type HttpResult<T> = std::result::Result<T, HttpError>;
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
 /// Default cap for most RUES POST request bodies.
+#[cfg_attr(
+    not(any(feature = "chain", feature = "prover", test)),
+    allow(dead_code)
+)]
 pub(crate) const MAX_RUES_REQUEST_BODY_BYTES: usize = 3 * 1024 * 1024;
 /// Cap for `POST /on/contract:<id>/upload_driver` request bodies.
+#[cfg(feature = "chain")]
 pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
 /// Cap for `POST /graphql` request bodies.
 #[cfg(feature = "chain")]
@@ -72,13 +79,6 @@ pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
 /// socket.
 pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
 
-pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
-    match uri.inner() {
-        ("contract", Some(_), "upload_driver") => MAX_DRIVER_UPLOAD_BODY_BYTES,
-        _ => MAX_RUES_REQUEST_BODY_BYTES,
-    }
-}
-
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
     _shutdown: broadcast::Sender<Infallible>,
@@ -88,6 +88,7 @@ pub struct HttpServerConfig {
     pub address: String,
     pub cert: Option<PathBuf>,
     pub key: Option<PathBuf>,
+    pub enable_docs: bool,
     pub headers: HeaderMap,
     pub ws_event_channel_cap: usize,
     pub policy: HttpPolicyConfig,
@@ -99,7 +100,7 @@ impl HttpServer {
     }
 
     pub async fn bind(
-        handler: impl HandleRequest,
+        services: HttpHandlers,
         event_sender: broadcast::Sender<RuesEvent>,
         config: HttpServerConfig,
     ) -> io::Result<(Self, SocketAddr)> {
@@ -125,11 +126,12 @@ impl HttpServer {
         );
 
         let app = build_app(HttpAppState {
-            sources: Arc::new(handler),
+            services,
             sockets_map: Arc::new(RwLock::new(HashMap::new())),
             events: event_sender,
             shutdown: shutdown_sender.clone(),
             ws_event_channel_cap: config.ws_event_channel_cap,
+            enable_docs: config.enable_docs,
             policy: Arc::new(HttpRequestPolicy::new(config.policy)),
             headers: Arc::new(headers),
         });
@@ -159,66 +161,236 @@ impl HttpServer {
     }
 }
 
-#[derive(Default)]
-pub struct DataSources {
-    pub sources: Vec<Box<dyn HandleRequest>>,
+/// Registry of optional handler implementations.
+#[derive(Default, Clone)]
+pub struct HttpHandlers {
     #[cfg(feature = "chain")]
+    /// Chain-owned RUES handlers for transaction, network, account, block,
+    /// blob, and chain-state contract routes.
+    chain: Option<Arc<dyn ChainRequestHandler>>,
+    #[cfg(feature = "chain")]
+    /// Rusk-owned RUES handlers for provisioner/CRS, contract query, driver,
+    /// and contract metadata routes.
+    rusk: Option<Arc<dyn RuskRequestHandler>>,
+    #[cfg(feature = "chain")]
+    /// Handler for the dedicated `/graphql` HTTP endpoint.
     graphql: Option<Arc<dyn GraphqlHandler>>,
+    #[cfg(feature = "prover")]
+    /// Handler for proof-generation routes under `/on/prover/*`.
+    prover: Option<Arc<dyn ProverRequestHandler>>,
+    #[cfg(test)]
+    /// Test-only handler surface used by `/on/test/*` routes.
+    test: Option<Arc<dyn TestRequestHandler>>,
 }
 
 #[cfg(feature = "chain")]
 #[async_trait]
 pub trait GraphqlHandler: Send + Sync + 'static {
+    /// Execute a single or batch request received on the standalone `/graphql`
+    /// route.
     async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse;
 }
 
-impl DataSources {
+#[cfg(feature = "chain")]
+#[async_trait]
+pub trait ChainRequestHandler: Send + Sync + 'static {
+    /// Handle legacy GraphQL requests routed through `/on/graphql/query`.
+    async fn graphql_query(
+        &self,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/transactions/{topic}` requests such as `preverify`,
+    /// `propagate`, and `simulate`.
+    async fn transactions(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/network/{topic}` requests for peer and network state.
+    async fn network(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle chain node routes such as `/on/node/info`.
+    /// This is node runtime/state information, not Rusk-owned provisioner or
+    /// CRS data.
+    async fn node(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/account:{entity}/{topic}` requests against chain state.
+    async fn account(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle chain-owned `/on/contract:{entity}/{topic}` topics that expose
+    /// chain status for a contract. Currently this is only the `status` topic
+    /// (which is the contract balance).
+    async fn contract(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/blocks/{topic}` requests.
+    async fn blocks(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/blobs:{entity}/{topic}` requests.
+    async fn blobs(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/stats/{topic}` requests for chain-derived statistics.
+    async fn stats(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+}
+
+#[cfg(feature = "chain")]
+#[async_trait]
+pub trait RuskRequestHandler: Send + Sync + 'static {
+    /// Handle Rusk-owned `/on/node/{topic}` routes such as `provisioners` and
+    /// `crs`.
+    /// This is auxiliary node data exposed by Rusk, not general node info.
+    async fn node(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/contracts:{entity}/{topic}` contract query and call routes.
+    /// Unlike `contract`, this route dispatches contract-facing queries
+    /// rather than single-contract metadata or driver operations.
+    async fn contracts(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/driver:{entity}/{topic}` data-driver routes.
+    async fn driver(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle `/on/contract_owner:{entity}/{topic}` owner lookup routes.
+    async fn contract_owner(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+    /// Handle Rusk-owned `/on/contract:{entity}/{topic}` management and
+    /// metadata topics such as `upload_driver`, `download_driver`, and
+    /// `metadata`. This is operational contract management, not chain-state
+    /// status.
+    async fn contract(
+        &self,
+        entity: &str,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+}
+
+#[cfg(feature = "prover")]
+#[async_trait]
+pub trait ProverRequestHandler: Send + Sync + 'static {
+    /// Handle `/on/prover/prove` proof-generation requests.
+    async fn prove(
+        &self,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+}
+
+#[cfg(test)]
+#[async_trait]
+pub trait TestRequestHandler: Send + Sync + 'static {
+    /// Handle test-only `/on/test/{topic}` requests.
+    async fn handle_test(
+        &self,
+        topic: &str,
+        request: &RuesDispatchEvent,
+    ) -> HttpResult<ResponseData>;
+}
+
+impl HttpHandlers {
     #[cfg(feature = "chain")]
-    pub(crate) fn set_graphql_handler<T>(&mut self, handler: T)
+    pub fn set_chain_handler<T>(&mut self, handler: T)
+    where
+        T: ChainRequestHandler,
+    {
+        self.chain = Some(Arc::new(handler));
+    }
+
+    #[cfg(feature = "chain")]
+    pub(crate) fn chain_handler(&self) -> Option<Arc<dyn ChainRequestHandler>> {
+        self.chain.clone()
+    }
+
+    #[cfg(feature = "chain")]
+    pub fn set_rusk_handler<T>(&mut self, handler: T)
+    where
+        T: RuskRequestHandler,
+    {
+        self.rusk = Some(Arc::new(handler));
+    }
+
+    #[cfg(feature = "chain")]
+    pub(crate) fn rusk_handler(&self) -> Option<Arc<dyn RuskRequestHandler>> {
+        self.rusk.clone()
+    }
+
+    #[cfg(feature = "chain")]
+    pub fn set_graphql_handler<T>(&mut self, handler: T)
     where
         T: GraphqlHandler,
     {
         self.graphql = Some(Arc::new(handler));
     }
-}
-
-#[async_trait]
-impl HandleRequest for DataSources {
-    fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
-        self.sources.iter().any(|s| s.can_handle_rues(event))
-    }
 
     #[cfg(feature = "chain")]
-    fn graphql_handler(&self) -> Option<&dyn GraphqlHandler> {
-        self.graphql.as_deref()
+    pub(crate) fn graphql_handler(&self) -> Option<Arc<dyn GraphqlHandler>> {
+        self.graphql.clone()
     }
 
-    async fn handle_rues(
-        &self,
-        event: &RuesDispatchEvent,
-    ) -> HttpResult<ResponseData> {
-        info!("Received event at {}", event.uri);
-        event.check_rusk_version()?;
-        for h in &self.sources {
-            if h.can_handle_rues(event) {
-                return h.handle_rues(event).await;
-            }
-        }
-        Err(HttpError::Unsupported)
+    #[cfg(feature = "prover")]
+    pub(crate) fn set_prover_handler<T>(&mut self, handler: T)
+    where
+        T: ProverRequestHandler,
+    {
+        self.prover = Some(Arc::new(handler));
     }
-}
 
-#[async_trait]
-pub trait HandleRequest: Send + Sync + 'static {
-    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
-    #[cfg(feature = "chain")]
-    fn graphql_handler(&self) -> Option<&dyn GraphqlHandler> {
-        None
-    }
-    async fn handle_rues(
+    #[cfg(feature = "prover")]
+    pub(crate) fn prover_handler(
         &self,
-        request: &RuesDispatchEvent,
-    ) -> HttpResult<ResponseData>;
+    ) -> Option<Arc<dyn ProverRequestHandler>> {
+        self.prover.clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_test_handler<T>(&mut self, handler: T)
+    where
+        T: TestRequestHandler,
+    {
+        self.test = Some(Arc::new(handler));
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_handler(&self) -> Option<Arc<dyn TestRequestHandler>> {
+        self.test.clone()
+    }
 }
 
 #[cfg(test)]
@@ -240,8 +412,14 @@ mod tests {
 
     use super::*;
 
-    /// A [`HandleRequest`] implementation that returns the same data
+    /// A [`TestRequestHandler`] implementation that returns the same data
     struct TestHandle;
+    impl TestHandle {
+        fn ok() -> HttpResult<ResponseData> {
+            Ok(ResponseData::new("ok".to_string()))
+        }
+    }
+
     struct SlowRuesHandle {
         entered: std::sync::Arc<tokio::sync::Notify>,
         delay: std::time::Duration,
@@ -255,16 +433,14 @@ mod tests {
     ];
 
     #[async_trait]
-    impl HandleRequest for TestHandle {
-        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
-            true
-        }
-        async fn handle_rues(
+    impl TestRequestHandler for TestHandle {
+        async fn handle_test(
             &self,
+            topic: &str,
             request: &RuesDispatchEvent,
         ) -> HttpResult<ResponseData> {
-            let response = match request.uri.inner() {
-                ("test", _, "stream") => {
+            let response = match topic {
+                "stream" => {
                     let (sender, rec) = std::sync::mpsc::channel();
                     thread::spawn(move || {
                         for f in STREAMED_DATA.iter() {
@@ -273,21 +449,13 @@ mod tests {
                     });
                     ResponseData::new(rec)
                 }
-                ("test", _, "echo") => {
-                    ResponseData::new(request.data.as_bytes().to_vec())
-                }
-                ("test", _, "no-content") => ResponseData::new(DataType::None),
-                ("contracts", Some(_), _) => ResponseData::new(DataType::None),
-                ("test", _, "internal-error") => {
+                "echo" => ResponseData::new(request.data.as_bytes().to_vec()),
+                "no-content" => ResponseData::new(DataType::None),
+                "internal-error" => {
                     return Err(HttpError::internal("sensitive details"));
                 }
-                ("test", _, "invalid-header") => {
-                    ResponseData::new("ok".to_string())
-                        .with_header("bad\nheader", "value")
-                }
-                ("graphql", _, "query") => {
-                    ResponseData::new(serde_json::json!({ "data": "ok" }))
-                }
+                "invalid-header" => ResponseData::new("ok".to_string())
+                    .with_header("bad\nheader", "value"),
                 _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
@@ -295,17 +463,14 @@ mod tests {
     }
 
     #[async_trait]
-    impl HandleRequest for SlowRuesHandle {
-        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
-            true
-        }
-
-        async fn handle_rues(
+    impl TestRequestHandler for SlowRuesHandle {
+        async fn handle_test(
             &self,
+            topic: &str,
             request: &RuesDispatchEvent,
         ) -> HttpResult<ResponseData> {
-            match request.uri.inner() {
-                ("test", _, "slow") => {
+            match topic {
+                "slow" => {
                     self.entered.notify_waiters();
                     tokio::time::sleep(self.delay).await;
                     Ok(ResponseData::new(request.data.as_bytes().to_vec()))
@@ -376,6 +541,147 @@ mod tests {
         }
     }
 
+    // Keep these methods explicit so the tests still show which routes are
+    // owned by each service trait.
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl ChainRequestHandler for TestHandle {
+        async fn graphql_query(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            let gql_query = request.data.as_string();
+
+            if gql_query.trim().is_empty() {
+                return Ok(ResponseData::new("schema".to_string()));
+            }
+
+            if gql_query.contains("missing") {
+                return Ok(ResponseData::new(serde_json::json!({
+                    "data": null,
+                    "errors": [{ "message": "missing field" }],
+                })));
+            }
+
+            Ok(ResponseData::new(serde_json::json!({ "data": "ok" })))
+        }
+
+        async fn transactions(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn network(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn node(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn account(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn blocks(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn blobs(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn stats(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl RuskRequestHandler for TestHandle {
+        async fn node(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contracts(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn driver(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract_owner(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+    }
+
     const EVENT_CHANNEL_CAP: usize = 16;
     const WS_EVENT_CHANNEL_CAP: usize = 2;
 
@@ -386,14 +692,39 @@ mod tests {
         headers: HeaderMap,
     }
 
-    async fn bind_test_server<H: HandleRequest>(
+    async fn bind_test_server_with_services(
+        services: HttpHandlers,
+        options: TestServerOptions,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        let (event_sender, _event_receiver) =
+            broadcast::channel(EVENT_CHANNEL_CAP);
+        let (_server, local_addr) = HttpServer::bind(
+            services,
+            event_sender.clone(),
+            HttpServerConfig {
+                address: "localhost:0".to_string(),
+                cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),
+                key: options.cert_and_key.map(|(_, k)| PathBuf::from(k)),
+                enable_docs: false,
+                headers: options.headers,
+                ws_event_channel_cap: WS_EVENT_CHANNEL_CAP,
+                policy: options.policy,
+            },
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        (_server, local_addr, event_sender)
+    }
+
+    async fn bind_test_server<H: TestRequestHandler>(
         handler: H,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
         bind_test_server_with_options(handler, TestServerOptions::default())
             .await
     }
 
-    async fn bind_test_server_with_headers<H: HandleRequest>(
+    async fn bind_test_server_with_headers<H: TestRequestHandler>(
         handler: H,
         headers: HeaderMap,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
@@ -407,28 +738,13 @@ mod tests {
         .await
     }
 
-    async fn bind_test_server_with_options<H: HandleRequest>(
+    async fn bind_test_server_with_options<H: TestRequestHandler>(
         handler: H,
         options: TestServerOptions,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        let (event_sender, _event_receiver) =
-            broadcast::channel(EVENT_CHANNEL_CAP);
-        let (_server, local_addr) = HttpServer::bind(
-            handler,
-            event_sender.clone(),
-            HttpServerConfig {
-                address: "localhost:0".to_string(),
-                cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),
-                key: options.cert_and_key.map(|(_, k)| PathBuf::from(k)),
-                headers: options.headers,
-                ws_event_channel_cap: WS_EVENT_CHANNEL_CAP,
-                policy: options.policy,
-            },
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        (_server, local_addr, event_sender)
+        let mut services = HttpHandlers::default();
+        services.set_test_handler(handler);
+        bind_test_server_with_services(services, options).await
     }
 
     fn connect_ws(
@@ -717,9 +1033,11 @@ mod tests {
             concurrency: 64,
         };
 
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
         let (_server, local_addr, _event_sender) =
-            bind_test_server_with_options(
-                TestHandle,
+            bind_test_server_with_services(
+                services,
                 TestServerOptions {
                     policy,
                     ..Default::default()
@@ -729,16 +1047,61 @@ mod tests {
 
         let client = reqwest::Client::new();
         let first = client
-            .post(format!("http://{local_addr}/on/graphql/query"))
-            .body("{ ping }")
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
             .send()
             .await
             .expect("First request should complete");
         assert_eq!(first.status(), StatusCode::OK);
 
         let second = client
-            .post(format!("http://{local_addr}/on/graphql/query"))
-            .body("{ ping }")
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_tx_propagate_class_rate_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.tx_propagate =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .post(format!("http://{local_addr}/on/transactions/propagate"))
+            .body("tx")
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(format!("http://{local_addr}/on/transactions/propagate"))
+            .body("tx")
             .send()
             .await
             .expect("Second request should complete");
@@ -905,6 +1268,121 @@ mod tests {
             .expect("First request task should complete");
 
         assert_eq!(first.status(), StatusCode::OK);
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_contract_and_feeder_query_classes_use_distinct_limits() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.contract_query =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+        policy.global_limits.classes.feeder_query =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_rusk_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let path = "http://{local_addr}/on/contracts:abcd/query";
+
+        let first_contract = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .body("query")
+            .send()
+            .await
+            .expect("First contract query should complete");
+        assert_eq!(first_contract.status(), StatusCode::OK);
+
+        let second_contract = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .body("query")
+            .send()
+            .await
+            .expect("Second contract query should complete");
+        assert_eq!(second_contract.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second_contract);
+
+        let first_feeder = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .header("Rusk-Feeder", "1")
+            .body("query")
+            .send()
+            .await
+            .expect("First feeder query should complete");
+        assert_eq!(first_feeder.status(), StatusCode::OK);
+
+        let second_feeder = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .header("Rusk-Feeder", "1")
+            .body("query")
+            .send()
+            .await
+            .expect("Second feeder query should complete");
+        assert_eq!(second_feeder.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second_feeder);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_upload_driver_class_rate_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.upload_driver =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_rusk_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let path =
+            format!("http://{local_addr}/on/contract:abcd/upload_driver");
+
+        let first = client
+            .post(&path)
+            .body("driver")
+            .send()
+            .await
+            .expect("First upload request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(&path)
+            .body("driver")
+            .send()
+            .await
+            .expect("Second upload request should complete");
         assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
         assert_retry_after_positive_integer(&second);
     }
@@ -1594,9 +2072,17 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "chain")]
     async fn legacy_graphql_query_still_works() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+
         let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1616,12 +2102,71 @@ mod tests {
 
     #[tokio::test]
     #[cfg(feature = "chain")]
-    async fn graphql_post_query() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+    async fn legacy_graphql_empty_body_returns_schema() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.text().await.expect("Response should have body");
+        assert_eq!(body, "schema");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn legacy_graphql_invalid_query_returns_errors() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .body("{ missing }")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert!(payload["errors"].is_array());
+        assert_eq!(payload["errors"][0]["message"], "missing field");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_post_query() {
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1643,11 +2188,15 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_oversized_body_returns_payload_too_large() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let oversized = vec![b'a'; MAX_GRAPHQL_REQUEST_BODY_BYTES + 1];
@@ -1665,11 +2214,15 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_invalid_query_returns_errors() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1692,11 +2245,15 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_response_headers_from_handler_are_preserved() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHttpHeaderHandler);
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHttpHeaderHandler);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1785,12 +2342,16 @@ mod tests {
 
         let client = reqwest::Client::new();
         for case in cases {
-            let mut handler = DataSources::default();
+            let mut services = HttpHandlers::default();
             if case.configure_handler {
-                handler.set_graphql_handler(TestGraphqlHandler);
+                services.set_graphql_handler(TestGraphqlHandler);
             }
             let (_server, local_addr, _event_sender) =
-                bind_test_server(handler).await;
+                bind_test_server_with_services(
+                    services,
+                    TestServerOptions::default(),
+                )
+                .await;
 
             let mut request = client.request(
                 case.method.clone(),
@@ -1949,7 +2510,22 @@ mod tests {
             .ok_or(anyhow::anyhow!("Content location is not a string"))?
             .to_string();
 
-        let uri = RuesEventUri::parse_from_path(&path)
+        let path = path
+            .strip_prefix(RUES_LOCATION_PREFIX)
+            .ok_or(anyhow::anyhow!("Invalid location prefix"))?;
+        let mut segments = path.split('/');
+        let _leading = segments.next();
+        let target = segments
+            .next()
+            .ok_or(anyhow::anyhow!("Missing target in location"))?;
+        let topic = segments
+            .next()
+            .filter(|segment| !segment.is_empty())
+            .ok_or(anyhow::anyhow!("Missing topic in location"))?;
+        if segments.next().is_some() {
+            return Err(anyhow::anyhow!("Invalid location"));
+        }
+        let uri = RuesEventUri::from_target_and_topic(target, topic)
             .ok_or(anyhow::anyhow!("Invalid location"))?;
 
         let data = data.to_vec().into();

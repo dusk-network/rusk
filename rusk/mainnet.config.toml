@@ -4,6 +4,7 @@
 
 [http]
 #listen = true
+#enable_docs = false
 #listen_address = '127.0.0.1:8080'
 #cert = <path_of_pem>
 #key = <path_of_key>

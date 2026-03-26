@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 use std::time::Duration;
 
+use axum::extract::MatchedPath;
 use axum::http::{HeaderMap, Request, StatusCode};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,6 @@ use tower::limit::rate::{Rate, RateLimit};
 use tracing::warn;
 
 use super::RUES_LOCATION_PREFIX;
-use super::event::RuesEventUri;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HttpPolicyConfig {
@@ -213,7 +213,7 @@ impl HttpRequestPolicy {
             return Err(PolicyRejection::forbidden());
         }
 
-        let class = classify_request(path, req.headers());
+        let class = classify_request(req);
 
         if let Some(limits) = &self.limits {
             return limits.acquire(class, path);
@@ -273,35 +273,80 @@ impl EndpointClass {
 
 const ENDPOINT_CLASS_COUNT: usize = 7;
 
-/// Classifies an HTTP request path into a policy endpoint class.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum EndpointClassHint {
+    ContractQuery,
+    Graphql,
+    TxPropagate,
+    UploadDriver,
+    OtherRues,
+    OtherHttp,
+}
+
+impl EndpointClassHint {
+    fn resolve(self, headers: &HeaderMap) -> EndpointClass {
+        match self {
+            Self::ContractQuery => {
+                if headers.contains_key("Rusk-Feeder") {
+                    EndpointClass::FeederQuery
+                } else {
+                    EndpointClass::ContractQuery
+                }
+            }
+            Self::Graphql => EndpointClass::Graphql,
+            Self::TxPropagate => EndpointClass::TxPropagate,
+            Self::UploadDriver => EndpointClass::UploadDriver,
+            Self::OtherRues => EndpointClass::OtherRues,
+            Self::OtherHttp => EndpointClass::OtherHttp,
+        }
+    }
+}
+
+/// Classifies an HTTP request into a policy endpoint class using Axum
+/// `MatchedPath` metadata plus request headers for feeder-query splitting.
 ///
-/// For RUES paths, this operates on the `target/topic` route where `target` is
-/// internally parsed as `component[:entity]`.
-pub fn classify_request(path: &str, headers: &HeaderMap) -> EndpointClass {
+/// This is intentionally route-driven. The HTTP policy layer no longer reparses
+/// `/on/*` paths to infer endpoint ownership. Instead it relies on the matched
+/// route patterns registered in `axum_app.rs`, which makes those patterns part
+/// of the policy contract.
+///
+/// The following routes currently receive special classes:
+/// - `/graphql` and `/graphql/`
+/// - `/on/graphql/query`
+/// - `/on/transactions/propagate`
+/// - `/on/contracts:{entity}/{topic}`
+/// - `/on/contract:{entity}/upload_driver`
+///
+/// All other explicit `/on/*` routes fall back to `OtherRues`.
+pub fn classify_request<B>(req: &Request<B>) -> EndpointClass {
+    classify_request_hint(req).resolve(req.headers())
+}
+
+fn classify_request_hint<B>(req: &Request<B>) -> EndpointClassHint {
+    let path = req.uri().path();
+
     if is_graphql_path(path) {
-        return EndpointClass::Graphql;
+        return EndpointClassHint::Graphql;
     }
 
     if !path.starts_with(RUES_LOCATION_PREFIX) {
-        return EndpointClass::OtherHttp;
+        return EndpointClassHint::OtherHttp;
     }
 
-    let Some(uri) = RuesEventUri::parse_from_path(path) else {
-        return EndpointClass::OtherRues;
+    let Some(matched_path) = req.extensions().get::<MatchedPath>() else {
+        return EndpointClassHint::OtherHttp;
     };
 
-    match uri.inner() {
-        ("graphql", _, "query") => EndpointClass::Graphql,
-        ("contracts", Some(_), _) => {
-            if headers.contains_key("Rusk-Feeder") {
-                EndpointClass::FeederQuery
-            } else {
-                EndpointClass::ContractQuery
-            }
+    match matched_path.as_str() {
+        "/graphql" => EndpointClassHint::Graphql,
+        "/on/graphql/query" => EndpointClassHint::Graphql,
+        "/on/transactions/propagate" => EndpointClassHint::TxPropagate,
+        "/on/contracts:{entity}/{topic}" => EndpointClassHint::ContractQuery,
+        "/on/contract:{entity}/upload_driver" => {
+            EndpointClassHint::UploadDriver
         }
-        ("transactions", _, "propagate") => EndpointClass::TxPropagate,
-        ("contract", Some(_), "upload_driver") => EndpointClass::UploadDriver,
-        _ => EndpointClass::OtherRues,
+        path if path.starts_with("/on/") => EndpointClassHint::OtherRues,
+        _ => EndpointClassHint::OtherHttp,
     }
 }
 

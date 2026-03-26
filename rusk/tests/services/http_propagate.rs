@@ -15,7 +15,9 @@ use dusk_rusk_test::{RuskVmConfig, TestContext};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger};
-use rusk::http::{HttpPolicyConfig, HttpServer, HttpServerConfig};
+use rusk::http::{
+    HttpHandlers, HttpPolicyConfig, HttpServer, HttpServerConfig,
+};
 use rusk::node::RuskNode;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
@@ -87,13 +89,17 @@ async fn propagate_rejects_tx_that_fails_preverify() {
     );
 
     let (event_sender, _event_receiver) = broadcast::channel(1);
+    let mut handlers = HttpHandlers::default();
+    handlers.set_chain_handler(node.clone());
+    handlers.set_graphql_handler(node.clone());
     let (_server, local_addr) = HttpServer::bind(
-        node,
+        handlers,
         event_sender.clone(),
         HttpServerConfig {
             address: "127.0.0.1:0".to_string(),
             cert: None,
             key: None,
+            enable_docs: false,
             headers: Default::default(),
             ws_event_channel_cap: 16,
             policy: HttpPolicyConfig::default(),

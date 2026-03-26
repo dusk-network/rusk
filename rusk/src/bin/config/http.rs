@@ -19,6 +19,8 @@ pub struct HttpConfig {
     pub key: Option<PathBuf>,
     #[serde(default = "default_listen")]
     pub listen: bool,
+    #[serde(default = "default_enable_docs")]
+    pub enable_docs: bool,
     #[serde(
         default = "default_feeder_call_gas",
         deserialize_with = "deserialize_feeder_call_gas",
@@ -73,6 +75,7 @@ impl Default for HttpConfig {
             key: None,
             headers: default_http_headers(),
             listen: default_listen(),
+            enable_docs: default_enable_docs(),
             feeder_call_gas: default_feeder_call_gas(),
             listen_address: None,
             ws_sub_channel_cap: default_ws_sub_channel_cap(),
@@ -88,6 +91,10 @@ const fn default_feeder_call_gas() -> u64 {
 
 const fn default_listen() -> bool {
     true
+}
+
+const fn default_enable_docs() -> bool {
+    false
 }
 
 const fn default_ws_sub_channel_cap() -> usize {
