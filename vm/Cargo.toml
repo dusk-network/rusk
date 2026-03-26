@@ -28,6 +28,7 @@ serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 c-kzg = { workspace = true }
 secp256k1 = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["getrandom"] }
