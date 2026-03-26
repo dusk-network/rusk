@@ -28,7 +28,7 @@ use node_data::ledger::{SpendingId, Transaction};
 use serde_json::{Map, Value, json};
 use tracing::{error, warn};
 
-use super::event::RequestData;
+use super::rues::event::RequestData;
 use super::*;
 use crate::node::{RuskNode, set_vm_host_context};
 use crate::{VERSION, VERSION_BUILD};

@@ -29,8 +29,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::hex::Hex;
 
-use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
-use crate::http::HttpAppState;
+use crate::http::error::ApiError;
+use crate::http::{
+    HttpAppState, HttpError, RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER,
+};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
@@ -334,8 +336,8 @@ impl From<InvalidHeaderValue> for ExecutionError {
     }
 }
 
-impl From<super::HttpError> for ExecutionError {
-    fn from(e: super::HttpError) -> Self {
+impl From<HttpError> for ExecutionError {
+    fn from(e: HttpError) -> Self {
         Self::Other(e.to_string())
     }
 }
@@ -372,7 +374,7 @@ impl SessionId {
 }
 
 impl axum::extract::FromRequestParts<crate::http::HttpAppState> for SessionId {
-    type Rejection = super::error::ApiError;
+    type Rejection = ApiError;
 
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
@@ -387,7 +389,7 @@ impl axum::extract::FromRequestParts<crate::http::HttpAppState> for SessionId {
             // TODO: Keep 424 for current RUES compatibility; revisit whether
             // malformed or missing session identifiers should be normalized to
             // 400.
-            None => Err(super::error::ApiError::new(
+            None => Err(ApiError::new(
                 StatusCode::FAILED_DEPENDENCY,
                 "Session ID not provided or invalid",
                 "invalid_session",
@@ -523,7 +525,7 @@ impl RuesDispatchEvent {
             .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
     }
 
-    pub fn check_rusk_version(&self) -> Result<(), super::HttpError> {
+    pub fn check_rusk_version(&self) -> Result<(), HttpError> {
         check_rusk_version(
             self.header(RUSK_VERSION_HEADER),
             self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
@@ -549,7 +551,7 @@ impl RuesDispatchEvent {
         uri: RuesEventUri,
         request_headers: &HeaderMap,
         body_bytes: Vec<u8>,
-    ) -> Result<(Self, bool), super::HttpError> {
+    ) -> Result<(Self, bool), HttpError> {
         let (headers, binary_request, binary_response) =
             parse_rues_request_meta(request_headers)?;
         Self::from_parsed_parts(
@@ -567,7 +569,7 @@ impl RuesDispatchEvent {
         body_bytes: Vec<u8>,
         binary_request: bool,
         binary_response: bool,
-    ) -> Result<(Self, bool), super::HttpError> {
+    ) -> Result<(Self, bool), HttpError> {
         let data = parse_request_data(body_bytes, binary_request)?;
         let ret = RuesDispatchEvent { headers, data, uri };
         Ok((ret, binary_response))
@@ -576,10 +578,8 @@ impl RuesDispatchEvent {
 
 fn parse_rues_request_meta(
     request_headers: &HeaderMap,
-) -> Result<
-    (serde_json::Map<String, serde_json::Value>, bool, bool),
-    super::HttpError,
-> {
+) -> Result<(serde_json::Map<String, serde_json::Value>, bool, bool), HttpError>
+{
     let headers =
         request_headers
             .iter()
@@ -589,7 +589,7 @@ fn parse_rues_request_meta(
             })
             .collect::<Result<
                 serde_json::Map<String, serde_json::Value>,
-                super::HttpError,
+                HttpError,
             >>()?;
 
     let content_type = request_headers
@@ -612,13 +612,13 @@ fn parse_rues_request_meta(
 fn parse_request_data(
     bytes: Vec<u8>,
     binary_request: bool,
-) -> Result<RequestData, super::HttpError> {
+) -> Result<RequestData, HttpError> {
     if binary_request {
         return Ok(bytes.into());
     }
 
     let text = String::from_utf8(bytes)
-        .map_err(|_| super::HttpError::invalid_payload("Invalid utf8"))?;
+        .map_err(|_| HttpError::invalid_payload("Invalid utf8"))?;
     if let Some(hex) = text.strip_prefix("0x") {
         if let Ok(bytes) = hex::decode(hex) {
             Ok(bytes.into())
@@ -633,15 +633,15 @@ fn parse_request_data(
 fn parse_request_header_value(
     key: &str,
     value: &HeaderValue,
-) -> Result<serde_json::Value, super::HttpError> {
+) -> Result<serde_json::Value, HttpError> {
     if value.is_empty() {
         return Ok(serde_json::Value::Null);
     }
 
     let as_str = value.to_str().map_err(|_| {
-        super::HttpError::invalid_payload(format!(
-            "Invalid header encoding for {key}",
-        ))
+        HttpError::invalid_payload(
+            format!("Invalid header encoding for {key}",),
+        )
     })?;
 
     if key.to_lowercase().starts_with(GQL_VAR_PREFIX)
@@ -731,9 +731,9 @@ impl From<node_data::events::Event> for RuesEvent {
 pub fn check_rusk_version(
     version: Option<&serde_json::Value>,
     strict: bool,
-) -> Result<(), super::HttpError> {
+) -> Result<(), HttpError> {
     if strict && version.is_none() {
-        return Err(super::HttpError::VersionMismatch(
+        return Err(HttpError::VersionMismatch(
             "Missing Rusk-Version header while Rusk-Version-Strict is set"
                 .to_string(),
         ));
@@ -760,7 +760,7 @@ pub fn check_rusk_version(
         }
 
         if !req.matches(&current) {
-            return Err(super::HttpError::VersionMismatch(format!(
+            return Err(HttpError::VersionMismatch(format!(
                 "Mismatched rusk version: requested {req} - current {current}",
             )));
         }

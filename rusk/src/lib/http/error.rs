@@ -9,7 +9,7 @@ use axum::http::{HeaderValue, Response, StatusCode};
 use axum::response::IntoResponse;
 use tracing::{debug, error};
 
-use super::event::ExecutionError;
+use super::rues::event::ExecutionError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

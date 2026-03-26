@@ -13,11 +13,11 @@ use dusk_core::signatures::bls::Signature;
 use dusk_core::stake::{STAKE_CONTRACT, StakeFundOwner};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_data_driver::ConvertibleContract;
-use event::RequestData;
 use rusk_profile::CRS_17_HASH;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 
+use super::rues::event::RequestData;
 use super::*;
 use crate::BlsPublicKey;
 use crate::node::Rusk;

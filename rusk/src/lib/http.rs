@@ -11,7 +11,6 @@ mod chain;
 #[cfg(feature = "chain")]
 mod driver;
 mod error;
-mod event;
 #[cfg(feature = "chain")]
 mod graphql;
 mod middleware;
@@ -43,10 +42,8 @@ use axum::http::header::{ALLOW, CONTENT_TYPE};
 #[cfg(feature = "chain")]
 pub(crate) use driver::DriverExecutor;
 pub use error::Error as HttpError;
-pub(crate) use event::{
-    DataType, ExecutionError, MessageResponse as EventResponse,
-};
 pub use policy::HttpPolicyConfig;
+pub(crate) use rues::event::{DataType, ExecutionError};
 use tokio::sync::{RwLock, broadcast};
 use tokio::task::JoinError;
 use tokio::{io, task};
@@ -56,9 +53,13 @@ use tracing::info;
 
 pub(crate) use self::app_state::HttpAppState;
 use self::axum_app::build_app;
-pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
-use self::event::{ResponseData, RuesEventUri, SessionId};
 pub(crate) use self::policy::HttpRequestPolicy;
+#[cfg(test)]
+use self::rues::event::RuesEventUri;
+pub use self::rues::event::{
+    RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent,
+};
+use self::rues::event::{ResponseData, SessionId};
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -410,11 +411,11 @@ mod tests {
     use axum::http::StatusCode;
     use axum::response::IntoResponse;
     use dusk_core::abi::ContractId;
-    use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
     use tungstenite::{Message, client};
 
     use super::*;
+    use crate::http::rues::event::{BinaryWrapper, RequestData};
 
     /// A [`TestRequestHandler`] implementation that returns the same data
     struct TestHandle;

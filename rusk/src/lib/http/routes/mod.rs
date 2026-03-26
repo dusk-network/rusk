@@ -15,7 +15,7 @@ mod static_assets;
 /// defined here to be included in the docs.
 pub(crate) fn router() -> OpenApiRouter<HttpAppState> {
     let router = openapi::router()
-        .routes(routes!(rues::handle_rues_ws))
+        .routes(routes!(rues::ws::handle_rues_ws))
         .nest("/on", on::router());
 
     // /graphql
