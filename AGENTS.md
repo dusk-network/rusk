@@ -246,6 +246,7 @@ make clean && make -C <dir> build
 - **Secrets**: never log, use `zeroize` for buffers
 - **Lockfiles**: OK to change via manifest updates, don't run `cargo update` unprompted
 - **Circuit/keys**: Coordinate with maintainers before touching `rusk-profile/`
+- **Workspace dependencies**: dependency versions are declared centrally in the root `Cargo.toml` under `[workspace.dependencies]` with the minimal feature set. Sub-crates reference them as `{ workspace = true }`, enabling additional features locally as needed. Never add inline versioned dependencies for crates already in the workspace table — and when adding a new dependency, add it to the workspace table first
 - **Clippy**: don't ignore or suppress warnings — fix the underlying issue
 - **Test order**: don't assume tests run in a specific order
 
