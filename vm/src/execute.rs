@@ -14,9 +14,11 @@ use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::withdraw::{Withdraw, WithdrawReplayToken};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
-use piecrust::{CallReceipt, Error, Session};
+use piecrust::{CallReceipt, Session};
 use rkyv::Deserialize;
 use wasmparser::*;
+
+use crate::ExecutionError;
 
 /// Executes a transaction in the provided session.
 ///
@@ -69,13 +71,11 @@ pub fn execute(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    tx.phoenix_fee_check()
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, ExecutionError> {
+    tx.phoenix_fee_check()?;
 
     if config.phoenix_refund_check {
-        tx.phoenix_refund_check()
-            .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+        tx.phoenix_refund_check()?;
     }
 
     // Transaction will be discarded if it is a deployment transaction
@@ -84,20 +84,20 @@ pub fn execute(
         config.gas_per_deploy_byte,
         config.min_deploy_gas_price,
         config.min_deploy_points,
-    )
-    .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    )?;
 
     if let Some(contract_deploy) = tx.deploy() {
+        let is_wasm64 = is_wasm64(&contract_deploy.bytecode.bytes);
         match (config.disable_wasm32, config.disable_wasm64) {
-            (true, true) => Err(Error::Panic(
-                "contract deployment is not enabled in the VM".into(),
+            (true, true) => Err(ExecutionError::precondition(
+                "contract deployment is not enabled in the VM",
             )),
-            (true, false) if !is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("32-bit wasm is not enabled in the VM".into()))
-            }
-            (false, true) if is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("64-bit wasm is not enabled in the VM".into()))
-            }
+            (true, false) if !is_wasm64 => Err(ExecutionError::precondition(
+                "32-bit wasm is not enabled in the VM",
+            )),
+            (false, true) if is_wasm64 => Err(ExecutionError::precondition(
+                "64-bit wasm is not enabled in the VM",
+            )),
             _ => Ok(()),
         }?
     }
@@ -107,18 +107,16 @@ pub fn execute(
         && call.contract != TRANSFER_CONTRACT
         && call.contract != STAKE_CONTRACT
     {
-        return Err(Error::Panic(
-            "3rd party contracts are not enabled in the VM".into(),
+        return Err(ExecutionError::precondition(
+            "3rd party contracts are not enabled in the VM",
         ));
     }
 
-    let blob_min_charge = tx
-        .blob_check(config.gas_per_blob)
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    let blob_min_charge = tx.blob_check(config.gas_per_blob)?;
 
     if blob_min_charge.is_some() && !config.with_blob {
-        return Err(Error::Panic(
-            "Blob processing is not enabled in the VM".into(),
+        return Err(ExecutionError::precondition(
+            "Blob processing is not enabled in the VM",
         ));
     }
 
@@ -158,7 +156,8 @@ pub fn execute(
         )
         .inspect_err(|_| {
             clear_session(session, config);
-        })?;
+        })
+        .map_err(ExecutionError::from_spend_and_execute)?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
