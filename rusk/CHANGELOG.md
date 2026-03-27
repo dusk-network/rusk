@@ -511,8 +511,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.6.0...HEAD
-[1.6.0]: https://github.com/dusk-network/rusk-private/compare/0c61088614bcb515ed3abd955b738f4d375ce19c...dusk-rusk-1.6.0
-[1.5.0]: https://github.com/dusk-network/rusk-private/compare/dusk-rusk-1.4.4...0c61088614bcb515ed3abd955b738f4d375ce19c
+[1.6.0]: https://github.com/dusk-network/rusk/compare/0c61088614bcb515ed3abd955b738f4d375ce19c...dusk-rusk-1.6.0
+[1.5.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.4...0c61088614bcb515ed3abd955b738f4d375ce19c
 [1.4.4]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.3...dusk-rusk-1.4.4
 [1.4.3]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.2...dusk-rusk-1.4.3
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.1...dusk-rusk-1.4.2
