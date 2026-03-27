@@ -340,3 +340,347 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
+    use node_data::StepName;
+    use node_data::ledger::{Header, Seed, StepVotes};
+    use node_data::message::payload::{
+        QuorumType, ValidationQuorum, ValidationResult, Vote,
+    };
+    use node_data::message::{ConsensusHeader, Message, Payload};
+    use rand::SeedableRng;
+    use tokio::sync::Mutex;
+
+    use crate::commons::{Database, RoundUpdate};
+    use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+    use crate::errors::ConsensusError;
+    use crate::iteration_ctx::RoundCommittees;
+    use crate::msg_handler::MsgHandler;
+    use crate::step_votes_reg::AttInfoRegistry;
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{DUSK, Provisioners};
+    use crate::user::sortition::Config;
+    use crate::validation::handler::ValidationHandler;
+
+    // Keep one deterministic seed per test setup to isolate key material.
+    const SEED_ACCEPT_VALID_VOTE: u64 = 1;
+    const SEED_ACCEPT_PAST_VALID_VOTE: u64 = 2;
+    const SEED_REJECT_NOQUORUM: u64 = 3;
+    const SEED_REJECT_WRONG_ITERATION: u64 = 4;
+    const SEED_REJECT_PAST_NOQUORUM: u64 = 5;
+
+    #[derive(Default)]
+    struct DummyDb;
+
+    // Minimal DB stub for validation handler behavior tests.
+    #[async_trait::async_trait]
+    impl Database for DummyDb {
+        async fn store_candidate_block(
+            &mut self,
+            _b: node_data::ledger::Block,
+        ) {
+        }
+        async fn store_validation_result(
+            &mut self,
+            _ch: &node_data::message::ConsensusHeader,
+            _vr: &ValidationResult,
+        ) {
+        }
+        async fn get_last_iter(&self) -> (node_data::ledger::Hash, u8) {
+            ([0u8; 32], 0)
+        }
+        async fn store_last_iter(
+            &mut self,
+            _data: (node_data::ledger::Hash, u8),
+        ) {
+        }
+    }
+
+    // Build a single-member validation committee and matching signer.
+    fn setup_committee(
+        seed: Seed,
+        round: u64,
+        iteration: u8,
+        rng_seed: u64,
+    ) -> (Committee, RoundUpdate) {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(rng_seed);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = round - 1;
+        tip_header.seed = seed;
+
+        let ru = RoundUpdate::new(
+            pk.clone(),
+            sk,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+        let cfg =
+            Config::new(seed, round, iteration, StepName::Validation, vec![]);
+        let committee = Committee::new(&provisioners, &cfg);
+
+        (committee, ru)
+    }
+
+    // Build a validation handler for a specific iteration.
+    fn build_handler(iteration: u8) -> ValidationHandler<DummyDb> {
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let mut handler = ValidationHandler::new(att_registry, db);
+        handler.reset(iteration);
+        handler
+    }
+
+    // Collect a validation message for the current iteration.
+    async fn collect_validation_message(
+        handler: &mut ValidationHandler<DummyDb>,
+        msg: Message,
+        ru: &RoundUpdate,
+        committee: &Committee,
+    ) -> Result<crate::msg_handler::StepOutcome, ConsensusError> {
+        handler
+            .collect(
+                msg,
+                ru,
+                committee,
+                Some(*ru.pubkey_bls.bytes()),
+                // RoundCommittees is not used in validation handler, so we can pass an empty one.
+                &RoundCommittees::default(),
+            )
+            .await
+    }
+
+    // Collect a validation message from a past iteration.
+    async fn collect_validation_message_from_past(
+        handler: &mut ValidationHandler<DummyDb>,
+        msg: Message,
+        ru: &RoundUpdate,
+        committee: &Committee,
+    ) -> Result<crate::msg_handler::StepOutcome, ConsensusError> {
+        handler
+            .collect_from_past(msg, committee, Some(*ru.pubkey_bls.bytes()))
+            .await
+    }
+
+    // Build an emergency-mode ValidationQuorum message for past handling.
+    fn build_validation_quorum_message(
+        vote: Vote,
+        quorum: QuorumType,
+    ) -> Message {
+        let header = ConsensusHeader {
+            prev_block_hash: [7u8; 32],
+            round: 1,
+            iteration: EMERGENCY_MODE_ITERATION_THRESHOLD,
+        };
+        let result =
+            ValidationResult::new(StepVotes::new([9u8; 48], 1), vote, quorum);
+        let quorum = ValidationQuorum { header, result };
+        quorum.into()
+    }
+
+    #[tokio::test]
+    // Basic in-committee vote should be accepted when iteration matches.
+    async fn validation_accepts_valid_vote() {
+        let (committee, ru) = setup_committee(
+            Seed::from([9u8; 48]),
+            1,
+            0,
+            SEED_ACCEPT_VALID_VOTE,
+        );
+        let mut handler = build_handler(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoCandidate, &ru, 0);
+        let msg: Message = validation.into();
+
+        let outcome =
+            collect_validation_message(&mut handler, msg, &ru, &committee)
+                .await;
+
+        if let Err(err) = outcome {
+            panic!("expected Ok outcome, got {err:?}");
+        }
+    }
+
+    #[tokio::test]
+    // Past valid votes should yield a ValidationResult when quorum is reached.
+    async fn validation_collect_from_past_accepts_valid_vote_quorum() {
+        let (committee, ru) = setup_committee(
+            Seed::from([11u8; 48]),
+            1,
+            0,
+            SEED_ACCEPT_PAST_VALID_VOTE,
+        );
+        let mut handler = build_handler(0);
+
+        let vote = Vote::Valid([8u8; 32]);
+        let validation = crate::build_validation_payload(vote, &ru, 0);
+        let msg: Message = validation.into();
+
+        let outcome = collect_validation_message_from_past(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        .expect("past valid vote should be accepted");
+
+        match outcome {
+            crate::msg_handler::StepOutcome::Ready(msg) => {
+                if let Payload::ValidationResult(vr) = msg.payload {
+                    assert_eq!(vr.vote(), &vote);
+                } else {
+                    panic!("expected ValidationResult output");
+                }
+            }
+            crate::msg_handler::StepOutcome::Pending => {
+                panic!("expected quorum-ready output")
+            }
+        }
+    }
+
+    #[tokio::test]
+    // Emergency-mode ValidationQuorum with Valid vote should be accepted.
+    async fn validation_collect_from_past_accepts_emergency_validation_quorum()
+    {
+        let mut handler = build_handler(0);
+        let committee = Committee::default();
+        let vote = Vote::Valid([5u8; 32]);
+        let msg = build_validation_quorum_message(vote, QuorumType::Valid);
+
+        let outcome = handler
+            .collect_from_past(msg, &committee, None)
+            .await
+            .expect("valid emergency quorum should be accepted");
+
+        match outcome {
+            crate::msg_handler::StepOutcome::Ready(msg) => {
+                if let Payload::ValidationResult(vr) = msg.payload {
+                    assert_eq!(vr.vote(), &vote);
+                } else {
+                    panic!("expected ValidationResult output");
+                }
+            }
+            crate::msg_handler::StepOutcome::Pending => {
+                panic!("expected ready output from emergency quorum")
+            }
+        }
+    }
+
+    #[tokio::test]
+    // Validation messages with NoQuorum vote should be rejected since it's not a valid vote.
+    async fn validation_rejects_noquorum_vote() {
+        let (committee, ru) =
+            setup_committee(Seed::from([7u8; 48]), 1, 0, SEED_REJECT_NOQUORUM);
+        let mut handler = build_handler(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoQuorum, &ru, 0);
+        let msg: Message = validation.into();
+
+        let err = match collect_validation_message(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected noquorum vote rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidVote(Vote::NoQuorum)));
+    }
+
+    #[tokio::test]
+    // Validation messages from future iterations should be rejected.
+    async fn validation_rejects_wrong_iteration() {
+        let (committee, ru) = setup_committee(
+            Seed::from([5u8; 48]),
+            1,
+            0,
+            SEED_REJECT_WRONG_ITERATION,
+        );
+        let mut handler = build_handler(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoCandidate, &ru, 1);
+        let msg: Message = validation.into();
+
+        let err = match collect_validation_message(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected future iteration rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidMsgIteration(1)));
+    }
+
+    #[tokio::test]
+    // Emergency-mode ValidationQuorum must carry a Valid vote.
+    async fn validation_collect_from_past_rejects_emergency_non_valid_quorum() {
+        let mut handler = build_handler(0);
+        let committee = Committee::default();
+        let msg = build_validation_quorum_message(
+            Vote::NoCandidate,
+            QuorumType::NoCandidate,
+        );
+
+        let err = match handler.collect_from_past(msg, &committee, None).await {
+            Ok(_) => panic!("expected non-valid emergency quorum rejection"),
+            Err(err) => err,
+        };
+        assert!(matches!(err, ConsensusError::InvalidMsgType));
+    }
+
+    #[tokio::test]
+    // Past NoQuorum votes must be rejected in validation handling.
+    async fn validation_collect_from_past_rejects_noquorum_vote() {
+        let (committee, ru) = setup_committee(
+            Seed::from([13u8; 48]),
+            1,
+            0,
+            SEED_REJECT_PAST_NOQUORUM,
+        );
+        let mut handler = build_handler(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoQuorum, &ru, 0);
+        let msg: Message = validation.into();
+
+        let err = match collect_validation_message_from_past(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected past noquorum vote rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidVote(Vote::NoQuorum)));
+    }
+}
