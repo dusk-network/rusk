@@ -57,10 +57,12 @@ async fn propagate_rejects_tx_that_fails_preverify() {
     );
     backend
         .update(|db| {
-            let mut header = node_data::ledger::Header::default();
-            header.height = 0;
-            header.state_hash = state_root;
-            header.hash = [1u8; 32];
+            let header = node_data::ledger::Header {
+                height: 0,
+                state_hash: state_root,
+                hash: [1u8; 32],
+                ..Default::default()
+            };
             db.store_block(
                 &header,
                 &[],
@@ -72,9 +74,11 @@ async fn propagate_rejects_tx_that_fails_preverify() {
         })
         .expect("storing genesis block should succeed");
 
-    let mut kadcast_conf = kadcast::config::Config::default();
-    kadcast_conf.public_address = "127.0.0.1:0".to_string();
-    kadcast_conf.listen_address = Some("127.0.0.1:0".to_string());
+    let kadcast_conf = kadcast::config::Config {
+        public_address: "127.0.0.1:0".to_string(),
+        listen_address: Some("127.0.0.1:0".to_string()),
+        ..Default::default()
+    };
     let network =
         node::network::Kadcast::<255>::new(kadcast_conf).expect("valid config");
     #[cfg(feature = "archive")]

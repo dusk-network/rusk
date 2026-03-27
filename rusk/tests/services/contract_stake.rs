@@ -153,7 +153,7 @@ pub async fn stake_from_contract() -> Result<()> {
         .expect("stake to be successful");
     let tx = execute_transaction(
         stake_from_contract,
-        &rusk,
+        rusk,
         EPOCH * 2,
         None,
         Some(pk),

@@ -18,6 +18,7 @@ pub use piecrust::{
     Session,
 };
 
+pub use self::error::ExecutionError;
 pub use self::execute::feature::Activation as FeatureActivation;
 pub use self::execute::{Config as ExecutionConfig, execute, gen_contract_id};
 
@@ -49,6 +50,7 @@ use self::host_queries::{
 };
 
 pub(crate) mod cache;
+mod error;
 mod execute;
 pub mod host_queries;
 

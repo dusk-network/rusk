@@ -14,9 +14,11 @@ use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::withdraw::{Withdraw, WithdrawReplayToken};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
-use piecrust::{CallReceipt, Error, Session};
+use piecrust::{CallReceipt, Session};
 use rkyv::Deserialize;
 use wasmparser::*;
+
+use crate::ExecutionError;
 
 /// Executes a transaction in the provided session.
 ///
@@ -51,7 +53,10 @@ use wasmparser::*;
 ///
 /// 4. Call the "refund" function on the transfer contract with unlimited gas.
 ///    The amount charged depends on the gas spent by the transaction, and the
-///    optional contract call in steps 2 or 3.
+///    optional contract call in steps 2 or 3. If this fails, a specific error
+///    `FailedRefund` is returned, then the tx should be considered
+///    unspendable/invalid, and the caller SHALL DO a re-execution of previous
+///    transactions.
 ///
 /// Note that deployment transaction will never be re-executed for reasons
 /// related to deployment, as it is either discarded or it charges the
@@ -69,13 +74,11 @@ pub fn execute(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    tx.phoenix_fee_check()
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, ExecutionError> {
+    tx.phoenix_fee_check()?;
 
     if config.phoenix_refund_check {
-        tx.phoenix_refund_check()
-            .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+        tx.phoenix_refund_check()?;
     }
 
     // Transaction will be discarded if it is a deployment transaction
@@ -84,20 +87,20 @@ pub fn execute(
         config.gas_per_deploy_byte,
         config.min_deploy_gas_price,
         config.min_deploy_points,
-    )
-    .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    )?;
 
     if let Some(contract_deploy) = tx.deploy() {
+        let is_wasm64 = is_wasm64(&contract_deploy.bytecode.bytes);
         match (config.disable_wasm32, config.disable_wasm64) {
-            (true, true) => Err(Error::Panic(
-                "contract deployment is not enabled in the VM".into(),
+            (true, true) => Err(ExecutionError::precondition(
+                "contract deployment is not enabled in the VM",
             )),
-            (true, false) if !is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("32-bit wasm is not enabled in the VM".into()))
-            }
-            (false, true) if is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("64-bit wasm is not enabled in the VM".into()))
-            }
+            (true, false) if !is_wasm64 => Err(ExecutionError::precondition(
+                "32-bit wasm is not enabled in the VM",
+            )),
+            (false, true) if is_wasm64 => Err(ExecutionError::precondition(
+                "64-bit wasm is not enabled in the VM",
+            )),
             _ => Ok(()),
         }?
     }
@@ -107,18 +110,16 @@ pub fn execute(
         && call.contract != TRANSFER_CONTRACT
         && call.contract != STAKE_CONTRACT
     {
-        return Err(Error::Panic(
-            "3rd party contracts are not enabled in the VM".into(),
+        return Err(ExecutionError::precondition(
+            "3rd party contracts are not enabled in the VM",
         ));
     }
 
-    let blob_min_charge = tx
-        .blob_check(config.gas_per_blob)
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    let blob_min_charge = tx.blob_check(config.gas_per_blob)?;
 
     if blob_min_charge.is_some() && !config.with_blob {
-        return Err(Error::Panic(
-            "Blob processing is not enabled in the VM".into(),
+        return Err(ExecutionError::precondition(
+            "Blob processing is not enabled in the VM",
         ));
     }
 
@@ -158,7 +159,8 @@ pub fn execute(
         )
         .inspect_err(|_| {
             clear_session(session, config);
-        })?;
+        })
+        .map_err(ExecutionError::from_spend_and_execute)?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
@@ -176,9 +178,9 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
+    // Refund the appropriate amount to the transaction. If this errors, the
+    // transaction must be discarded by the caller who is also responsible to
+    // revert the state applied during the spend_and_execute.
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
@@ -186,7 +188,10 @@ pub fn execute(
             &receipt.gas_spent,
             u64::MAX,
         )
-        .expect("Refunding must succeed");
+        .inspect_err(|_| {
+            clear_session(session, config);
+        })
+        .map_err(ExecutionError::FailedRefund)?;
 
     receipt.events.extend(refund_receipt.events);
 
