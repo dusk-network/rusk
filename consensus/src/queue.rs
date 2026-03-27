@@ -124,7 +124,7 @@ mod tests {
     use node_data::bls::PUBLIC_BLS_SIZE;
 
     use super::QueueMessage;
-    use crate::queue::MsgRegistry;
+    use crate::queue::{MsgRegistry, MsgRegistryError};
 
     #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
     struct Item(u64, u8, i32, node_data::bls::PublicKeyBytes);
@@ -139,6 +139,21 @@ mod tests {
             buf[2] = data_bytes[2];
             buf[3] = data_bytes[3];
             Self(round, step, data, node_data::bls::PublicKeyBytes(buf))
+        }
+    }
+
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
+    struct NoSigner(u64, u8);
+
+    impl QueueMessage for NoSigner {
+        fn round(&self) -> u64 {
+            self.0
+        }
+        fn step(&self) -> u8 {
+            self.1
+        }
+        fn signer(&self) -> Option<node_data::bls::PublicKeyBytes> {
+            None
         }
     }
 
@@ -207,6 +222,62 @@ mod tests {
 
         assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
         assert!(reg.drain_msg_by_round_step(round + 2, 1).is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn test_rejects_no_signer() {
+        let mut reg = MsgRegistry::<NoSigner>::default();
+        let msg = NoSigner(42, 1);
+
+        match reg.put_msg(msg.clone()) {
+            Err(MsgRegistryError::NoSigner(returned)) => {
+                assert_eq!(returned, msg);
+            }
+            other => panic!("expected NoSigner error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_rejects_duplicate_signer() {
+        let mut reg = MsgRegistry::<Item>::default();
+        let msg = Item::new(7, 3, 99);
+
+        reg.put_msg(msg).expect("first insert");
+        match reg.put_msg(msg) {
+            Err(MsgRegistryError::SignerAlreadyEnqueue(returned)) => {
+                assert_eq!(returned, msg);
+            }
+            other => panic!("expected SignerAlreadyEnqueue, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_queue_capacity_drops_oldest() -> Result<(), MsgRegistryError<Item>>
+    {
+        let round = 1;
+        let step = 1;
+        let mut reg = MsgRegistry::<Item>::default();
+
+        for i in 0..super::MAX_MESSAGES_PER_QUEUE {
+            reg.put_msg(Item::new(round, step, i as i32))?;
+        }
+
+        assert_eq!(reg.msg_count(), super::MAX_MESSAGES_PER_QUEUE);
+
+        reg.put_msg(Item::new(
+            round,
+            step,
+            super::MAX_MESSAGES_PER_QUEUE as i32,
+        ))?;
+
+        assert_eq!(reg.msg_count(), super::MAX_MESSAGES_PER_QUEUE);
+
+        let drained = reg
+            .drain_msg_by_round_step(round, step)
+            .expect("queue exists");
+        assert_eq!(drained.len(), super::MAX_MESSAGES_PER_QUEUE);
+        assert_eq!(drained.front().unwrap().2, 1);
         Ok(())
     }
 }
