@@ -56,7 +56,7 @@ dusk-merkle = "0.6.0-rc.0"
 dusk-plonk = { version = "0.22.0-rc.0", default-features = false, features = ["legacy-proving"] }
 dusk-poseidon = "0.42.0-rc.0"
 jubjub-schnorr = { version = "0.7.0-rc.0", default-features = false }
-kadcast = "0.8.0-rc.0"
+kadcast = "0.8.0-rc.2"
 phoenix-circuits = { version = "0.8.0-rc.0", default-features = false }
 phoenix-core = { version = "0.35.0-rc.0", default-features = false }
 piecrust = "0.30.0-rc.0"
@@ -194,3 +194,4 @@ piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev =
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "777f3bf" }
 phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
 phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
+kadcast = { git = "https://github.com/dusk-network/kadcast-private.git", rev = "deadf46" }

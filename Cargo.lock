@@ -3262,9 +3262,8 @@ dependencies = [
 
 [[package]]
 name = "kadcast"
-version = "0.8.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba3371639014ff5f0044ebd4f3993fcb4d6714b52ceda91945e83703d480bd03"
+version = "0.8.0-rc.2"
+source = "git+https://github.com/dusk-network/kadcast-private.git?rev=deadf46#deadf4679b1ed2c2c07b2fb16d5370acd75fd811"
 dependencies = [
  "arrayvec",
  "blake2",
