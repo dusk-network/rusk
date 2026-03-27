@@ -14,9 +14,8 @@
 #cert = <path_of_pem>
 #key = <path_of_key>
 
-# The default max cost for feeder calls is the maximum representable. Put in a
-# a string wrapped number up to u64::MAX
-#feeder_call_gas = "18446744073709551615" 
+# The default max cost for feeder calls is 3 billion.
+#feeder_call_gas = 3_000_000_000
 
 #ws_sub_channel_cap = 16,
 #ws_event_channel_cap = 1024,

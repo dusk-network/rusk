@@ -4,13 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
-use dusk_core::transfer::{
-    TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
-};
 use dusk_rusk_test::common::state::{ExecuteResult, generator_procedure};
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use wallet_core::keys::derive_bls_sk;
@@ -18,7 +14,6 @@ use wallet_core::keys::derive_bls_sk;
 use crate::common::logger;
 
 const BLOCK_HEIGHT: u64 = 2;
-const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const TX_GAS_LIMIT: u64 = 1_000_000;
 const TX_GAS_PRICE: u64 = 1;
 const TRANSFER_VALUE: u64 = 17;
@@ -35,25 +30,11 @@ async fn refund_failure_discards_tx_and_preserves_state() -> Result<()> {
     let receiver_sk = derive_bls_sk(&seed, 2);
     let receiver_pk = BlsPublicKey::from(&receiver_sk);
 
-    let snapshot_toml = format!(
-        "[[moonlight_account]]\naddress = \"{}\"\nbalance = {}\n",
-        bs58::encode(sender_pk.to_bytes()).into_string(),
-        TRANSFER_VALUE + TX_GAS_LIMIT * TX_GAS_PRICE,
-    );
+    let state_toml = include_str!("../config/fee_refund_overflow.toml");
 
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-    let tc =
-        TestContext::instantiate_with(&snapshot_toml, vm_config, |session| {
-            session
-                .call::<(BlsPublicKey, u64), ()>(
-                    TRANSFER_CONTRACT,
-                    "add_account_balance",
-                    &(refund_pk, u64::MAX),
-                    u64::MAX,
-                )
-                .expect("Funding refund account should succeed");
-        })
-        .await?;
+    let vm_config = RuskVmConfig::new();
+    let block_gas_limit = vm_config.block_gas_limit;
+    let tc = TestContext::instantiate(&state_toml, vm_config).await?;
     let rusk = tc.rusk();
 
     let sender_before = rusk
@@ -66,7 +47,7 @@ async fn refund_failure_discards_tx_and_preserves_state() -> Result<()> {
         .account(&receiver_pk)
         .expect("Querying receiver account should succeed");
 
-    let tx: ProtocolTransaction = MoonlightTransaction::new_with_refund(
+    let tx = MoonlightTransaction::new_with_refund(
         &sender_sk,
         &refund_pk,
         Some(receiver_pk),
@@ -85,7 +66,7 @@ async fn refund_failure_discards_tx_and_preserves_state() -> Result<()> {
         rusk,
         &[tx],
         BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
+        block_gas_limit,
         vec![],
         Some(ExecuteResult {
             executed: 0,
@@ -103,12 +84,9 @@ async fn refund_failure_discards_tx_and_preserves_state() -> Result<()> {
         .account(&receiver_pk)
         .expect("Querying receiver account should succeed");
 
-    assert_eq!(sender_after.balance, sender_before.balance);
-    assert_eq!(sender_after.nonce, sender_before.nonce);
-    assert_eq!(refund_after.balance, refund_before.balance);
-    assert_eq!(refund_after.nonce, refund_before.nonce);
-    assert_eq!(receiver_after.balance, receiver_before.balance);
-    assert_eq!(receiver_after.nonce, receiver_before.nonce);
+    assert_eq!(sender_after, sender_before);
+    assert_eq!(refund_after, refund_before);
+    assert_eq!(receiver_after, receiver_before);
 
     Ok(())
 }
