@@ -261,6 +261,8 @@ fn with_transactions(
         ))
         .routes(routes!(transactions_subscribe))
         .routes(routes!(transactions_unsubscribe))
+        .routes(routes!(transactions_entity_subscribe))
+        .routes(routes!(transactions_entity_unsubscribe))
 }
 
 #[cfg(feature = "chain")]
@@ -286,6 +288,8 @@ fn with_block_and_stats(
         ))
         .routes(routes!(blocks_subscribe))
         .routes(routes!(blocks_unsubscribe))
+        .routes(routes!(blocks_entity_subscribe))
+        .routes(routes!(blocks_entity_unsubscribe))
 }
 
 #[cfg(feature = "chain")]
@@ -311,8 +315,8 @@ fn with_contract(
                 .routes(routes!(contract_owner_post))
                 .routes(routes!(contract_post)),
         ))
-        .routes(routes!(contracts_subscribe))
-        .routes(routes!(contracts_unsubscribe))
+        .routes(routes!(contracts_entity_subscribe))
+        .routes(routes!(contracts_entity_unsubscribe))
         .routes(routes!(contract_upload_driver_post).layer(
             RequestBodyLimitLayer::new(super::MAX_DRIVER_UPLOAD_BODY_BYTES),
         ))
@@ -466,6 +470,42 @@ async fn transactions_subscribe(
     .await
 }
 
+/// Subscribe to transaction events for a specific transaction identifier.
+///
+/// This preserves the legacy RUES `transactions:{entity}/{topic}` route shape
+/// used by clients subscribing to a single transaction lifecycle.
+#[cfg(feature = "chain")]
+#[utoipa::path(
+    get,
+    path = "/transactions:{entity}/{topic}",
+    tag = "RUES / Events",
+    params(
+        super::openapi::VersionHeaders,
+        super::openapi::SessionHeader,
+        ("entity" = String, Path, description = "Transaction identifier to monitor"),
+        ("topic" = String, Path, description = "Transaction event topic to monitor")
+    ),
+    responses(
+        (status = 200, description = "Transaction subscription registered"),
+        (status = 424, description = "Session ID missing or invalid", body = super::openapi::RuesErrorResponse),
+        (status = 500, description = "Failed to register the subscription", body = super::openapi::RuesErrorResponse)
+    )
+)]
+async fn transactions_entity_subscribe(
+    State(state): State<HttpAppState>,
+    Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
+    headers: HeaderMap,
+    session_id: SessionId,
+) -> Result<Response<Body>, ApiError> {
+    run_subscribe(
+        entity_uri("transactions", &entity, &topic),
+        headers,
+        session_id,
+        state.sockets_map,
+    )
+    .await
+}
+
 /// Unsubscribe from transaction event streams.
 ///
 /// The `Rusk-Session-Id` header must contain the session identifier emitted by
@@ -495,6 +535,40 @@ async fn transactions_unsubscribe(
 ) -> Result<Response<Body>, ApiError> {
     run_unsubscribe(
         component_uri("transactions", &topic),
+        headers,
+        session_id,
+        state.sockets_map,
+    )
+    .await
+}
+
+/// Unsubscribe from transaction events for a specific transaction identifier.
+#[cfg(feature = "chain")]
+#[utoipa::path(
+    delete,
+    path = "/transactions:{entity}/{topic}",
+    tag = "RUES / Events",
+    params(
+        super::openapi::VersionHeaders,
+        super::openapi::SessionHeader,
+        ("entity" = String, Path, description = "Transaction identifier being monitored"),
+        ("topic" = String, Path, description = "Transaction event subscription to remove")
+    ),
+    responses(
+        (status = 200, description = "Transaction subscription removed"),
+        (status = 404, description = "Subscription not found", body = super::openapi::RuesErrorResponse),
+        (status = 424, description = "Session ID missing or invalid", body = super::openapi::RuesErrorResponse),
+        (status = 500, description = "Failed to remove the subscription", body = super::openapi::RuesErrorResponse)
+    )
+)]
+async fn transactions_entity_unsubscribe(
+    State(state): State<HttpAppState>,
+    Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
+    headers: HeaderMap,
+    session_id: SessionId,
+) -> Result<Response<Body>, ApiError> {
+    run_unsubscribe(
+        entity_uri("transactions", &entity, &topic),
         headers,
         session_id,
         state.sockets_map,
@@ -687,6 +761,42 @@ async fn blocks_subscribe(
     .await
 }
 
+/// Subscribe to block events for a specific block identifier.
+///
+/// This preserves the legacy RUES `blocks:{entity}/{topic}` route shape used
+/// by clients subscribing to a single block state transition.
+#[cfg(feature = "chain")]
+#[utoipa::path(
+    get,
+    path = "/blocks:{entity}/{topic}",
+    tag = "RUES / Events",
+    params(
+        super::openapi::VersionHeaders,
+        super::openapi::SessionHeader,
+        ("entity" = String, Path, description = "Block identifier to monitor"),
+        ("topic" = String, Path, description = "Block event type to monitor")
+    ),
+    responses(
+        (status = 200, description = "Block subscription registered"),
+        (status = 424, description = "Session ID missing or invalid", body = super::openapi::RuesErrorResponse),
+        (status = 500, description = "Failed to register the subscription", body = super::openapi::RuesErrorResponse)
+    )
+)]
+async fn blocks_entity_subscribe(
+    State(state): State<HttpAppState>,
+    Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
+    headers: HeaderMap,
+    session_id: SessionId,
+) -> Result<Response<Body>, ApiError> {
+    run_subscribe(
+        entity_uri("blocks", &entity, &topic),
+        headers,
+        session_id,
+        state.sockets_map,
+    )
+    .await
+}
+
 /// Unsubscribe from block event notifications.
 ///
 /// The `Rusk-Session-Id` header must contain the session identifier emitted by
@@ -716,6 +826,40 @@ async fn blocks_unsubscribe(
 ) -> Result<Response<Body>, ApiError> {
     run_unsubscribe(
         component_uri("blocks", &topic),
+        headers,
+        session_id,
+        state.sockets_map,
+    )
+    .await
+}
+
+/// Unsubscribe from block events for a specific block identifier.
+#[cfg(feature = "chain")]
+#[utoipa::path(
+    delete,
+    path = "/blocks:{entity}/{topic}",
+    tag = "RUES / Events",
+    params(
+        super::openapi::VersionHeaders,
+        super::openapi::SessionHeader,
+        ("entity" = String, Path, description = "Block identifier being monitored"),
+        ("topic" = String, Path, description = "Block event subscription to remove")
+    ),
+    responses(
+        (status = 200, description = "Block subscription removed"),
+        (status = 404, description = "Subscription not found", body = super::openapi::RuesErrorResponse),
+        (status = 424, description = "Session ID missing or invalid", body = super::openapi::RuesErrorResponse),
+        (status = 500, description = "Failed to remove the subscription", body = super::openapi::RuesErrorResponse)
+    )
+)]
+async fn blocks_entity_unsubscribe(
+    State(state): State<HttpAppState>,
+    Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
+    headers: HeaderMap,
+    session_id: SessionId,
+) -> Result<Response<Body>, ApiError> {
+    run_unsubscribe(
+        entity_uri("blocks", &entity, &topic),
         headers,
         session_id,
         state.sockets_map,
@@ -987,7 +1131,7 @@ async fn contracts_post(
         (status = 500, description = "Failed to register the subscription", body = super::openapi::RuesErrorResponse)
     )
 )]
-async fn contracts_subscribe(
+async fn contracts_entity_subscribe(
     State(state): State<HttpAppState>,
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
     headers: HeaderMap,
@@ -1024,7 +1168,7 @@ async fn contracts_subscribe(
         (status = 500, description = "Failed to remove the subscription", body = super::openapi::RuesErrorResponse)
     )
 )]
-async fn contracts_unsubscribe(
+async fn contracts_entity_unsubscribe(
     State(state): State<HttpAppState>,
     Path(EntityTopicPath { entity, topic }): Path<EntityTopicPath>,
     headers: HeaderMap,
@@ -1484,7 +1628,7 @@ mod tests {
     use axum::body::{Body, to_bytes};
     use axum::extract::{Path, State};
     use axum::http::header::CONTENT_TYPE;
-    use axum::http::{HeaderMap, Request, StatusCode};
+    use axum::http::{HeaderMap, Method, Request, StatusCode};
     use axum::response::Response;
     use axum::routing::post;
     use serde_json::Value;
@@ -1586,6 +1730,70 @@ mod tests {
         }
     }
 
+    async fn insert_test_session(
+        state: &HttpAppState,
+    ) -> (SessionId, mpsc::Receiver<SubscriptionAction>) {
+        let session_id = SessionId::parse("00112233445566778899aabbccddeeff")
+            .expect("Session ID should parse");
+        let (sender, receiver) = mpsc::channel(1);
+        state.sockets_map.write().await.insert(session_id, sender);
+        (session_id, receiver)
+    }
+
+    async fn assert_entity_subscription_route(
+        method: Method,
+        path: &str,
+        expected_component: &str,
+        expected_entity: &str,
+        expected_topic: &str,
+    ) {
+        let state = test_state(false);
+        let (session_id, mut receiver) = insert_test_session(&state).await;
+        let request = Request::builder()
+            .method(method.clone())
+            .uri(path)
+            .header("Rusk-Session-Id", session_id.to_string())
+            .body(Body::empty())
+            .expect("Request should be built");
+        let app = build_app(state);
+
+        let response_handle = tokio::spawn(async move {
+            app.oneshot(request)
+                .await
+                .expect("Subscription response should be produced")
+        });
+
+        let action = receiver
+            .recv()
+            .await
+            .expect("Subscription action should be delivered");
+
+        match action {
+            SubscriptionAction::Subscribe { uri, reply }
+                if method == Method::GET =>
+            {
+                assert_eq!(uri.component, expected_component);
+                assert_eq!(uri.entity.as_deref(), Some(expected_entity));
+                assert_eq!(uri.topic, expected_topic);
+                reply.send(Ok(())).expect("Reply should be delivered");
+            }
+            SubscriptionAction::Unsubscribe { uri, reply }
+                if method == Method::DELETE =>
+            {
+                assert_eq!(uri.component, expected_component);
+                assert_eq!(uri.entity.as_deref(), Some(expected_entity));
+                assert_eq!(uri.topic, expected_topic);
+                reply.send(Ok(())).expect("Reply should be delivered");
+            }
+            _ => panic!("Unexpected subscription action"),
+        }
+
+        let response = response_handle
+            .await
+            .expect("Subscription task should complete");
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
     #[tokio::test]
     async fn router_fallback_returns_json_not_found() {
         let app = build_app(test_state(false));
@@ -1674,5 +1882,47 @@ mod tests {
             .expect("Response should be produced");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn transaction_entity_subscription_routes_preserve_entity_topics() {
+        assert_entity_subscription_route(
+            Method::GET,
+            "/on/transactions:coffee/executed",
+            "transactions",
+            "coffee",
+            "executed",
+        )
+        .await;
+
+        assert_entity_subscription_route(
+            Method::DELETE,
+            "/on/transactions:coffee/executed",
+            "transactions",
+            "coffee",
+            "executed",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn block_entity_subscription_routes_preserve_entity_topics() {
+        assert_entity_subscription_route(
+            Method::GET,
+            "/on/blocks:cafe/statechange",
+            "blocks",
+            "cafe",
+            "statechange",
+        )
+        .await;
+
+        assert_entity_subscription_route(
+            Method::DELETE,
+            "/on/blocks:cafe/statechange",
+            "blocks",
+            "cafe",
+            "statechange",
+        )
+        .await;
     }
 }
