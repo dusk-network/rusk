@@ -809,18 +809,20 @@ fn reward_and_slash(
 ///
 /// # Note on reward distribution and dust
 ///
-/// The total block reward is split among the generator and voters. Due to
-/// integer division when computing per-credit reward quotas, a small amount
-/// of dust (at most 127 LUX per block) may be left undistributed and is
-/// effectively lost:
+/// The total block reward is split into a fixed generator reward, a Dusk
+/// reward, a generator extra reward, and a voters reward. Due to integer
+/// division when computing per-credit reward quotas, a small amount of dust
+/// may be left undistributed and is effectively lost:
 ///
 /// - **Voters reward**: divided by [`TOTAL_COMMITTEES_CREDITS`] to obtain a
-///   per-credit quota. Any remainder from this division is lost.
+///   per-credit quota. Any remainder from this division is lost, up to
+///   [`TOTAL_COMMITTEES_CREDITS`] - 1 LUX (currently 127 LUX).
 /// - **Generator extra reward**: divided by the maximum number of extra credits
-///   to obtain a per-credit quota (see [`calc_generator_extra_reward`]). Any
-///   remainder from this division is lost, except when the generator includes
-///   votes from the whole committee, in which case it gets the full extra
-///   reward.
+///   to obtain a per-credit quota (see [`calc_generator_extra_reward`]). The
+///   raw division remainder can be as high as `max_extra_credits - 1` LUX
+///   (currently 41 LUX), but when all votes are included the generator gets the
+///   full extra reward. On the proportional branch, at most 40 LUX can remain
+///   undistributed.
 ///
 /// While this dust amount is minimal, a more precise distribution mechanism
 /// (e.g., assigning the remainder to the generator) could be considered in
@@ -852,7 +854,8 @@ fn reward(
     // Split voters reward in credit quotas.
     // Each voter will get as many quotas as its credits in the committee.
     //
-    // Note: Due to integer division, a maximum of 127 LUX can be lost as dust.
+    // Note: Due to integer division, up to TOTAL_COMMITTEES_CREDITS - 1 LUX
+    // (currently 127 LUX) can be lost as dust.
     let credit_reward = voters_reward / TOTAL_COMMITTEES_CREDITS as u64;
 
     // Compute the number of rewards
@@ -926,7 +929,10 @@ fn calc_generator_extra_reward(
     // To calculate the extra reward, we divide the whole amount in quotas,
     // with each quota corresponding to reward value for a single extra credit.
     //
-    // Note: Due to integer division, a maximum of 40 LUX can be lost as dust.
+    // Note: The raw division remainder can be as high as max_extra_credits - 1
+    // LUX (currently 41 LUX). However, that bound only occurs when all extra
+    // credits are included, and that case returns `full_extra_reward` above.
+    // On this branch, at most 40 LUX remain undistributed.
     let max_extra_credits = validation_extra() + ratification_extra();
     let reward_quota = full_extra_reward / max_extra_credits as u64;
 
