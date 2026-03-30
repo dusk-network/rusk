@@ -396,7 +396,7 @@ impl HttpHandlers {
 #[cfg(test)]
 mod tests {
     use std::net::{SocketAddr, TcpStream};
-    use std::{fs, thread};
+    use std::{error::Error as _, fs, thread};
 
     #[cfg(feature = "chain")]
     use async_graphql::{
@@ -896,6 +896,42 @@ mod tests {
         assert!(retry_after >= 1, "Retry-After should be at least 1 second");
     }
 
+    fn is_oversized_upload_transport_error(err: &reqwest::Error) -> bool {
+        let mut current = err.source();
+        while let Some(source) = current {
+            let message = source.to_string().to_ascii_lowercase();
+            if message.contains("connection reset")
+                || message.contains("broken pipe")
+            {
+                return true;
+            }
+            current = source.source();
+        }
+
+        let message = err.to_string().to_ascii_lowercase();
+        message.contains("connection reset") || message.contains("broken pipe")
+    }
+
+    async fn assert_oversized_body_rejection(
+        result: Result<reqwest::Response, reqwest::Error>,
+    ) {
+        match result {
+            Ok(response) => {
+                assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+            }
+            Err(err) => {
+                // RequestBodyLimitLayer can reject from Content-Length before
+                // consuming the body. Depending on socket timing, reqwest may
+                // either observe the 413 response first or the peer closing the
+                // connection while the upload is still in flight.
+                assert!(
+                    is_oversized_upload_transport_error(&err),
+                    "Expected 413 or early connection close for oversized upload, got: {err:?}",
+                );
+            }
+        }
+    }
+
     #[tokio::test]
     async fn http_query() {
         let (_server, local_addr, _event_sender) =
@@ -977,10 +1013,9 @@ mod tests {
             .post(format!("http://{local_addr}/on/test/echo"))
             .body(oversized)
             .send()
-            .await
-            .expect("Requesting should succeed");
+            .await;
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_oversized_body_rejection(response).await;
     }
 
     #[tokio::test]
@@ -1404,10 +1439,9 @@ mod tests {
             ))
             .body(oversized)
             .send()
-            .await
-            .expect("Requesting should succeed");
+            .await;
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_oversized_body_rejection(response).await;
     }
 
     #[tokio::test]
@@ -2205,10 +2239,9 @@ mod tests {
             .header("Content-Type", "application/json")
             .body(oversized)
             .send()
-            .await
-            .expect("Requesting should succeed");
+            .await;
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_oversized_body_rejection(response).await;
     }
 
     #[tokio::test]
