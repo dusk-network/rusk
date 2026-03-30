@@ -218,8 +218,8 @@ mod tests {
 
         // Verify we have documented at least 18 paths
         assert!(
-            path_count >= 18,
-            "Expected at least 18 paths in OpenAPI spec, found {path_count}",
+            path_count >= 20,
+            "Expected at least 20 paths in OpenAPI spec, found {path_count}",
         );
 
         // Verify key paths are present
@@ -237,6 +237,14 @@ mod tests {
         assert!(
             path_names.contains(&"/on/transactions/{topic}"),
             "Missing transaction subscription routes"
+        );
+        assert!(
+            path_names.contains(&"/on/transactions:{entity}/{topic}"),
+            "Missing entity-scoped transaction subscription routes"
+        );
+        assert!(
+            path_names.contains(&"/on/blocks:{entity}/{topic}"),
+            "Missing entity-scoped block subscription routes"
         );
         assert!(
             path_names.contains(&"/on/contracts:{entity}/{topic}"),
@@ -307,6 +315,14 @@ mod tests {
         assert!(
             subscribe_params.contains("Rusk-Version-Strict"),
             "Subscription routes should document Rusk-Version-Strict"
+        );
+
+        let entity_subscribe =
+            operation(&spec, "/on/transactions:{entity}/{topic}", "get");
+        let entity_subscribe_params = parameter_names(entity_subscribe);
+        assert!(
+            entity_subscribe_params.contains("entity"),
+            "Entity transaction subscribe should document the entity path parameter"
         );
 
         let contracts_post =
@@ -431,6 +447,15 @@ mod tests {
             unsubscribe_statuses.contains("404"),
             "Transaction unsubscribe should document missing subscriptions"
         );
+
+        let entity_transactions_unsubscribe =
+            operation(&spec, "/on/transactions:{entity}/{topic}", "delete");
+        let entity_unsubscribe_statuses =
+            response_statuses(entity_transactions_unsubscribe);
+        assert!(
+            entity_unsubscribe_statuses.contains("404"),
+            "Entity transaction unsubscribe should document missing subscriptions"
+        );
     }
 
     #[test]
@@ -507,6 +532,22 @@ mod tests {
             "Transaction unsubscribe should use the RUES events tag"
         );
 
+        let transactions_entity_subscribe =
+            operation(&spec, "/on/transactions:{entity}/{topic}", "get");
+        assert_eq!(
+            operation_tags(transactions_entity_subscribe),
+            BTreeSet::from(["RUES / Events"]),
+            "Entity transaction subscribe should use the RUES events tag"
+        );
+
+        let blocks_entity_subscribe =
+            operation(&spec, "/on/blocks:{entity}/{topic}", "get");
+        assert_eq!(
+            operation_tags(blocks_entity_subscribe),
+            BTreeSet::from(["RUES / Events"]),
+            "Entity block subscribe should use the RUES events tag"
+        );
+
         let contracts_post =
             operation(&spec, "/on/contracts:{entity}/{topic}", "post");
         assert_eq!(
@@ -515,18 +556,18 @@ mod tests {
             "Contract calls and queries should use the RUES dispatch tag"
         );
 
-        let contracts_subscribe =
+        let contracts_entity_subscribe =
             operation(&spec, "/on/contracts:{entity}/{topic}", "get");
         assert_eq!(
-            operation_tags(contracts_subscribe),
+            operation_tags(contracts_entity_subscribe),
             BTreeSet::from(["RUES / Events"]),
             "Contract subscribe should use the RUES events tag"
         );
 
-        let contracts_unsubscribe =
+        let contracts_entity_unsubscribe =
             operation(&spec, "/on/contracts:{entity}/{topic}", "delete");
         assert_eq!(
-            operation_tags(contracts_unsubscribe),
+            operation_tags(contracts_entity_unsubscribe),
             BTreeSet::from(["RUES / Events"]),
             "Contract unsubscribe should use the RUES events tag"
         );
