@@ -158,7 +158,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         metadata: Option<&Metadata>,
     ) {
         match &mut self.curr {
-            State::OutOfSync(oos) => oos.on_quorum(quorum).await,
+            State::OutOfSync(oos) => oos.on_quorum(quorum, metadata).await,
             State::InSync(is) => is.on_quorum(quorum, metadata).await,
         }
     }
