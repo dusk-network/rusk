@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OutOfSync: stop consensus task on entry
 - OutOfSync: ensure sync attempts do not exceed `SYNC_ATTEMPTS`
 - InSync: reject implausible far-future Quorum sync targets
+- OutOfSync: add early recovery on valid next-round Candidates
 - Reject historical transaction formats during live mempool admission while
   preserving ledger replay compatibility
 

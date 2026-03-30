@@ -9,19 +9,28 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use dusk_consensus::config::{
+    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+};
+use dusk_consensus::errors::HeaderError;
+use dusk_consensus::merkle::merkle_root;
+use node_data::get_current_timestamp;
 use node_data::ledger::Block;
-use node_data::message::payload::{GetResource, Inv, Quorum};
+use node_data::message::Metadata;
+use node_data::message::payload::{Candidate, GetResource, Inv, Quorum};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use super::PresyncInfo;
 use crate::chain::acceptor::Acceptor;
+use crate::chain::header_validation::Validator;
 use crate::{Network, database, vm};
 
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;
 const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
 const SYNC_ATTEMPTS: u8 = 3;
+const LIVE_CANDIDATE_MAX_AGE: u64 = 30;
 
 /// The `OutOfSyncImpl` struct manages the synchronization state of a node
 /// that is out of sync with the network. It handles the detection of missing
@@ -237,6 +246,127 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 self.last_request = last_request;
             }
         }
+    }
+
+    pub async fn on_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> anyhow::Result<bool> {
+        let (tip_header, db, context_provisioners) = {
+            let acc = self.acc.read().await;
+            let tip_header = acc.tip_header().await;
+            let db = acc.db.clone();
+            let context_provisioners = {
+                let provisioners = acc.provisioners_list.read().await;
+                provisioners.clone()
+            };
+
+            (tip_header, db, context_provisioners)
+        };
+        let candidate_header = candidate.candidate.header();
+
+        // Only a Candidate that extends our current tip can prove we do
+        // not need this sync session anymore.
+        if candidate_header.height != tip_header.height + 1
+            || candidate_header.prev_block_hash != tip_header.hash
+        {
+            return Ok(false);
+        }
+
+        // Only a recent Candidate can prove the live chain is already back at
+        // our tip. Old but valid Candidates are replayable and should not be
+        // enough to abort a legitimate sync session.
+        let now = get_current_timestamp();
+        if candidate_header
+            .timestamp
+            .saturating_add(LIVE_CANDIDATE_MAX_AGE)
+            < now
+        {
+            debug!(
+                event = "ignore stale sync candidate",
+                candidate_timestamp = candidate_header.timestamp,
+                now,
+                height = candidate_header.height,
+                iter = candidate_header.iteration,
+            );
+            return Ok(false);
+        }
+
+        let expected_generator = context_provisioners.current().get_generator(
+            candidate_header.iteration,
+            tip_header.seed,
+            candidate_header.height,
+        );
+        let validator = Validator::new(db, &tip_header, &context_provisioners);
+
+        match validator
+            .verify_block_header_fields(
+                candidate_header,
+                &expected_generator,
+                false,
+            )
+            .await
+        {
+            Ok(_) => {}
+            Err(
+                err @ (HeaderError::Storage(_, _) | HeaderError::Generic(_)),
+            ) => {
+                return Err(err.into());
+            }
+            Err(err) => {
+                debug!(
+                    event = "ignore sync candidate with invalid header",
+                    ?err,
+                    height = candidate_header.height,
+                    iter = candidate_header.iteration,
+                );
+                return Ok(false);
+            }
+        }
+
+        // Authenticate the header before we spend CPU on payload-root checks.
+        // If the tip already changed, skip the expensive payload validation
+        // because this sync candidate can no longer end the current session.
+        let live_tip = self.acc.read().await.tip_header().await;
+        if live_tip.height != tip_header.height
+            || live_tip.hash != tip_header.hash
+        {
+            debug!(
+                event = "skip sync candidate after tip change",
+                snapshot_height = tip_header.height,
+                live_height = live_tip.height,
+            );
+            return Ok(false);
+        }
+
+        if let Err(err) = validate_candidate_payload(candidate) {
+            debug!(
+                event = "ignore malformed sync candidate",
+                ?err,
+                height = candidate_header.height,
+                iter = candidate_header.iteration,
+            );
+            return Ok(false);
+        }
+
+        // Recheck once more before leaving OutOfSync so payload validation does
+        // not race with a live tip change.
+        let live_tip = self.acc.read().await.tip_header().await;
+        if live_tip.height != tip_header.height
+            || live_tip.hash != tip_header.hash
+        {
+            debug!(
+                event = "skip sync candidate after tip change",
+                snapshot_height = tip_header.height,
+                live_height = live_tip.height,
+            );
+            return Ok(false);
+        }
+
+        // Restart consensus before leaving OutOfSync so the Candidate already
+        // in flight can continue through the normal acceptor path.
+        self.acc.write().await.restart_consensus().await;
+        Ok(true)
     }
 
     /// Processes incoming blocks during the out-of-sync state. Determines
@@ -491,4 +621,44 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
         last_request
     }
+}
+
+// Reject obviously malformed Candidates before doing the more expensive
+// consensus-specific header checks.
+fn validate_candidate_payload(candidate: &Candidate) -> anyhow::Result<()> {
+    let candidate_block = &candidate.candidate;
+    let candidate_header = candidate_block.header();
+
+    if candidate_block.txs().len() > MAX_NUMBER_OF_TRANSACTIONS {
+        anyhow::bail!("candidate contains too many transactions");
+    }
+
+    if candidate_block.faults().len() > MAX_NUMBER_OF_FAULTS {
+        anyhow::bail!("candidate contains too many faults");
+    }
+
+    let candidate_size = candidate_block
+        .size()
+        .map_err(|_| anyhow::anyhow!("unknown block size"))?;
+
+    if candidate_size > MAX_BLOCK_SIZE {
+        anyhow::bail!("candidate exceeds max block size");
+    }
+
+    let tx_digests: Vec<_> =
+        candidate_block.txs().iter().map(|tx| tx.digest()).collect();
+    if merkle_root(&tx_digests[..]) != candidate_header.txroot {
+        anyhow::bail!("candidate has invalid tx merkle root");
+    }
+
+    let fault_digests: Vec<_> = candidate_block
+        .faults()
+        .iter()
+        .map(|fault| fault.digest())
+        .collect();
+    if merkle_root(&fault_digests[..]) != candidate_header.faultroot {
+        anyhow::bail!("candidate has invalid fault merkle root");
+    }
+
+    Ok(())
 }
