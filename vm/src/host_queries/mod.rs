@@ -7,7 +7,6 @@
 //! The host-queries registered on the Dusk VM
 
 use alloc::vec::Vec;
-use core::cell::Cell;
 use std::sync::LazyLock;
 
 use bytecheck::CheckBytes;
@@ -39,7 +38,6 @@ use sha3::Keccak256;
 use tracing::warn;
 
 mod cache;
-
 mod pricing;
 
 pub(crate) use pricing::{
@@ -50,12 +48,12 @@ pub(crate) use pricing::{
     verify_schnorr_host_query,
 };
 
-thread_local! {
-    // Default to V2 for safety: if the node forgets to set a version for a
-    // consensus-critical call path, we'd rather reject than accept.
-    static PLONK_VERSION: Cell<PlonkVersion> = const { Cell::new(PlonkVersion::V2) };
-    static HARD_FORK: Cell<HardFork> = const { Cell::new(HardFork::PreFork) };
-}
+use self::cache::{CacheDomain, cache_key};
+pub use self::cache::{
+    HardForkGuard, HostQueryPolicy, HostQueryPolicyGuard, PlonkVersionGuard,
+    hard_fork, host_query_policy, plonk_version,
+    set_hard_fork, set_host_query_policy, set_plonk_version,
+};
 
 static SECP256K1_CONTEXT: LazyLock<Secp256k1<secp256k1::All>> =
     LazyLock::new(Secp256k1::new);
@@ -79,64 +77,6 @@ impl HardFork {
             HardFork::PreFork => BlsVersion::V1,
         }
     }
-}
-
-/// Guard that restores the previous PLONK version when dropped.
-#[derive(Debug)]
-pub struct PlonkVersionGuard {
-    prev: PlonkVersion,
-}
-
-impl Drop for PlonkVersionGuard {
-    fn drop(&mut self) {
-        PLONK_VERSION.with(|m| m.set(self.prev));
-    }
-}
-
-/// Returns the current thread's PLONK version (defaults to `V2`).
-pub fn plonk_version() -> PlonkVersion {
-    PLONK_VERSION.with(|m| m.get())
-}
-
-/// Sets the current thread's PLONK version.
-///
-/// The previous version is restored when the returned guard is dropped.
-pub fn set_plonk_version(version: PlonkVersion) -> PlonkVersionGuard {
-    let prev = PLONK_VERSION.with(|m| {
-        let prev = m.get();
-        m.set(version);
-        prev
-    });
-    PlonkVersionGuard { prev }
-}
-
-/// Guard that restores the previous hardfork when dropped.
-#[derive(Debug)]
-pub struct HardForkGuard {
-    prev: HardFork,
-}
-
-impl Drop for HardForkGuard {
-    fn drop(&mut self) {
-        HARD_FORK.with(|m| m.set(self.prev));
-    }
-}
-
-/// Returns the active hardfork for this thread.
-pub fn hard_fork() -> HardFork {
-    HARD_FORK.with(|m| m.get())
-}
-
-/// Sets the active hardfork for this thread.
-///
-/// The previous value is restored when the returned guard is dropped.
-pub fn set_hard_fork(hard_fork: HardFork) -> HardForkGuard {
-    let prev = HARD_FORK.with(|m| {
-        let prev = m.get();
-        m.set(hard_fork);
-        prev
-    });
-    HardForkGuard { prev }
 }
 
 /// Computes a cryptographic hash of a byte vector.
@@ -236,43 +176,6 @@ pub fn verify_plonk_with_version(
             false
         }
     }
-}
-
-fn plonk_cache_key(
-    version: PlonkVersion,
-    arg_buf: &[u8],
-) -> [u8; blake2b_simd::OUTBYTES] {
-    // Domain-separate the cache key by PLONK version.
-    let mut state = blake2b_simd::Params::new()
-        .hash_length(blake2b_simd::OUTBYTES)
-        .to_state();
-    let cache_tag = match version {
-        PlonkVersion::V1 => 0,
-        PlonkVersion::V2 => 1,
-        PlonkVersion::V3 => 2,
-        _ => u8::MAX,
-    };
-    state.update(&[cache_tag]);
-    state.update(arg_buf);
-    *state.finalize().as_array()
-}
-
-fn bls_cache_key(
-    hard_fork: HardFork,
-    arg_buf: &[u8],
-) -> [u8; blake2b_simd::OUTBYTES] {
-    // Domain-separate the cache key by active hardfork rule set.
-    let mut state = blake2b_simd::Params::new()
-        .hash_length(blake2b_simd::OUTBYTES)
-        .to_state();
-    let cache_tag = match hard_fork {
-        HardFork::PreFork => 0u8,
-        HardFork::Aegis => 1u8,
-        HardFork::Boreas => 2u8,
-    };
-    state.update(&[cache_tag]);
-    state.update(arg_buf);
-    *state.finalize().as_array()
 }
 
 /// Verifies a Groth16 zk-SNARK proof over the BN254 curve.
@@ -590,8 +493,7 @@ where
 }
 
 pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let cache_key =
-        *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let cache_key = cache_key(CacheDomain::Hash, &arg_buf[..arg_len as usize]);
     let cached = cache::get_hash(cache_key);
 
     wrap_host_query(
@@ -610,7 +512,8 @@ pub(crate) fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash =
+        cache_key(CacheDomain::PoseidonHash, &arg_buf[..arg_len as usize]);
     let cached = cache::get_poseidon_hash(hash);
 
     wrap_host_query(
@@ -630,7 +533,7 @@ pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 
 pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let version = plonk_version();
-    let hash = plonk_cache_key(version, &arg_buf[..arg_len as usize]);
+    let hash = cache_key(CacheDomain::Plonk, &arg_buf[..arg_len as usize]);
     let cached = cache::get_plonk_verification(hash);
 
     wrap_host_query(
@@ -652,7 +555,8 @@ pub(crate) fn host_verify_groth16_bn254(
     arg_buf: &mut [u8],
     arg_len: u32,
 ) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash =
+        cache_key(CacheDomain::Groth16Bn254, &arg_buf[..arg_len as usize]);
     let cached = cache::get_groth16_verification(hash);
 
     wrap_host_query(
@@ -671,7 +575,7 @@ pub(crate) fn host_verify_groth16_bn254(
 }
 
 pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash = cache_key(CacheDomain::Schnorr, &arg_buf[..arg_len as usize]);
     let cached = cache::get_schnorr_verification(hash);
 
     wrap_host_query(
@@ -690,8 +594,7 @@ pub(crate) fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let current_hard_fork = hard_fork();
-    let hash = bls_cache_key(current_hard_fork, &arg_buf[..arg_len as usize]);
+    let hash = cache_key(CacheDomain::Bls, &arg_buf[..arg_len as usize]);
     let cached = cache::get_bls_verification(hash);
 
     wrap_host_query(
@@ -713,8 +616,8 @@ pub(crate) fn host_verify_bls_multisig(
     arg_buf: &mut [u8],
     arg_len: u32,
 ) -> u32 {
-    let current_hard_fork = hard_fork();
-    let hash = bls_cache_key(current_hard_fork, &arg_buf[..arg_len as usize]);
+    let hash =
+        cache_key(CacheDomain::BlsMultisig, &arg_buf[..arg_len as usize]);
     let cached = cache::get_bls_multisig_verification(hash);
 
     wrap_host_query(
@@ -733,7 +636,7 @@ pub(crate) fn host_verify_bls_multisig(
 }
 
 pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash = cache_key(CacheDomain::Keccak256, &arg_buf[..arg_len as usize]);
     let cached = cache::get_keccak256(hash);
 
     wrap_host_query(arg_buf, arg_len, "host_keccak256", &[0u8; 32], |arg| {
@@ -746,7 +649,7 @@ pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash = cache_key(CacheDomain::Sha256, &arg_buf[..arg_len as usize]);
     let cached = cache::get_sha256(hash);
 
     wrap_host_query(arg_buf, arg_len, "host_sha256", &[0u8; 32], |arg| {
@@ -759,7 +662,7 @@ pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash = cache_key(CacheDomain::Kzg, &arg_buf[..arg_len as usize]);
     let cached = cache::get_kzg_verification(hash);
 
     wrap_host_query(
@@ -778,7 +681,8 @@ pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let hash =
+        cache_key(CacheDomain::Secp256k1Recover, &arg_buf[..arg_len as usize]);
     let cached = cache::get_secp256k1_recover(hash);
 
     wrap_host_query(
@@ -799,6 +703,7 @@ pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use core::cell::RefCell;
+    use std::cell::Cell;
 
     use super::*;
 

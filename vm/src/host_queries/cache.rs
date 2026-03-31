@@ -4,11 +4,235 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::cell::Cell;
 use std::env;
 use std::num::NonZeroUsize;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
+use dusk_core::plonk::PlonkVersion;
 use lru::LruCache;
+
+use super::HardFork;
+
+// These caches are process-global and survive across block executions.
+// Cache keys for consensus-sensitive host queries must therefore include every
+// execution-policy input that can change semantics across heights or releases.
+
+const fn plonk_cache_revision(version: PlonkVersion) -> u32 {
+    match version {
+        PlonkVersion::V1 => 1,
+        PlonkVersion::V2 => 2,
+        PlonkVersion::V3 => 3,
+        _ => u32::MAX,
+    }
+}
+
+const fn bls_cache_revision(hard_fork: HardFork) -> u32 {
+    match hard_fork {
+        HardFork::PreFork => 0,
+        HardFork::Aegis | HardFork::Boreas => 1,
+    }
+}
+
+/// Active execution policy used by VM host queries.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct HostQueryPolicy {
+    /// PLONK verifier version selected for this execution context.
+    pub plonk_version: PlonkVersion,
+    /// Active hardfork used for BLS verification semantics.
+    pub hard_fork: HardFork,
+}
+
+impl HostQueryPolicy {
+    /// Creates a policy from the active PLONK and hardfork versions.
+    pub const fn from_versions(
+        plonk_version: PlonkVersion,
+        hard_fork: HardFork,
+    ) -> Self {
+        Self {
+            plonk_version,
+            hard_fork,
+        }
+    }
+}
+
+thread_local! {
+    // Default to V2 for safety: if the node forgets to set a version for a
+    // consensus-critical call path, we'd rather reject than accept.
+    static HOST_QUERY_POLICY: Cell<HostQueryPolicy> = const {
+        Cell::new(HostQueryPolicy::from_versions(
+            PlonkVersion::V2,
+            HardFork::PreFork,
+        ))
+    };
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(super) enum CacheDomain {
+    Hash,
+    PoseidonHash,
+    Plonk,
+    Groth16Bn254,
+    Schnorr,
+    Bls,
+    BlsMultisig,
+    Keccak256,
+    Sha256,
+    Kzg,
+    Secp256k1Recover,
+}
+
+impl CacheDomain {
+    const fn tag(self) -> u8 {
+        match self {
+            CacheDomain::Hash => 0,
+            CacheDomain::PoseidonHash => 1,
+            CacheDomain::Plonk => 2,
+            CacheDomain::Groth16Bn254 => 3,
+            CacheDomain::Schnorr => 4,
+            CacheDomain::Bls => 5,
+            CacheDomain::BlsMultisig => 6,
+            CacheDomain::Keccak256 => 7,
+            CacheDomain::Sha256 => 8,
+            CacheDomain::Kzg => 9,
+            CacheDomain::Secp256k1Recover => 10,
+        }
+    }
+}
+
+// Cache revisions must be derived from execution policy inputs that change at
+// explicit activation boundaries. That keeps long-lived nodes aligned with
+// fresh nodes across fork and feature transitions.
+const fn cache_revision(policy: HostQueryPolicy, domain: CacheDomain) -> u32 {
+    match domain {
+        CacheDomain::Plonk => plonk_cache_revision(policy.plonk_version),
+        CacheDomain::Bls | CacheDomain::BlsMultisig => {
+            bls_cache_revision(policy.hard_fork)
+        }
+        CacheDomain::Hash
+        | CacheDomain::PoseidonHash
+        | CacheDomain::Groth16Bn254
+        | CacheDomain::Schnorr
+        | CacheDomain::Keccak256
+        | CacheDomain::Sha256
+        | CacheDomain::Kzg
+        | CacheDomain::Secp256k1Recover => 0,
+    }
+}
+
+/// Guard that restores the previous host-query policy when dropped.
+#[derive(Debug)]
+pub struct HostQueryPolicyGuard {
+    prev: HostQueryPolicy,
+}
+
+impl Drop for HostQueryPolicyGuard {
+    fn drop(&mut self) {
+        HOST_QUERY_POLICY.with(|m| m.set(self.prev));
+    }
+}
+
+/// Guard that restores the previous PLONK version when dropped.
+#[derive(Debug)]
+pub struct PlonkVersionGuard {
+    prev: HostQueryPolicy,
+}
+
+impl Drop for PlonkVersionGuard {
+    fn drop(&mut self) {
+        HOST_QUERY_POLICY.with(|m| m.set(self.prev));
+    }
+}
+
+/// Guard that restores the previous hardfork when dropped.
+#[derive(Debug)]
+pub struct HardForkGuard {
+    prev: HostQueryPolicy,
+}
+
+impl Drop for HardForkGuard {
+    fn drop(&mut self) {
+        HOST_QUERY_POLICY.with(|m| m.set(self.prev));
+    }
+}
+
+/// Returns the current thread's host-query policy.
+pub fn host_query_policy() -> HostQueryPolicy {
+    HOST_QUERY_POLICY.with(|m| m.get())
+}
+
+/// Sets the current thread's host-query policy.
+///
+/// The previous policy is restored when the returned guard is dropped.
+pub fn set_host_query_policy(policy: HostQueryPolicy) -> HostQueryPolicyGuard {
+    let prev = HOST_QUERY_POLICY.with(|m| {
+        let prev = m.get();
+        m.set(policy);
+        prev
+    });
+    HostQueryPolicyGuard { prev }
+}
+
+/// Returns the current thread's PLONK version (defaults to `V2`).
+pub fn plonk_version() -> PlonkVersion {
+    host_query_policy().plonk_version
+}
+
+/// Sets the current thread's PLONK version.
+///
+/// The previous version is restored when the returned guard is dropped.
+pub fn set_plonk_version(version: PlonkVersion) -> PlonkVersionGuard {
+    let prev = HOST_QUERY_POLICY.with(|m| {
+        let prev = m.get();
+        let mut policy = prev;
+        policy.plonk_version = version;
+        m.set(policy);
+        prev
+    });
+    PlonkVersionGuard { prev }
+}
+
+/// Returns the active hardfork for this thread.
+pub fn hard_fork() -> HardFork {
+    host_query_policy().hard_fork
+}
+
+/// Sets the active hardfork for this thread.
+///
+/// The previous value is restored when the returned guard is dropped.
+pub fn set_hard_fork(hard_fork: HardFork) -> HardForkGuard {
+    let prev = HOST_QUERY_POLICY.with(|m| {
+        let prev = m.get();
+        let mut policy = prev;
+        policy.hard_fork = hard_fork;
+        m.set(policy);
+        prev
+    });
+    HardForkGuard { prev }
+}
+
+pub(super) fn cache_key_with_revision(
+    domain: CacheDomain,
+    revision: u32,
+    arg_buf: &[u8],
+) -> [u8; blake2b_simd::OUTBYTES] {
+    // Domain-separate cache entries by query domain and semantics revision.
+    let mut state = blake2b_simd::Params::new()
+        .hash_length(blake2b_simd::OUTBYTES)
+        .to_state();
+    state.update(&[domain.tag()]);
+    state.update(&revision.to_le_bytes());
+    state.update(arg_buf);
+    *state.finalize().as_array()
+}
+
+pub(super) fn cache_key(
+    domain: CacheDomain,
+    arg_buf: &[u8],
+) -> [u8; blake2b_simd::OUTBYTES] {
+    let revision = cache_revision(host_query_policy(), domain);
+    cache_key_with_revision(domain, revision, arg_buf)
+}
 
 type ScalarCacheValue = dusk_core::BlsScalar;
 type RecoverCacheValue = Option<[u8; 65]>;
@@ -161,3 +385,95 @@ define_cache!(
     2048,
     "DUSK_VM_SECP256K1_RECOVER_CACHE_SIZE"
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn host_query_policy_revisions_follow_versions() {
+        let prefork =
+            HostQueryPolicy::from_versions(PlonkVersion::V1, HardFork::PreFork);
+        let aegis =
+            HostQueryPolicy::from_versions(PlonkVersion::V3, HardFork::Aegis);
+        let boreas =
+            HostQueryPolicy::from_versions(PlonkVersion::V3, HardFork::Boreas);
+
+        assert_ne!(
+            cache_revision(prefork, CacheDomain::Plonk),
+            cache_revision(aegis, CacheDomain::Plonk)
+        );
+        assert_ne!(
+            cache_revision(prefork, CacheDomain::Bls),
+            cache_revision(aegis, CacheDomain::Bls)
+        );
+        assert_eq!(
+            cache_revision(aegis, CacheDomain::Bls),
+            cache_revision(aegis, CacheDomain::BlsMultisig)
+        );
+        assert_eq!(
+            cache_revision(aegis, CacheDomain::Bls),
+            cache_revision(boreas, CacheDomain::Bls)
+        );
+        assert_eq!(cache_revision(prefork, CacheDomain::Schnorr), 0);
+    }
+
+    #[test]
+    fn cache_key_is_domain_and_revision_separated() {
+        let arg = [1u8, 2, 3, 4];
+
+        let hash_key = cache_key_with_revision(CacheDomain::Hash, 0, &arg);
+        let schnorr_key =
+            cache_key_with_revision(CacheDomain::Schnorr, 0, &arg);
+        let bumped_hash_key =
+            cache_key_with_revision(CacheDomain::Hash, 1, &arg);
+
+        assert_ne!(hash_key, schnorr_key);
+        assert_ne!(hash_key, bumped_hash_key);
+    }
+
+    #[test]
+    fn set_host_query_policy_restores_previous_policy() {
+        let prev = host_query_policy();
+        let next =
+            HostQueryPolicy::from_versions(PlonkVersion::V3, HardFork::Boreas);
+
+        {
+            let _guard = set_host_query_policy(next);
+            assert_eq!(host_query_policy(), next);
+        }
+
+        assert_eq!(host_query_policy(), prev);
+    }
+
+    #[test]
+    fn version_setters_update_cache_revisions() {
+        let prev = host_query_policy();
+
+        {
+            let _guard = set_plonk_version(PlonkVersion::V1);
+            assert_eq!(plonk_version(), PlonkVersion::V1);
+            assert_eq!(
+                cache_revision(host_query_policy(), CacheDomain::Plonk),
+                plonk_cache_revision(PlonkVersion::V1)
+            );
+        }
+
+        assert_eq!(host_query_policy(), prev);
+
+        {
+            let _guard = set_hard_fork(HardFork::Boreas);
+            assert_eq!(hard_fork(), HardFork::Boreas);
+            assert_eq!(
+                cache_revision(host_query_policy(), CacheDomain::Bls),
+                bls_cache_revision(HardFork::Boreas)
+            );
+            assert_eq!(
+                cache_revision(host_query_policy(), CacheDomain::BlsMultisig),
+                bls_cache_revision(HardFork::Boreas)
+            );
+        }
+
+        assert_eq!(host_query_policy(), prev);
+    }
+}
