@@ -12,6 +12,8 @@ import { Bookmark } from "../bookmark.js";
 
 const DEFAULT_OWNERSHIP_CHUNK_SIZE = 512;
 const MAX_OWNERSHIP_WORKERS = 16;
+const DEFAULT_NULLIFIER_BATCH_BYTE_BUDGET = 60 * 1024;
+const NULLIFIER_BATCH_LAYOUT_BYTES = 8;
 const size = (array) => array.reduce((sum, { size }) => sum + size, 0);
 
 function clampPositiveInteger(value, fallback) {
@@ -54,6 +56,40 @@ function splitNoteChunk(notes, itemSize, chunkSize) {
   }
 
   return chunks;
+}
+
+function encodeNullifierBatch(nullifiers, itemSize) {
+  const byteLength = nullifiers.length * itemSize +
+    NULLIFIER_BATCH_LAYOUT_BYTES;
+  const body = new Uint8Array(byteLength);
+
+  DataBuffer.copyInto(body, nullifiers);
+  DataBuffer.layout(body, nullifiers.length);
+
+  return body;
+}
+
+function splitNullifierBatches(nullifiers, itemSize) {
+  if (nullifiers.length === 0) {
+    return [];
+  }
+
+  const batchSize = Math.max(
+    Math.floor(
+      Math.max(
+        DEFAULT_NULLIFIER_BATCH_BYTE_BUDGET - NULLIFIER_BATCH_LAYOUT_BYTES,
+        0,
+      ) / itemSize,
+    ),
+    1,
+  );
+  const batches = [];
+
+  for (let index = 0; index < nullifiers.length; index += batchSize) {
+    batches.push(nullifiers.slice(index, index + batchSize));
+  }
+
+  return batches;
 }
 
 function assertProfilesShareSource(profiles) {
@@ -248,22 +284,22 @@ export class AddressSyncer extends EventTarget {
 
   async spent(nullifiers) {
     const entrySize = await ProtocolDriver.getEntrySize();
-
-    const size = nullifiers.length * entrySize.key + 8;
-    const body = new Uint8Array(size);
-
-    DataBuffer.copyInto(body, nullifiers);
-    DataBuffer.layout(body, nullifiers.length);
-
-    const buffer = await this.#network.contracts.transferContract.call
-      .existing_nullifiers(body)
-      .then((response) => response.arrayBuffer());
-
-    const layout = DataBuffer.layout(new Uint8Array(buffer));
     const spentNullifiers = [];
 
-    for (let i = 0; i < layout.totalLength; i += entrySize.key) {
-      spentNullifiers.push(buffer.slice(i, i + entrySize.key));
+    for (const batch of splitNullifierBatches(nullifiers, entrySize.key)) {
+      const body = encodeNullifierBatch(batch, entrySize.key);
+      const response = await this.#network.contracts.transferContract.call
+        .existing_nullifiers(body);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const buffer = await response.arrayBuffer();
+      const layout = DataBuffer.layout(new Uint8Array(buffer));
+
+      for (let i = 0; i < layout.totalLength; i += entrySize.key) {
+        spentNullifiers.push(buffer.slice(i, i + entrySize.key));
+      }
     }
 
     return spentNullifiers;
