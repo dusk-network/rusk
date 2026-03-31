@@ -24,6 +24,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::any::Any;
 
+use dusk_core::BlsScalar;
 use dusk_core::signatures::bls::{
     MultisigSignature, PublicKey as BlsPublicKey,
 };
@@ -41,7 +42,8 @@ use super::{
 struct HostQueryPricing {
     hash: u64,
     hash_per_byte: u64,
-    poseidon_hash: u64,
+    poseidon_hash_base: u64,
+    poseidon_hash_per_scalar: u64,
     verify_plonk: u64,
     verify_groth16_bn254: u64,
     verify_schnorr: u64,
@@ -61,7 +63,8 @@ impl HostQueryPricing {
         Self {
             hash: 0,
             hash_per_byte: 0,
-            poseidon_hash: 0,
+            poseidon_hash_base: 0,
+            poseidon_hash_per_scalar: 0,
             verify_plonk: 0,
             verify_groth16_bn254: 0,
             verify_schnorr: 0,
@@ -83,7 +86,8 @@ impl HostQueryPricing {
         Self {
             hash: 3_000,
             hash_per_byte: 10,
-            poseidon_hash: 200_000,
+            poseidon_hash_base: 30_000,
+            poseidon_hash_per_scalar: 10_000,
             verify_plonk: 10_000_000,
             verify_groth16_bn254: 4_500_000,
             verify_schnorr: 1_000_000,
@@ -102,12 +106,27 @@ impl HostQueryPricing {
     fn per_byte_cost(&self, base: u64, per_byte: u64, arg_buf: &[u8]) -> u64 {
         base + per_byte * decoded_vec_len(arg_buf) as u64
     }
+
+    fn per_scalar_cost(
+        &self,
+        base: u64,
+        per_scalar: u64,
+        arg_buf: &[u8],
+    ) -> u64 {
+        base + per_scalar * decoded_scalar_vec_len(arg_buf).max(1) as u64
+    }
 }
 
 fn decoded_vec_len(arg_buf: &[u8]) -> usize {
     rkyv::from_bytes::<Vec<u8>>(arg_buf)
         .map(|bytes| bytes.len())
         .unwrap_or(arg_buf.len())
+}
+
+fn decoded_scalar_vec_len(arg_buf: &[u8]) -> usize {
+    rkyv::from_bytes::<Vec<BlsScalar>>(arg_buf)
+        .map(|scalars| scalars.len())
+        .unwrap_or(1)
 }
 
 fn pricing_for_hard_fork(hard_fork: HardFork) -> HostQueryPricing {
@@ -151,8 +170,12 @@ fn hash_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
     pricing.per_byte_cost(pricing.hash, pricing.hash_per_byte, arg_buf)
 }
 
-fn poseidon_hash_cost(pricing: HostQueryPricing, _arg_buf: &[u8]) -> u64 {
-    pricing.poseidon_hash
+fn poseidon_hash_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
+    pricing.per_scalar_cost(
+        pricing.poseidon_hash_base,
+        pricing.poseidon_hash_per_scalar,
+        arg_buf,
+    )
 }
 
 fn verify_plonk_cost(pricing: HostQueryPricing, _arg_buf: &[u8]) -> u64 {
@@ -254,6 +277,7 @@ pub(crate) fn secp256k1_recover_host_query() -> PricedHostQuery {
 mod tests {
     use alloc::vec::Vec;
 
+    use dusk_core::BlsScalar;
     use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
     use rand::SeedableRng;
     use rand::rngs::StdRng;
@@ -273,7 +297,8 @@ mod tests {
         HostQueryPricing {
             hash: 3_000,
             hash_per_byte: 10,
-            poseidon_hash: 200_000,
+            poseidon_hash_base: 30_000,
+            poseidon_hash_per_scalar: 10_000,
             verify_plonk: 10_000_000,
             verify_groth16_bn254: 4_500_000,
             verify_schnorr: 1_000_000,
@@ -287,6 +312,13 @@ mod tests {
             verify_kzg_proof: 2_000_000,
             secp256k1_recover: 200_000,
         }
+    }
+
+    fn encoded_scalars(count: usize) -> Vec<u8> {
+        let scalars: Vec<_> = (0..count)
+            .map(|i| BlsScalar::from((i + 1) as u64))
+            .collect();
+        encoded_arg(&scalars)
     }
 
     #[test]
@@ -343,6 +375,26 @@ mod tests {
         assert_eq!(
             sha256_cost(pricing, &plus_one) - sha256_cost(pricing, &exact_word),
             8
+        );
+    }
+
+    #[test]
+    fn boreas_poseidon_pricing_scales_with_scalar_count() {
+        let pricing = pricing_for_hard_fork(HardFork::Boreas);
+        let one = encoded_scalars(1);
+        let six = encoded_scalars(6);
+        let sixteen = encoded_scalars(16);
+
+        assert_eq!(poseidon_hash_cost(pricing, &one), 40_000);
+        assert_eq!(poseidon_hash_cost(pricing, &six), 90_000);
+        assert_eq!(poseidon_hash_cost(pricing, &sixteen), 190_000);
+        assert!(
+            poseidon_hash_cost(pricing, &six)
+                > poseidon_hash_cost(pricing, &one)
+        );
+        assert!(
+            poseidon_hash_cost(pricing, &sixteen)
+                > poseidon_hash_cost(pricing, &six)
         );
     }
 
