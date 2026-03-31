@@ -1893,8 +1893,8 @@ dependencies = [
 
 [[package]]
 name = "dusk-plonk"
-version = "0.22.0-rc.0"
-source = "git+https://github.com/dusk-network/plonk-private.git?rev=8a8254adfc6da9efdeec26b8fbeb8d4f92bb38ba#8a8254adfc6da9efdeec26b8fbeb8d4f92bb38ba"
+version = "0.22.0"
+source = "git+https://github.com/dusk-network/plonk-private.git?rev=f63cfb0c4a5e5f485361c83ae15584257d3339ab#f63cfb0c4a5e5f485361c83ae15584257d3339ab"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -3235,8 +3235,9 @@ dependencies = [
 
 [[package]]
 name = "jubjub-elgamal"
-version = "0.5.0-rc.1"
-source = "git+https://github.com/dusk-network/jubjub-elgamal-private.git?rev=1f0d481fb29282c69fdc0063a0404cb89a53bd10#1f0d481fb29282c69fdc0063a0404cb89a53bd10"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22c81bad2a54e37f6eadcdba35f35761b7dba5665af26ea16f29f0d9372fb64f"
 dependencies = [
  "dusk-bytes",
  "dusk-jubjub",
@@ -4045,8 +4046,8 @@ dependencies = [
 
 [[package]]
 name = "phoenix-circuits"
-version = "0.8.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=0908187#09081870f8338c1ee5d6de409c5be15c14a67de8"
+version = "0.8.0"
+source = "git+https://github.com/dusk-network/phoenix-private.git?rev=68d48a1d6ad124bfd17b6d4770f6308778422d02#68d48a1d6ad124bfd17b6d4770f6308778422d02"
 dependencies = [
  "dusk-bls12_381",
  "dusk-bytes",
@@ -4061,8 +4062,8 @@ dependencies = [
 
 [[package]]
 name = "phoenix-core"
-version = "0.35.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=0908187#09081870f8338c1ee5d6de409c5be15c14a67de8"
+version = "0.35.0"
+source = "git+https://github.com/dusk-network/phoenix-private.git?rev=68d48a1d6ad124bfd17b6d4770f6308778422d02#68d48a1d6ad124bfd17b6d4770f6308778422d02"
 dependencies = [
  "aes-gcm",
  "base64",

@@ -53,12 +53,12 @@ dusk-bls12_381 = { version = "0.14", default-features = false }
 dusk-bytes = "0.1.7"
 dusk-jubjub = { version = "0.15.2", default-features = false }
 dusk-merkle = "0.6.0-rc.0"
-dusk-plonk = { version = "0.22.0-rc.0", default-features = false, features = ["legacy-proving"] }
+dusk-plonk = { version = "0.22.0", default-features = false, features = ["legacy-proving"] }
 dusk-poseidon = "0.42.0-rc.0"
 jubjub-schnorr = { version = "0.7.0-rc.0", default-features = false }
 kadcast = "0.8.0-rc.2"
-phoenix-circuits = { version = "0.8.0-rc.0", default-features = false }
-phoenix-core = { version = "0.35.0-rc.0", default-features = false }
+phoenix-circuits = { version = "0.8.0", default-features = false }
+phoenix-core = { version = "0.35.0", default-features = false }
 piecrust = "0.30.0-rc.0"
 piecrust-uplink = "0.20.0-rc.0"
 poseidon-merkle = "0.9.0-rc.0"
@@ -185,12 +185,12 @@ codegen-units = 16
 overflow-checks = true
 
 [patch.crates-io]
-# Pin AEGIS cryptography/runtime dependencies to private mirrors carrying the
-# merged remediation set.
-dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = "8a8254adfc6da9efdeec26b8fbeb8d4f92bb38ba" }
-jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", rev = "1f0d481fb29282c69fdc0063a0404cb89a53bd10" }
+# New version of dusk plonk requiring "compiler: guard prover/verifier length arithmetic from overflow"
+dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = "f63cfb0c4a5e5f485361c83ae15584257d3339ab" }
 piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "777f3bf" }
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "777f3bf" }
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
-phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "0908187" }
+# New version of phoenix requiring "core: add legacy transaction decode helpers"
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "68d48a1d6ad124bfd17b6d4770f6308778422d02" }
+phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "68d48a1d6ad124bfd17b6d4770f6308778422d02" }
+# New version of kadcast with "Improve memory allocation for wire frames (P1.10-1)
 kadcast = { git = "https://github.com/dusk-network/kadcast-private.git", rev = "deadf46" }
