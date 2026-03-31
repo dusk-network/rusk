@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Add entrypoint type declarations and symbol documentation.
+- Parallelize Phoenix note ownership scanning during sync based on available logical cores.
 
 ## [1.6.0] - 2026-02-27
 

@@ -46,6 +46,7 @@ reqwest = { workspace = true, features = ["stream"] }
 dusk-bytes = { workspace = true }
 blake2b_simd = { workspace = true }
 node-data = { workspace = true }
+rayon = { workspace = true }
 
 zeroize = { workspace = true, features = ["derive"] }
 wallet-core = { workspace = true }
@@ -65,6 +66,7 @@ aes-gcm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+ff = { workspace = true }
 
 [features]
 e2e-test = []
