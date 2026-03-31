@@ -1786,8 +1786,9 @@ dependencies = [
 
 [[package]]
 name = "dusk-jubjub"
-version = "0.15.1"
-source = "git+https://github.com/dusk-network/jubjub-private.git?rev=6e2b63f59edac8afa4f81a28b12d88529af37cdb#6e2b63f59edac8afa4f81a28b12d88529af37cdb"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49c388e710446aabbe7c7717109a239cea254594253ceb94e9134976c5b59509"
 dependencies = [
  "bitvec",
  "blake2b_simd",

@@ -51,7 +51,7 @@ dusk-stake-contract-dd = { version = "0.3.1-alpha.1", path = "./data-drivers/sta
 bls12_381-bls = { version = "0.6.0", default-features = false }
 dusk-bls12_381 = { version = "0.14", default-features = false }
 dusk-bytes = "0.1.7"
-dusk-jubjub = { version = "0.15.1", default-features = false }
+dusk-jubjub = { version = "0.15.2", default-features = false }
 dusk-merkle = "0.6.0-rc.0"
 dusk-plonk = { version = "0.22.0-rc.0", default-features = false, features = ["legacy-proving"] }
 dusk-poseidon = "0.42.0-rc.0"
@@ -188,7 +188,6 @@ overflow-checks = true
 # Pin AEGIS cryptography/runtime dependencies to private mirrors carrying the
 # merged remediation set.
 dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = "8a8254adfc6da9efdeec26b8fbeb8d4f92bb38ba" }
-dusk-jubjub = { git = "https://github.com/dusk-network/jubjub-private.git", rev = "6e2b63f59edac8afa4f81a28b12d88529af37cdb" }
 jubjub-elgamal = { git = "https://github.com/dusk-network/jubjub-elgamal-private.git", rev = "1f0d481fb29282c69fdc0063a0404cb89a53bd10" }
 piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "777f3bf" }
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "777f3bf" }
