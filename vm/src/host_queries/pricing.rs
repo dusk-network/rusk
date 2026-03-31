@@ -15,8 +15,8 @@
 //! - round values into stable protocol buckets instead of encoding benchmark
 //!   noise into consensus constants
 //! - use flat pricing for fixed-cost crypto queries
-//! - use `base + per_word32 * ceil(bytes / 32)` when runtime materially scales
-//!   with byte length
+//! - use `base + per_byte * bytes` when runtime materially scales with byte
+//!   length
 //! - keep the resulting schedule compatible with the current `3_000_000_000`
 //!   block gas limit and Boreas throughput assumptions
 
@@ -40,7 +40,7 @@ use super::{
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct HostQueryPricing {
     hash: u64,
-    hash_per_word32: u64,
+    hash_per_byte: u64,
     poseidon_hash: u64,
     verify_plonk: u64,
     verify_groth16_bn254: u64,
@@ -49,9 +49,9 @@ struct HostQueryPricing {
     verify_bls_multisig_base: u64,
     verify_bls_multisig_per_key: u64,
     keccak256: u64,
-    keccak256_per_word32: u64,
+    keccak256_per_byte: u64,
     sha256: u64,
-    sha256_per_word32: u64,
+    sha256_per_byte: u64,
     verify_kzg_proof: u64,
     secp256k1_recover: u64,
 }
@@ -60,7 +60,7 @@ impl HostQueryPricing {
     const fn zero() -> Self {
         Self {
             hash: 0,
-            hash_per_word32: 0,
+            hash_per_byte: 0,
             poseidon_hash: 0,
             verify_plonk: 0,
             verify_groth16_bn254: 0,
@@ -69,9 +69,9 @@ impl HostQueryPricing {
             verify_bls_multisig_base: 0,
             verify_bls_multisig_per_key: 0,
             keccak256: 0,
-            keccak256_per_word32: 0,
+            keccak256_per_byte: 0,
             sha256: 0,
-            sha256_per_word32: 0,
+            sha256_per_byte: 0,
             verify_kzg_proof: 0,
             secp256k1_recover: 0,
         }
@@ -82,7 +82,7 @@ impl HostQueryPricing {
     const fn boreas_default() -> Self {
         Self {
             hash: 3_000,
-            hash_per_word32: 300,
+            hash_per_byte: 10,
             poseidon_hash: 200_000,
             verify_plonk: 10_000_000,
             verify_groth16_bn254: 4_500_000,
@@ -91,16 +91,16 @@ impl HostQueryPricing {
             verify_bls_multisig_base: 2_500_000,
             verify_bls_multisig_per_key: 200_000,
             keccak256: 3_000,
-            keccak256_per_word32: 510,
+            keccak256_per_byte: 16,
             sha256: 3_000,
-            sha256_per_word32: 250,
+            sha256_per_byte: 8,
             verify_kzg_proof: 2_000_000,
             secp256k1_recover: 200_000,
         }
     }
 
-    fn word32_cost(&self, base: u64, per_word32: u64, arg_buf: &[u8]) -> u64 {
-        base + per_word32 * decoded_vec_len(arg_buf).div_ceil(32).max(1) as u64
+    fn per_byte_cost(&self, base: u64, per_byte: u64, arg_buf: &[u8]) -> u64 {
+        base + per_byte * decoded_vec_len(arg_buf) as u64
     }
 }
 
@@ -148,7 +148,7 @@ impl HostQuery for PricedHostQuery {
 }
 
 fn hash_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
-    pricing.word32_cost(pricing.hash, pricing.hash_per_word32, arg_buf)
+    pricing.per_byte_cost(pricing.hash, pricing.hash_per_byte, arg_buf)
 }
 
 fn poseidon_hash_cost(pricing: HostQueryPricing, _arg_buf: &[u8]) -> u64 {
@@ -187,15 +187,15 @@ fn verify_bls_multisig_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
 }
 
 fn keccak256_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
-    pricing.word32_cost(
+    pricing.per_byte_cost(
         pricing.keccak256,
-        pricing.keccak256_per_word32,
+        pricing.keccak256_per_byte,
         arg_buf,
     )
 }
 
 fn sha256_cost(pricing: HostQueryPricing, arg_buf: &[u8]) -> u64 {
-    pricing.word32_cost(pricing.sha256, pricing.sha256_per_word32, arg_buf)
+    pricing.per_byte_cost(pricing.sha256, pricing.sha256_per_byte, arg_buf)
 }
 
 fn verify_kzg_proof_cost(pricing: HostQueryPricing, _arg_buf: &[u8]) -> u64 {
@@ -272,7 +272,7 @@ mod tests {
     fn expected_boreas_pricing() -> HostQueryPricing {
         HostQueryPricing {
             hash: 3_000,
-            hash_per_word32: 300,
+            hash_per_byte: 10,
             poseidon_hash: 200_000,
             verify_plonk: 10_000_000,
             verify_groth16_bn254: 4_500_000,
@@ -281,9 +281,9 @@ mod tests {
             verify_bls_multisig_base: 2_500_000,
             verify_bls_multisig_per_key: 200_000,
             keccak256: 3_000,
-            keccak256_per_word32: 510,
+            keccak256_per_byte: 16,
             sha256: 3_000,
-            sha256_per_word32: 250,
+            sha256_per_byte: 8,
             verify_kzg_proof: 2_000_000,
             secp256k1_recover: 200_000,
         }
@@ -306,23 +306,44 @@ mod tests {
     }
 
     #[test]
-    fn boreas_hash_family_pricing_scales_with_input_words() {
+    fn boreas_hash_family_pricing_scales_with_input_bytes() {
         let pricing = pricing_for_hard_fork(HardFork::Boreas);
         let short = encoded_arg(&vec![7u8; 32]);
         let long = encoded_arg(&vec![9u8; 128]);
         let keccak = encoded_arg(&vec![1u8; 96]);
         let sha = encoded_arg(&vec![2u8; 96]);
         let cases = [
-            ("hash", hash_cost(pricing, &short), 3_300u64),
-            ("hash", hash_cost(pricing, &long), 4_200u64),
-            ("keccak256", keccak256_cost(pricing, &keccak), 4_530u64),
-            ("sha256", sha256_cost(pricing, &sha), 3_750u64),
+            ("hash", hash_cost(pricing, &short), 3_320u64),
+            ("hash", hash_cost(pricing, &long), 4_280u64),
+            ("keccak256", keccak256_cost(pricing, &keccak), 4_536u64),
+            ("sha256", sha256_cost(pricing, &sha), 3_768u64),
         ];
 
         for (name, actual, expected) in cases {
             assert_eq!(actual, expected, "{name} pricing changed unexpectedly");
         }
         assert!(hash_cost(pricing, &long) > hash_cost(pricing, &short));
+    }
+
+    #[test]
+    fn boreas_hash_pricing_has_no_word_boundary_cliff() {
+        let pricing = pricing_for_hard_fork(HardFork::Boreas);
+        let exact_word = encoded_arg(&vec![5u8; 32]);
+        let plus_one = encoded_arg(&vec![5u8; 33]);
+
+        assert_eq!(
+            hash_cost(pricing, &plus_one) - hash_cost(pricing, &exact_word),
+            10
+        );
+        assert_eq!(
+            keccak256_cost(pricing, &plus_one)
+                - keccak256_cost(pricing, &exact_word),
+            16
+        );
+        assert_eq!(
+            sha256_cost(pricing, &plus_one) - sha256_cost(pricing, &exact_word),
+            8
+        );
     }
 
     #[test]
