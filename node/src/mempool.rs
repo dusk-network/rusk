@@ -98,6 +98,16 @@ impl From<TxPreconditionError> for TxAcceptanceError {
             TxPreconditionError::BlobLowLimit(min) => {
                 TxAcceptanceError::GasLimitTooLow(min)
             }
+            TxPreconditionError::DeployChargeOverflow => {
+                TxAcceptanceError::VerificationFailed(
+                    "deploy charge overflow".into(),
+                )
+            }
+            TxPreconditionError::BlobChargeOverflow => {
+                TxAcceptanceError::VerificationFailed(
+                    "blob charge overflow".into(),
+                )
+            }
             TxPreconditionError::DeployLowLimit(min) => {
                 TxAcceptanceError::GasLimitTooLow(min)
             }
