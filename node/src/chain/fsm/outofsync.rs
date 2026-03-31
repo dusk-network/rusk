@@ -232,7 +232,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 new = prev_quorum_height,
             );
             self.range.1 = prev_quorum_height;
-            self.request_pool_missing_blocks().await;
+            if let Some(last_request) = self.request_pool_missing_blocks().await
+            {
+                self.last_request = last_request;
+            }
         }
     }
 
