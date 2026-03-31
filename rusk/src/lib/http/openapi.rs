@@ -14,7 +14,7 @@ use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 
-use super::axum_app::HttpAppState;
+use crate::http::HttpAppState;
 
 #[derive(Serialize, ToSchema)]
 pub(super) struct ErrorEnvelope {
