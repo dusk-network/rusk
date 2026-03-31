@@ -82,7 +82,6 @@ pub(crate) async fn sync_db(
     zeroize_secret_keys(&mut keys);
 
     // Remove spent nullifiers from live notes
-    // zerorize all the secret keys
     reconcile_cached_unspent_notes(client, cache, &keys).await?;
 
     // insert last post after the notes has been inserted
