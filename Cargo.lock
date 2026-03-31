@@ -1393,8 +1393,8 @@ dependencies = [
 
 [[package]]
 name = "crumbles"
-version = "0.4.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
+version = "0.4.0"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
 dependencies = [
  "libc",
  "rangemap",
@@ -4089,8 +4089,8 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.30.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
+version = "0.30.0"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4111,8 +4111,8 @@ dependencies = [
 
 [[package]]
 name = "piecrust-uplink"
-version = "0.20.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=777f3bf#777f3bfca5cd1d65a68bea562da0bd0a20e8cab2"
+version = "0.20.0"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
 dependencies = [
  "bytecheck",
  "dlmalloc",
