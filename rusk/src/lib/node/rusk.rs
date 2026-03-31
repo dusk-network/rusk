@@ -134,7 +134,7 @@ impl Rusk {
 
         let cert_voters = &transition_data.cert_voters[..];
 
-        let (_plonk_version_guard, _hard_fork_guard) =
+        let _host_query_policy_guard =
             set_vm_host_context(&self.vm_config, block_height);
 
         info!(
@@ -650,7 +650,7 @@ impl Rusk {
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
 
-        let (_plonk_version_guard, _hard_fork_guard) =
+        let _host_query_policy_guard =
             set_vm_host_context(&self.vm_config, block_height);
 
         let generator_bytes = blk.header().generator_bls_pubkey;

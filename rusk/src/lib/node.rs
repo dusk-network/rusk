@@ -66,14 +66,13 @@ pub struct RuskNode {
 pub(crate) fn set_vm_host_context(
     vm_config: &RuskVmConfig,
     block_height: u64,
-) -> (host_queries::PlonkVersionGuard, host_queries::HardForkGuard) {
+) -> host_queries::HostQueryPolicyGuard {
     let policy = fork_policy::policy_at(vm_config, block_height);
-    let plonk = host_queries::set_plonk_version(policy.plonk_version);
-    let hard_fork = host_queries::set_hard_fork(fork_policy::host_hard_fork(
-        policy.hard_fork,
-    ));
-
-    (plonk, hard_fork)
+    let host_policy = host_queries::HostQueryPolicy::from_versions(
+        policy.plonk_version,
+        fork_policy::host_hard_fork(policy.hard_fork),
+    );
+    host_queries::set_host_query_policy(host_policy)
 }
 
 impl RuskNode {
