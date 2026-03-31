@@ -50,7 +50,6 @@ use self::host_queries::{
     verify_schnorr_host_query,
 };
 
-pub(crate) mod cache;
 mod error;
 mod execute;
 pub mod host_queries;

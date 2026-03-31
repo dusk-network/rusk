@@ -38,7 +38,7 @@ use sha2::{Digest as Sha2Digest, Sha256};
 use sha3::Keccak256;
 use tracing::warn;
 
-use crate::cache;
+mod cache;
 
 mod pricing;
 
