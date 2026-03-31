@@ -85,8 +85,12 @@ impl From<dusk_bytes::Error> for Error {
 pub enum TxPreconditionError {
     /// The gas price is too low to deploy a transaction.
     DeployLowPrice(u64),
+    /// The deployment charge overflows while calculating the required gas.
+    DeployChargeOverflow,
     /// The gas limit is too low to deploy a transaction.
     DeployLowLimit(u64),
+    /// The blob charge overflows while calculating the required gas.
+    BlobChargeOverflow,
     /// The gas limit is too low to cover the blob gas charges.
     BlobLowLimit(u64),
     /// No blob attached to the transaction.
@@ -113,9 +117,13 @@ impl TxPreconditionError {
             TxPreconditionError::DeployLowPrice(_) => {
                 "gas price too low to deploy"
             }
+            TxPreconditionError::DeployChargeOverflow => {
+                "deploy charge overflow"
+            }
             TxPreconditionError::DeployLowLimit(_) => {
                 "not enough gas to deploy"
             }
+            TxPreconditionError::BlobChargeOverflow => "blob charge overflow",
             TxPreconditionError::BlobLowLimit(_) => "not enough gas for blobs",
             TxPreconditionError::BlobEmpty => {
                 "no blob attached to the transaction"

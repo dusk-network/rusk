@@ -598,25 +598,45 @@ impl Transaction {
     /// contract will cost at least `min_deploy_points`.
     /// If the transaction is not a deploy-transaction, the deploy-charge will
     /// be 0.
-    #[must_use]
+    ///
+    /// # Errors
+    /// Returns an error if the deploy charge overflows while calculating
+    /// `bytecode_len * gas_per_deploy_byte`.
     pub fn deploy_charge(
         &self,
         gas_per_deploy_byte: u64,
         min_deploy_points: u64,
-    ) -> u64 {
+    ) -> Result<u64, TxPreconditionError> {
         if let Some(deploy) = self.deploy() {
             let bytecode_len = deploy.bytecode.bytes.len() as u64;
-            max(bytecode_len * gas_per_deploy_byte, min_deploy_points)
+            let deploy_charge =
+                bytecode_len
+                    .checked_mul(gas_per_deploy_byte)
+                    .ok_or(TxPreconditionError::DeployChargeOverflow)?;
+
+            Ok(max(deploy_charge, min_deploy_points))
         } else {
-            0
+            Ok(0)
         }
     }
 
     /// Returns the minimum gas charged for a blob transaction deployment.
     /// If the transaction is not a blob transaction, it returns None.
-    #[must_use]
-    pub fn blob_charge(&self, gas_per_blob: u64) -> Option<u64> {
-        self.blob().map(|blobs| blobs.len() as u64 * gas_per_blob)
+    ///
+    /// # Errors
+    /// Returns an error if the blob charge overflows while calculating
+    /// `blob_count * gas_per_blob`.
+    pub fn blob_charge(
+        &self,
+        gas_per_blob: u64,
+    ) -> Result<Option<u64>, TxPreconditionError> {
+        self.blob()
+            .map(|blobs| {
+                (blobs.len() as u64)
+                    .checked_mul(gas_per_blob)
+                    .ok_or(TxPreconditionError::BlobChargeOverflow)
+            })
+            .transpose()
     }
 
     /// Check the validity of the phoenix fee and return an error if it is
@@ -674,7 +694,7 @@ impl Transaction {
     ) -> Result<(), TxPreconditionError> {
         if self.deploy().is_some() {
             let deploy_charge =
-                self.deploy_charge(gas_per_deploy_byte, min_deploy_points);
+                self.deploy_charge(gas_per_deploy_byte, min_deploy_points)?;
 
             if self.gas_price() < min_deploy_gas_price {
                 return Err(TxPreconditionError::DeployLowPrice(
@@ -716,7 +736,7 @@ impl Transaction {
             return Ok(None);
         }
 
-        let min_charge = self.blob_charge(gas_per_blob);
+        let min_charge = self.blob_charge(gas_per_blob)?;
         if let Some(min_charge) = min_charge
             && self.gas_limit() < min_charge
         {
