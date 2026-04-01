@@ -132,30 +132,6 @@ impl Drop for HostQueryPolicyGuard {
     }
 }
 
-/// Guard that restores the previous PLONK version when dropped.
-#[derive(Debug)]
-pub struct PlonkVersionGuard {
-    prev: HostQueryPolicy,
-}
-
-impl Drop for PlonkVersionGuard {
-    fn drop(&mut self) {
-        HOST_QUERY_POLICY.with(|m| m.set(self.prev));
-    }
-}
-
-/// Guard that restores the previous hardfork when dropped.
-#[derive(Debug)]
-pub struct HardForkGuard {
-    prev: HostQueryPolicy,
-}
-
-impl Drop for HardForkGuard {
-    fn drop(&mut self) {
-        HOST_QUERY_POLICY.with(|m| m.set(self.prev));
-    }
-}
-
 /// Returns the current thread's host-query policy.
 pub fn host_query_policy() -> HostQueryPolicy {
     HOST_QUERY_POLICY.with(|m| m.get())
@@ -178,37 +154,9 @@ pub fn plonk_version() -> PlonkVersion {
     host_query_policy().plonk_version
 }
 
-/// Sets the current thread's PLONK version.
-///
-/// The previous version is restored when the returned guard is dropped.
-pub fn set_plonk_version(version: PlonkVersion) -> PlonkVersionGuard {
-    let prev = HOST_QUERY_POLICY.with(|m| {
-        let prev = m.get();
-        let mut policy = prev;
-        policy.plonk_version = version;
-        m.set(policy);
-        prev
-    });
-    PlonkVersionGuard { prev }
-}
-
 /// Returns the active hardfork for this thread.
 pub fn hard_fork() -> HardFork {
     host_query_policy().hard_fork
-}
-
-/// Sets the active hardfork for this thread.
-///
-/// The previous value is restored when the returned guard is dropped.
-pub fn set_hard_fork(hard_fork: HardFork) -> HardForkGuard {
-    let prev = HOST_QUERY_POLICY.with(|m| {
-        let prev = m.get();
-        let mut policy = prev;
-        policy.hard_fork = hard_fork;
-        m.set(policy);
-        prev
-    });
-    HardForkGuard { prev }
 }
 
 pub(super) fn cache_key_with_revision(
@@ -447,11 +395,14 @@ mod tests {
     }
 
     #[test]
-    fn version_setters_update_cache_revisions() {
+    fn host_query_policy_updates_cache_revisions() {
         let prev = host_query_policy();
 
         {
-            let _guard = set_plonk_version(PlonkVersion::V1);
+            let _guard = set_host_query_policy(HostQueryPolicy::from_versions(
+                PlonkVersion::V1,
+                prev.hard_fork,
+            ));
             assert_eq!(plonk_version(), PlonkVersion::V1);
             assert_eq!(
                 cache_revision(host_query_policy(), CacheDomain::Plonk),
@@ -462,7 +413,10 @@ mod tests {
         assert_eq!(host_query_policy(), prev);
 
         {
-            let _guard = set_hard_fork(HardFork::Boreas);
+            let _guard = set_host_query_policy(HostQueryPolicy::from_versions(
+                prev.plonk_version,
+                HardFork::Boreas,
+            ));
             assert_eq!(hard_fork(), HardFork::Boreas);
             assert_eq!(
                 cache_revision(host_query_policy(), CacheDomain::Bls),
