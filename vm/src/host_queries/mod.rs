@@ -51,8 +51,8 @@ pub(crate) use pricing::{
 use self::cache::{CacheDomain, cache_key};
 pub use self::cache::{
     HardForkGuard, HostQueryPolicy, HostQueryPolicyGuard, PlonkVersionGuard,
-    hard_fork, host_query_policy, plonk_version,
-    set_hard_fork, set_host_query_policy, set_plonk_version,
+    hard_fork, host_query_policy, plonk_version, set_hard_fork,
+    set_host_query_policy, set_plonk_version,
 };
 
 static SECP256K1_CONTEXT: LazyLock<Secp256k1<secp256k1::All>> =
