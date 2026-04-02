@@ -40,6 +40,16 @@ use tracing::warn;
 
 use crate::cache;
 
+mod pricing;
+
+pub(crate) use pricing::{
+    hash_host_query, keccak256_host_query, poseidon_hash_host_query,
+    secp256k1_recover_host_query, sha256_host_query, verify_bls_host_query,
+    verify_bls_multisig_host_query, verify_groth16_bn254_host_query,
+    verify_kzg_proof_host_query, verify_plonk_host_query,
+    verify_schnorr_host_query,
+};
+
 thread_local! {
     // Default to V2 for safety: if the node forgets to set a version for a
     // consensus-critical call path, we'd rather reject than accept.
@@ -57,13 +67,15 @@ pub enum HardFork {
     PreFork,
     /// Behavior after Aegis activation.
     Aegis,
+    /// Behavior after Boreas activation.
+    Boreas,
 }
 
 impl HardFork {
     /// Returns the BLS signature version for this hardfork.
     pub fn bls_version(&self) -> BlsVersion {
         match self {
-            HardFork::Aegis => BlsVersion::V2,
+            HardFork::Aegis | HardFork::Boreas => BlsVersion::V2,
             HardFork::PreFork => BlsVersion::V1,
         }
     }
@@ -256,6 +268,7 @@ fn bls_cache_key(
     let cache_tag = match hard_fork {
         HardFork::PreFork => 0u8,
         HardFork::Aegis => 1u8,
+        HardFork::Boreas => 2u8,
     };
     state.update(&[cache_tag]);
     state.update(arg_buf);

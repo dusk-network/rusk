@@ -178,8 +178,9 @@ impl HttpServer {
 }
 #[cfg(test)]
 mod tests {
+    use std::error::Error as _;
     use std::net::{SocketAddr, TcpStream};
-    use std::{error::Error as _, fs, thread};
+    use std::{fs, thread};
 
     #[cfg(feature = "chain")]
     use async_graphql::{

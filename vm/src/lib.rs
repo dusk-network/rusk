@@ -43,10 +43,11 @@ use dusk_core::abi::{ContractId, Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
-    host_hash, host_keccak256, host_poseidon_hash, host_secp256k1_recover,
-    host_sha256, host_verify_bls, host_verify_bls_multisig,
-    host_verify_groth16_bn254, host_verify_kzg_proof, host_verify_plonk,
-    host_verify_schnorr,
+    hash_host_query, keccak256_host_query, poseidon_hash_host_query,
+    secp256k1_recover_host_query, sha256_host_query, verify_bls_host_query,
+    verify_bls_multisig_host_query, verify_groth16_bn254_host_query,
+    verify_kzg_proof_host_query, verify_plonk_host_query,
+    verify_schnorr_host_query,
 };
 
 pub(crate) mod cache;
@@ -316,33 +317,41 @@ impl VM {
     }
 
     fn register_host_queries(&mut self) {
-        self.inner.register_host_query(Query::HASH, host_hash);
         self.inner
-            .register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
-        self.inner
-            .register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
+            .register_host_query(Query::HASH, hash_host_query());
+        self.inner.register_host_query(
+            Query::POSEIDON_HASH,
+            poseidon_hash_host_query(),
+        );
+        self.inner.register_host_query(
+            Query::VERIFY_PLONK,
+            verify_plonk_host_query(),
+        );
         self.inner.register_host_query(
             Query::VERIFY_GROTH16_BN254,
-            host_verify_groth16_bn254,
+            verify_groth16_bn254_host_query(),
+        );
+        self.inner.register_host_query(
+            Query::VERIFY_SCHNORR,
+            verify_schnorr_host_query(),
         );
         self.inner
-            .register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
-        self.inner
-            .register_host_query(Query::VERIFY_BLS, host_verify_bls);
+            .register_host_query(Query::VERIFY_BLS, verify_bls_host_query());
         self.inner.register_host_query(
             Query::VERIFY_BLS_MULTISIG,
-            host_verify_bls_multisig,
+            verify_bls_multisig_host_query(),
         );
         self.inner
-            .register_host_query(Query::KECCAK256, host_keccak256);
-        self.inner.register_host_query(Query::SHA256, host_sha256);
+            .register_host_query(Query::KECCAK256, keccak256_host_query());
+        self.inner
+            .register_host_query(Query::SHA256, sha256_host_query());
         self.inner.register_host_query(
             Query::VERIFY_KZG_PROOF,
-            host_verify_kzg_proof,
+            verify_kzg_proof_host_query(),
         );
         self.inner.register_host_query(
             Query::SECP256K1_RECOVER,
-            host_secp256k1_recover,
+            secp256k1_recover_host_query(),
         );
     }
 

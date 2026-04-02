@@ -60,7 +60,8 @@ pub(super) fn policy_at(
 pub(super) fn host_hard_fork(hard_fork: HardFork) -> host_queries::HardFork {
     match hard_fork {
         HardFork::PreFork => host_queries::HardFork::PreFork,
-        HardFork::Aegis | HardFork::Boreas => host_queries::HardFork::Aegis,
+        HardFork::Aegis => host_queries::HardFork::Aegis,
+        HardFork::Boreas => host_queries::HardFork::Boreas,
     }
 }
 
