@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gate the deploy gas sufficiency check behind Boreas so historical deploy
   semantics remain unchanged before the hard fork (P1.2-5)
 - Fail transaction refunds gracefully instead of panicking (P1.2-7)
+- Fail deploy-charge overflow checks explicitly instead of wrapping the gas
+  requirement
 
 ### Changed
 

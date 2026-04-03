@@ -273,8 +273,13 @@ fn contract_deploy(
         let min_deploy_points = config.min_deploy_points;
 
         if receipt.data.is_ok() {
-            let deploy_charge =
-                tx.deploy_charge(gas_per_deploy_byte, min_deploy_points);
+            let Ok(deploy_charge) =
+                tx.deploy_charge(gas_per_deploy_byte, min_deploy_points)
+            else {
+                receipt.data =
+                    Err(ContractError::Panic("deploy charge overflow".into()));
+                return;
+            };
             if !is_deploy_gas_sufficient(
                 tx.gas_limit(),
                 receipt.gas_spent,

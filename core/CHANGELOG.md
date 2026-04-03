@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject deploy transactions whose required gas charge overflows during
+  precondition checking
+- Reject blob transactions whose required gas charge overflows during
+  precondition checking
+
 ## [1.6.0] - 2026-02-27
 
 ### Added

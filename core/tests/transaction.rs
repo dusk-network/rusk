@@ -8,12 +8,13 @@ use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
 use dusk_core::transfer::Transaction;
+use dusk_core::transfer::data::{BlobData, ContractBytecode, ContractDeploy};
 use dusk_core::transfer::data::{ContractCall, MAX_MEMO_SIZE, TransactionData};
 use dusk_core::transfer::phoenix::{
     Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, TxCircuitVec,
 };
-use dusk_core::{Error, JubJubScalar};
+use dusk_core::{Error, JubJubScalar, TxPreconditionError};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -331,5 +332,46 @@ fn moonlight_memo_too_large() {
     assert_eq!(
         new_moonlight_tx(data).unwrap_err(),
         Error::MemoTooLarge(MEMO_SIZE)
+    );
+}
+
+#[test]
+fn deploy_check_rejects_overflowing_deploy_charge() {
+    let deploy = ContractDeploy {
+        bytecode: ContractBytecode {
+            hash: [7u8; 32],
+            bytes: vec![1u8; 2],
+        },
+        owner: vec![2u8; 32],
+        init_args: None,
+        nonce: 42,
+    };
+
+    let tx = new_moonlight_tx(Some(deploy)).expect("deploy tx should build");
+
+    assert_eq!(
+        tx.deploy_check(u64::MAX, 0, 0),
+        Err(TxPreconditionError::DeployChargeOverflow)
+    );
+}
+
+#[test]
+fn blob_check_rejects_overflowing_blob_charge() {
+    let blobs = vec![
+        BlobData {
+            hash: [9u8; 32],
+            data: None,
+        },
+        BlobData {
+            hash: [10u8; 32],
+            data: None,
+        },
+    ];
+
+    let tx = new_moonlight_tx(Some(blobs)).expect("blob tx should build");
+
+    assert_eq!(
+        tx.blob_check(u64::MAX),
+        Err(TxPreconditionError::BlobChargeOverflow)
     );
 }
