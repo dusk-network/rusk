@@ -450,7 +450,8 @@ impl RuskNode {
     }
 
     async fn simulate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
-        let (config, mut session, _plonk_version_guard, _hard_fork_guard, tx) = {
+        // Keep the guard alive across `execute()` below.
+        let (config, mut session, _host_query_policy_guard, tx) = {
             let vm_handler = self.inner().vm_handler();
             let vm_handler = vm_handler.read().await;
             let tip = load_tip(&self.db())
@@ -474,7 +475,7 @@ impl RuskNode {
                 ));
             }
             let config = vm_handler.vm_config.to_execution_config(height);
-            let (plonk_version_guard, hard_fork_guard) =
+            let _host_query_policy_guard =
                 set_vm_host_context(&vm_handler.vm_config, height);
             let session = vm_handler
                 .new_block_session(height, vm_handler.tip.read().current)
@@ -483,7 +484,9 @@ impl RuskNode {
                         "Failed to initialize a session: {e}"
                     ))
                 })?;
-            (config, session, plonk_version_guard, hard_fork_guard, tx)
+            // Return the guard so the host-query policy is restored only after
+            // `execute()` completes.
+            (config, session, _host_query_policy_guard, tx)
         };
         let receipt = execute(&mut session, &tx.inner, &config);
         let resp = match receipt {

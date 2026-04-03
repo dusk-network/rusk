@@ -22,8 +22,11 @@ const TX_GAS_PRICE: u64 = 1;
 
 #[test]
 fn execute_returns_error_when_refund_call_fails() {
-    let _hard_fork_guard = dusk_vm::host_queries::set_hard_fork(
-        dusk_vm::host_queries::HardFork::Aegis,
+    let _host_query_policy_guard = dusk_vm::host_queries::set_host_query_policy(
+        dusk_vm::host_queries::HostQueryPolicy::from_versions(
+            dusk_vm::host_queries::plonk_version(),
+            dusk_vm::host_queries::HardFork::Aegis,
+        ),
     );
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let mut session = vm.genesis_session(CHAIN_ID);
