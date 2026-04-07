@@ -53,7 +53,6 @@ node-data = { workspace = true, features = ["faker"] }
 rand = { workspace = true }
 tempfile = { workspace = true }
 criterion = { workspace = true, features = ["async_futures"] }
-wallet-core = { workspace = true }
 
 [features]
 with_telemetry = []

@@ -13,6 +13,19 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 
 /// Represents events related to transactions.
 ///
+/// - `Deferred(Hash, &'static str)`
+///
+///   Indicates that a transaction has been staged outside the real mempool and
+///   is waiting on an admission precondition such as a missing intermediate
+///   nonce. The `Hash` identifies the staged transaction and the string
+///   carries a compact reason.
+///
+/// - `Dropped(Hash, &'static str)`
+///
+///   Indicates that a transaction has been discarded before entering the real
+///   mempool. The `Hash` identifies the dropped transaction and the string
+///   carries a compact reason.
+///
 /// - `Removed(Hash)`
 ///
 ///   Indicates that a transaction has been removed from the mempool. The
@@ -36,6 +49,8 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 ///     - A "failed" transaction: executed and the `err` field is `Some`.
 #[derive(Clone, Debug)]
 pub enum TransactionEvent<'t> {
+    Deferred(Hash, &'static str),
+    Dropped(Hash, &'static str),
     Removed(Hash),
     Included(&'t Transaction),
     Executed(&'t SpentTransaction),
@@ -46,6 +61,8 @@ impl EventSource for TransactionEvent<'_> {
 
     fn topic(&self) -> &'static str {
         match self {
+            Self::Deferred(_, _) => "deferred",
+            Self::Dropped(_, _) => "dropped",
             Self::Removed(_) => "removed",
             Self::Executed(_) => "executed",
             Self::Included(_) => "included",
@@ -53,6 +70,9 @@ impl EventSource for TransactionEvent<'_> {
     }
     fn data(&self) -> Option<serde_json::Value> {
         match self {
+            Self::Deferred(_, reason) | Self::Dropped(_, reason) => {
+                Some(serde_json::json!({ "reason": reason }))
+            }
             Self::Removed(_) => None,
             Self::Executed(t) => serde_json::to_value(t).ok(),
             Self::Included(t) => serde_json::to_value(t).ok(),
@@ -60,7 +80,9 @@ impl EventSource for TransactionEvent<'_> {
     }
     fn entity(&self) -> String {
         let hash = match self {
-            Self::Removed(hash) => *hash,
+            Self::Deferred(hash, _)
+            | Self::Dropped(hash, _)
+            | Self::Removed(hash) => *hash,
             Self::Executed(tx) => tx.inner.id(),
             Self::Included(tx) => tx.id(),
         };
