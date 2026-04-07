@@ -23,6 +23,7 @@ use node::LongLivedService;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::rocksdb::{self, Backend};
+use node::mempool::FutureNonceRetryHandle;
 use node::network::Kadcast;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
@@ -59,6 +60,7 @@ pub(crate) type Services =
 #[derive(Clone)]
 pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
+    future_nonce_retry_queue: FutureNonceRetryHandle,
     #[cfg(feature = "archive")]
     archive: Archive,
 }
@@ -79,10 +81,12 @@ pub(crate) fn set_vm_host_context(
 impl RuskNode {
     pub fn new(
         inner: node::Node<Kadcast<255>, Backend, Rusk>,
+        future_nonce_retry_queue: FutureNonceRetryHandle,
         #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         Self {
             inner,
+            future_nonce_retry_queue,
             #[cfg(feature = "archive")]
             archive,
         }
@@ -107,6 +111,10 @@ impl RuskNode {
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
         self.inner.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
+    }
+
+    pub fn future_nonce_retry_queue(&self) -> FutureNonceRetryHandle {
+        self.future_nonce_retry_queue.clone()
     }
 
     pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {

@@ -96,6 +96,21 @@ async fn preverify_tx(
     node: &RuskNode,
     data: &[u8],
 ) -> ChainResult<Transaction> {
+    let tx = decode_ingress_tx(node, data).await?;
+    let db = node.inner().database();
+    let vm = node.inner().vm_handler();
+
+    MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
+        .await
+        .map_err(|e| map_check_tx_error(hex::encode(tx.id()), e))?;
+
+    Ok(tx)
+}
+
+async fn decode_ingress_tx(
+    node: &RuskNode,
+    data: &[u8],
+) -> ChainResult<Transaction> {
     let db = node.inner().database();
     let tip_height = db
         .read()
@@ -111,12 +126,6 @@ async fn preverify_tx(
     let tx =
         Transaction::decode_for_ingress(data, tip_height.saturating_add(1))
             .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?;
-    let vm = node.inner().vm_handler();
-
-    MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
-        .await
-        .map_err(|e| map_check_tx_error(hex::encode(tx.id()), e))?;
-
     Ok(tx)
 }
 
@@ -136,6 +145,9 @@ fn map_check_tx_error(tx_id: String, error: TxAcceptanceError) -> ChainError {
         | TxAcceptanceError::BlobInvalid(_)
         | TxAcceptanceError::SpendIdExistsInMempool
         | TxAcceptanceError::VerificationFailed(_)
+        | TxAcceptanceError::MissingIntermediateNonce(_)
+        | TxAcceptanceError::MaxFutureNonceQueueExceeded(_)
+        | TxAcceptanceError::MaxMoonlightFutureNoncePerAccountExceeded(_)
         | TxAcceptanceError::GasPriceTooLow(_)
         | TxAcceptanceError::GasLimitTooLow(_)
         | TxAcceptanceError::TooLarge
@@ -351,11 +363,27 @@ impl RuskNode {
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> ChainResult<ResponseData> {
-        let tx = preverify_tx(self, tx).await?;
-        let tx_message = tx.into();
+        let tx = decode_ingress_tx(self, tx).await?;
+        let db = self.inner().database();
+        let vm = self.inner().vm_handler();
 
-        let network = self.network();
-        network.read().await.route_internal(tx_message);
+        match MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX).await {
+            Ok(_) => {
+                let network = self.network();
+                network.read().await.route_internal(tx.into());
+            }
+            Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
+                let tx_id = hex::encode(tx.id());
+                let tx_message = tx.into();
+                self.future_nonce_retry_queue()
+                    .enqueue_message(&tx_message)
+                    .await
+                    .map_err(|e| map_check_tx_error(tx_id, e))?;
+            }
+            Err(e) => {
+                return Err(map_check_tx_error(hex::encode(tx.id()), e));
+            }
+        }
 
         Ok(ResponseData::new(DataType::None))
     }
@@ -543,11 +571,9 @@ impl RuskNode {
             ChainError::vm(format!("Cannot query the state: {e:?}"))
         })?;
 
-        // Determine the next available nonce not already used in the mempool.
-        // This ensures that any in-flight transactions using sequential nonces
-        // are accounted for.
-        // If the account has no transactions in the mempool, the next_nonce is
-        // the same as the account's current nonce + 1.
+        // Approximate the next immediately usable nonce by walking the real
+        // mempool frontier. Deferred prequeue entries are intentionally not
+        // counted here because they are not yet admitted as pending txs.
         let next_nonce = db
             .read()
             .await

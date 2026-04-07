@@ -239,8 +239,14 @@ impl RuskNodeBuilder {
                 self.db_options.clone(),
             );
             let net = Kadcast::new(self.kadcast)?;
+            let future_nonce_retry_queue =
+                node::mempool::FutureNonceRetryHandle::new(
+                    self.mempool.max_queue_size,
+                    self.mempool.max_moonlight_future_nonce_per_account,
+                );
             RuskNode::new(
                 Node::new(net, db, rusk.clone()),
+                future_nonce_retry_queue.clone(),
                 #[cfg(feature = "archive")]
                 archive.clone(),
             )
@@ -270,7 +276,11 @@ impl RuskNodeBuilder {
         }
 
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())),
+            Box::new(MempoolSrv::with_future_nonce_retry_queue(
+                self.mempool,
+                node_sender.clone(),
+                node.future_nonce_retry_queue(),
+            )),
             Box::new(chain_srv),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
