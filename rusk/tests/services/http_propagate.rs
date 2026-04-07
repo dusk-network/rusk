@@ -14,7 +14,8 @@ use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_rusk_test::{RuskVmConfig, TestContext};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
-use node::database::{DB, DatabaseOptions, Ledger};
+use node::database::{DB, DatabaseOptions, Ledger, Mempool};
+use node::mempool::conf::Params as MempoolParams;
 use rusk::http::{
     HttpHandlers, HttpPolicyConfig, HttpServer, HttpServerConfig,
 };
@@ -29,7 +30,7 @@ const GAS_LIMIT: u64 = 75_000;
 const GAS_PRICE: u64 = 1;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn propagate_rejects_tx_that_fails_preverify() {
+async fn propagate_accepts_future_nonce_but_rejects_invalid_tx() {
     let seed = [0u8; 64];
     let sender_sk = derive_bls_sk(&seed, 0);
     let sender_pk = BlsPublicKey::from(&sender_sk);
@@ -86,8 +87,13 @@ async fn propagate_rejects_tx_that_fails_preverify() {
         tempdir().expect("creating archive tempdir should succeed");
     #[cfg(feature = "archive")]
     let archive = Archive::create_or_open(_archive_dir.path()).await;
+    let mempool_conf = MempoolParams::default();
     let node = RuskNode::new(
         node::Node::new(network, backend, rusk),
+        node::mempool::FutureNonceRetryHandle::new(
+            mempool_conf.max_queue_size,
+            mempool_conf.max_moonlight_future_nonce_per_account,
+        ),
         #[cfg(feature = "archive")]
         archive,
     );
@@ -113,29 +119,34 @@ async fn propagate_rejects_tx_that_fails_preverify() {
     .expect("binding test HTTP server should succeed");
     drop(event_sender);
 
-    let tx = MoonlightTransaction::new(
+    let future_tx = MoonlightTransaction::new(
         &sender_sk,
         None,
         1,
         0,
         GAS_LIMIT,
         GAS_PRICE,
-        sender_account.nonce + 1,
+        sender_account.nonce + 2,
         chain_id,
         None::<TransactionData>,
     )
     .expect("creating tx should succeed");
-    let tx = ProtocolTransaction::Moonlight(tx);
+    let future_tx = ProtocolTransaction::Moonlight(future_tx);
 
     let client = reqwest::Client::new();
     let response = client
         .post(format!("http://{local_addr}/on/transactions/propagate"))
         .header("Content-Type", "application/octet-stream")
-        .body(tx.to_var_bytes())
+        .body(future_tx.to_var_bytes())
         .send()
         .await
         .expect("requesting should succeed");
     assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
+    assert_eq!(
+        node.db().read().await.view(|db| db.mempool_txs_count()),
+        0,
+        "future nonce tx should not be inserted into the real mempool by HTTP ingress alone"
+    );
 
     let invalid_tx = MoonlightTransaction::new(
         &sender_sk,

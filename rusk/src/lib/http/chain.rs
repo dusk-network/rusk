@@ -571,9 +571,11 @@ impl RuskNode {
             ChainError::vm(format!("Cannot query the state: {e:?}"))
         })?;
 
-        // Approximate the next immediately usable nonce by walking the real
-        // mempool frontier. Deferred prequeue entries are intentionally not
-        // counted here because they are not yet admitted as pending txs.
+        // Determine the next available nonce not already used in the mempool.
+        // This ensures that any in-flight transactions using sequential nonces
+        // are accounted for.
+        // If the account has no transactions in the mempool, the next_nonce is
+        // the same as the account's current nonce + 1.
         let next_nonce = db
             .read()
             .await

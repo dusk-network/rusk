@@ -686,3 +686,67 @@ fn check_tx_serialization(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use dusk_core::signatures::bls::{PublicKey, SecretKey};
+    use rand::rngs::StdRng;
+    use rand::{CryptoRng, Rng, RngCore, SeedableRng};
+    use wallet_core::transaction::moonlight_deployment;
+
+    use super::*;
+
+    fn new_moonlight_deploy_tx<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        bytecode: Vec<u8>,
+        init_args: Vec<u8>,
+    ) -> dusk_core::transfer::Transaction {
+        const CHAIN_ID: u8 = 0xfa;
+        let sk = SecretKey::random(rng);
+        let pk = PublicKey::from(&SecretKey::random(rng));
+
+        let gas_limit: u64 = rng.r#gen();
+        let gas_price: u64 = rng.r#gen();
+        let nonce: u64 = rng.r#gen();
+        let deploy_nonce: u64 = rng.r#gen();
+
+        moonlight_deployment(
+            &sk,
+            bytecode,
+            &pk,
+            init_args,
+            gas_limit,
+            gas_price,
+            nonce,
+            deploy_nonce,
+            CHAIN_ID,
+        )
+        .expect("should create a transaction")
+    }
+
+    const MAX_MOONLIGHT_ARG_SIZE: usize = 64 * 1024 - 2320;
+
+    #[test]
+    fn test_tx_serialization_check_normal() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = new_moonlight_deploy_tx(
+            &mut rng,
+            vec![0; 64 * 1024],
+            vec![0; MAX_MOONLIGHT_ARG_SIZE],
+        );
+        let result = check_tx_serialization(&tx);
+        assert!(matches!(result, Ok(())));
+    }
+
+    #[test]
+    fn test_tx_serialization_check_tx_too_large() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = new_moonlight_deploy_tx(
+            &mut rng,
+            vec![0; 64 * 1024],
+            vec![0; MAX_MOONLIGHT_ARG_SIZE + 1],
+        );
+        let result = check_tx_serialization(&tx);
+        assert!(matches!(result, Err(TxAcceptanceError::TooLarge)));
+    }
+}
