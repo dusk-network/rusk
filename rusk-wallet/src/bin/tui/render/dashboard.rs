@@ -108,7 +108,14 @@ fn render_info_block(
     let mut lines = Vec::new();
 
     // ── Shielded ─────────────────────────────────────────────────
-    let shielded_addr = profile.shielded_account_preview();
+    const SHIELDED_LABEL_WIDTH: u16 = 12;
+    let shielded_full = profile.shielded_account_string();
+    let shielded_addr =
+        if area.width >= SHIELDED_LABEL_WIDTH + shielded_full.len() as u16 {
+            shielded_full
+        } else {
+            profile.shielded_account_preview()
+        };
     lines.push(Line::from(vec![
         Span::styled("  Shielded  ", theme::heading()),
         Span::styled(shielded_addr, theme::dim()),
@@ -116,7 +123,14 @@ fn render_info_block(
     lines.push(shielded_balance_line(bal.phoenix.as_ref()));
 
     // ── Public ───────────────────────────────────────────────────
-    let public_addr = profile.public_account_preview();
+    const PUBLIC_LABEL_WIDTH: u16 = 12;
+    let public_full = profile.public_account_string();
+    let public_addr =
+        if area.width >= PUBLIC_LABEL_WIDTH + public_full.len() as u16 {
+            public_full
+        } else {
+            profile.public_account_preview()
+        };
     lines.push(Line::from(vec![
         Span::styled("  Public    ", theme::heading()),
         Span::styled(public_addr, theme::dim()),
