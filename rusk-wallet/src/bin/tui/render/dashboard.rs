@@ -47,19 +47,45 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
+    let profile = app.current_profile();
+
+    let w = inner.width.max(1);
+    let shielded_full = profile.shielded_account_string();
+    let public_full = profile.public_account_string();
+    let sh_rows = (12 + shielded_full.len() as u16).div_ceil(w);
+    let pu_rows = (12 + public_full.len() as u16).div_ceil(w);
+    // Both show full (≤2 rows each) or both fall back to the preview (1 row).
+    let use_full = sh_rows <= 2 && pu_rows <= 2;
+    let (shielded_text, public_text) = if use_full {
+        (shielded_full, public_full)
+    } else {
+        (
+            profile.shielded_account_preview(),
+            profile.public_account_preview(),
+        )
+    };
+    let info_height = if use_full { sh_rows + pu_rows } else { 2 } + 4;
+
     // Layout: info section, separator + menu, hint bar
     let layout = Layout::vertical([
-        Constraint::Length(6), // shielded + public + staking + status
-        Constraint::Min(4),    // menu (scrollable, fills remaining)
+        Constraint::Length(info_height),
+        Constraint::Min(4), // menu (scrollable, fills remaining)
         Constraint::Length(1), // hint bar
     ])
     .split(inner);
 
     let bal = app.current_balance();
-    let profile = app.current_profile();
     let stake = app.stake_info.get(&app.profile_idx);
 
-    render_info_block(frame, layout[0], app, profile, &bal, stake);
+    render_info_block(
+        frame,
+        layout[0],
+        app,
+        &bal,
+        stake,
+        shielded_text,
+        public_text,
+    );
 
     match &app.screen {
         AppScreen::History { entries } => {
@@ -101,54 +127,39 @@ fn render_info_block(
     frame: &mut Frame,
     area: ratatui::layout::Rect,
     app: &App,
-    profile: &rusk_wallet::Profile,
     bal: &super::super::app::ProfileBalance,
     stake: Option<&StakeState>,
+    shielded_text: String,
+    public_text: String,
 ) {
-    let mut lines = Vec::new();
+    let lines = vec![
+        // ── Shielded ───────────────────────────────────────────────
+        Line::from(vec![
+            Span::styled("  Shielded  ", theme::heading()),
+            Span::styled(shielded_text, theme::dim()),
+        ]),
+        shielded_balance_line(bal.phoenix.as_ref()),
+        // ── Public ─────────────────────────────────────────────────
+        Line::from(vec![
+            Span::styled("  Public    ", theme::heading()),
+            Span::styled(public_text, theme::dim()),
+        ]),
+        public_balance_line(bal.moonlight),
+        // ── Staking ────────────────────────────────────────────────
+        staking_line(stake),
+        // ── Status ─────────────────────────────────────────────────
+        status_line(
+            &app.sync_status,
+            app.sync_block_height,
+            &app.network_label,
+            &app.connection,
+        ),
+    ];
 
-    // ── Shielded ─────────────────────────────────────────────────
-    const SHIELDED_LABEL_WIDTH: u16 = 12;
-    let shielded_full = profile.shielded_account_string();
-    let shielded_addr =
-        if area.width >= SHIELDED_LABEL_WIDTH + shielded_full.len() as u16 {
-            shielded_full
-        } else {
-            profile.shielded_account_preview()
-        };
-    lines.push(Line::from(vec![
-        Span::styled("  Shielded  ", theme::heading()),
-        Span::styled(shielded_addr, theme::dim()),
-    ]));
-    lines.push(shielded_balance_line(bal.phoenix.as_ref()));
-
-    // ── Public ───────────────────────────────────────────────────
-    const PUBLIC_LABEL_WIDTH: u16 = 12;
-    let public_full = profile.public_account_string();
-    let public_addr =
-        if area.width >= PUBLIC_LABEL_WIDTH + public_full.len() as u16 {
-            public_full
-        } else {
-            profile.public_account_preview()
-        };
-    lines.push(Line::from(vec![
-        Span::styled("  Public    ", theme::heading()),
-        Span::styled(public_addr, theme::dim()),
-    ]));
-    lines.push(public_balance_line(bal.moonlight));
-
-    // ── Staking ────────────────────────────────────────────────
-    lines.push(staking_line(stake));
-
-    // ── Status ────────────────────────────────────────────────
-    lines.push(status_line(
-        &app.sync_status,
-        app.sync_block_height,
-        &app.network_label,
-        &app.connection,
-    ));
-
-    frame.render_widget(Paragraph::new(lines), area);
+    frame.render_widget(
+        Paragraph::new(lines).wrap(ratatui::widgets::Wrap { trim: false }),
+        area,
+    );
 }
 
 fn shielded_balance_line(balance: Option<&BalanceInfo>) -> Line<'static> {
