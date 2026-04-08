@@ -301,10 +301,7 @@ impl<'a> App<'a> {
                 self.open_form(FormId::Unstake);
                 None
             }
-            "c" => {
-                self.open_form(FormId::ClaimRewards);
-                None
-            }
+            "c" => Some(AppAction::OpenClaimRewardsForm),
             "d" => {
                 self.open_form(FormId::Shield);
                 None
@@ -622,8 +619,50 @@ impl<'a> App<'a> {
         }
     }
 
-    fn open_form(&mut self, form_id: FormId) {
-        let _profile = self.current_profile();
+    pub fn open_form(&mut self, form_id: FormId) {
+        let (phoenix_spendable, moonlight_bal) = self.form_balances();
+        let form = forms::build_form(
+            form_id,
+            self.profile_idx,
+            phoenix_spendable,
+            moonlight_bal,
+            self.claim_rewards_max(),
+            self.wallet.profiles(),
+            &self.settings.wallet_dir,
+        );
+
+        self.screen = AppScreen::Form {
+            form: Box::new(form),
+        };
+    }
+
+    pub fn open_claim_rewards_form(&mut self, reward_max: Option<Dusk>) {
+        let (phoenix_spendable, moonlight_bal) = self.form_balances();
+        let form = forms::build_form(
+            FormId::ClaimRewards,
+            self.profile_idx,
+            phoenix_spendable,
+            moonlight_bal,
+            reward_max,
+            self.wallet.profiles(),
+            &self.settings.wallet_dir,
+        );
+
+        self.screen = AppScreen::Form {
+            form: Box::new(form),
+        };
+    }
+
+    fn claim_rewards_max(&self) -> Option<Dusk> {
+        self.stake_info
+            .get(&self.profile_idx)
+            .map(|stake| match stake {
+                StakeState::Loaded(data) => Dusk::from(data.reward),
+                StakeState::NoStake => Dusk::from(0),
+            })
+    }
+
+    fn form_balances(&self) -> (Dusk, Dusk) {
         let bal = self.current_balance();
         let phoenix_spendable = bal
             .phoenix
@@ -632,18 +671,7 @@ impl<'a> App<'a> {
             .unwrap_or(Dusk::from(0));
         let moonlight_bal = bal.moonlight.unwrap_or(Dusk::from(0));
 
-        let form = forms::build_form(
-            form_id,
-            self.profile_idx,
-            phoenix_spendable,
-            moonlight_bal,
-            self.wallet.profiles(),
-            &self.settings.wallet_dir,
-        );
-
-        self.screen = AppScreen::Form {
-            form: Box::new(form),
-        };
+        (phoenix_spendable, moonlight_bal)
     }
 
     pub fn num_profiles(&self) -> usize {
@@ -987,6 +1015,7 @@ pub enum AppAction {
     RefreshBalance,
     FetchHistory,
     FetchStakeInfo,
+    OpenClaimRewardsForm,
     ImportWallet,
     CloseForm,
     ConfirmCommand(Command),

@@ -81,15 +81,8 @@ fn render_form_field(
         theme::border()
     };
 
-    let label = &field.label;
-
     // Build the title with optional hints
-    let title = match &field.kind {
-        FieldKind::Amount { max } => {
-            format!(" {label} (max: {max}) [m] ")
-        }
-        _ => format!(" {label} "),
-    };
+    let title = field_title(field);
 
     let block = Block::default()
         .title(title)
@@ -148,5 +141,19 @@ fn render_form_field(
                 frame.set_cursor_position((cursor_x, inner.y));
             }
         }
+    }
+}
+
+fn field_title(field: &FormField) -> String {
+    let label = &field.label;
+
+    match &field.kind {
+        FieldKind::Amount { max: Some(max) } => {
+            format!(" {label} (max: {max}) [m] ")
+        }
+        FieldKind::Amount { max: None } => {
+            format!(" {label} (max: Unknown) ")
+        }
+        _ => format!(" {label} "),
     }
 }

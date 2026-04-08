@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix TUI import/restore lock contention by closing the active wallet before importing a different one
 - Clear stale cache when importing a different wallet and auto-retry connect on cache schema mismatch errors
 - Avoid printing raw startup/offline connection warnings into the terminal buffer while TUI is active
+- Fix Claim Reward info about the max amount & show `max: Unknown` when stake reward lookup fails
+- Refresh TUI stake reward display after confirmed stake, unstake, and claim-rewards transactions
 
 ## [0.3.0] - 2026-02-27
 
