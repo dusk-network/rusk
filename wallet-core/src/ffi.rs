@@ -58,6 +58,11 @@ static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 #[unsafe(no_mangle)]
 static MINIMUM_STAKE: u64 = dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
+#[repr(C)]
+pub struct ContractIdBytes {
+    bytes: [u8; 32],
+}
+
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
 
@@ -67,9 +72,8 @@ fn revert(value: &BlsScalar) -> String {
     // DOES NOT match the `tx.hash` of the network.
     let displayed = alloc::format!("{}", &value);
     let displayed = displayed.chars().skip(2).collect::<Vec<_>>();
-    let displayed = displayed.chunks(2).rev().flatten().collect::<String>();
 
-    displayed
+    displayed.chunks(2).rev().flatten().collect::<String>()
 }
 
 fn as_phoenix_transaction(
@@ -77,7 +81,7 @@ fn as_phoenix_transaction(
 ) -> Result<phoenix::Transaction, ErrorCode> {
     match tx {
         Transaction::Phoenix(tx) => Ok(tx),
-        _ => Err(ErrorCode::PhoenixTransactionError),
+        Transaction::Moonlight(_) => Err(ErrorCode::PhoenixTransactionError),
     }
 }
 
@@ -106,14 +110,14 @@ pub unsafe extern "C" fn generate_profile(
     let bpk = derive_bls_pk(seed, index).to_bytes();
 
     ptr::copy_nonoverlapping(
-        &ppk[0],
-        &mut (*profile)[0],
+        &raw const ppk[0],
+        &raw mut (*profile)[0],
         PhoenixPublicKey::SIZE,
     );
 
     ptr::copy_nonoverlapping(
-        &bpk[0],
-        &mut (*profile)[PhoenixPublicKey::SIZE],
+        &raw const bpk[0],
+        &raw mut (*profile)[PhoenixPublicKey::SIZE],
         BlsPublicKey::SIZE,
     );
 
@@ -123,7 +127,7 @@ pub unsafe extern "C" fn generate_profile(
 /// Filter all notes and their block height that are owned by the given keys,
 /// mapped to their nullifiers.
 #[unsafe(no_mangle)]
-pub unsafe fn map_owned(
+pub unsafe extern "C" fn map_owned(
     seed: &Seed,
     indexes: *const u8,
     notes_ptr: *const u8,
@@ -147,15 +151,17 @@ pub unsafe fn map_owned(
 
     let owned = notes::owned::map(&keys, notes);
 
-    keys.into_iter().for_each(|mut sk| sk.zeroize());
+    for mut sk in keys {
+        sk.zeroize();
+    }
 
     let bytes = to_bytes::<_, NOTES_BUFFER_SIZE>(&owned)
         .or(Err(ErrorCode::ArchivingError))?;
 
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
-
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *owned_ptr = ptr;
@@ -164,12 +170,12 @@ pub unsafe fn map_owned(
     ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
     ptr::copy_nonoverlapping(
         block_height.to_le_bytes().as_ptr(),
-        &mut (*last_info_ptr)[0],
+        &raw mut (*last_info_ptr)[0],
         8,
     );
     ptr::copy_nonoverlapping(
         pos.to_le_bytes().as_ptr(),
-        &mut (*last_info_ptr)[8],
+        &raw mut (*last_info_ptr)[8],
         8,
     );
 
@@ -177,12 +183,12 @@ pub unsafe fn map_owned(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn display_scalar(
+pub unsafe extern "C" fn display_scalar(
     scalar_ptr: &[u8; 32],
     output: &mut [u8; 64],
 ) -> ErrorCode {
     let scalar: BlsScalar = mem::parse_buffer(scalar_ptr)?;
-    let displayed = alloc::format!("{}", scalar);
+    let displayed = alloc::format!("{scalar}");
     let bytes = displayed.as_bytes();
 
     ptr::copy_nonoverlapping(bytes[2..].as_ptr(), output.as_mut_ptr(), 64);
@@ -191,7 +197,7 @@ pub unsafe fn display_scalar(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn accounts_into_raw(
+pub unsafe extern "C" fn accounts_into_raw(
     accounts_ptr: *const u8,
     raws_ptr: *mut *mut u8,
 ) -> ErrorCode {
@@ -211,7 +217,8 @@ pub unsafe fn accounts_into_raw(
         });
 
     let len = bytes.len().to_le_bytes();
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *raws_ptr = ptr;
@@ -225,7 +232,7 @@ pub unsafe fn accounts_into_raw(
 /// Calculate the balance info for the phoenix address at the given index for
 /// the given seed.
 #[unsafe(no_mangle)]
-pub unsafe fn balance(
+pub unsafe extern "C" fn balance(
     seed: &Seed,
     index: u8,
     notes_ptr: *const u8,
@@ -239,7 +246,7 @@ pub unsafe fn balance(
 
     ptr::copy_nonoverlapping(
         info.to_bytes().as_ptr(),
-        &mut (*balance_info_ptr)[0],
+        &raw mut (*balance_info_ptr)[0],
         16,
     );
 
@@ -248,7 +255,7 @@ pub unsafe fn balance(
 
 /// Pick the notes to be used in a transaction from an owned notes list.
 #[unsafe(no_mangle)]
-pub unsafe fn pick_notes(
+pub unsafe extern "C" fn pick_notes(
     seed: &Seed,
     index: u8,
     value: *const u64,
@@ -273,7 +280,7 @@ pub unsafe fn pick_notes(
 
 /// Gets the bookmark from the given note.
 #[unsafe(no_mangle)]
-pub unsafe fn bookmarks(
+pub unsafe extern "C" fn bookmarks(
     notes_ptr: *const u8,
     bookmarks_ptr: *mut *mut u8,
 ) -> ErrorCode {
@@ -287,7 +294,8 @@ pub unsafe fn bookmarks(
         .flat_map(|&num| num.to_le_bytes())
         .collect();
 
-    let ptr = mem::malloc(bytes.len() as u32);
+    let ptr =
+        mem::malloc(u32::try_from(bytes.len()).expect("bytes len to be u32"));
     let ptr = ptr as *mut u8;
 
     *bookmarks_ptr = ptr;
@@ -311,7 +319,7 @@ impl Prove for NoOpProver {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn into_proven(
+pub unsafe extern "C" fn into_proven(
     tx_ptr: *const u8,
     proof_ptr: *const u8,
     proven_ptr: *mut *mut u8,
@@ -327,7 +335,8 @@ pub unsafe fn into_proven(
 
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *proven_ptr = ptr;
@@ -344,7 +353,7 @@ pub unsafe fn into_proven(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn phoenix(
+pub unsafe extern "C" fn phoenix(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -364,7 +373,7 @@ pub unsafe fn phoenix(
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
-    let sender_sk = derive_phoenix_sk(&seed, sender_index);
+    let sender_sk = derive_phoenix_sk(seed, sender_index);
     let change_pk = PhoenixPublicKey::from(&sender_sk);
     let receiver_pk = PhoenixPublicKey::from_bytes(receiver)
         .or(Err(ErrorCode::DeserializationError))?;
@@ -378,7 +387,7 @@ pub unsafe fn phoenix(
     let inputs: Vec<(Note, NoteOpening)> = notes
         .into_iter()
         .map(|note_leaf| note_leaf.note)
-        .zip(openings.into_iter())
+        .zip(openings)
         .filter_map(|(note, opening)| opening.map(|op| (note, op)))
         .collect();
 
@@ -413,7 +422,8 @@ pub unsafe fn phoenix(
     let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -424,7 +434,8 @@ pub unsafe fn phoenix(
     let bytes = prover.circuits.into_inner();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *proof_ptr = ptr;
@@ -436,7 +447,7 @@ pub unsafe fn phoenix(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn moonlight(
+pub unsafe extern "C" fn moonlight(
     seed: &Seed,
     sender_index: u8,
     receiver: *const [u8; BlsPublicKey::SIZE],
@@ -450,7 +461,7 @@ pub unsafe fn moonlight(
     tx_ptr: *mut *mut u8,
     hash_ptr: &mut [u8; 64],
 ) -> ErrorCode {
-    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let sender_sk = derive_bls_sk(seed, sender_index);
 
     let receiver_pk = if receiver.is_null() {
         None
@@ -485,7 +496,8 @@ pub unsafe fn moonlight(
     let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -502,7 +514,7 @@ pub unsafe fn moonlight(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn phoenix_to_moonlight(
+pub unsafe extern "C" fn phoenix_to_moonlight(
     rng: &[u8; 32],
     seed: &Seed,
     profile_index: u8,
@@ -519,8 +531,8 @@ pub unsafe fn phoenix_to_moonlight(
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
-    let phoenix_sender_sk = derive_phoenix_sk(&seed, profile_index);
-    let moonlight_receiver_sk = derive_bls_sk(&seed, profile_index);
+    let phoenix_sender_sk = derive_phoenix_sk(seed, profile_index);
+    let moonlight_receiver_sk = derive_bls_sk(seed, profile_index);
 
     let root: BlsScalar = mem::parse_buffer(root)?;
 
@@ -531,8 +543,8 @@ pub unsafe fn phoenix_to_moonlight(
     let inputs: Vec<(Note, NoteOpening, BlsScalar)> = notes
         .into_iter()
         .map(|note_leaf| note_leaf.note)
-        .zip(openings.into_iter())
-        .zip(nullifiers.into_iter())
+        .zip(openings)
+        .zip(nullifiers)
         .filter_map(|((note, opening), nullifier)| {
             opening.map(|op| (note, op, nullifier))
         })
@@ -559,7 +571,8 @@ pub unsafe fn phoenix_to_moonlight(
     let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -570,7 +583,8 @@ pub unsafe fn phoenix_to_moonlight(
     let bytes = prover.circuits.into_inner();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *proof_ptr = ptr;
@@ -582,7 +596,7 @@ pub unsafe fn phoenix_to_moonlight(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn moonlight_to_phoenix(
+pub unsafe extern "C" fn moonlight_to_phoenix(
     rng: &[u8; 32],
     seed: &Seed,
     profile_index: u8,
@@ -596,8 +610,8 @@ pub unsafe fn moonlight_to_phoenix(
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
-    let moonlight_sender_sk = derive_bls_sk(&seed, profile_index);
-    let phoenix_receiver_sk = derive_phoenix_sk(&seed, profile_index);
+    let moonlight_sender_sk = derive_bls_sk(seed, profile_index);
+    let phoenix_receiver_sk = derive_phoenix_sk(seed, profile_index);
 
     let tx = crate::transaction::moonlight_to_phoenix(
         &mut rng,
@@ -614,7 +628,8 @@ pub unsafe fn moonlight_to_phoenix(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -631,7 +646,7 @@ pub unsafe fn moonlight_to_phoenix(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn moonlight_stake(
+pub unsafe extern "C" fn moonlight_stake(
     seed: &Seed,
     sender_index: u8,
     stake_value: *const u64,
@@ -645,7 +660,7 @@ pub unsafe fn moonlight_stake(
     let transfer_value = 0;
     let deposit = *stake_value;
 
-    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let sender_sk = derive_bls_sk(seed, sender_index);
     let stake_sk = sender_sk.clone();
 
     let stake = Stake::new(&stake_sk, &stake_sk, *stake_value, chain_id);
@@ -670,7 +685,8 @@ pub unsafe fn moonlight_stake(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -687,7 +703,7 @@ pub unsafe fn moonlight_stake(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn moonlight_unstake(
+pub unsafe extern "C" fn moonlight_unstake(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -701,7 +717,7 @@ pub unsafe fn moonlight_unstake(
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
-    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let sender_sk = derive_bls_sk(seed, sender_index);
     let stake_sk = sender_sk.clone();
 
     let transfer_value = 0;
@@ -735,7 +751,8 @@ pub unsafe fn moonlight_unstake(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -752,7 +769,7 @@ pub unsafe fn moonlight_unstake(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn moonlight_stake_reward(
+pub unsafe extern "C" fn moonlight_stake_reward(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -766,7 +783,7 @@ pub unsafe fn moonlight_stake_reward(
 ) -> ErrorCode {
     let mut rng = ChaCha12Rng::from_seed(*rng);
 
-    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let sender_sk = derive_bls_sk(seed, sender_index);
     let stake_sk = sender_sk.clone();
 
     let transfer_value = 0;
@@ -800,7 +817,8 @@ pub unsafe fn moonlight_stake_reward(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *tx_ptr = ptr;
@@ -817,30 +835,25 @@ pub unsafe fn moonlight_stake_reward(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe fn create_tx_data(
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn create_tx_data(
     fn_name_len: *const u32,
     fn_name_buf: *mut u8,
     fn_args_len: *const u32,
     fn_args_buf: *mut u8,
-    contract_id: [u8; 32],
+    contract_id: ContractIdBytes,
     memo_len: *const u32,
     memo_buf: *mut u8,
     rkyv_ptr: *mut *mut u8,
 ) -> ErrorCode {
-    let tx_data = if memo_len == crate::ffi::ptr::null()
-        || memo_buf == crate::ffi::ptr::null_mut()
-    {
-        let fn_name = alloc::string::String::from_raw_parts(
-            fn_name_buf,
-            *fn_name_len as usize,
-            *fn_name_len as usize,
-        );
-        let fn_args = alloc::vec::Vec::from_raw_parts(
-            fn_args_buf,
-            *fn_args_len as usize,
-            *fn_args_len as usize,
-        );
-        let contract = ContractId::from_bytes(contract_id);
+    let tx_data = if memo_len.is_null() || memo_buf.is_null() {
+        let fn_name = String::from(str::from_utf8_unchecked(
+            slice::from_raw_parts(fn_name_buf, *fn_name_len as usize),
+        ));
+
+        let fn_args =
+            slice::from_raw_parts(fn_args_buf, *fn_args_len as usize).into();
+        let contract = ContractId::from_bytes(contract_id.bytes);
 
         let contract_call = ContractCall {
             fn_name,
@@ -849,11 +862,7 @@ pub unsafe fn create_tx_data(
         };
         TransactionData::Call(contract_call)
     } else {
-        let memo = alloc::vec::Vec::from_raw_parts(
-            memo_buf,
-            *memo_len as usize,
-            *memo_len as usize,
-        );
+        let memo = slice::from_raw_parts(memo_buf, *memo_len as usize).into();
         TransactionData::Memo(memo)
     };
     let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
@@ -862,7 +871,8 @@ pub unsafe fn create_tx_data(
     };
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
     let ptr = ptr as *mut u8;
 
     *rkyv_ptr = ptr;

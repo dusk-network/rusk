@@ -94,7 +94,8 @@ rusk-wallet: ## build the rusk wallet binary
 	$(MAKE) -C ./rusk-wallet build 
 
 fmt: ## Format code
-	@cargo +nightly fmt --all
+	@bash ./install-nightly-rusk.sh
+	@cargo +nightly-rusk fmt --all
 
 check: ## Type-check all crates
 	@cargo check --workspace
