@@ -249,16 +249,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let mut acc = self.acc.write().await;
         let block_height = blk.header().height;
 
-        if self.retries == SYNC_ATTEMPTS - 1 && self.is_timeout_expired() {
+        let current_height = acc.get_curr_height().await;
+        if block_height <= current_height {
+            return Ok(false);
+        }
+
+        if block_height != current_height + 1
+            && self.retries == SYNC_ATTEMPTS - 1
+            && self.is_timeout_expired()
+        {
+            // Keep the per-block timeout fallback for non-progressing traffic
+            // so a block flood cannot starve the heartbeat path. The next
+            // expected block is the one exception because it can immediately
+            // prove the sync session is still making progress.
             acc.restart_consensus().await;
             // Timeout-ed sync-up
             // Transit back to InSync mode
             return Ok(true);
-        }
-
-        let current_height = acc.get_curr_height().await;
-        if block_height <= current_height {
-            return Ok(false);
         }
 
         if block_height > self.range.1 {
