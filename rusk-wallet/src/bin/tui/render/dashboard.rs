@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
+use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
@@ -107,7 +107,35 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
         }
         AppScreen::Addresses => {
             render_addresses_panel(frame, layout[1], profile);
-            render_panel_hint_bar(frame, layout[2], &[("Esc", "Back")]);
+            render_panel_hint_bar(
+                frame,
+                layout[2],
+                &[
+                    ("s", "Copy Shielded"),
+                    ("p", "Copy Public"),
+                    ("Esc", "Back"),
+                ],
+            );
+            if let Some(msg) = app.clipboard_message() {
+                // Overlay a temporary success toast on the right side of the
+                // hint bar so the shortcuts remain visible.
+                let area = layout[2];
+                let text = format!(" {msg} ");
+                let toast_w = (text.len() as u16).min(area.width);
+                let toast = Rect {
+                    x: area.x + area.width.saturating_sub(toast_w),
+                    y: area.y,
+                    width: toast_w,
+                    height: area.height,
+                };
+                frame.render_widget(
+                    Paragraph::new(Line::from(Span::styled(
+                        text,
+                        theme::success(),
+                    ))),
+                    toast,
+                );
+            }
         }
         _ => {
             render_menu(
@@ -465,11 +493,6 @@ fn render_addresses_panel(
             Span::raw("    "),
             Span::styled(public, theme::value()),
         ]),
-        Line::default(),
-        Line::from(Span::styled(
-            "  Tip: use `profiles` for copy-friendly one-line output",
-            theme::dim(),
-        )),
     ];
 
     frame.render_widget(

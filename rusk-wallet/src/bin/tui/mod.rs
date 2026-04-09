@@ -475,6 +475,9 @@ async fn run_inner(
         // Poll background sync channel
         poll_sync_channel(&mut app);
 
+        // Clear expired transient messages
+        app.expire_clipboard_msg();
+
         // Handle actions
         if let Some(action) = action {
             match action {

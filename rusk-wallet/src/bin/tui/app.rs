@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::process::Command as ProcessCommand;
 use std::time::{Duration, Instant};
 
+use base64::Engine;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use dusk_core::stake::StakeData;
 use rusk_wallet::currency::Dusk;
@@ -154,6 +155,9 @@ pub struct App<'a> {
     // Last submitted form (for retry on error)
     pub last_form: Option<Box<FormState>>,
 
+    // Clipboard feedback shown in the hint bar (message + time it was set)
+    pub clipboard_msg: Option<(String, Instant)>,
+
     // Control
     pub should_quit: bool,
 }
@@ -181,6 +185,7 @@ impl<'a> App<'a> {
             status_messages: Vec::new(),
             history_selected: 0,
             last_form: None,
+            clipboard_msg: None,
             should_quit: false,
         }
     }
@@ -210,10 +215,12 @@ impl<'a> App<'a> {
                 self.handle_result_key(key);
                 None
             }
-            AppScreen::History { .. }
-            | AppScreen::StakeInfo
-            | AppScreen::Addresses => {
+            AppScreen::History { .. } | AppScreen::StakeInfo => {
                 self.handle_history_key(key);
+                None
+            }
+            AppScreen::Addresses => {
+                self.handle_addresses_key(key);
                 None
             }
             AppScreen::Help => {
@@ -478,6 +485,33 @@ impl<'a> App<'a> {
         }
     }
 
+    fn handle_addresses_key(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.clipboard_msg = None;
+                self.screen = AppScreen::Dashboard;
+            }
+            KeyCode::Char('s') => {
+                let addr =
+                    Address::Shielded(self.current_profile().shielded_addr)
+                        .to_string();
+                self.clipboard_msg = Some((
+                    clipboard_message("Shielded", copy_to_clipboard(&addr)),
+                    Instant::now(),
+                ));
+            }
+            KeyCode::Char('p') => {
+                let addr = Address::Public(self.current_profile().public_addr)
+                    .to_string();
+                self.clipboard_msg = Some((
+                    clipboard_message("Public", copy_to_clipboard(&addr)),
+                    Instant::now(),
+                ));
+            }
+            _ => {}
+        }
+    }
+
     fn handle_history_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
@@ -616,6 +650,25 @@ impl<'a> App<'a> {
 
         if should_switch {
             self.sync_status = SyncStatus::Syncing;
+        }
+    }
+
+    /// Return the clipboard feedback message if it hasn't expired yet.
+    pub fn clipboard_message(&self) -> Option<&str> {
+        const CLIPBOARD_MSG_TTL: Duration = Duration::from_secs(3);
+        self.clipboard_msg
+            .as_ref()
+            .filter(|(_, at)| at.elapsed() < CLIPBOARD_MSG_TTL)
+            .map(|(msg, _)| msg.as_str())
+    }
+
+    /// Clear the clipboard feedback message if it has expired.
+    pub fn expire_clipboard_msg(&mut self) {
+        if let Some((_, at)) = &self.clipboard_msg {
+            const CLIPBOARD_MSG_TTL: Duration = Duration::from_secs(3);
+            if at.elapsed() >= CLIPBOARD_MSG_TTL {
+                self.clipboard_msg = None;
+            }
         }
     }
 
@@ -882,6 +935,35 @@ fn sanitize_error_for_display(message: &str) -> String {
     }
 
     first_line
+}
+
+fn clipboard_message(label: &str, result: Result<(), String>) -> String {
+    match result {
+        Ok(()) => format!("{label} address: copy request sent to terminal"),
+        Err(err) => {
+            format!(
+                "{label} address: failed to send copy request to terminal: {err}"
+            )
+        }
+    }
+}
+
+/// Send a text to the clipboard using OSC 52 escape sequence. This allows
+/// copying without needing external clipboard tools.
+///
+/// Not every terminal supports OSC 52. And OSC 52 is fire-and-forget.
+/// Success cannot be confirmed.
+fn copy_to_clipboard(text: &str) -> Result<(), String> {
+    use std::io::Write;
+    let osc52 = format!(
+        "\x1b]52;c;{}\x07",
+        base64::engine::general_purpose::STANDARD.encode(text.as_bytes())
+    );
+    // Write to stderr: ratatui owns stdout (raw/alternate-screen mode), but
+    // stderr is a separate fd that still reaches the same terminal device.
+    std::io::stderr()
+        .write_all(osc52.as_bytes())
+        .map_err(|e| e.to_string())
 }
 
 fn open_explorer_url(url: &str) -> Result<(), String> {
