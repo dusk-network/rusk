@@ -15,7 +15,21 @@ use crate::tui::forms::field::{FieldKind, FormField};
 use crate::tui::theme;
 
 pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
-    let area = centered_rect(60, 70, frame.area());
+    let screen = frame.area();
+    // Each field is 3 rows tall; add 1 for the hint/error row and 2 for the
+    // modal border.
+    let needed_h = (form.fields.len() as u16 * 3 + 3).min(screen.height);
+    let area = {
+        let full = centered_rect(60, 70, screen);
+        // If the percentage-based height is too small, centre a fixed-height
+        // rect instead so all fields remain visible.
+        if full.height < needed_h {
+            let top = screen.y + screen.height.saturating_sub(needed_h) / 2;
+            Rect::new(full.x, top, full.width, needed_h)
+        } else {
+            full
+        }
+    };
     frame.render_widget(Clear, area);
 
     let block = Block::bordered()
