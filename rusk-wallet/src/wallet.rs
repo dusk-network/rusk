@@ -318,6 +318,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         let cache_dir = self.cache_path()?;
+        let is_local =
+            self.file.as_ref().and_then(|f| f.path().network.as_deref())
+                == Some("local");
 
         // create a state client
         self.state = Some(State::new(
@@ -326,6 +329,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             http_state,
             http_prover,
             self.store.clone(),
+            is_local,
         )?);
 
         Ok(())

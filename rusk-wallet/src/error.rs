@@ -178,6 +178,12 @@ pub enum Error {
     /// Consensus keys error
     #[error("Error while saving consensus keys: {0}")]
     ConsensusKeysError(ConsensusKeysError),
+    /// Note cache is from a different chain; delete the cache directory and
+    /// restart
+    #[error(
+        "Stale note cache at position {0}; delete the cache directory and restart."
+    )]
+    StaleCache(u64),
     /// Trying to claim more reward than the person has
     #[error("Trying to claim more than existing reward")]
     NotEnoughReward,

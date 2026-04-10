@@ -72,6 +72,8 @@ pub struct State {
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
     sync_shutdown: Option<(Arc<Notify>, JoinHandle<()>)>,
+    /// Auto-reset stale cache on mismatch (only for local dev nodes).
+    allow_cache_reset: bool,
 }
 
 impl State {
@@ -82,6 +84,7 @@ impl State {
         client: RuesHttpClient,
         prover: RuesHttpClient,
         store: LocalStore,
+        allow_cache_reset: bool,
     ) -> Result<Self, Error> {
         let cfs = (0..MAX_PROFILES)
             .flat_map(|i| {
@@ -107,6 +110,7 @@ impl State {
             status,
             client,
             sync_shutdown: None,
+            allow_cache_reset,
         })
     }
 
@@ -139,6 +143,7 @@ impl State {
         let cache = self.cache();
         let client = self.client.clone();
         let mut store = self.store.clone();
+        let allow_cache_reset = self.allow_cache_reset;
         let shutdown = Arc::new(Notify::new());
         let shutdown_signal = shutdown.clone();
 
@@ -151,7 +156,7 @@ impl State {
                     () = sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)) => {
                         let _ = sync_tx.send("Syncing..".to_string());
 
-                        let _ = match sync_db(&client, &cache, &store, |_| {}).await {
+                        let _ = match sync_db(&client, &cache, &store, |_| {}, allow_cache_reset).await {
                             Ok(()) => sync_tx.send("Syncing Complete".to_string()),
                             Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
                         };
@@ -166,7 +171,14 @@ impl State {
     }
 
     pub async fn sync(&self) -> Result<(), Error> {
-        sync_db(&self.client, &self.cache(), &self.store, self.status).await
+        sync_db(
+            &self.client,
+            &self.cache(),
+            &self.store,
+            self.status,
+            self.allow_cache_reset,
+        )
+        .await
     }
 
     async fn next_propagation_format(

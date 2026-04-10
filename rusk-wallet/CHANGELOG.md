@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Refuse remote `http://` wallet service endpoints unless `--allow-insecure` is set, while keeping loopback HTTP available for local development
 - Batch `existing_nullifiers` sync queries to avoid large restore failures
+- Detect stale note cache (e.g., from a wiped local node) and reset it automatically before syncing
 - Zeroize the validated mnemonic phrase immediately after CLI restore derives the wallet
 - Create CLI mnemonic seed files with owner-only permissions on Unix
 - Fix TUI stdout artifacting and stale frame residue after startup sync
