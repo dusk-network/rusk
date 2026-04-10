@@ -313,14 +313,11 @@ fn contract_deploy(
                     Ok((_, init_receipt)) => {
                         receipt.gas_spent =
                             receipt.gas_spent.saturating_add(deploy_charge);
-                        if config.charge_init_gas
-                            && let Some(init_receipt) = init_receipt
-                        {
-                            receipt.gas_spent = receipt
-                                .gas_spent
-                                .saturating_add(init_receipt.gas_spent);
-                            receipt.events.extend(init_receipt.events);
-                        }
+                        apply_deploy_init_receipt(
+                            receipt,
+                            init_receipt,
+                            config.charge_init_gas,
+                        );
                     }
                     Err(err) => {
                         let msg = format!("failed deployment: {err:?}");
@@ -329,6 +326,20 @@ fn contract_deploy(
                 }
             }
         }
+    }
+}
+
+fn apply_deploy_init_receipt(
+    receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
+    init_receipt: Option<CallReceipt<Vec<u8>>>,
+    charge_init_gas: bool,
+) {
+    if let Some(init_receipt) = init_receipt {
+        if charge_init_gas {
+            receipt.gas_spent =
+                receipt.gas_spent.saturating_add(init_receipt.gas_spent);
+        }
+        receipt.events.extend(init_receipt.events);
     }
 }
 
@@ -393,11 +404,14 @@ mod tests {
     use alloc::vec;
 
     use dusk_core::BlsScalar;
+    use dusk_core::abi::Event;
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
     // Dev-dependencies only used in integration tests trigger the
     // unused_crate_dependencies lint, so we re-import them here.
     use {ff as _, hex as _, once_cell as _};
+
+    use crate::CallTree;
 
     use super::*;
 
@@ -595,5 +609,51 @@ mod tests {
                 expected,
             );
         }
+    }
+
+    #[test]
+    fn deploy_init_events_are_preserved_before_and_after_boreas() {
+        let init_event = Event {
+            source: ContractId::from_bytes([7; 32]),
+            topic: "runtime_update".into(),
+            data: vec![1, 2, 3, 4],
+        };
+        let build_init_receipt = || CallReceipt {
+            gas_spent: 123,
+            gas_limit: 999,
+            events: vec![init_event.clone()],
+            call_tree: CallTree::default(),
+            data: Vec::new(),
+        };
+
+        let mut prefork_receipt = CallReceipt {
+            gas_spent: 10,
+            gas_limit: 1000,
+            events: vec![],
+            call_tree: CallTree::default(),
+            data: Ok(Vec::new()),
+        };
+        apply_deploy_init_receipt(
+            &mut prefork_receipt,
+            Some(build_init_receipt()),
+            false,
+        );
+        assert_eq!(prefork_receipt.gas_spent, 10);
+        assert_eq!(prefork_receipt.events, vec![init_event.clone()]);
+
+        let mut boreas_receipt = CallReceipt {
+            gas_spent: 10,
+            gas_limit: 1000,
+            events: vec![],
+            call_tree: CallTree::default(),
+            data: Ok(Vec::new()),
+        };
+        apply_deploy_init_receipt(
+            &mut boreas_receipt,
+            Some(build_init_receipt()),
+            true,
+        );
+        assert_eq!(boreas_receipt.gas_spent, 133);
+        assert_eq!(boreas_receipt.events, vec![init_event]);
     }
 }
