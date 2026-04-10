@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a bounded pre-admission retry queue for non-consecutive Moonlight transactions
+
 ### Fixed
 
 - Remove unsafe consensus spin-time environment mutation during node initialization

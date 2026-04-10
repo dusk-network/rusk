@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod conf;
+mod prequeue;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -23,6 +24,11 @@ use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
 use node_data::message::{AsyncQueue, Payload, Topics, payload};
+pub use prequeue::FutureNonceRetryHandle;
+use prequeue::{
+    RETRY_POLL_INTERVAL, drain_unblocked_chain, handle_enqueue_outcome,
+    process_due_retries,
+};
 use rkyv::Infallible;
 use rkyv::ser::Serializer;
 use rkyv::ser::serializers::{
@@ -32,6 +38,7 @@ use rkyv::ser::serializers::{
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::Sender;
+use tokio::time::Instant;
 use tracing::{error, info, warn};
 
 use crate::database::{Ledger, Mempool};
@@ -65,6 +72,14 @@ pub enum TxAcceptanceError {
     GasLimitTooLow(u64),
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
+    #[error("Missing intermediate nonce {0}")]
+    MissingIntermediateNonce(u64),
+    #[error("Maximum future nonce retry queue size exceeded {0}")]
+    MaxFutureNonceQueueExceeded(usize),
+    #[error(
+        "Maximum queued future Moonlight transactions per account exceeded {0}"
+    )]
+    MaxMoonlightFutureNoncePerAccountExceeded(usize),
     #[error("this transaction is too large to be serialized")]
     TooLarge,
     #[error("Maximum transaction size exceeded {0}")]
@@ -142,10 +157,23 @@ pub struct MempoolSrv {
     conf: Params,
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
+    future_nonce_retry_queue: FutureNonceRetryHandle,
 }
 
 impl MempoolSrv {
     pub fn new(conf: Params, event_sender: Sender<Event>) -> Self {
+        let queue = FutureNonceRetryHandle::new(
+            conf.max_queue_size,
+            conf.max_moonlight_future_nonce_per_account,
+        );
+        Self::with_future_nonce_retry_queue(conf, event_sender, queue)
+    }
+
+    pub fn with_future_nonce_retry_queue(
+        conf: Params,
+        event_sender: Sender<Event>,
+        future_nonce_retry_queue: FutureNonceRetryHandle,
+    ) -> Self {
         info!("MempoolSrv::new with conf {}", conf);
         Self {
             inbound: AsyncQueue::bounded(
@@ -154,6 +182,7 @@ impl MempoolSrv {
             ),
             conf,
             event_sender,
+            future_nonce_retry_queue,
         }
     }
 }
@@ -187,6 +216,24 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             .mempool_expiry
             .unwrap_or(DEFAULT_EXPIRY_TIME)
             .as_secs();
+
+        let retry_queue = self.future_nonce_retry_queue.clone();
+        let retry_event_sender = self.event_sender.clone();
+        let retry_max_mempool_txn_count = self.conf.max_mempool_txn_count;
+        let retry_network = network.clone();
+        let retry_db = db.clone();
+        let retry_vm = vm.clone();
+        tokio::spawn(async move {
+            MempoolSrv::run_retry_worker(
+                retry_queue,
+                retry_event_sender,
+                retry_max_mempool_txn_count,
+                retry_network,
+                retry_db,
+                retry_vm,
+            )
+            .await;
+        });
 
         // Mempool service loop
         let mut on_idle_event = tokio::time::interval(idle_interval);
@@ -228,15 +275,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Ok(msg) = msg {
                         match &msg.payload {
                             Payload::Transaction(tx) => {
-                                let accept = self.accept_tx(&db, &vm, tx);
-                                if let Err(e) = accept.await {
+                                if let Err(e) = self
+                                    .handle_tx_message(
+                                        &network,
+                                        &db,
+                                        &vm,
+                                        &msg,
+                                    )
+                                    .await
+                                {
                                     error!("Tx {} not accepted: {e}", hex::encode(tx.id()));
-                                    continue;
-                                }
-
-                                let network = network.read().await;
-                                if let Err(e) = network.broadcast(&msg).await {
-                                    warn!("Unable to broadcast accepted tx: {e}")
                                 };
                             }
                             _ => error!("invalid inbound message payload"),
@@ -254,14 +302,120 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 }
 
 impl MempoolSrv {
-    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
+    async fn run_retry_worker<
+        N: Network,
+        DB: database::DB,
+        VM: vm::VMExecution,
+    >(
+        future_nonce_retry_queue: FutureNonceRetryHandle,
+        event_sender: Sender<Event>,
+        max_mempool_txn_count: usize,
+        network: Arc<RwLock<N>>,
+        db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
+    ) {
+        let mut on_retry_event = tokio::time::interval(RETRY_POLL_INTERVAL);
+
+        loop {
+            on_retry_event.tick().await;
+            process_due_retries(
+                &future_nonce_retry_queue,
+                &event_sender,
+                max_mempool_txn_count,
+                &network,
+                &db,
+                &vm,
+                Instant::now(),
+            )
+            .await;
+        }
+    }
+
+    async fn broadcast_tx<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
+        let network = network.read().await;
+        if let Err(e) = network.broadcast(msg).await {
+            warn!("Unable to broadcast accepted tx: {e}");
+        };
+    }
+
+    async fn broadcast_accepted_tx<N: Network>(
+        network: &Arc<RwLock<N>>,
+        msg: &Message,
+        tx: &Transaction,
+        source: Option<&str>,
+        queue_age_ms: Option<u64>,
+    ) {
+        if let Some(source) = source {
+            info!(
+                event = "future_nonce_retry_accepted",
+                hash = hex::encode(tx.id()),
+                source,
+                queue_age_ms
+            );
+        }
+        Self::broadcast_tx(network, msg).await;
+    }
+
+    async fn handle_tx_message<
+        N: Network,
+        DB: database::DB,
+        VM: vm::VMExecution,
+    >(
         &mut self,
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        msg: &Message,
+    ) -> Result<(), TxAcceptanceError> {
+        let Payload::Transaction(tx) = &msg.payload else {
+            return Err(TxAcceptanceError::Generic(anyhow!(
+                "invalid inbound message payload"
+            )));
+        };
+
+        match Self::accept_tx(
+            &self.event_sender,
+            self.conf.max_mempool_txn_count,
+            db,
+            vm,
+            tx,
+        )
+        .await
+        {
+            Ok(()) => {
+                Self::broadcast_accepted_tx(network, msg, tx, None, None).await;
+                drain_unblocked_chain(
+                    &self.future_nonce_retry_queue,
+                    &self.event_sender,
+                    self.conf.max_mempool_txn_count,
+                    network,
+                    db,
+                    vm,
+                    tx,
+                )
+                .await;
+                Ok(())
+            }
+            Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
+                handle_enqueue_outcome(
+                    &self.event_sender,
+                    tx,
+                    self.future_nonce_retry_queue
+                        .enqueue_message_with_outcome(msg)
+                        .await,
+                )
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
+        event_sender: &Sender<Event>,
+        max_mempool_txn_count: usize,
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
     ) -> Result<(), TxAcceptanceError> {
-        let max_mempool_txn_count = self.conf.max_mempool_txn_count;
-
         let events =
             MempoolSrv::check_tx(db, vm, tx, false, max_mempool_txn_count)
                 .await?;
@@ -273,7 +427,7 @@ impl MempoolSrv {
 
         for tx_event in events {
             let node_event = tx_event.into();
-            if let Err(e) = self.event_sender.try_send(node_event) {
+            if let Err(e) = event_sender.try_send(node_event) {
                 warn!("cannot notify mempool accepted transaction {e}")
             };
         }
@@ -438,9 +592,9 @@ impl MempoolSrv {
                         .mempool_txs_by_spendable_ids(&[spending_id])
                         .is_empty()
                     {
-                        return Err(TxAcceptanceError::VerificationFailed(
-                            format!("Missing intermediate nonce {nonce}"),
-                        ));
+                        return Err(
+                            TxAcceptanceError::MissingIntermediateNonce(nonce),
+                        );
                     }
                 }
                 Ok(())

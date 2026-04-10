@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 pub const DEFAULT_EXPIRY_TIME: Duration = Duration::from_secs(3 * 60 * 60 * 24); /* 3 days */
 pub const DEFAULT_IDLE_INTERVAL: Duration = Duration::from_secs(60 * 60); /* 1 hour */
 pub const DEFAULT_DOWNLOAD_REDUNDANCY: usize = 5;
+pub const DEFAULT_MAX_MOONLIGHT_FUTURE_NONCE_PER_ACCOUNT: usize = 64;
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Params {
@@ -21,6 +22,11 @@ pub struct Params {
 
     /// Maximum number of transactions that can be accepted/stored in mempool
     pub max_mempool_txn_count: usize,
+
+    /// Maximum number of non-consecutive Moonlight transactions to keep in the
+    /// pre-admission future-nonce queue for a single account.
+    #[serde(default = "default_max_moonlight_future_nonce_per_account")]
+    pub max_moonlight_future_nonce_per_account: usize,
 
     /// Interval to check for expired transactions
     #[serde(with = "humantime_serde")]
@@ -39,6 +45,8 @@ impl Default for Params {
         Self {
             max_queue_size: 1000,
             max_mempool_txn_count: 10_000,
+            max_moonlight_future_nonce_per_account:
+                DEFAULT_MAX_MOONLIGHT_FUTURE_NONCE_PER_ACCOUNT,
             idle_interval: Some(DEFAULT_IDLE_INTERVAL),
             mempool_expiry: Some(DEFAULT_EXPIRY_TIME),
             mempool_download_redundancy: Some(DEFAULT_DOWNLOAD_REDUNDANCY),
@@ -46,14 +54,19 @@ impl Default for Params {
     }
 }
 
+const fn default_max_moonlight_future_nonce_per_account() -> usize {
+    DEFAULT_MAX_MOONLIGHT_FUTURE_NONCE_PER_ACCOUNT
+}
+
 impl std::fmt::Display for Params {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "max_queue_size: {}, max_mempool_txn_count: {},
+            "max_queue_size: {}, max_mempool_txn_count: {}, max_moonlight_future_nonce_per_account: {},
          idle_interval: {:?}, mempool_expiry: {:?}, mempool_download_redundancy: {:?}",
             self.max_queue_size,
             self.max_mempool_txn_count,
+            self.max_moonlight_future_nonce_per_account,
             self.idle_interval,
             self.mempool_expiry,
             self.mempool_download_redundancy
