@@ -525,6 +525,11 @@ mod tests {
     };
     use crate::message::payload::{Candidate, Validation};
 
+    const HISTORICAL_PRE_AEGIS_TX_HEX: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../test-fixtures/pre_aegis_3422299.tx.hex"
+    ));
+
     /// Asserts if encoding/decoding of a serializable type runs properly.
     fn assert_serializable<S: Dummy<Faker> + Eq + Serializable>() {
         let obj: S = Faker.fake();
@@ -580,6 +585,29 @@ mod tests {
             .with_format(TransactionFormat::Boreas);
         let decoded = assert_transaction_roundtrip(tx);
         assert_eq!(decoded.format(), TransactionFormat::Boreas);
+    }
+
+    #[test]
+    fn test_encoding_block_with_pre_aegis_transaction() {
+        let header: Header = Faker.fake();
+        let tx = Transaction::decode_any(
+            &hex::decode(HISTORICAL_PRE_AEGIS_TX_HEX.trim())
+                .expect("fixture hex should decode"),
+        )
+        .expect("historical tx should decode");
+        let block = Block::new(header, vec![tx], vec![])
+            .expect("block construction should succeed");
+
+        let mut buf = vec![];
+        block
+            .write(&mut buf)
+            .expect("block encoding should succeed");
+
+        let decoded = Block::read(&mut &buf[..])
+            .expect("block decoding should preserve legacy transactions");
+        assert_eq!(decoded.txs().len(), 1);
+        assert_eq!(decoded.txs()[0].format(), TransactionFormat::PreAegis);
+        assert_eq!(decoded.txs()[0].id(), block.txs()[0].id());
     }
 
     #[test]
