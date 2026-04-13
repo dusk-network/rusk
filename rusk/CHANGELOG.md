@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix panic during invalid tx refund processing (P1.2-7)
 - Queue future-nonce Moonlight transactions during HTTP propagation instead of rejecting them on local admission gaps
+- Map invalid transaction ingress format rejections to HTTP invalid-input errors instead of failing exhaustiveness checks in preverify handling
 
 
 ## [1.6.0] - 2026-02-27

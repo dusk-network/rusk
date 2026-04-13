@@ -150,6 +150,7 @@ fn map_check_tx_error(tx_id: String, error: TxAcceptanceError) -> ChainError {
         | TxAcceptanceError::MaxMoonlightFutureNoncePerAccountExceeded(_)
         | TxAcceptanceError::GasPriceTooLow(_)
         | TxAcceptanceError::GasLimitTooLow(_)
+        | TxAcceptanceError::InvalidIngressFormat { .. }
         | TxAcceptanceError::TooLarge
         | TxAcceptanceError::MaxSizeExceeded(_) => {
             warn!("{err_msg}");
@@ -737,6 +738,7 @@ async fn load_tip<DB: database::DB>(
 #[cfg(test)]
 mod tests {
     use async_graphql::{Response as GraphqlResponse, ServerError, Value};
+    use dusk_core::transfer::TransactionFormat;
     use node::mempool::TxAcceptanceError;
 
     use super::{
@@ -782,6 +784,19 @@ mod tests {
         let err = map_check_tx_error(
             "deadbeef".to_string(),
             TxAcceptanceError::GasPriceTooLow(1),
+        );
+        assert!(matches!(err, ChainError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn preverify_invalid_ingress_format_maps_to_invalid_input() {
+        let err = map_check_tx_error(
+            "deadbeef".to_string(),
+            TxAcceptanceError::InvalidIngressFormat {
+                actual: TransactionFormat::PreAegis,
+                expected: TransactionFormat::Aegis,
+                block_height: 42,
+            },
         );
         assert!(matches!(err, ChainError::InvalidInput(_)));
     }
