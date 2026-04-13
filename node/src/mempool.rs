@@ -20,8 +20,10 @@ use dusk_consensus::errors::BlobError;
 use dusk_core::TxPreconditionError;
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::TransactionFormat;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
+use node_data::hard_fork::ingress_tx_format_at;
 use node_data::ledger::{Header, SpendingId, Transaction};
 use node_data::message::{AsyncQueue, Payload, Topics, payload};
 pub use prequeue::FutureNonceRetryHandle;
@@ -70,6 +72,14 @@ pub enum TxAcceptanceError {
     GasPriceTooLow(u64),
     #[error("gas limit lower than minimum {0}")]
     GasLimitTooLow(u64),
+    #[error(
+        "transaction format {actual:?} is not valid for ingress at height {block_height}; expected {expected:?}"
+    )]
+    InvalidIngressFormat {
+        actual: TransactionFormat,
+        expected: TransactionFormat,
+        block_height: u64,
+    },
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
     #[error("Missing intermediate nonce {0}")]
@@ -150,6 +160,24 @@ impl From<TxPreconditionError> for TxAcceptanceError {
             }
         }
     }
+}
+
+fn check_ingress_tx_format(
+    tx: &Transaction,
+    block_height: u64,
+) -> Result<(), TxAcceptanceError> {
+    let expected = ingress_tx_format_at(block_height);
+    let actual = tx.format();
+
+    if actual == expected {
+        return Ok(());
+    }
+
+    Err(TxAcceptanceError::InvalidIngressFormat {
+        actual,
+        expected,
+        block_height,
+    })
 }
 
 pub struct MempoolSrv {
@@ -469,6 +497,9 @@ impl MempoolSrv {
             })?
             .header
             .height;
+        let next_block_height = tip_height.saturating_add(1);
+
+        check_ingress_tx_format(tx, next_block_height)?;
 
         {
             // Mimic the VM's additional checks for transactions
@@ -758,5 +789,35 @@ mod tests {
         );
         let result = check_tx_serialization(&tx);
         assert!(matches!(result, Err(TxAcceptanceError::TooLarge)));
+    }
+
+    #[test]
+    fn test_ingress_format_check_rejects_pre_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx: Transaction =
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]).into();
+        let tx = tx.with_format(TransactionFormat::PreAegis);
+
+        let result = check_ingress_tx_format(&tx, 1);
+
+        assert!(matches!(
+            result,
+            Err(TxAcceptanceError::InvalidIngressFormat {
+                actual: TransactionFormat::PreAegis,
+                expected: TransactionFormat::Aegis,
+                block_height: 1,
+            })
+        ));
+    }
+
+    #[test]
+    fn test_ingress_format_check_accepts_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx: Transaction =
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]).into();
+
+        let result = check_ingress_tx_format(&tx, 1);
+
+        assert!(matches!(result, Ok(())));
     }
 }
