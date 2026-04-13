@@ -231,7 +231,27 @@ impl Transaction {
         }
     }
 
+    /// Decode a transaction for live ingress under the selected protocol
+    /// format.
+    ///
+    /// This path is intended for mempool and network admission, where only the
+    /// format valid at the target block height should be accepted.
+    ///
+    /// # Errors
+    /// Returns [`BytesError::InvalidData`] when the bytes do not match the
+    /// transaction families or format accepted under `format`.
+    pub fn decode_for_ingress(
+        format: TransactionFormat,
+        buf: &[u8],
+    ) -> Result<DecodedTransaction, BytesError> {
+        Self::decode_with_format(format, buf)
+    }
+
     /// Decode a transaction in any currently supported format.
+    ///
+    /// This path is intended for historical ledger replay and storage decoding,
+    /// where legacy transactions from earlier protocol eras must remain
+    /// decodable.
     ///
     /// # Errors
     /// Returns [`BytesError::InvalidData`] when the bytes do not encode a
@@ -249,6 +269,13 @@ impl Transaction {
                 buf,
                 PhoenixTransaction::from_slice,
             )
+            .or_else(|_| {
+                Self::decode_legacy(
+                    TransactionFormat::PreAegis,
+                    buf,
+                    PhoenixTransaction::from_slice_ledger_compat,
+                )
+            })
         }
     }
 

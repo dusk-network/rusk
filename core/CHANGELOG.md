@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   precondition checking
 - Reject blob transactions whose required gas charge overflows during
   precondition checking
+- Restore historical pre-Aegis transaction decode compatibility for ledger
+  replay while keeping ingress decoding format-gated
 
 ## [1.6.0] - 2026-02-27
 
