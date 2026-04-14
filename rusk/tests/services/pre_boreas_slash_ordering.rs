@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
@@ -22,27 +20,6 @@ const BOREAS_ACTIVATION_HEIGHT: u64 = 2;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
-
-fn resign_moonlight_insecure(
-    tx: ProtocolTransaction,
-    signer: &dusk_core::signatures::bls::SecretKey,
-) -> ProtocolTransaction {
-    let ProtocolTransaction::Moonlight(tx) = tx else {
-        panic!("expected moonlight transaction");
-    };
-    let mut bytes = tx.to_var_bytes();
-    let sig = signer.sign_insecure(&tx.signature_message()).to_bytes();
-    let sig_start = bytes
-        .len()
-        .checked_sub(sig.len())
-        .expect("moonlight tx must include signature bytes");
-    bytes[sig_start..].copy_from_slice(&sig);
-
-    ProtocolTransaction::Moonlight(
-        dusk_core::transfer::moonlight::Transaction::from_slice(&bytes)
-            .expect("re-signed moonlight transaction must deserialize"),
-    )
-}
 
 async fn stake_state_pre_boreas() -> Result<TestContext> {
     let state = include_str!("../config/stake.toml");
@@ -70,14 +47,9 @@ pub async fn slash_events_follow_tx_events_pre_boreas() -> Result<()> {
         .account_public_key(2)
         .expect("receiver pubkey to be available");
 
-    let sender_sk = wallet
-        .account_secret_key(0)
-        .expect("sender account secret key to be available");
-
     let transfer_tx = wallet
         .moonlight_transfer(0, receiver_pk, 1, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create transfer tx");
-    let transfer_tx = resign_moonlight_insecure(transfer_tx, &sender_sk);
     let node_tx: NodeTransaction = transfer_tx.into();
 
     let prev_state = rusk.state_root();
