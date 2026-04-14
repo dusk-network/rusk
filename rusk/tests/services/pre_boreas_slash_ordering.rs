@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bytes::Serializable;
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
