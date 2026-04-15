@@ -31,7 +31,7 @@ use tracing::{error, warn};
 
 use super::rues::event::RequestData;
 use super::*;
-use crate::node::{RuskNode, set_vm_host_context};
+use crate::node::{RuskNode, forward_event_to_rues, set_vm_host_context};
 use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
@@ -127,6 +127,17 @@ async fn decode_ingress_tx(
         Transaction::decode_for_ingress(data, tip_height.saturating_add(1))
             .map_err(|e| ChainError::invalid_input(format!("Data: {e:?}")))?;
     Ok(tx)
+}
+
+async fn forward_rues_events(
+    node: &RuskNode,
+    events: Vec<node_data::events::Event>,
+) {
+    let vm = node.inner().vm_handler();
+    let rues_sender = vm.read().await.event_sender.clone();
+    for event in events {
+        forward_event_to_rues(&rues_sender, event);
+    }
 }
 
 fn map_check_tx_error(tx_id: String, error: TxAcceptanceError) -> ChainError {
@@ -376,10 +387,12 @@ impl RuskNode {
             Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
                 let tx_id = hex::encode(tx.id());
                 let tx_message = tx.into();
-                self.future_nonce_retry_queue()
-                    .enqueue_message(&tx_message)
-                    .await
-                    .map_err(|e| map_check_tx_error(tx_id, e))?;
+                let (events, result) = self
+                    .future_nonce_retry_queue()
+                    .enqueue_message_report(&tx_message)
+                    .await;
+                forward_rues_events(self, events).await;
+                result.map_err(|e| map_check_tx_error(tx_id, e))?;
             }
             Err(e) => {
                 return Err(map_check_tx_error(hex::encode(tx.id()), e));
