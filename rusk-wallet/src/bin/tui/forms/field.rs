@@ -22,7 +22,7 @@ pub struct FormField {
 #[derive(Debug, Clone)]
 pub enum FieldKind {
     Text,
-    Amount { max: Dusk },
+    Amount { max: Option<Dusk> },
     Number,
     Select { options: Vec<String> },
 }
@@ -57,6 +57,18 @@ impl FormField {
     }
 
     pub fn amount(name: &'static str, label: &str, max: Dusk) -> Self {
+        Self::amount_with_max(name, label, Some(max))
+    }
+
+    pub fn amount_unknown(name: &'static str, label: &str) -> Self {
+        Self::amount_with_max(name, label, None)
+    }
+
+    fn amount_with_max(
+        name: &'static str,
+        label: &str,
+        max: Option<Dusk>,
+    ) -> Self {
         Self {
             name,
             label: label.to_string(),
@@ -138,7 +150,7 @@ impl FormField {
 
     /// Set value to the max amount (for Amount fields).
     pub fn set_max(&mut self) {
-        if let FieldKind::Amount { max } = &self.kind {
+        if let FieldKind::Amount { max: Some(max) } = &self.kind {
             self.value = format!("{max}");
             self.cursor = self.value.len();
         }

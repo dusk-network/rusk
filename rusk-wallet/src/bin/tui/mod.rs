@@ -492,6 +492,19 @@ async fn run_inner(
                         )),
                     }
                 }
+                AppAction::OpenClaimRewardsForm => {
+                    // Fetch fresh stake info so the reward max is up to date,
+                    // then open the form
+                    match fetch_stake_info(&mut app).await {
+                        Ok(()) => app.open_form(forms::FormId::ClaimRewards),
+                        Err(err) => {
+                            debug!(
+                                "Failed to refresh stake info before opening claim rewards form: {err}"
+                            );
+                            app.open_claim_rewards_form(None);
+                        }
+                    }
+                }
                 AppAction::ImportWallet => {
                     app.wallet.close();
                     return Ok(ExitReason::ImportWallet);
@@ -1073,6 +1086,13 @@ async fn execute_command(
     cmd: crate::Command,
     tx: &mpsc::UnboundedSender<AsyncResult>,
 ) {
+    let refresh_stake_info = matches!(
+        &cmd,
+        crate::Command::Stake { .. }
+            | crate::Command::Unstake { .. }
+            | crate::Command::ClaimRewards { .. }
+            | crate::Command::Withdraw { .. }
+    );
     let result = cmd.run(app.wallet, app.settings).await;
 
     match result {
@@ -1095,6 +1115,13 @@ async fn execute_command(
 
                     app.handle_async_result(AsyncResult::TxComplete(hash));
                     fetch_balances(app).await;
+                    if refresh_stake_info
+                        && let Err(err) = fetch_stake_info(app).await
+                    {
+                        debug!(
+                            "Failed to refresh stake info after confirmed transaction: {err}"
+                        );
+                    }
                 }
                 RunResult::DeployTx(hash, contract_id) => {
                     let tx_id = hex::encode(hash.to_bytes());

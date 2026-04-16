@@ -180,7 +180,7 @@ impl FormState {
                 if let field::FieldKind::Amount { max: field_max } =
                     &mut field.kind
                 {
-                    *field_max = max;
+                    *field_max = Some(max);
                 }
                 field.set_max();
             }
@@ -214,7 +214,7 @@ impl FormState {
             self.fields.iter_mut().find(|field| field.name == "amount")
             && let field::FieldKind::Amount { max: field_max } = &mut field.kind
         {
-            *field_max = max;
+            *field_max = Some(max);
         }
     }
 
@@ -578,6 +578,7 @@ pub fn build_form(
     profile_idx: u8,
     phoenix_spendable: Dusk,
     moonlight_balance: Dusk,
+    claim_rewards_max: Option<Dusk>,
     profiles: &[Profile],
     wallet_dir: &Path,
 ) -> FormState {
@@ -624,11 +625,7 @@ pub fn build_form(
                 "Transaction model",
                 vec!["Shielded".into(), "Public".into()],
             ),
-            FormField::amount(
-                "amount",
-                "Amount to claim (DUSK, empty = all)",
-                moonlight_balance,
-            ),
+            claim_rewards_amount_field(claim_rewards_max),
             FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
@@ -713,5 +710,14 @@ pub fn build_form(
         public_addr,
         transfer_shielded_max: phoenix_spendable,
         transfer_public_max: moonlight_balance,
+    }
+}
+
+fn claim_rewards_amount_field(max: Option<Dusk>) -> FormField {
+    const LABEL: &str = "Amount to claim (DUSK, empty = all)";
+
+    match max {
+        Some(max) => FormField::amount("amount", LABEL, max),
+        None => FormField::amount_unknown("amount", LABEL),
     }
 }
