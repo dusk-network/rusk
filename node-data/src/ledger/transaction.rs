@@ -111,10 +111,11 @@ impl Transaction {
         bytes: &[u8],
         block_height: u64,
     ) -> Result<Self, dusk_bytes::Error> {
-        Self::decode_with_selected_format(
-            bytes,
+        ProtocolTransaction::decode_for_ingress(
             hard_fork::ingress_tx_format_at(block_height),
+            bytes,
         )
+        .map(Into::into)
     }
 
     pub fn decode_for_ledger(

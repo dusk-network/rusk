@@ -18,7 +18,7 @@ pub use driverstore::DriverStore;
 use dusk_core::abi::ContractId;
 use dusk_core::{Dusk, dusk};
 use dusk_vm::{VM, host_queries};
-pub(crate) use events::ChainEventStreamer;
+pub(crate) use events::{ChainEventStreamer, forward_event_to_rues};
 use node::LongLivedService;
 #[cfg(feature = "archive")]
 use node::archive::Archive;

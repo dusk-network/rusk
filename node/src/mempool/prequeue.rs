@@ -230,6 +230,18 @@ impl FutureNonceRetryHandle {
         self.inner.lock().await.enqueue(msg).map(|_| ())
     }
 
+    pub async fn enqueue_message_report(
+        &self,
+        msg: &Message,
+    ) -> (Vec<Event>, Result<(), TxAcceptanceError>) {
+        let outcome = self.inner.lock().await.enqueue(msg);
+        let Some(tx) = pending_tx(msg) else {
+            return (vec![], outcome.map(|_| ()));
+        };
+
+        enqueue_outcome_report(tx, outcome)
+    }
+
     pub(super) async fn enqueue_message_with_outcome(
         &self,
         msg: &Message,
@@ -268,13 +280,6 @@ fn emit_tx_event(event_sender: &Sender<Event>, event: TransactionEvent<'_>) {
     }
 }
 
-fn emit_prequeue_deferred(event_sender: &Sender<Event>, tx: &Transaction) {
-    emit_tx_event(
-        event_sender,
-        TransactionEvent::Deferred(tx.id(), "missing_intermediate_nonce"),
-    );
-}
-
 fn emit_prequeue_dropped(
     event_sender: &Sender<Event>,
     tx: &Transaction,
@@ -288,42 +293,78 @@ pub(super) fn handle_enqueue_outcome(
     tx: &Transaction,
     outcome: Result<EnqueueOutcome, TxAcceptanceError>,
 ) -> Result<(), TxAcceptanceError> {
-    match outcome {
+    let (events, result) = enqueue_outcome_report(tx, outcome);
+    for event in events {
+        if let Err(e) = event_sender.try_send(event) {
+            warn!("cannot notify transaction event {e}");
+        }
+    }
+    result
+}
+
+fn enqueue_outcome_report(
+    tx: &Transaction,
+    outcome: Result<EnqueueOutcome, TxAcceptanceError>,
+) -> (Vec<Event>, Result<(), TxAcceptanceError>) {
+    let mut events = Vec::new();
+    let result = match outcome {
         Ok(EnqueueOutcome::Deferred) => {
-            emit_prequeue_deferred(event_sender, tx);
+            events.push(
+                TransactionEvent::Deferred(
+                    tx.id(),
+                    "missing_intermediate_nonce",
+                )
+                .into(),
+            );
             Ok(())
         }
         Ok(EnqueueOutcome::Replaced(replaced)) => {
-            emit_tx_event(
-                event_sender,
-                TransactionEvent::Dropped(replaced, "replaced_in_prequeue"),
+            events.push(
+                TransactionEvent::Dropped(replaced, "replaced_in_prequeue")
+                    .into(),
             );
-            emit_prequeue_deferred(event_sender, tx);
+            events.push(
+                TransactionEvent::Deferred(
+                    tx.id(),
+                    "missing_intermediate_nonce",
+                )
+                .into(),
+            );
             Ok(())
         }
         Ok(EnqueueOutcome::Ignored) => {
-            emit_prequeue_dropped(event_sender, tx, "superseded_by_staged_tx");
+            events.push(
+                TransactionEvent::Dropped(tx.id(), "superseded_by_staged_tx")
+                    .into(),
+            );
             Ok(())
         }
         Err(err) => {
-            match err {
+            match &err {
                 TxAcceptanceError::MaxFutureNonceQueueExceeded(_) => {
-                    emit_prequeue_dropped(event_sender, tx, "prequeue_full");
+                    events.push(
+                        TransactionEvent::Dropped(tx.id(), "prequeue_full")
+                            .into(),
+                    );
                 }
                 TxAcceptanceError::MaxMoonlightFutureNoncePerAccountExceeded(
                     _,
                 ) => {
-                    emit_prequeue_dropped(
-                        event_sender,
-                        tx,
-                        "prequeue_account_limit",
+                    events.push(
+                        TransactionEvent::Dropped(
+                            tx.id(),
+                            "prequeue_account_limit",
+                        )
+                        .into(),
                     );
                 }
                 _ => {}
             }
             Err(err)
         }
-    }
+    };
+
+    (events, result)
 }
 
 async fn process_pending_tx<

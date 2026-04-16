@@ -21,6 +21,10 @@ use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
 const CHAIN_ID: u8 = 0xFA;
+const HISTORICAL_PRE_AEGIS_TX_HEX: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../test-fixtures/pre_aegis_3422299.tx.hex"
+));
 
 struct TxCircuitVecProver();
 
@@ -137,6 +141,21 @@ fn new_phoenix_tx<R: RngCore + CryptoRng>(
         &TxCircuitVecProver(),
     )
     .expect("transaction generation should work")
+}
+
+fn decode_hex(input: &str) -> Vec<u8> {
+    let input = input.trim();
+    assert_eq!(input.len() % 2, 0, "hex fixture must have even length");
+
+    input
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|chunk| {
+            let chunk =
+                std::str::from_utf8(chunk).expect("fixture must be utf-8");
+            u8::from_str_radix(chunk, 16).expect("fixture must be valid hex")
+        })
+        .collect()
 }
 
 fn new_moonlight_tx<R: RngCore + CryptoRng>(
@@ -327,6 +346,35 @@ fn decode_any_preserves_format() -> Result<(), Error> {
     assert_eq!(decoded.format, TransactionFormat::Boreas);
 
     Ok(())
+}
+
+#[test]
+fn decode_any_accepts_pre_aegis_legacy_phoenix() -> Result<(), Error> {
+    let transaction_bytes = decode_hex(HISTORICAL_PRE_AEGIS_TX_HEX);
+
+    let decoded = Transaction::decode_any(&transaction_bytes)?;
+    let expected = Transaction::decode_with_format(
+        TransactionFormat::PreAegis,
+        &transaction_bytes,
+    )?;
+
+    assert_eq!(decoded.transaction, expected.transaction);
+    assert_eq!(decoded.format, TransactionFormat::PreAegis);
+
+    Ok(())
+}
+
+#[test]
+fn decode_for_ingress_rejects_pre_aegis_legacy_phoenix() {
+    let transaction_bytes = decode_hex(HISTORICAL_PRE_AEGIS_TX_HEX);
+
+    let err = Transaction::decode_for_ingress(
+        TransactionFormat::Aegis,
+        &transaction_bytes,
+    )
+    .unwrap_err();
+
+    assert_eq!(err, dusk_bytes::Error::InvalidData);
 }
 
 #[test]

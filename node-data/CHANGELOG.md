@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add hardfork-governed transaction format selection for ledger replay and
   ingress decoding.
+- Add a regression test covering historical pre-Aegis transaction decoding in
+  block serialization.
 
 ## [1.6.0] - 2026-02-27
 

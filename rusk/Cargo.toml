@@ -104,6 +104,7 @@ wallet-core = { workspace = true }
 ff = { workspace = true }
 criterion = { workspace = true }
 dusk-rusk-test = { path = "../rusk-test/" }
+rusk-recovery = { workspace = true, features = ["state"] }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
