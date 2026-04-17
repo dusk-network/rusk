@@ -23,8 +23,8 @@ use node_data::ledger::Transaction as LedgerTransaction;
 use rusk::http::{
     HttpHandlers, HttpPolicyConfig, HttpServer, HttpServerConfig,
 };
-use rusk::node::RuskNode;
-use rusk::node::{WellKnownVmConfig, driverstore::DriverStore};
+use rusk::node::driverstore::DriverStore;
+use rusk::node::{RuskNode, WellKnownVmConfig};
 use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 use tempfile::tempdir;
