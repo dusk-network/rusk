@@ -92,6 +92,25 @@ archiver = "https://my-archiver.example.com"         # optional, defaults to sta
 
 Then use with: `rusk-wallet --network mynetwork <command>`
 
+For local `rusk` development, align the wallet with the node port. One-off:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080
+```
+
+If you also need archive endpoints:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080 --archiver http://127.0.0.1:9080
+```
+
+For a persistent local override, update `[network.local]` in either
+`{wallet_dir}/config.toml` or `$HOME/.config/rusk-wallet/config.toml`.
+
+Wallet CLI URL overrides currently use `Url::parse(...).ok().unwrap_or(...)`.
+Malformed endpoint values therefore fall back to config/default values instead
+of failing fast.
+
 **Note:** When using Windows, connection will default to TCP/IP even if UDS is explicitly specified.
 
 ## Running the CLI Wallet

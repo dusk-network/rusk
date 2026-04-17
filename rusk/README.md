@@ -42,6 +42,28 @@ When running `prepare-dev` in the root repository, the Genesis state according t
 
 Note that the `password` used when running rusk is connected to the example consensus keys, which are also defined in the <a href="https://github.com/dusk-network/rusk/blob/master/examples/genesis.toml" target="_blank">`examples/genesis.toml`</a>.
 
+## Local startup overrides
+
+For normal runtime startup, `rusk` only reads a TOML file when you pass
+`--config <path>` or set `RUSK_CONFIG_TOML`. The files
+<a href="https://github.com/dusk-network/rusk/blob/master/rusk/default.config.toml" target="_blank">`rusk/default.config.toml`</a>
+and
+<a href="https://github.com/dusk-network/rusk/blob/master/rusk/mainnet.config.toml" target="_blank">`rusk/mainnet.config.toml`</a>
+are templates, not auto-loaded defaults.
+
+For reusable local overrides, keep a TOML such as `.rusk/local.toml`:
+
+```toml
+[http]
+listen_address = "127.0.0.1:9080"
+```
+
+Then run with:
+
+```bash
+RUSK_CONFIG_TOML=.rusk/local.toml cargo run --release -p dusk-rusk -- -s /tmp/example.state
+```
+
 ## Join a cluster
 
 It is possible to connect to other clusters by defining a set of bootstrapping nodes to which to connect to on initialization, by defining them in the <a href="https://github.com/dusk-network/rusk/blob/master/rusk/default.config.toml#L13" target="_blank">`rusk/default.config.toml`</a> , or by passing the `--bootstrap` argument in the node launch command.
