@@ -8,8 +8,10 @@ use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
 use dusk_core::transfer::Transaction;
-use dusk_core::transfer::data::{BlobData, ContractBytecode, ContractDeploy};
-use dusk_core::transfer::data::{ContractCall, MAX_MEMO_SIZE, TransactionData};
+use dusk_core::transfer::data::{
+    BlobData, ContractBytecode, ContractCall, ContractDeploy, MAX_MEMO_SIZE,
+    TransactionData,
+};
 use dusk_core::transfer::phoenix::{
     Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, TxCircuitVec,
