@@ -64,12 +64,14 @@ echo "Normalized version: $VERSION"
 CURRENT_VERSION=$(rustup run nightly-rusk rustc --version 2>/dev/null || true)
 if printf '%s\n' "$CURRENT_VERSION" | grep -q "rustc ${VERSION}-nightly"; then
   echo "nightly-rusk already matches rustc ${VERSION}-nightly"
-  echo "checking for clippy and rustfmt components..."
-  if rustup run nightly-rusk rustfmt --version >/dev/null 2>&1 && rustup run nightly-rusk cargo-clippy --version >/dev/null 2>&1; then
-    echo "clippy and rustfmt are already installed for nightly-rusk"
+  echo "checking for clippy/rustfmt/rust-src components..."
+  if rustup run nightly-rusk rustfmt --version >/dev/null 2>&1 && \
+     rustup run nightly-rusk cargo-clippy --version >/dev/null 2>&1 && \
+     ls "$(rustc +nightly-rusk --print sysroot)/lib/rustlib/src/rust/src" >/dev/null 2>&1; then
+    echo "clippy, rustfmt, and rust-src are already installed for nightly-rusk"
     exit 0
   else 
-    echo "clippy and/or rustfmt are missing for nightly-rusk, reinstalling from scratch..."
+    echo "one of clippy/rustfmt/rust-src is missing for nightly-rusk, reinstalling from scratch..."
   fi
 fi
 
