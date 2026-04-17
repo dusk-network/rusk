@@ -411,9 +411,8 @@ mod tests {
     // unused_crate_dependencies lint, so we re-import them here.
     use {ff as _, hex as _, once_cell as _};
 
-    use crate::CallTree;
-
     use super::*;
+    use crate::CallTree;
 
     #[test]
     fn check_withdrawal_nullifiers_matching_count_passes() {
