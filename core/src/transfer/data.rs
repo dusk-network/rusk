@@ -153,35 +153,38 @@ impl TransactionData {
     ///
     /// # Errors
     /// Errors when the bytes are not canonical.
-    pub fn from_slice(buf: &[u8]) -> Result<Option<Self>, BytesError> {
-        let mut buf = buf;
-
+    pub fn from_slice(buf: &mut &[u8]) -> Result<Option<Self>, BytesError> {
         // deserialize optional transaction data
-        let data = match u8::from_reader(&mut buf)? {
+        let data = match u8::from_reader(buf)? {
             Self::NONE_ID => None,
             Self::CALL_ID => {
-                Some(TransactionData::Call(ContractCall::from_slice(buf)?))
+                let call = ContractCall::from_slice(buf)?;
+                *buf = &[];
+                Some(TransactionData::Call(call))
             }
             Self::DEPLOY_ID => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+                let deploy = ContractDeploy::from_slice(buf)?;
+                *buf = &[];
+                Some(TransactionData::Deploy(deploy))
             }
             Self::MEMO_ID => {
                 // we only build for 64-bit so this truncation is impossible
                 #[allow(clippy::cast_possible_truncation)]
-                let size = u64::from_reader(&mut buf)? as usize;
+                let size = u64::from_reader(buf)? as usize;
 
                 if buf.len() != size || size > MAX_MEMO_SIZE {
                     return Err(BytesError::InvalidData);
                 }
 
                 let memo = buf[..size].to_vec();
+                *buf = &[];
                 Some(TransactionData::Memo(memo))
             }
             Self::BLOB_ID => {
-                let blobs_len = u8::from_reader(&mut buf)?;
+                let blobs_len = u8::from_reader(buf)?;
                 let mut blobs = Vec::with_capacity(blobs_len as usize);
                 for _ in 0..blobs_len {
-                    let blob = BlobData::from_buf(&mut buf)?;
+                    let blob = BlobData::from_buf(buf)?;
                     blobs.push(blob);
                 }
                 Some(TransactionData::Blob(blobs))
@@ -190,6 +193,10 @@ impl TransactionData {
                 return Err(BytesError::InvalidData);
             }
         };
+
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
 
         Ok(data)
     }
@@ -337,6 +344,10 @@ impl ContractDeploy {
 
         let nonce = u64::from_reader(&mut buf)?;
 
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
+
         Ok(Self {
             bytecode,
             owner,
@@ -451,6 +462,10 @@ impl ContractCall {
         let fn_name = crate::read_str(&mut buf)?;
 
         let fn_args = crate::read_vec(&mut buf)?;
+
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
 
         Ok(Self {
             contract: contract.into(),

@@ -101,6 +101,10 @@ impl Transaction {
         let payload = parse_payload(read_len_prefixed(&mut buf)?)?;
         let proof = read_len_prefixed(&mut buf)?.into();
 
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
+
         Ok(Self { payload, proof })
     }
 
@@ -716,7 +720,7 @@ impl Payload {
         let chain_id = u8::from_reader(&mut buf)?;
         let tx_skeleton = parse_skeleton(read_len_prefixed(&mut buf)?)?;
         let fee = parse_fee(&mut buf)?;
-        let data = TransactionData::from_slice(buf)?;
+        let data = TransactionData::from_slice(&mut buf)?;
 
         Ok(Self {
             chain_id,

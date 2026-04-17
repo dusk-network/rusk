@@ -486,7 +486,7 @@ impl Payload {
         let nonce = u64::from_reader(&mut buf)?;
 
         // deserialize optional transaction data
-        let data = TransactionData::from_slice(buf)?;
+        let data = TransactionData::from_slice(&mut buf)?;
 
         Ok(Self {
             chain_id,
