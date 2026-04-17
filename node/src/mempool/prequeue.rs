@@ -12,9 +12,8 @@ use anyhow::anyhow;
 use node_data::events::{Event, TransactionEvent};
 use node_data::ledger::{SpendingId, Transaction};
 use node_data::message::{Message, Payload};
-use tokio::sync::Mutex as AsyncMutex;
-use tokio::sync::RwLock;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::{Mutex as AsyncMutex, RwLock};
 use tokio::time::Instant;
 use tracing::{info, warn};
 

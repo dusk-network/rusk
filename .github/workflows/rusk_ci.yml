@@ -71,7 +71,7 @@ jobs:
           git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - name: Run rustfmt
         working-directory: ${{ env.WORKDIR }}/repo
-        run: cargo fmt --all -- --check
+        run: make fmt-check
       - name: Run clippy
         working-directory: ${{ env.WORKDIR }}/repo
         run: make clippy
