@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashSet;
+use std::future::Future;
 
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
@@ -42,6 +43,7 @@ pub(crate) async fn sync_db(
     cache: &Cache,
     store: &LocalStore,
     status: fn(&str),
+    allow_cache_reset: bool,
 ) -> Result<(), Error> {
     let seed = store.get_seed();
 
@@ -65,7 +67,25 @@ pub(crate) async fn sync_db(
     let last_pos = cache.last_pos().inspect_err(|_| {
         zeroize_secret_keys(&mut keys);
     })?;
-    let pos_to_search = last_pos.map(|p| p + 1).unwrap_or_default();
+    let mut pos_to_search = last_pos.map(|p| p + 1).unwrap_or_default();
+
+    // Re-fetch a known owned note and verify its content matches the chain.
+    if pos_to_search > 0 {
+        let pks: Vec<PhoenixPublicKey> =
+            keys.iter().map(|(_, _, pk)| *pk).collect();
+        if check_stale_cache(
+            cache,
+            &pks,
+            |pos| fetch_note_at_pos(client, pos),
+            allow_cache_reset,
+            status,
+        )
+        .await
+        .inspect_err(|_| zeroize_secret_keys(&mut keys))?
+        {
+            pos_to_search = 0;
+        }
+    }
 
     if pos_to_search > 0 {
         status(&format!(
@@ -309,6 +329,65 @@ fn zeroize_secret_keys(
     }
 }
 
+/// Checks whether the cache is stale by comparing an owned note against the
+/// live chain. Returns `true` if the cache was stale and has been reset.
+async fn check_stale_cache<F, Fut>(
+    cache: &Cache,
+    pks: &[PhoenixPublicKey],
+    fetch_note: F,
+    allow_cache_reset: bool,
+    status: fn(&str),
+) -> Result<bool, Error>
+where
+    F: Fn(u64) -> Fut,
+    Fut: Future<Output = Result<Option<Note>, Error>>,
+{
+    if let Some(anchor) = cache.note_for_cache_validation(pks)? {
+        let note_pos = *anchor.pos();
+        let chain_note = fetch_note(note_pos).await?;
+        if chain_note.as_ref() != Some(&anchor) {
+            if !allow_cache_reset {
+                return Err(Error::StaleCache(note_pos));
+            }
+            tracing::warn!(
+                note_pos,
+                "cached note mismatch — resetting stale cache"
+            );
+            status("Stale cache detected — resetting note cache...");
+            cache.clear_notes(pks)?;
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+/// Fetches the note at `pos` from the note tree, or `None` if absent.
+async fn fetch_note_at_pos(
+    client: &RuesHttpClient,
+    pos: u64,
+) -> Result<Option<Note>, Error> {
+    let req = rkyv::to_bytes::<_, 16>(&(pos, 1u64))
+        .map_err(|_| Error::Rkyv)?
+        .to_vec();
+    let mut stream = client
+        .call_raw(CONTRACTS_TARGET, TRANSFER_CONTRACT, "sync", &req, true)
+        .await?
+        .bytes_stream();
+    let mut buffer = vec![];
+    while let Some(http_chunk) = stream.next().await {
+        buffer.extend_from_slice(&http_chunk?);
+        if buffer.len() >= TREE_LEAF {
+            let NoteLeaf { note, .. } =
+                rkyv::check_archived_root::<NoteLeaf>(&buffer[..TREE_LEAF])
+                    .map_err(|_| Error::Rkyv)?
+                    .deserialize(&mut rkyv::Infallible)
+                    .unwrap();
+            return Ok((*note.pos() == pos).then_some(note));
+        }
+    }
+    Ok(None)
+}
+
 /// Asks the node to return the nullifiers that already exist from the given
 /// nullifiers.
 pub(crate) async fn fetch_existing_nullifiers_remote(
@@ -337,15 +416,17 @@ pub(crate) async fn fetch_existing_nullifiers_remote(
 
 #[cfg(test)]
 mod tests {
-    use dusk_core::JubJubScalar;
     use dusk_core::transfer::phoenix::{
         Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     };
+    use dusk_core::{BlsScalar, JubJubScalar};
     use ff::Field;
     use rand::rngs::StdRng;
     use rand::{CryptoRng, RngCore, SeedableRng};
 
     use super::*;
+    use crate::Error;
+    use crate::clients::Cache;
 
     fn gen_note<T: RngCore + CryptoRng>(
         rng: &mut T,
@@ -400,5 +481,58 @@ mod tests {
         let parallel = collect_owned_notes(&keys, &note_data);
 
         assert_eq!(serial, parallel);
+    }
+
+    fn cache_with_note(
+        pk: &PhoenixPublicKey,
+        note: Note,
+    ) -> (Cache, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let bs58_repr = bs58::encode(pk.to_bytes()).into_string();
+        let cfs = vec![bs58_repr.clone(), format!("spent_{bs58_repr}")];
+        let cache = Cache::new(dir.path(), cfs, |_| {}).unwrap();
+        cache
+            .insert(&bs58_repr, 5, (note, BlsScalar::from(1u64)))
+            .unwrap();
+        (cache, dir)
+    }
+
+    #[tokio::test]
+    async fn stale_cache_errors_when_reset_not_allowed() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+        let note = gen_note(&mut rng, &pk, 100);
+        let (cache, _dir) = cache_with_note(&pk, note);
+
+        let result = check_stale_cache(
+            &cache,
+            &[pk],
+            |_pos| async { Ok::<Option<Note>, Error>(None) },
+            false,
+            |_| {},
+        )
+        .await;
+
+        assert!(matches!(result, Err(Error::StaleCache(_))));
+    }
+
+    #[tokio::test]
+    async fn stale_cache_resets_notes_when_allowed() {
+        let mut rng = StdRng::seed_from_u64(2);
+        let pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+        let note = gen_note(&mut rng, &pk, 100);
+        let (cache, _dir) = cache_with_note(&pk, note);
+
+        let result = check_stale_cache(
+            &cache,
+            &[pk],
+            |_pos| async { Ok::<Option<Note>, Error>(None) },
+            true,
+            |_| {},
+        )
+        .await;
+
+        assert_eq!(result.expect("expected Ok(true)"), true);
+        assert!(cache.notes(&pk).unwrap().is_empty());
     }
 }
