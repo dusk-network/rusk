@@ -65,9 +65,9 @@ const SYNC_ATTEMPTS: u8 = 3;
 ///   with the rest of the network. If the node receives valid blocks from this
 ///   peer, it may reset its timeout to allow more time for synchronization.
 ///
-/// * `retries: u8` - The number of timeout-driven retries already performed
-///   for the current sync cycle. It starts at `0` when entering `OutOfSync`,
-///   is reset to `0` whenever valid block progress is made, and is incremented
+/// * `retries: u8` - The number of timeout-driven retries already performed for
+///   the current sync cycle. It starts at `0` when entering `OutOfSync`, is
+///   reset to `0` whenever valid block progress is made, and is incremented
 ///   each time the timeout expires without progress. When the timeout expires
 ///   while `retries == SYNC_ATTEMPTS - 1`, the node stops retrying and may
 ///   transition back to an in-sync state as a fallback.
