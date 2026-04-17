@@ -44,7 +44,7 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
             for tx in txs {
                 let mut d = vec![];
 
-                if tx.inner.blob().is_some() {
+                if tx.inner.protocol().blob().is_some() {
                     let mut strip_tx = tx.clone();
                     if let Some(blobs) = strip_tx.inner.strip_blobs() {
                         for (hash, sidecar) in blobs.into_iter() {

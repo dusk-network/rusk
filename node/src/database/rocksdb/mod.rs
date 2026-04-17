@@ -405,10 +405,60 @@ impl node_data::Serializable for LightBlock {
 
 #[cfg(test)]
 mod tests {
+    use dusk_core::signatures::bls::{
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+    };
+    use dusk_core::transfer::Transaction as ProtocolTransaction;
+    use dusk_core::transfer::data::{
+        BlobData, BlobDataPart, BlobSidecar, TransactionData,
+    };
     use fake::{Fake, Faker};
     use node_data::{hard_fork, ledger};
+    use rand::rngs::StdRng;
+    use rand::{Rng, SeedableRng};
 
     use super::*;
+
+    fn blob_spent_tx(block_height: u64) -> SpentTransaction {
+        let mut rng = StdRng::seed_from_u64(42);
+        let sender_sk = AccountSecretKey::random(&mut rng);
+        let receiver_pk =
+            Some(AccountPublicKey::from(&AccountSecretKey::random(&mut rng)));
+
+        let blob_data: BlobDataPart = [7u8; 4096 * 32];
+        let sidecar = BlobSidecar {
+            commitment: [8u8; 48],
+            proof: [9u8; 48],
+            data: blob_data,
+        };
+        let blob = BlobData {
+            hash: [10u8; 32],
+            data: Some(sidecar),
+        };
+
+        let protocol = ProtocolTransaction::moonlight(
+            &sender_sk,
+            receiver_pk,
+            rng.r#gen(),
+            rng.r#gen(),
+            1,
+            1,
+            rng.r#gen(),
+            0xFA,
+            Some(TransactionData::from(vec![blob])),
+        )
+        .expect("blob tx should build");
+
+        SpentTransaction {
+            inner: LedgerTransaction::from_protocol_for_ledger(
+                protocol,
+                block_height,
+            ),
+            block_height,
+            gas_spent: 0,
+            err: None,
+        }
+    }
 
     #[test]
     fn test_store_block() {
@@ -444,8 +494,10 @@ mod tests {
 
                 // Assert all transactions are fully fetched from ledger as
                 // well.
-                for pos in 0..b.txs().len() {
-                    assert_eq!(db_blk.txs()[pos], spent_txs[pos].inner);
+                for (db_tx, spent_tx) in
+                    db_blk.txs().iter().zip(spent_txs.iter())
+                {
+                    assert_eq!(*db_tx, spent_tx.inner);
                 }
 
                 // Assert all faults are fully fetched from ledger as
@@ -469,6 +521,85 @@ mod tests {
                 );
             });
         });
+    }
+
+    #[test]
+    fn test_store_block_strips_blob_sidecars() {
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                TestWrapper::new("test_store_block_strips_blob_sidecars").run(
+                    |path| {
+                        let db = Backend::create_or_open(
+                            path,
+                            DatabaseOptions::default(),
+                        );
+                        let header: Header = Faker.fake();
+                        let spent_tx = blob_spent_tx(header.height);
+                        let blob_hash =
+                            spent_tx.inner.protocol().blob().unwrap()[0].hash;
+                        let expected_sidecar = spent_tx.inner.protocol().blob()
+                            .unwrap()[0]
+                            .data
+                            .clone()
+                            .unwrap();
+
+                        db.update(|txn| {
+                            txn.store_block(
+                                &header,
+                                std::slice::from_ref(&spent_tx),
+                                &[],
+                                Label::Final(header.height),
+                            )?;
+                            Ok(())
+                        })
+                        .expect("block should be stored");
+
+                        db.view(|txn| {
+                            let raw = txn
+                                .inner
+                                .get_cf(txn.ledger_txs_cf, spent_tx.inner.id())
+                                .expect("ledger tx bytes should be readable")
+                                .expect("ledger tx bytes should exist");
+                            let stored = SpentTransaction::read(&mut &raw[..])
+                                .expect("stored spent tx should decode");
+                            assert!(
+                                stored.inner.protocol().blob().unwrap()[0]
+                                    .data
+                                    .is_none(),
+                                "ledger tx record must not persist blob sidecars",
+                            );
+
+                            let stored_sidecar = txn
+                                .blob_data_by_hash(&blob_hash)
+                                .expect("blob sidecar bytes should be readable")
+                                .expect("blob sidecar should be stored separately");
+                            let decoded_sidecar = BlobSidecar::from_buf(
+                                &mut &stored_sidecar[..],
+                            )
+                            .expect("stored blob sidecar should decode");
+                            assert_eq!(decoded_sidecar, expected_sidecar);
+
+                            let block = txn
+                                .block(&header.hash)
+                                .expect("block should be readable")
+                                .expect("block should exist");
+                            assert!(
+                                block.txs()[0].protocol().blob().unwrap()[0]
+                                    .data
+                                    .is_some(),
+                                "blob sidecar should be rehydrated on read",
+                            );
+
+                            Ok::<(), error::RocksDbError>(())
+                        })
+                        .expect("block readback should succeed");
+                    },
+                );
+            })
+            .expect("blob storage test thread should spawn")
+            .join()
+            .expect("blob storage test thread should complete");
     }
 
     #[test]
@@ -500,7 +631,7 @@ mod tests {
     fn test_transaction_isolation() {
         TestWrapper::new("test_transaction_isolation").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
-            let mut b: Block = Faker.fake();
+            let b: Block = Faker.fake();
             let spent_txs = to_spent_txs(b.header().height, b.txs());
             let hash = b.header().hash;
 
@@ -538,11 +669,8 @@ mod tests {
             // Asserts that update was done
             db.view(|txn| {
                 assert_blocks_eq(
-                    &mut txn
-                        .block(&hash)
-                        .expect("block to be fetched")
-                        .unwrap(),
-                    &mut b,
+                    &txn.block(&hash).expect("block to be fetched").unwrap(),
+                    &b,
                 );
             });
         });
@@ -634,7 +762,7 @@ mod tests {
             db.update(|db| {
                 assert_eq!(db.mempool_txs_count(), 0);
                 txs.iter().for_each(|t| {
-                    db.store_mempool_tx(&t, 0).expect("tx should be added")
+                    db.store_mempool_tx(t, 0).expect("tx should be added")
                 });
                 Ok(())
             })
@@ -698,13 +826,13 @@ mod tests {
             let mut expiry_list = HashSet::new();
             let _ = db.update(|txn| {
                 (1..101).for_each(|i| {
-                    let t = ledger::faker::gen_dummy_tx(i as u64);
+                    let t = ledger::faker::gen_dummy_tx(i);
                     txn.store_mempool_tx(&t, i).expect("tx should be added");
                     expiry_list.insert(t.id());
                 });
 
                 (1000..1100).for_each(|i| {
-                    let t = ledger::faker::gen_dummy_tx(i as u64);
+                    let t = ledger::faker::gen_dummy_tx(i);
                     txn.store_mempool_tx(&t, i).expect("tx should be added");
                 });
 
@@ -712,12 +840,8 @@ mod tests {
             });
 
             db.view(|vq| {
-                let expired: HashSet<_> = vq
-                    .mempool_expired_txs(100)
-                    .unwrap()
-                    .into_iter()
-                    .map(|id| id)
-                    .collect();
+                let expired: HashSet<_> =
+                    vq.mempool_expired_txs(100).unwrap().into_iter().collect();
 
                 assert_eq!(expiry_list, expired);
             });
@@ -734,8 +858,7 @@ mod tests {
                 inner: LedgerTransaction::from_protocol_with_format(
                     t.protocol().clone(),
                     format,
-                )
-                .expect("test tx should canonicalize"),
+                ),
                 block_height,
                 gas_spent: 0,
                 err: None,
