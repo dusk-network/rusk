@@ -138,6 +138,10 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             .validate_block_header(header, &expected_generator)
             .await?;
 
+        for tx in candidate.txs().iter() {
+            validate_ledger_tx_format(tx, header.height)?;
+        }
+
         // Validate state transition
         executor
             .validate_state_transition(prev_state, candidate, &cert_voters)
@@ -232,6 +236,25 @@ pub fn validate_blob_sidecars(tx: &LedgerTransaction) -> Result<(), BlobError> {
     }
 
     Ok(())
+}
+
+fn validate_ledger_tx_format(
+    tx: &LedgerTransaction,
+    block_height: u64,
+) -> Result<(), OperationError> {
+    let expected = node_data::hard_fork::ledger_tx_format_at(block_height);
+    let actual = tx.format();
+
+    if actual == expected {
+        return Ok(());
+    }
+
+    Err(OperationError::InvalidTxFormat {
+        tx_id: hex::encode(tx.id()),
+        actual,
+        expected,
+        block_height,
+    })
 }
 
 pub fn build_validation_payload(
@@ -334,5 +357,181 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
     pub fn name(&self) -> &'static str {
         "validation"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    use async_trait::async_trait;
+    use dusk_core::transfer::TransactionFormat;
+    use node_data::StepName;
+    use node_data::bls::PublicKeyBytes;
+    use node_data::ledger::{Block, Fault, Header, LedgerTransaction};
+    use node_data::message::{ConsensusHeader, payload};
+
+    use super::*;
+    use crate::commons::Database;
+    use crate::errors::{HeaderError, OperationError};
+    use crate::operations::{
+        StateTransitionData, StateTransitionResult, Voter,
+    };
+
+    struct TestDatabase;
+
+    #[async_trait]
+    impl Database for TestDatabase {
+        async fn store_candidate_block(&mut self, _b: Block) {}
+
+        async fn store_validation_result(
+            &mut self,
+            _ch: &ConsensusHeader,
+            _vr: &payload::ValidationResult,
+        ) {
+        }
+
+        async fn get_last_iter(&self) -> ([u8; 32], u8) {
+            ([0; 32], 0)
+        }
+
+        async fn store_last_iter(&mut self, _data: ([u8; 32], u8)) {}
+    }
+
+    struct TestExecutor {
+        state_transition_calls: Arc<AtomicUsize>,
+    }
+
+    #[async_trait]
+    impl Operations for TestExecutor {
+        async fn validate_block_header(
+            &self,
+            _candidate_header: &Header,
+            _expected_generator: &PublicKeyBytes,
+        ) -> Result<Vec<Voter>, HeaderError> {
+            Ok(vec![])
+        }
+
+        async fn validate_faults(
+            &self,
+            _block_height: u64,
+            _faults: &[Fault],
+        ) -> Result<(), OperationError> {
+            Ok(())
+        }
+
+        async fn validate_state_transition(
+            &self,
+            _prev_state: StateRoot,
+            _blk: &Block,
+            _cert_voters: &[Voter],
+        ) -> Result<(), OperationError> {
+            self.state_transition_calls.fetch_add(1, Ordering::Relaxed);
+            Ok(())
+        }
+
+        async fn generate_state_transition(
+            &self,
+            _transition_data: StateTransitionData,
+        ) -> Result<
+            (
+                Vec<node_data::ledger::SpentTransaction>,
+                StateTransitionResult,
+            ),
+            OperationError,
+        > {
+            unreachable!("unused in validation-step tests")
+        }
+
+        async fn add_step_elapsed_time(
+            &self,
+            _round: u64,
+            _step_name: StepName,
+            _elapsed: Duration,
+        ) -> Result<(), OperationError> {
+            Ok(())
+        }
+
+        async fn get_block_gas_limit(&self) -> u64 {
+            0
+        }
+    }
+
+    fn candidate_with_tx_format(format: TransactionFormat) -> Block {
+        let tx = node_data::ledger::faker::gen_dummy_tx(1);
+        let tx = LedgerTransaction::from_protocol_with_format(
+            tx.protocol().clone(),
+            format,
+        );
+
+        Block::new(
+            Header {
+                height: 1,
+                ..Default::default()
+            },
+            vec![tx],
+            vec![],
+        )
+        .expect("candidate block should build")
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn candidate_validation_rejects_non_ledger_tx_format() {
+        let state_transition_calls = Arc::new(AtomicUsize::new(0));
+        let executor = Arc::new(TestExecutor {
+            state_transition_calls: state_transition_calls.clone(),
+        });
+        let candidate = candidate_with_tx_format(TransactionFormat::Aegis);
+
+        let err =
+            ValidationStep::<TestExecutor, TestDatabase>::validate_candidate(
+                &candidate,
+                [0; 32],
+                executor,
+                Default::default(),
+            )
+            .await
+            .expect_err("candidate should be rejected before state transition");
+
+        assert!(matches!(
+            err,
+            OperationError::InvalidTxFormat {
+                actual: TransactionFormat::Aegis,
+                expected: TransactionFormat::PreAegis,
+                block_height: 1,
+                ..
+            }
+        ));
+        assert_eq!(
+            state_transition_calls.load(Ordering::Relaxed),
+            0,
+            "format rejection must happen before state transition verification",
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn candidate_validation_accepts_matching_ledger_tx_format() {
+        let state_transition_calls = Arc::new(AtomicUsize::new(0));
+        let executor = Arc::new(TestExecutor {
+            state_transition_calls: state_transition_calls.clone(),
+        });
+        let candidate = candidate_with_tx_format(TransactionFormat::PreAegis);
+
+        ValidationStep::<TestExecutor, TestDatabase>::validate_candidate(
+            &candidate,
+            [0; 32],
+            executor,
+            Default::default(),
+        )
+        .await
+        .expect("candidate should pass validation");
+
+        assert_eq!(
+            state_transition_calls.load(Ordering::Relaxed),
+            1,
+            "matching ledger format should reach state transition verification",
+        );
     }
 }

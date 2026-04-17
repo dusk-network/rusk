@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switch transaction validation call sites to use the explicit
   `LedgerTransaction` ledger wrapper.
 
+### Fixed
+
+- Reject candidate transactions whose ledger encoding does not match the
+  canonical ledger format for the block height.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
