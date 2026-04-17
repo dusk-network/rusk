@@ -64,7 +64,13 @@ echo "Normalized version: $VERSION"
 CURRENT_VERSION=$(rustup run nightly-rusk rustc --version 2>/dev/null || true)
 if printf '%s\n' "$CURRENT_VERSION" | grep -q "rustc ${VERSION}-nightly"; then
   echo "nightly-rusk already matches rustc ${VERSION}-nightly"
-  exit 0
+  echo "checking for clippy and rustfmt components..."
+  if rustup run nightly-rusk rustfmt --version >/dev/null 2>&1 && rustup run nightly-rusk cargo-clippy --version >/dev/null 2>&1; then
+    echo "clippy and rustfmt are already installed for nightly-rusk"
+    exit 0
+  else 
+    echo "clippy and/or rustfmt are missing for nightly-rusk, reinstalling from scratch..."
+  fi
 fi
 
 DATE=$(
@@ -117,6 +123,7 @@ for i in {0..30}; do
     rustup install "nightly-$TRY_DATE"
     rustup component add rust-src --toolchain "nightly-$TRY_DATE"
     rustup component add clippy --toolchain "nightly-$TRY_DATE"
+    rustup component add rustfmt --toolchain "nightly-$TRY_DATE"
     rustup toolchain remove nightly-rusk >/dev/null 2>&1 || true
     rustup toolchain link nightly-rusk \
       "$(dirname "$(dirname "$(rustup which --toolchain "nightly-$TRY_DATE" rustc)")")"

@@ -102,6 +102,10 @@ fmt: ## Format code
 	@bash ./install-nightly-rusk.sh
 	@cargo +nightly-rusk fmt --all
 
+fmt-check: ## Check code formatting
+	@bash ./install-nightly-rusk.sh
+	@cargo +nightly-rusk fmt --all -- --check
+
 check: ## Type-check all crates
 	@cargo check --workspace
 
