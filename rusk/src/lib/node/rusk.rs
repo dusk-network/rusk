@@ -222,7 +222,8 @@ impl Rusk {
             }
 
             let tx_id = hex::encode(unspent_tx.id());
-            let tx_size = unspent_tx.size();
+            let ledger_tx = unspent_tx.reformat_for_ledger(block_height);
+            let tx_size = ledger_tx.size();
 
             if tx_size > space_left {
                 info!(
@@ -235,11 +236,8 @@ impl Rusk {
                 continue;
             }
 
-            match execute(
-                &mut session,
-                unspent_tx.protocol(),
-                &execution_config,
-            ) {
+            match execute(&mut session, ledger_tx.protocol(), &execution_config)
+            {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -268,11 +266,11 @@ impl Rusk {
                     event_bloom.add_events(&receipt.events);
 
                     gas_left -= gas_spent;
-                    let gas_price = unspent_tx.gas_price();
+                    let gas_price = ledger_tx.gas_price();
                     dusk_spent += gas_spent * gas_price;
 
                     if let ProtocolTransaction::Moonlight(tx) =
-                        unspent_tx.protocol()
+                        ledger_tx.protocol()
                     {
                         // Check if the current transaction unblocks any
                         // transaction from the same in the pending list.
@@ -305,7 +303,7 @@ impl Rusk {
                     }
 
                     spent_txs.push(SpentTransaction {
-                        inner: unspent_tx,
+                        inner: ledger_tx,
                         gas_spent,
                         block_height,
                         err: error,
@@ -999,4 +997,185 @@ fn slash(session: &mut Session, slashes: Vec<Slash>) -> Result<Vec<Event>> {
 fn is_missing_stake_slash_panic(msg: &str) -> bool {
     msg.contains("The stake to slash should exist")
         || msg.contains("The stake to hard slash should exist")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use dusk_bytes::Serializable;
+    use dusk_core::signatures::bls;
+    use dusk_core::transfer::data::ContractCall;
+    use dusk_core::transfer::{
+        TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
+        TransactionFormat,
+    };
+    use dusk_rusk_test::common::state::DEFAULT_MIN_GAS_LIMIT;
+    use rand::SeedableRng;
+    use rusk_recovery_tools::state::restore_state;
+    use tempfile::tempdir;
+    use tokio::sync::broadcast;
+    use wallet_core::transaction::moonlight;
+
+    use super::*;
+    use crate::node::{FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS};
+
+    const HISTORICAL_CHAIN_ID: u8 = 0x01;
+    const HISTORICAL_BLOCK_HEIGHT: u64 = 2_710_377;
+    const HISTORICAL_GAS_LIMIT: u64 = 0x10000000;
+
+    fn resign_moonlight_insecure(
+        tx: ProtocolTransaction,
+        signer: &bls::SecretKey,
+    ) -> ProtocolTransaction {
+        let ProtocolTransaction::Moonlight(tx) = tx else {
+            panic!("expected moonlight transaction");
+        };
+        let mut bytes = tx.to_var_bytes();
+        let sig = signer.sign_insecure(&tx.signature_message()).to_bytes();
+        let sig_start = bytes
+            .len()
+            .checked_sub(sig.len())
+            .expect("moonlight tx must include signature bytes");
+        bytes[sig_start..].copy_from_slice(&sig);
+
+        ProtocolTransaction::Moonlight(
+            dusk_core::transfer::moonlight::Transaction::from_slice(&bytes)
+                .expect("re-signed moonlight transaction must deserialize"),
+        )
+    }
+
+    async fn initial_state<P: AsRef<Path>>(dir: P) -> Rusk {
+        let dir = dir.as_ref();
+        let (_vm, _commit_id) =
+            restore_state(dir).expect("historical state should restore");
+
+        let (sender, _) = broadcast::channel(10);
+
+        #[cfg(feature = "archive")]
+        let archive_dir = tempdir().expect("archive tempdir should be created");
+        #[cfg(feature = "archive")]
+        let archive =
+            node::archive::Archive::create_or_open(archive_dir.path()).await;
+
+        let mut vm_config =
+            RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
+        vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
+        vm_config.with_feature(FEATURE_HARDFORK_AEGIS, u64::MAX);
+
+        Rusk::new(
+            dir,
+            HISTORICAL_CHAIN_ID,
+            vm_config,
+            DEFAULT_MIN_GAS_LIMIT,
+            u64::MAX,
+            sender,
+            #[cfg(feature = "archive")]
+            archive,
+            DriverStore::new(None::<PathBuf>),
+        )
+        .expect("historical rusk should initialize")
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn create_state_transition_rewraps_ingress_tx_to_ledger_format() {
+        let tmpdir = tempdir().expect("tempdir should be created");
+        let state_dir = tmpdir.path().join("state");
+        let data = include_bytes!("../../../tests/assets/2710377_state.tar.gz");
+        rusk_recovery_tools::state::tar::unarchive(
+            &data[..],
+            state_dir.as_path(),
+        )
+        .expect("historical state should unpack");
+
+        let rusk = initial_state(&state_dir).await;
+        let base = hex::decode(
+            "53de818894cf665f1131edda3c5579ccb8736fd05c993ecb5cd16677974b088b",
+        )
+        .expect("historical base root should decode");
+        let mut base_a = [0u8; 32];
+        base_a.copy_from_slice(&base);
+        rusk.tip.write().current = base_a;
+
+        let mut rng = rand::rngs::StdRng::seed_from_u64(77);
+        let sender_sk = bls::SecretKey::random(&mut rng);
+        let sender_pk = bls::PublicKey::from(&sender_sk);
+        let receiver_sk = bls::SecretKey::random(&mut rng);
+        let receiver_pk = bls::PublicKey::from(&receiver_sk);
+
+        let mut session = rusk
+            .new_block_session(1, rusk.tip.read().current)
+            .expect("historical session should open");
+        session
+            .call::<(_, u64), ()>(
+                TRANSFER_CONTRACT,
+                "add_account_balance",
+                &(sender_pk, 100_000_000_000_000),
+                HISTORICAL_GAS_LIMIT,
+            )
+            .expect("sender balance should be injected");
+        rusk.commit_session(session)
+            .expect("historical funding session should commit");
+
+        let protocol_tx = moonlight(
+            &sender_sk,
+            Some(receiver_pk),
+            1,
+            0,
+            HISTORICAL_GAS_LIMIT,
+            1,
+            1,
+            HISTORICAL_CHAIN_ID,
+            None::<ContractCall>,
+        )
+        .expect("historical moonlight tx should build");
+        let protocol_tx = resign_moonlight_insecure(protocol_tx, &sender_sk);
+        let ingress_tx = LedgerTransaction::from_protocol_with_format(
+            protocol_tx,
+            TransactionFormat::Aegis,
+        );
+
+        let mut voters = vec![];
+        for i in 0..10 {
+            let sk = bls::SecretKey::random(&mut rng);
+            let pk = bls::PublicKey::from(&sk);
+            voters.push((node_data::bls::PublicKey::new(pk), i));
+        }
+        let transition_data = StateTransitionData {
+            round: HISTORICAL_BLOCK_HEIGHT,
+            generator: node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY),
+            slashes: vec![],
+            cert_voters: voters,
+            max_txs_bytes: 5_000,
+            prev_state_root: rusk.tip.read().current,
+        };
+
+        let (spent, discarded, _) = rusk
+            .create_state_transition(
+                &transition_data,
+                vec![ingress_tx.clone()].into_iter(),
+            )
+            .expect("state transition should execute");
+
+        assert!(
+            discarded.is_empty(),
+            "ingress tx should execute successfully: spent={spent:?}, discarded={discarded:?}",
+        );
+        assert_eq!(spent.len(), 1, "exactly one tx should be sealed");
+        assert_eq!(
+            spent[0].inner.id(),
+            ingress_tx.id(),
+            "rewrapping must preserve transaction identity",
+        );
+        assert_eq!(
+            spent[0].inner.format(),
+            TransactionFormat::PreAegis,
+            "pre-fork sealing must persist ledger-format bytes",
+        );
+        assert_ne!(
+            spent[0].inner.format(),
+            ingress_tx.format(),
+            "pre-fork sealing must not reuse the ingress encoding as-is",
+        );
+    }
 }
