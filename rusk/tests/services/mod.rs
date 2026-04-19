@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod compat_replay;
-mod compat_replay_fixture;
 pub mod contract_deployment;
 pub mod contract_stake;
 pub mod conversion;

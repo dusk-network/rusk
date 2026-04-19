@@ -7,11 +7,14 @@
 //! Deterministic cross-fork replay coverage for pre-hardfork, Aegis, and
 //! Boreas transaction behavior.
 //!
+//! This suite lives in its own integration-test binary because the hardfork
+//! activation timeline is cached process-wide.
+//!
 //! The checked-in fixture stores raw transaction bytes plus the expected
 //! post-state root after each step. Normal replay is cheap and suitable for
 //! CI:
 //!
-//! `cargo test --manifest-path rusk/Cargo.toml --test tests
+//! `cargo test --manifest-path rusk/Cargo.toml --test cross_fork_replay
 //! compat_replay_fixture_replays_deterministically`
 //!
 //! Extending the scenario is intentionally explicit:
@@ -19,12 +22,12 @@
 //!    or fork heights need to change
 //! 2. add or adjust steps in `build_fixture()`
 //! 3. regenerate the fixture with: `cargo test --manifest-path rusk/Cargo.toml
-//!    --test tests generate_compat_replay_v1_fixture -- --ignored`
+//!    --test cross_fork_replay generate_compat_replay_v1_fixture -- --ignored`
 //!
 //! If only the expected state roots need to be refreshed after an intentional
 //! semantic change, use:
 //!
-//! `cargo test --manifest-path rusk/Cargo.toml --test tests
+//! `cargo test --manifest-path rusk/Cargo.toml --test cross_fork_replay
 //! sync_compat_replay_v1_fixture_expectations -- --ignored`
 
 use std::fs;
