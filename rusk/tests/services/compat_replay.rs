@@ -4,6 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Deterministic cross-fork replay coverage for pre-hardfork, Aegis, and
+//! Boreas transaction behavior.
+//!
+//! The checked-in fixture stores raw transaction bytes plus the expected
+//! post-state root after each step. Normal replay is cheap and suitable for
+//! CI:
+//!
+//! `cargo test --manifest-path rusk/Cargo.toml --test tests
+//! compat_replay_fixture_replays_deterministically`
+//!
+//! Extending the scenario is intentionally explicit:
+//! 1. update `tests/config/compat_replay.toml` if the funded accounts, notes,
+//!    or fork heights need to change
+//! 2. add or adjust steps in `build_fixture()`
+//! 3. regenerate the fixture with: `cargo test --manifest-path rusk/Cargo.toml
+//!    --test tests generate_compat_replay_v1_fixture -- --ignored`
+//!
+//! If only the expected state roots need to be refreshed after an intentional
+//! semantic change, use:
+//!
+//! `cargo test --manifest-path rusk/Cargo.toml --test tests
+//! sync_compat_replay_v1_fixture_expectations -- --ignored`
+
 use std::fs;
 
 use anyhow::{Context, Result, bail};
@@ -41,13 +64,6 @@ const AEGIS_BOB_INIT_VALUE: u8 = 13;
 const AEGIS_BOB_RESET_VALUE: u8 = 17;
 const BOREAS_BOB_INIT_VALUE: u8 = 19;
 const BOREAS_BOB_RESET_VALUE: u8 = 23;
-
-// This suite keeps a checked-in replay fixture so we can cheaply prove that
-// the same historical transaction bytes still produce the same post-state
-// roots across pre-hardfork, Aegis, and Boreas transitions.
-//
-// The expensive part is fixture generation. Day-to-day replay just loads the
-// checked-in raw tx bytes and proves they still commit to the same roots.
 
 fn seeded_rng(seed: u64) -> StdRng {
     StdRng::seed_from_u64(seed)
@@ -518,6 +534,7 @@ async fn build_fixture() -> Result<ReplayFixture> {
     })
 }
 
+/// Rebuilds the checked-in fixture from the current generator logic.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "writes deterministic replay fixtures"]
 async fn generate_compat_replay_v1_fixture() -> Result<()> {
@@ -530,6 +547,7 @@ async fn generate_compat_replay_v1_fixture() -> Result<()> {
     Ok(())
 }
 
+/// Replays the stored raw transactions and refreshes only the expected roots.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "replays the existing fixture and rewrites expected roots"]
 async fn sync_compat_replay_v1_fixture_expectations() -> Result<()> {
@@ -543,6 +561,7 @@ async fn sync_compat_replay_v1_fixture_expectations() -> Result<()> {
     Ok(())
 }
 
+/// Cheap day-to-day proof that the checked-in historical bytes still replay.
 #[tokio::test(flavor = "multi_thread")]
 async fn compat_replay_fixture_replays_deterministically() -> Result<()> {
     logger();

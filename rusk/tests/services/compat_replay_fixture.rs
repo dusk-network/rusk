@@ -4,6 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Fixture schema and replay plumbing for the cross-fork replay suite.
+//!
+//! This module owns three things:
+//! - the on-disk fixture/config locations
+//! - deterministic state construction from `tests/config/compat_replay.toml`
+//! - replay execution used both by fixture generation and by the cheap
+//!   day-to-day verifier
+//!
+//! The `index` fields in the config are wallet derivation slots. They are
+//! turned into concrete Moonlight and Phoenix addresses by deriving keys from
+//! `FIXTURE_SEED`, then encoding the resulting public keys into the genesis
+//! TOML that `TestContext::instantiate` consumes.
+
 use std::fs;
 use std::path::{Path, PathBuf};
 

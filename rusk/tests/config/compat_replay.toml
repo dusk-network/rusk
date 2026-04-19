@@ -1,3 +1,7 @@
+# Cross-fork replay fixture seed data.
+# `index` values below are wallet derivation slots from `FIXTURE_SEED`
+# in `tests/services/compat_replay_fixture.rs`.
+
 suite = "compat_replay_v1"
 
 [features]
