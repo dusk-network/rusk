@@ -229,15 +229,8 @@ pub async fn run(
         match run_inner(&mut terminal, wallet_path, settings).await {
             Ok(ExitReason::Quit) => break Ok(()),
             Ok(ExitReason::ImportWallet) => {
-                // Back up old wallet, run restore flow, then re-enter
-                backup_wallet(wallet_path)?;
-                match restore_wallet_flow(&mut terminal, wallet_path, true)? {
-                    Some(_) => {
-                        clear_wallet_cache(wallet_path)?;
-                        continue;
-                    } // New wallet saved, restart
-                    None => break Ok(()), // User cancelled
-                }
+                // Replacement wallet is already saved; restart into it.
+                continue;
             }
             Err(e) => break Err(e),
         }
@@ -540,8 +533,16 @@ async fn run_inner(
                     }
                 }
                 AppAction::ImportWallet => {
-                    app.wallet.close();
-                    return Ok(ExitReason::ImportWallet);
+                    match restore_wallet_flow(terminal, wallet_path, true)? {
+                        Some(_) => {
+                            app.wallet.close();
+                            clear_wallet_cache(wallet_path)?;
+                            return Ok(ExitReason::ImportWallet);
+                        }
+                        None => {
+                            app.screen = AppScreen::Dashboard;
+                        }
+                    }
                 }
                 AppAction::CloseForm => {
                     app.screen = AppScreen::Dashboard;
@@ -870,10 +871,10 @@ fn restore_wallet_flow(
     };
 
     // Step 3: Get new password (with confirmation)
-    let password = match enter_new_password(terminal)? {
+    let mut password = Zeroizing::new(match enter_new_password(terminal)? {
         Some(p) => p,
         None => return Ok(None),
-    };
+    });
 
     // Step 4: Create the wallet
     let salt = gen_salt();
@@ -889,15 +890,16 @@ fn restore_wallet_flow(
         }
     };
     phrase.zeroize();
+    if replacing_existing_wallet {
+        backup_wallet(wallet_path)?;
+    }
     wallet.save_to(WalletFile {
         path: wallet_path.clone(),
         aes_key: key,
         salt: Some(salt),
         iv: Some(iv),
     })?;
-
-    let mut pwd = password;
-    pwd.zeroize();
+    password.zeroize();
 
     Ok(Some(wallet))
 }
