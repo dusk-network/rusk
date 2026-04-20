@@ -75,7 +75,7 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
     .split(inner);
 
     let bal = app.current_balance();
-    let stake = app.stake_info.get(&app.profile_idx);
+    let stake = app.current_stake_state();
 
     render_info_block(
         frame,

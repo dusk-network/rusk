@@ -44,6 +44,13 @@ pub enum StakeState {
     NoStake,
 }
 
+/// Cached stake state together with the last tip height it was attempted for.
+#[derive(Debug, Clone, Default)]
+pub struct CachedStakeInfo {
+    pub state: Option<StakeState>,
+    pub attempted_at_tip: Option<u64>,
+}
+
 /// Sync state tracking.
 #[derive(Debug, Clone, Default)]
 pub enum SyncStatus {
@@ -135,7 +142,7 @@ pub struct App<'a> {
 
     // Cached data
     pub balances: HashMap<u8, ProfileBalance>,
-    pub stake_info: HashMap<u8, StakeState>,
+    stake_info: HashMap<u8, CachedStakeInfo>,
     pub sync_status: SyncStatus,
     pub sync_block_height: Option<u64>,
     pub network_label: String,
@@ -549,8 +556,13 @@ impl<'a> App<'a> {
                     entry.moonlight = Some(m);
                 }
             }
-            AsyncResult::StakeUpdate { profile_idx, stake } => {
-                self.stake_info.insert(profile_idx, stake);
+            AsyncResult::StakeUpdate {
+                profile_idx,
+                stake,
+                attempted_at_tip,
+            } => {
+                let entry = self.stake_info.entry(profile_idx).or_default();
+                apply_stake_update(entry, stake, attempted_at_tip);
             }
             AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
                 if let Some(height) = parse_block_height(&msg) {
@@ -707,12 +719,10 @@ impl<'a> App<'a> {
     }
 
     fn claim_rewards_max(&self) -> Option<Dusk> {
-        self.stake_info
-            .get(&self.profile_idx)
-            .map(|stake| match stake {
-                StakeState::Loaded(data) => Dusk::from(data.reward),
-                StakeState::NoStake => Dusk::from(0),
-            })
+        self.current_stake_state().map(|stake| match stake {
+            StakeState::Loaded(data) => Dusk::from(data.reward),
+            StakeState::NoStake => Dusk::from(0),
+        })
     }
 
     fn form_balances(&self) -> (Dusk, Dusk) {
@@ -740,6 +750,31 @@ impl<'a> App<'a> {
             .get(&self.profile_idx)
             .cloned()
             .unwrap_or_default()
+    }
+
+    pub fn current_stake_state(&self) -> Option<&StakeState> {
+        self.stake_info
+            .get(&self.profile_idx)
+            .and_then(|info| info.state.as_ref())
+    }
+
+    pub fn current_profile_stake_refresh_tip_to_fetch(&self) -> Option<u64> {
+        stake_refresh_tip_to_fetch(
+            self.sync_block_height,
+            self.stake_info
+                .get(&self.profile_idx)
+                .and_then(|info| info.attempted_at_tip),
+        )
+    }
+
+    pub fn note_current_profile_stake_refresh_attempt(
+        &mut self,
+        tip_height: u64,
+    ) {
+        self.stake_info
+            .entry(self.profile_idx)
+            .or_default()
+            .attempted_at_tip = Some(tip_height);
     }
 
     /// Build confirmation details for a command.
@@ -945,6 +980,17 @@ fn clipboard_message(label: &str, result: Result<(), String>) -> String {
                 "{label} address: failed to send copy request to terminal: {err}"
             )
         }
+    }
+}
+
+fn apply_stake_update(
+    entry: &mut CachedStakeInfo,
+    stake: StakeState,
+    attempted_at_tip: Option<u64>,
+) {
+    entry.state = Some(stake);
+    if let Some(tip_height) = attempted_at_tip {
+        entry.attempted_at_tip = Some(tip_height);
     }
 }
 
@@ -1256,6 +1302,21 @@ fn parse_block_height(message: &str) -> Option<u64> {
     None
 }
 
+fn stake_refresh_tip_to_fetch(
+    current_tip: Option<u64>,
+    last_attempted_tip: Option<u64>,
+) -> Option<u64> {
+    match (current_tip, last_attempted_tip) {
+        (Some(current_tip), Some(last_attempted_tip))
+            if last_attempted_tip >= current_tip =>
+        {
+            None
+        }
+        (Some(current_tip), _) => Some(current_tip),
+        (None, _) => None,
+    }
+}
+
 fn resolve_network_label(settings: &Settings) -> String {
     if let Some(name) = settings.network_name.as_deref() {
         return name.to_string();
@@ -1284,5 +1345,54 @@ fn infer_network_label(state_url: &url::Url) -> &'static str {
         "Mainnet"
     } else {
         "Custom"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        CachedStakeInfo, StakeState, apply_stake_update,
+        stake_refresh_tip_to_fetch,
+    };
+
+    #[test]
+    fn missing_stake_info_is_refreshable() {
+        assert_eq!(stake_refresh_tip_to_fetch(Some(42), None), Some(42));
+    }
+
+    #[test]
+    fn current_tip_is_not_retried_after_already_refreshing_it() {
+        assert_eq!(stake_refresh_tip_to_fetch(Some(42), Some(42)), None);
+    }
+
+    #[test]
+    fn newer_tip_marks_stake_info_as_stale() {
+        assert_eq!(stake_refresh_tip_to_fetch(Some(42), Some(41)), Some(42));
+    }
+
+    #[test]
+    fn stake_update_uses_fetch_attempt_tip() {
+        let mut entry = CachedStakeInfo {
+            state: None,
+            attempted_at_tip: Some(44),
+        };
+
+        apply_stake_update(&mut entry, StakeState::NoStake, Some(42));
+
+        assert!(matches!(entry.state, Some(StakeState::NoStake)));
+        assert_eq!(entry.attempted_at_tip, Some(42));
+    }
+
+    #[test]
+    fn stake_update_preserves_attempt_when_result_has_no_tip() {
+        let mut entry = CachedStakeInfo {
+            state: None,
+            attempted_at_tip: Some(42),
+        };
+
+        apply_stake_update(&mut entry, StakeState::NoStake, None);
+
+        assert!(matches!(entry.state, Some(StakeState::NoStake)));
+        assert_eq!(entry.attempted_at_tip, Some(42));
     }
 }
