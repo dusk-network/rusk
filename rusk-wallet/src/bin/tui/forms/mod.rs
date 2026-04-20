@@ -32,6 +32,13 @@ pub enum FormId {
     Export,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TransferModel {
+    Public,
+    Shielded,
+    Unknown,
+}
+
 /// A form with multiple input fields that can build a Command.
 #[derive(Debug, Clone)]
 pub struct FormState {
@@ -193,11 +200,39 @@ impl FormState {
         }
     }
 
-    fn transfer_amount_max_for_recipient(&self) -> Option<Dusk> {
+    pub(crate) fn transfer_model(&self) -> TransferModel {
+        if self.id != FormId::Transfer {
+            return TransferModel::Unknown;
+        }
+
         match self.parse_address("recipient") {
-            Some(Address::Public(_)) => Some(self.transfer_public_max),
-            Some(Address::Shielded(_)) => Some(self.transfer_shielded_max),
-            None => None,
+            Some(address) => Self::transfer_model_for_address(&address),
+            None => TransferModel::Unknown,
+        }
+    }
+
+    fn transfer_model_for_address(address: &Address) -> TransferModel {
+        match address {
+            Address::Public(_) => TransferModel::Public,
+            Address::Shielded(_) => TransferModel::Shielded,
+        }
+    }
+
+    fn transfer_sender_for_address(&self, address: &Address) -> Address {
+        match Self::transfer_model_for_address(address) {
+            TransferModel::Public => self.public_addr.clone(),
+            TransferModel::Shielded => self.shielded_addr.clone(),
+            TransferModel::Unknown => unreachable!(
+                "a parsed transfer recipient address always resolves to a model"
+            ),
+        }
+    }
+
+    fn transfer_amount_max_for_recipient(&self) -> Option<Dusk> {
+        match self.transfer_model() {
+            TransferModel::Public => Some(self.transfer_public_max),
+            TransferModel::Shielded => Some(self.transfer_shielded_max),
+            TransferModel::Unknown => None,
         }
     }
 
@@ -206,15 +241,12 @@ impl FormState {
             return;
         }
 
-        let Some(max) = self.transfer_amount_max_for_recipient() else {
-            return;
-        };
-
+        let max = self.transfer_amount_max_for_recipient();
         if let Some(field) =
             self.fields.iter_mut().find(|field| field.name == "amount")
             && let field::FieldKind::Amount { max: field_max } = &mut field.kind
         {
-            *field_max = Some(max);
+            *field_max = max;
         }
     }
 
@@ -308,11 +340,7 @@ impl FormState {
             }
         };
 
-        // Match sender to recipient address type
-        let sender = match &rcvr {
-            Address::Shielded(_) => self.shielded_addr.clone(),
-            Address::Public(_) => self.public_addr.clone(),
-        };
+        let sender = self.transfer_sender_for_address(&rcvr);
 
         let amt = match self.parse_dusk("amount") {
             Some(a) => a,
@@ -589,7 +617,7 @@ pub fn build_form(
     let fields = match id {
         FormId::Transfer => vec![
             FormField::text("recipient", "Recipient address"),
-            FormField::amount("amount", "Amount (DUSK)", phoenix_spendable),
+            FormField::amount_unknown("amount", "Amount (DUSK)"),
             FormField::text("memo", "Memo (optional)"),
             FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_TRANSFER),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
@@ -706,5 +734,115 @@ fn claim_rewards_amount_field(max: Option<Dusk>) -> FormField {
     match max {
         Some(max) => FormField::amount("amount", LABEL, max),
         None => FormField::amount_unknown("amount", LABEL),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wallet_core::Seed;
+    use wallet_core::keys::{derive_bls_pk, derive_phoenix_pk};
+
+    use super::*;
+
+    fn test_profile() -> Profile {
+        let seed: Seed = [7u8; 64];
+        Profile {
+            shielded_addr: derive_phoenix_pk(&seed, 0),
+            public_addr: derive_bls_pk(&seed, 0),
+        }
+    }
+
+    fn transfer_form() -> FormState {
+        let temp_dir = std::env::temp_dir();
+
+        build_form(
+            FormId::Transfer,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &[test_profile()],
+            temp_dir.as_path(),
+        )
+    }
+
+    fn set_recipient(form: &mut FormState, address: &Address) {
+        let field = form
+            .fields
+            .iter_mut()
+            .find(|field| field.name == "recipient")
+            .expect("transfer form should have a recipient field");
+        field.value = address.to_string();
+        field.cursor = field.value.len();
+    }
+
+    fn amount_max(form: &FormState) -> Option<Dusk> {
+        let field = form
+            .fields
+            .iter()
+            .find(|field| field.name == "amount")
+            .expect("transfer form should have an amount field");
+        match field.kind {
+            field::FieldKind::Amount { max } => max,
+            _ => panic!("amount field should use amount kind"),
+        }
+    }
+
+    #[test]
+    fn public_recipient_resolves_to_public_transfer_model() {
+        let mut form = transfer_form();
+        let profile = test_profile();
+        set_recipient(&mut form, &Address::Public(profile.public_addr));
+
+        assert_eq!(form.transfer_model(), TransferModel::Public);
+    }
+
+    #[test]
+    fn shielded_recipient_resolves_to_shielded_transfer_model() {
+        let mut form = transfer_form();
+        let profile = test_profile();
+        set_recipient(&mut form, &Address::Shielded(profile.shielded_addr));
+
+        assert_eq!(form.transfer_model(), TransferModel::Shielded);
+    }
+
+    #[test]
+    fn invalid_recipient_resolves_to_unknown_transfer_model() {
+        let mut form = transfer_form();
+        let field = form
+            .fields
+            .iter_mut()
+            .find(|field| field.name == "recipient")
+            .expect("transfer form should have a recipient field");
+        field.value = "not-an-address".into();
+        field.cursor = field.value.len();
+
+        assert_eq!(form.transfer_model(), TransferModel::Unknown);
+    }
+
+    #[test]
+    fn transfer_amount_max_tracks_derived_transfer_model() {
+        let profile = test_profile();
+        let mut form = transfer_form();
+
+        assert_eq!(amount_max(&form), None);
+
+        set_recipient(&mut form, &Address::Public(profile.public_addr));
+        form.update_transfer_amount_max();
+        assert_eq!(amount_max(&form), Some(Dusk::from(22)));
+
+        set_recipient(&mut form, &Address::Shielded(profile.shielded_addr));
+        form.update_transfer_amount_max();
+        assert_eq!(amount_max(&form), Some(Dusk::from(11)));
+
+        let field = form
+            .fields
+            .iter_mut()
+            .find(|field| field.name == "recipient")
+            .expect("transfer form should have a recipient field");
+        field.value = "invalid".into();
+        field.cursor = field.value.len();
+        form.update_transfer_amount_max();
+        assert_eq!(amount_max(&form), None);
     }
 }

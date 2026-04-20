@@ -10,15 +10,16 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 
 use super::centered_rect;
-use crate::tui::forms::FormState;
 use crate::tui::forms::field::{FieldKind, FormField};
+use crate::tui::forms::{FormId, FormState, TransferModel};
 use crate::tui::theme;
 
 pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
     let screen = frame.area();
-    // Each field is 3 rows tall; add 1 for the hint/error row and 2 for the
-    // modal border.
-    let needed_h = (form.fields.len() as u16 * 3 + 3).min(screen.height);
+    // Each field is 3 rows tall; add footer rows plus 2 for the modal border.
+    let footer_rows = footer_row_count(form);
+    let needed_h =
+        (form.fields.len() as u16 * 3 + footer_rows + 2).min(screen.height);
     let area = {
         let full = centered_rect(60, 70, screen);
         // If the percentage-based height is too small, centre a fixed-height
@@ -42,12 +43,14 @@ pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
     frame.render_widget(block, area);
 
     let field_height = 3u16;
-    let constraints: Vec<Constraint> = form
+    let mut constraints: Vec<Constraint> = form
         .fields
         .iter()
         .map(|_| Constraint::Length(field_height))
-        .chain(std::iter::once(Constraint::Min(1))) // error/hint area
         .collect();
+    for _ in 0..footer_rows {
+        constraints.push(Constraint::Length(1));
+    }
 
     let field_areas = Layout::vertical(constraints).split(inner);
 
@@ -56,31 +59,69 @@ pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
         render_form_field(frame, field_areas[i], field, is_focused);
     }
 
-    // Error display at bottom
+    let footer_index = form.fields.len();
     if let Some(error) = &form.error {
-        let error_area = *field_areas.last().unwrap();
+        let error_area = footer_area(&field_areas, footer_index);
         let error_widget = Paragraph::new(Line::from(vec![
             Span::styled(" Error: ", theme::error()),
             Span::styled(error.clone(), theme::error()),
         ]));
         frame.render_widget(error_widget, error_area);
+    } else if form.id == FormId::Transfer {
+        render_transfer_model_footer(frame, field_areas[footer_index], form);
+        render_form_hints(frame, field_areas[footer_index + 1]);
     } else {
-        let hint_area = *field_areas.last().unwrap();
-        let hint = Paragraph::new(Line::from(vec![
-            Span::styled(" Tab", theme::dim()),
-            Span::styled(" next", theme::dim()),
-            Span::styled("  \u{00b7}  ", theme::dim()),
-            Span::styled("Shift+Tab", theme::dim()),
-            Span::styled(" prev", theme::dim()),
-            Span::styled("  \u{00b7}  ", theme::dim()),
-            Span::styled("Enter", theme::dim()),
-            Span::styled(" submit", theme::dim()),
-            Span::styled("  \u{00b7}  ", theme::dim()),
-            Span::styled("Esc", theme::dim()),
-            Span::styled(" cancel", theme::dim()),
-        ]));
-        frame.render_widget(hint, hint_area);
+        render_form_hints(frame, field_areas[footer_index]);
     }
+}
+
+fn footer_row_count(form: &FormState) -> u16 {
+    if form.id == FormId::Transfer { 2 } else { 1 }
+}
+
+fn footer_area(areas: &[Rect], footer_index: usize) -> Rect {
+    let first = areas[footer_index];
+    let last = *areas.last().expect("form footer should exist");
+    Rect::new(first.x, first.y, first.width, last.bottom() - first.y)
+}
+
+fn render_form_hints(frame: &mut Frame, area: Rect) {
+    let hint = Paragraph::new(Line::from(vec![
+        Span::styled(" Tab", theme::dim()),
+        Span::styled(" next", theme::dim()),
+        Span::styled("  \u{00b7}  ", theme::dim()),
+        Span::styled("Shift+Tab", theme::dim()),
+        Span::styled(" prev", theme::dim()),
+        Span::styled("  \u{00b7}  ", theme::dim()),
+        Span::styled("Enter", theme::dim()),
+        Span::styled(" submit", theme::dim()),
+        Span::styled("  \u{00b7}  ", theme::dim()),
+        Span::styled("Esc", theme::dim()),
+        Span::styled(" cancel", theme::dim()),
+    ]));
+    frame.render_widget(hint, area);
+}
+
+fn render_transfer_model_footer(
+    frame: &mut Frame,
+    area: Rect,
+    form: &FormState,
+) {
+    let spans = match form.transfer_model() {
+        TransferModel::Public => vec![
+            Span::styled(" Transaction model: ", theme::label()),
+            Span::styled("Public", theme::value()),
+        ],
+        TransferModel::Shielded => vec![
+            Span::styled(" Transaction model: ", theme::label()),
+            Span::styled("Shielded", theme::value()),
+        ],
+        TransferModel::Unknown => vec![
+            Span::styled(" Transaction model: ", theme::label()),
+            Span::styled("Enter a valid recipient address", theme::dim()),
+        ],
+    };
+    frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
 fn render_form_field(
