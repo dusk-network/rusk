@@ -14,23 +14,22 @@ use crate::tui::forms::field::{FieldKind, FormField};
 use crate::tui::forms::{FormId, FormState, TransferModel};
 use crate::tui::theme;
 
+const FORM_MIN_WIDTH: u16 = 60;
+const FIELD_HEIGHT: u16 = 3;
+const RESIZE_WARNING_MIN_WIDTH: u16 = 56;
+const RESIZE_WARNING_MIN_HEIGHT: u16 = 9;
+
 pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
     let screen = frame.area();
-    // Each field is 3 rows tall; add footer rows plus 2 for the modal border.
+    let min_height = required_form_height(form);
+    let area = form_modal_area(screen, min_height);
+
+    if !form_fits(area, min_height) {
+        render_resize_warning(frame, screen, form, min_height);
+        return;
+    }
+
     let footer_rows = footer_row_count(form);
-    let needed_h =
-        (form.fields.len() as u16 * 3 + footer_rows + 2).min(screen.height);
-    let area = {
-        let full = centered_rect(60, 70, screen);
-        // If the percentage-based height is too small, centre a fixed-height
-        // rect instead so all fields remain visible.
-        if full.height < needed_h {
-            let top = screen.y + screen.height.saturating_sub(needed_h) / 2;
-            Rect::new(full.x, top, full.width, needed_h)
-        } else {
-            full
-        }
-    };
     frame.render_widget(Clear, area);
 
     let block = Block::bordered()
@@ -42,15 +41,12 @@ pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let field_height = 3u16;
-    let mut constraints: Vec<Constraint> = form
+    let constraints: Vec<Constraint> = form
         .fields
         .iter()
-        .map(|_| Constraint::Length(field_height))
+        .map(|_| Constraint::Length(FIELD_HEIGHT))
+        .chain((0..footer_rows).map(|_| Constraint::Length(1)))
         .collect();
-    for _ in 0..footer_rows {
-        constraints.push(Constraint::Length(1));
-    }
 
     let field_areas = Layout::vertical(constraints).split(inner);
 
@@ -73,6 +69,24 @@ pub fn render_form_modal(frame: &mut Frame, form: &FormState) {
     } else {
         render_form_hints(frame, field_areas[footer_index]);
     }
+}
+
+fn required_form_height(form: &FormState) -> u16 {
+    form.fields.len() as u16 * FIELD_HEIGHT + footer_row_count(form) + 2
+}
+
+fn form_modal_area(screen: Rect, min_height: u16) -> Rect {
+    let full = centered_rect(60, 70, screen);
+    let width = full.width.max(FORM_MIN_WIDTH).min(screen.width);
+    let height = full.height.max(min_height).min(screen.height);
+    let x = screen.x + screen.width.saturating_sub(width) / 2;
+    let y = screen.y + screen.height.saturating_sub(height) / 2;
+
+    Rect::new(x, y, width, height)
+}
+
+fn form_fits(area: Rect, min_height: u16) -> bool {
+    area.width >= FORM_MIN_WIDTH && area.height >= min_height
 }
 
 fn footer_row_count(form: &FormState) -> u16 {
@@ -124,6 +138,75 @@ fn render_transfer_model_footer(
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
+fn render_resize_warning(
+    frame: &mut Frame,
+    screen: Rect,
+    form: &FormState,
+    min_height: u16,
+) {
+    let area = resize_warning_area(screen);
+    frame.render_widget(Clear, area);
+
+    let block = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title(" Terminal Too Small ")
+        .title_style(theme::title())
+        .border_style(theme::border_focused());
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let lines = vec![
+        Line::from(vec![
+            Span::styled("  Form: ", theme::label()),
+            Span::styled(&form.title, theme::value()),
+        ]),
+        Line::from(vec![
+            Span::styled("  Current: ", theme::label()),
+            Span::styled(
+                format!("{}x{}", screen.width, screen.height),
+                theme::value(),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("  Required: ", theme::label()),
+            Span::styled(
+                format!("{FORM_MIN_WIDTH}x{min_height}"),
+                theme::value(),
+            ),
+        ]),
+        Line::default(),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                "Resize the terminal to view the full form.",
+                theme::warning(),
+            ),
+        ]),
+        Line::default(),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled("Esc", theme::dim()),
+            Span::styled(" cancel", theme::dim()),
+        ]),
+    ];
+
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn resize_warning_area(screen: Rect) -> Rect {
+    let full = centered_rect(60, 40, screen);
+    let width = full.width.max(RESIZE_WARNING_MIN_WIDTH).min(screen.width);
+    let height = full
+        .height
+        .max(RESIZE_WARNING_MIN_HEIGHT)
+        .min(screen.height);
+    let x = screen.x + screen.width.saturating_sub(width) / 2;
+    let y = screen.y + screen.height.saturating_sub(height) / 2;
+
+    Rect::new(x, y, width, height)
+}
+
 fn render_form_field(
     frame: &mut Frame,
     area: Rect,
@@ -136,7 +219,6 @@ fn render_form_field(
         theme::border()
     };
 
-    // Build the title with optional hints
     let title = field_title(field);
 
     let block = Block::default()
@@ -189,7 +271,6 @@ fn render_form_field(
 
             frame.render_widget(Paragraph::new(Line::from(display)), inner);
 
-            // Show cursor position for focused text fields
             if focused && inner.width > 0 {
                 let cursor_x =
                     inner.x + (field.cursor as u16).min(inner.width - 1);
@@ -210,5 +291,96 @@ fn field_title(field: &FormField) -> String {
             format!(" {label} (max: Unknown) ")
         }
         _ => format!(" {label} "),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::layout::Rect;
+    use rusk_wallet::Profile;
+    use rusk_wallet::currency::Dusk;
+    use wallet_core::Seed;
+    use wallet_core::keys::{derive_bls_pk, derive_phoenix_pk};
+
+    use super::{
+        FIELD_HEIGHT, FORM_MIN_WIDTH, RESIZE_WARNING_MIN_HEIGHT,
+        RESIZE_WARNING_MIN_WIDTH, form_fits, form_modal_area,
+        required_form_height, resize_warning_area,
+    };
+    use crate::tui::forms::{FormId, build_form};
+
+    fn test_profile() -> Profile {
+        let seed: Seed = [7u8; 64];
+        Profile {
+            shielded_addr: derive_phoenix_pk(&seed, 0),
+            public_addr: derive_bls_pk(&seed, 0),
+        }
+    }
+
+    fn form(id: FormId) -> crate::tui::forms::FormState {
+        let temp_dir = std::env::temp_dir();
+
+        build_form(
+            id,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &[test_profile()],
+            temp_dir.as_path(),
+        )
+    }
+
+    #[test]
+    fn transfer_required_height_is_nineteen() {
+        assert_eq!(
+            required_form_height(&form(FormId::Transfer)),
+            5 * FIELD_HEIGHT + 2 + 2
+        );
+    }
+
+    #[test]
+    fn contract_deploy_required_height_is_twenty_one() {
+        assert_eq!(
+            required_form_height(&form(FormId::ContractDeploy)),
+            6 * FIELD_HEIGHT + 1 + 2
+        );
+    }
+
+    #[test]
+    fn contract_call_required_height_is_twenty_four() {
+        assert_eq!(
+            required_form_height(&form(FormId::ContractCall)),
+            7 * FIELD_HEIGHT + 1 + 2
+        );
+    }
+
+    #[test]
+    fn form_modal_area_honors_minimum_width() {
+        let area = form_modal_area(Rect::new(0, 0, FORM_MIN_WIDTH, 24), 24);
+
+        assert_eq!(area.width, FORM_MIN_WIDTH);
+    }
+
+    #[test]
+    fn fit_check_succeeds_at_required_size() {
+        let area = form_modal_area(Rect::new(0, 0, FORM_MIN_WIDTH, 24), 24);
+
+        assert!(form_fits(area, 24));
+    }
+
+    #[test]
+    fn fit_check_fails_below_required_height() {
+        let area = form_modal_area(Rect::new(0, 0, FORM_MIN_WIDTH, 23), 24);
+
+        assert!(!form_fits(area, 24));
+    }
+
+    #[test]
+    fn resize_warning_area_stays_readable_at_min_supported_screen_size() {
+        let area = resize_warning_area(Rect::new(0, 0, FORM_MIN_WIDTH, 20));
+
+        assert_eq!(area.width, RESIZE_WARNING_MIN_WIDTH);
+        assert_eq!(area.height, RESIZE_WARNING_MIN_HEIGHT);
     }
 }
