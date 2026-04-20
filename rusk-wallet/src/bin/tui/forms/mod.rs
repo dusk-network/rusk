@@ -595,13 +595,7 @@ pub fn build_form(
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::Stake => vec![
-            // Default to Public — stake amount max is moonlight_balance
-            FormField::select_with_default(
-                "model",
-                "Transaction model",
-                vec!["Shielded".into(), "Public".into()],
-                1,
-            ),
+            public_model_field(),
             FormField::amount(
                 "amount",
                 "Stake amount (DUSK)",
@@ -611,20 +605,12 @@ pub fn build_form(
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::Unstake => vec![
-            FormField::select(
-                "model",
-                "Transaction model",
-                vec!["Shielded".into(), "Public".into()],
-            ),
+            public_model_field(),
             FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::ClaimRewards => vec![
-            FormField::select(
-                "model",
-                "Transaction model",
-                vec!["Shielded".into(), "Public".into()],
-            ),
+            public_model_field(),
             claim_rewards_amount_field(claim_rewards_max),
             FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
@@ -648,11 +634,7 @@ pub fn build_form(
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::ContractDeploy => vec![
-            FormField::select(
-                "model",
-                "Transaction model",
-                vec!["Shielded".into(), "Public".into()],
-            ),
+            public_model_field(),
             FormField::text("code", "WASM contract path"),
             FormField::text("init_args", "Init args (hex)"),
             FormField::number("nonce", "Deploy nonce", 0),
@@ -668,11 +650,7 @@ pub fn build_form(
             ),
         ],
         FormId::ContractCall => vec![
-            FormField::select(
-                "model",
-                "Transaction model",
-                vec!["Shielded".into(), "Public".into()],
-            ),
+            public_model_field(),
             FormField::text("contract_id", "Contract ID (hex)"),
             FormField::text("fn_name", "Function name"),
             FormField::text("fn_args", "Function args (hex)"),
@@ -711,6 +689,15 @@ pub fn build_form(
         transfer_shielded_max: phoenix_spendable,
         transfer_public_max: moonlight_balance,
     }
+}
+
+fn public_model_field() -> FormField {
+    FormField::select_with_default(
+        "model",
+        "Transaction model",
+        vec!["Shielded".into(), "Public".into()],
+        1,
+    )
 }
 
 fn claim_rewards_amount_field(max: Option<Dusk>) -> FormField {
