@@ -9,6 +9,7 @@ import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import { Profile, ProfileGenerator } from "./profile.js";
 import { Contract } from "./contract.js";
 import {
+  ContractDeployment,
   ShieldTransfer,
   StakeTransfer,
   Transfer,
@@ -34,6 +35,10 @@ class BookEntry {
 
   transfer(amount) {
     return new Transfer(this).amount(amount);
+  }
+
+  deploy(bytecode, options) {
+    return new ContractDeployment(this, bytecode, options);
   }
 
   unshield(amount) {
