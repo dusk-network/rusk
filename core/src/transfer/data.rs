@@ -157,13 +157,20 @@ impl TransactionData {
         let mut buf = buf;
 
         // deserialize optional transaction data
-        let data = match u8::from_reader(&mut buf)? {
-            Self::NONE_ID => None,
+        match u8::from_reader(&mut buf)? {
+            Self::NONE_ID => {
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+                Ok(None)
+            }
             Self::CALL_ID => {
-                Some(TransactionData::Call(ContractCall::from_slice(buf)?))
+                let call = ContractCall::from_slice(buf)?;
+                Ok(Some(TransactionData::Call(call)))
             }
             Self::DEPLOY_ID => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+                let deploy = ContractDeploy::from_slice(buf)?;
+                Ok(Some(TransactionData::Deploy(deploy)))
             }
             Self::MEMO_ID => {
                 // we only build for 64-bit so this truncation is impossible
@@ -175,7 +182,7 @@ impl TransactionData {
                 }
 
                 let memo = buf[..size].to_vec();
-                Some(TransactionData::Memo(memo))
+                Ok(Some(TransactionData::Memo(memo)))
             }
             Self::BLOB_ID => {
                 let blobs_len = u8::from_reader(&mut buf)?;
@@ -184,14 +191,15 @@ impl TransactionData {
                     let blob = BlobData::from_buf(&mut buf)?;
                     blobs.push(blob);
                 }
-                Some(TransactionData::Blob(blobs))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
 
-        Ok(data)
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+
+                Ok(Some(TransactionData::Blob(blobs)))
+            }
+            _ => Err(BytesError::InvalidData),
+        }
     }
 }
 
@@ -337,6 +345,10 @@ impl ContractDeploy {
 
         let nonce = u64::from_reader(&mut buf)?;
 
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
+
         Ok(Self {
             bytecode,
             owner,
@@ -451,6 +463,10 @@ impl ContractCall {
         let fn_name = crate::read_str(&mut buf)?;
 
         let fn_args = crate::read_vec(&mut buf)?;
+
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
 
         Ok(Self {
             contract: contract.into(),

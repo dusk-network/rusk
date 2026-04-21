@@ -14,20 +14,22 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::{
+    Block, CanonicalTransaction, LedgerTransaction, SpentTransaction,
+};
 
 #[derive(Default)]
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn create_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -58,7 +60,7 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn preverify(
         &self,
-        tx: &Transaction,
+        tx: &CanonicalTransaction,
         tip_height: u64,
     ) -> anyhow::Result<PreverificationResult>;
 
@@ -106,6 +108,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn enable_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()>;
 }
 
+#[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum PreverificationResult {
     Valid,

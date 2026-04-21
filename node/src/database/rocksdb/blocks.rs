@@ -44,9 +44,9 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
             for tx in txs {
                 let mut d = vec![];
 
-                if tx.inner.inner.blob().is_some() {
+                if tx.inner.protocol().blob().is_some() {
                     let mut strip_tx = tx.clone();
-                    if let Some(blobs) = strip_tx.inner.inner.strip_blobs() {
+                    if let Some(blobs) = strip_tx.inner.strip_blobs() {
                         for (hash, sidecar) in blobs.into_iter() {
                             let sidecar_bytes = sidecar.to_var_bytes();
                             self.store_blob_data(&hash, sidecar_bytes)?;
@@ -262,7 +262,7 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
                 for buf in txs_buffers {
                     let buf = buf?.unwrap();
                     let mut tx = SpentTransaction::read(&mut &buf[..])?;
-                    if let Some(blobs) = tx.inner.inner.blob_mut() {
+                    if let Some(blobs) = tx.inner.blob_mut() {
                         for blob in blobs {
                             // Retrieve blob data from the ledger
                             let sidecar = self

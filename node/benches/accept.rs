@@ -61,7 +61,7 @@ fn create_step_votes(
     let mut cluster = Cluster::<node_data::bls::PublicKey>::default();
     for (pk, sk) in keys.iter() {
         if let Some(weight) = committee.votes_for(pk) {
-            let vote = vote.clone();
+            let vote = *vote;
             let ru = RoundUpdate::new(
                 pk.clone(),
                 sk.clone(),

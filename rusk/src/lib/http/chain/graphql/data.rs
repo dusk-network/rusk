@@ -51,26 +51,26 @@ pub struct Header<'a>(&'a node_data::ledger::Header);
 pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
 pub struct Transaction<'a>(TransactionData<'a>);
 
-impl<'a> From<&'a node_data::ledger::Transaction> for Transaction<'a> {
-    fn from(value: &'a node_data::ledger::Transaction) -> Self {
+impl<'a> From<&'a node_data::ledger::LedgerTransaction> for Transaction<'a> {
+    fn from(value: &'a node_data::ledger::LedgerTransaction) -> Self {
         Self(TransactionData::Ref(value))
     }
 }
 
-impl From<node_data::ledger::Transaction> for Transaction<'_> {
-    fn from(value: node_data::ledger::Transaction) -> Self {
+impl From<node_data::ledger::LedgerTransaction> for Transaction<'_> {
+    fn from(value: node_data::ledger::LedgerTransaction) -> Self {
         Self(TransactionData::Owned(value))
     }
 }
 
 #[allow(clippy::large_enum_variant)]
 enum TransactionData<'a> {
-    Owned(node_data::ledger::Transaction),
-    Ref(&'a node_data::ledger::Transaction),
+    Owned(node_data::ledger::LedgerTransaction),
+    Ref(&'a node_data::ledger::LedgerTransaction),
 }
 
 impl Deref for TransactionData<'_> {
-    type Target = node_data::ledger::Transaction;
+    type Target = node_data::ledger::LedgerTransaction;
     fn deref(&self) -> &Self::Target {
         match self {
             TransactionData::Owned(t) => t,
@@ -281,7 +281,7 @@ impl Transaction<'_> {
     }
 
     pub async fn json(&self) -> String {
-        let tx: &node_data::ledger::Transaction = &self.0;
+        let tx: &node_data::ledger::LedgerTransaction = &self.0;
         serde_json::to_string(tx).unwrap_or_default()
     }
 
@@ -290,15 +290,15 @@ impl Transaction<'_> {
     }
 
     pub async fn gas_limit(&self) -> u64 {
-        self.0.inner.gas_limit()
+        self.0.protocol().gas_limit()
     }
 
     pub async fn gas_price(&self) -> u64 {
-        self.0.inner.gas_price()
+        self.0.gas_price()
     }
 
     pub async fn tx_type(&self) -> String {
-        match self.0.inner {
+        match self.0.protocol() {
             dusk_core::transfer::Transaction::Phoenix(_) => "Phoenix",
             dusk_core::transfer::Transaction::Moonlight(_) => "Moonlight",
         }
@@ -306,7 +306,7 @@ impl Transaction<'_> {
     }
 
     pub async fn call_data(&self) -> Option<CallData> {
-        self.0.inner.call().map(|call| CallData {
+        self.0.protocol().call().map(|call| CallData {
             contract_id: hex::encode(call.contract),
             fn_name: call.fn_name.clone(),
             data: hex::encode(&call.fn_args),
@@ -314,17 +314,17 @@ impl Transaction<'_> {
     }
 
     pub async fn blob_hashes(&self) -> Option<Vec<String>> {
-        self.0.inner.blob().map(|blobs| {
+        self.0.protocol().blob().map(|blobs| {
             blobs.iter().map(|blob| hex::encode(blob.hash)).collect()
         })
     }
 
     pub async fn is_deploy(&self) -> bool {
-        self.0.inner.deploy().is_some()
+        self.0.protocol().deploy().is_some()
     }
 
     pub async fn contract_id(&self) -> Option<String> {
-        self.0.inner.deploy().map(|deploy| {
+        self.0.protocol().deploy().map(|deploy| {
             let contract_id = gen_contract_id(
                 &deploy.bytecode.bytes,
                 deploy.nonce,
@@ -335,7 +335,7 @@ impl Transaction<'_> {
     }
 
     pub async fn memo(&self) -> Option<String> {
-        self.0.inner.memo().map(hex::encode)
+        self.0.protocol().memo().map(hex::encode)
     }
 }
 

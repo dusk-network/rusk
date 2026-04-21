@@ -33,7 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Emit deferred transaction lifecycle events when HTTP propagation queues
   future-nonce Moonlight transactions
 - Map invalid transaction ingress format rejections to HTTP invalid-input errors instead of failing exhaustiveness checks in preverify handling
+- Canonicalize locally sealed transactions to the active ledger format before
+  committing them into blocks
 
+
+### Changed
+
+- Route transaction ingress and node execution through explicit canonical
+  ledger transaction boundaries.
 
 ## [1.6.0] - 2026-02-27
 

@@ -220,6 +220,21 @@ fn assert_decode_rejected(
     assert_eq!(err, dusk_bytes::Error::InvalidData);
 }
 
+fn assert_decode_rejects_trailing_bytes(
+    transaction: Transaction,
+    format: TransactionFormat,
+) {
+    let mut transaction_bytes = transaction.encode_for_format(format);
+    transaction_bytes.extend_from_slice(b"AAAA");
+
+    let err = Transaction::decode_with_format(format, &transaction_bytes)
+        .unwrap_err();
+    assert_eq!(err, dusk_bytes::Error::InvalidData);
+
+    let err = Transaction::decode_any(&transaction_bytes).unwrap_err();
+    assert_eq!(err, dusk_bytes::Error::InvalidData);
+}
+
 fn make_data_case<R: RngCore>(
     rng: &mut R,
     case: DataCase,
@@ -375,6 +390,24 @@ fn decode_for_ingress_rejects_pre_aegis_legacy_phoenix() {
     .unwrap_err();
 
     assert_eq!(err, dusk_bytes::Error::InvalidData);
+}
+
+#[test]
+fn aegis_phoenix_rejects_trailing_bytes() {
+    let mut rng = StdRng::seed_from_u64(42);
+    assert_decode_rejects_trailing_bytes(
+        new_phoenix_tx(&mut rng, None),
+        TransactionFormat::Aegis,
+    );
+}
+
+#[test]
+fn boreas_phoenix_rejects_trailing_bytes() {
+    let mut rng = StdRng::seed_from_u64(42);
+    assert_decode_rejects_trailing_bytes(
+        new_phoenix_tx(&mut rng, None),
+        TransactionFormat::Boreas,
+    );
 }
 
 #[test]

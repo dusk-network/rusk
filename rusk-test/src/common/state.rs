@@ -19,7 +19,8 @@ use node::archive::Archive;
 use node::vm::VMExecution;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
-    Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
+    Attestation, Block, CanonicalTransaction, Header, IterationsInfo,
+    LedgerTransaction, Slash, SpentTransaction,
 };
 use node_data::message::payload::Vote;
 use rusk::node::RuskVmConfig;
@@ -155,12 +156,22 @@ pub fn generator_procedure2(
         discarded: 0,
     });
 
-    let txs: Vec<_> = txs.iter().map(|t| t.clone().into()).collect();
+    let txs: Vec<_> = txs
+        .iter()
+        .cloned()
+        .map(|tx| LedgerTransaction::from_protocol_for_ledger(tx, block_height))
+        .collect();
     // `preverify()` is meant to be called at the current tip height; it will
     // validate the tx against rules that apply to the *next* block height.
     let tip_height = block_height.saturating_sub(1);
     for tx in &txs {
-        rusk.preverify(tx, tip_height)?;
+        let canonical = CanonicalTransaction::canonicalize(
+            tx.protocol().clone(),
+            node_data::hard_fork::ingress_tx_format_at(
+                tip_height.saturating_add(1),
+            ),
+        );
+        rusk.preverify(&canonical, tip_height)?;
     }
 
     let generator = generator.unwrap_or(*DUSK_CONSENSUS_KEY);

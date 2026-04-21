@@ -101,6 +101,10 @@ impl Transaction {
         let payload = parse_payload(read_len_prefixed(&mut buf)?)?;
         let proof = read_len_prefixed(&mut buf)?.into();
 
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
+
         Ok(Self { payload, proof })
     }
 

@@ -20,7 +20,7 @@ use node::mempool::MempoolSrv;
 use node::mempool::conf::Params as MempoolParams;
 use node::{BoxedFilter, LongLivedService, Network};
 use node_data::events::Event;
-use node_data::ledger::{Header, Label, SpendingId, Transaction};
+use node_data::ledger::{Header, Label, LedgerTransaction, SpendingId};
 use node_data::message::{AsyncQueue, Message, Payload, Topics, payload};
 use tempfile::TempDir;
 use tokio::task::JoinHandle;
@@ -41,7 +41,7 @@ struct TestNetwork {
 }
 
 impl TestNetwork {
-    async fn route_tx(&self, tx: Transaction) -> Result<()> {
+    async fn route_tx(&self, tx: LedgerTransaction) -> Result<()> {
         let msg: Message = tx.into();
         let deadline = Instant::now() + ROUTE_WAIT_TIMEOUT;
 
@@ -204,7 +204,7 @@ impl MempoolHarness {
         Ok(harness)
     }
 
-    fn make_tx(&self, nonce: u64) -> Transaction {
+    fn make_tx(&self, nonce: u64) -> LedgerTransaction {
         self.make_tx_with_fee(nonce, GAS_LIMIT, GAS_PRICE)
     }
 
@@ -213,7 +213,7 @@ impl MempoolHarness {
         nonce: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Transaction {
+    ) -> LedgerTransaction {
         let wallet = self.test_context.wallet();
         let receiver = wallet
             .account_public_key(1)
@@ -231,10 +231,10 @@ impl MempoolHarness {
             )
             .expect("creating moonlight tx should succeed");
 
-        Transaction::from(tx)
+        LedgerTransaction::from_protocol_for_ledger(tx, 1)
     }
 
-    async fn route_tx(&self, tx: Transaction) -> Result<()> {
+    async fn route_tx(&self, tx: LedgerTransaction) -> Result<()> {
         self.network.route_tx(tx).await
     }
 
@@ -315,7 +315,7 @@ impl Drop for MempoolHarness {
 
 fn tx_topics(
     events: &[Event],
-    tx: &Transaction,
+    tx: &LedgerTransaction,
 ) -> Vec<(&'static str, Option<String>)> {
     let entity = hex_encode(tx.id());
     events
@@ -337,7 +337,7 @@ fn tx_topics(
 
 fn assert_tx_topics(
     events: &[Event],
-    tx: &Transaction,
+    tx: &LedgerTransaction,
     expected: &[(&'static str, Option<&str>)],
 ) {
     let expected = expected
