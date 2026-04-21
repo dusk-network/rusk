@@ -25,6 +25,7 @@ dusk-core = { workspace = true }
 rkyv = { workspace = true, features = ["alloc", "validation"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
+blake2b_simd = { workspace = true }
 dlmalloc = { workspace = true, features = ["global"] }
 
 [dev-dependencies]

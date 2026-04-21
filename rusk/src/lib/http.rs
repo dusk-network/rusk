@@ -2212,6 +2212,7 @@ mod tests {
             "/static/drivers/wallet-core-1.0.1.wasm",
             "/static/drivers/wallet-core-1.3.0.wasm",
             "/static/drivers/wallet-core-1.6.0.wasm",
+            "/static/drivers/wallet-core-1.6.1.wasm",
         ];
 
         let client = reqwest::Client::new();

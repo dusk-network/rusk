@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add FFI support for serializing contract deployment transaction data and deriving contract IDs.
+
 ### Fixed
 
 - Prevent phoenix balance aggregation from wrapping on `u64` overflow by using saturating sums

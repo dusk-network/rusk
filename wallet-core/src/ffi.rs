@@ -29,7 +29,9 @@ use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{STAKE_CONTRACT, Stake};
-use dusk_core::transfer::data::{ContractCall, TransactionData};
+use dusk_core::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+};
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
@@ -879,6 +881,103 @@ pub unsafe extern "C" fn create_tx_data(
 
     ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
     ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn create_deploy_tx_data(
+    bytecode_len: *const u32,
+    bytecode_buf: *mut u8,
+    owner_len: *const u32,
+    owner_buf: *mut u8,
+    init_args_len: *const u32,
+    init_args_buf: *mut u8,
+    deploy_nonce: *const u64,
+    rkyv_ptr: *mut *mut u8,
+) -> ErrorCode {
+    if bytecode_len.is_null()
+        || bytecode_buf.is_null()
+        || owner_len.is_null()
+        || owner_buf.is_null()
+        || deploy_nonce.is_null()
+    {
+        return ErrorCode::DeserializationError;
+    }
+
+    let bytecode =
+        slice::from_raw_parts(bytecode_buf, *bytecode_len as usize).to_vec();
+    let owner = slice::from_raw_parts(owner_buf, *owner_len as usize).to_vec();
+    let init_args = if init_args_len.is_null() || init_args_buf.is_null() {
+        None
+    } else {
+        Some(
+            slice::from_raw_parts(init_args_buf, *init_args_len as usize)
+                .to_vec(),
+        )
+    };
+
+    let tx_data = TransactionData::Deploy(ContractDeploy {
+        bytecode: ContractBytecode {
+            hash: blake3::hash(&bytecode).into(),
+            bytes: bytecode,
+        },
+        owner,
+        init_args,
+        nonce: *deploy_nonce,
+    });
+
+    let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
+        Ok(v) => v.to_vec(),
+        Err(_) => return ErrorCode::ArchivingError,
+    };
+    let len = bytes.len().to_le_bytes();
+
+    let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
+    let ptr = mem::malloc(4 + ptr_len);
+    let ptr = ptr as *mut u8;
+
+    *rkyv_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn contract_id(
+    bytecode_len: *const u32,
+    bytecode_buf: *mut u8,
+    owner_len: *const u32,
+    owner_buf: *mut u8,
+    deploy_nonce: *const u64,
+    contract_id_ptr: *mut [u8; 32],
+) -> ErrorCode {
+    if bytecode_len.is_null()
+        || bytecode_buf.is_null()
+        || owner_len.is_null()
+        || owner_buf.is_null()
+        || deploy_nonce.is_null()
+    {
+        return ErrorCode::DeserializationError;
+    }
+
+    let bytecode = slice::from_raw_parts(bytecode_buf, *bytecode_len as usize);
+    let owner = slice::from_raw_parts(owner_buf, *owner_len as usize);
+
+    let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
+    hasher.update(bytecode);
+    hasher.update(&(*deploy_nonce).to_le_bytes()[..]);
+    hasher.update(owner);
+
+    let bytes = hasher.finalize();
+    ptr::copy_nonoverlapping(
+        bytes.as_bytes().as_ptr(),
+        &raw mut (*contract_id_ptr)[0],
+        32,
+    );
 
     ErrorCode::Ok
 }
