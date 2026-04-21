@@ -12,6 +12,11 @@ import { Node } from "./components/node.js";
 import { Blocks } from "./components/blocks.js";
 import { Transactions } from "./components/transactions.js";
 import { Contracts } from "./components/contracts.js";
+import {
+  graphqlInit,
+  normalizeGraphQLRequest,
+  parseGraphQLResponse,
+} from "./graphql.js";
 import { Gas } from "../gas.js";
 
 export { Gas };
@@ -131,20 +136,18 @@ export class Network extends EventTarget {
   }
 
   async query(gql, options = {}) {
-    gql = gql ? `query { ${gql} }` : "";
+    const headers = new Headers(options.headers);
+    headers.set("rusk-version", this.#rues.version);
 
-    const response = await this.#rues.scope("graphql").call.query(gql, options);
+    const response = await fetch(
+      new URL("/graphql", this.url),
+      graphqlInit(normalizeGraphQLRequest(gql), {
+        ...options,
+        headers,
+      }),
+    );
 
-    switch (response.status) {
-      case 200:
-        return await response.json();
-      case 500:
-        throw new Error((await response.json())[0]);
-      default:
-        throw new Error(
-          `Unexpected [${response.status}] : ${response.statusText}}`,
-        );
-    }
+    return await parseGraphQLResponse(response);
   }
 
   static connect(url, options = {}) {

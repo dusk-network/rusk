@@ -5,28 +5,85 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 export class GraphQLError extends Error {
-  constructor({ message, locations }) {
+  constructor({ message, locations, data, errors }) {
     super(message);
     this.locations = locations;
+    this.data = data;
+    this.errors = errors;
   }
 }
 
-export class GraphQLRequest extends Request {
-  constructor(body, baseUrl) {
-    const url = new URL("on/graphql/query/", baseUrl);
-    super(url, { method: "POST", body });
+const MISSING_QUERY_ERROR = "GraphQL query is required.";
+
+function isGraphQLDocument(query) {
+  return /^(query|mutation|subscription|fragment)\b|^\{/.test(query);
+}
+
+function createGraphQLError(payload) {
+  return new GraphQLError({
+    ...payload.errors[0],
+    data: payload.data,
+    errors: payload.errors,
+  });
+}
+
+export function normalizeGraphQLRequest(request) {
+  if (typeof request === "string") {
+    const query = request.trim();
+
+    if (!query) {
+      throw new TypeError(MISSING_QUERY_ERROR);
+    }
+
+    return {
+      query: isGraphQLDocument(query) ? query : `query { ${query} }`,
+    };
   }
 
-  async handle(response) {
-    switch (response.status) {
-      case 200:
-        return await response.json();
-      case 500:
-        throw new GraphQLError((await response.json())[0]);
-      default:
-        throw new Error(
-          `Unexpected [${response.status}] : ${response.statusText}}`,
-        );
+  const query = request?.query?.trim();
+  if (!query) {
+    throw new TypeError(MISSING_QUERY_ERROR);
+  }
+
+  return { ...request, query };
+}
+
+export function graphqlInit(payload, { headers, ...options } = {}) {
+  headers = new Headers(headers);
+  headers.set("Accept", "application/graphql-response+json, application/json");
+  headers.set("Content-Type", "application/json");
+
+  return {
+    ...options,
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  };
+}
+
+export async function parseGraphQLResponse(response) {
+  const body = await response.text();
+  let payload;
+
+  if (body) {
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      throw new Error("Invalid GraphQL response: non-JSON body");
     }
   }
+
+  if (payload?.errors?.length) {
+    throw createGraphQLError(payload);
+  }
+
+  if (response.status !== 200) {
+    throw new Error(`Unexpected [${response.status}] : ${response.statusText}`);
+  }
+
+  if (payload && "data" in payload) {
+    return payload.data;
+  }
+
+  throw new Error("Invalid GraphQL response: missing data/errors");
 }
