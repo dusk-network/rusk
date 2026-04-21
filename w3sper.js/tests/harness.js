@@ -43,8 +43,21 @@ import { Bookmark } from "@dusk/w3sper";
 
 const WASM_RELEASE_PATH =
   "../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm";
+export const DEFAULT_NETWORK = "http://localhost:8080/";
 
-export const NETWORK = "http://localhost:8080/";
+export function getNetwork() {
+  if (typeof Deno === "undefined") {
+    return DEFAULT_NETWORK;
+  }
+
+  try {
+    return Deno.env.get("NETWORK") || DEFAULT_NETWORK;
+  } catch {
+    return DEFAULT_NETWORK;
+  }
+}
+
+export const NETWORK = getNetwork();
 
 export function getLocalWasmBuffer() {
   if (typeof Deno !== "undefined") {

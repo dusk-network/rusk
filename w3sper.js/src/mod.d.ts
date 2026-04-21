@@ -326,6 +326,12 @@ export interface NetworkConnectOptions {
   signal?: AbortSignal;
 }
 
+export interface GraphQLRequest {
+  query: string;
+  variables?: JsonObject;
+  [key: string]: JsonValue | undefined;
+}
+
 /**
  * Main network client for interacting with a Rusk node.
  */
@@ -349,7 +355,10 @@ export class Network extends EventTarget {
   disconnect(): Promise<void>;
   execute(tx: BasicTransfer | BuiltTransaction): Promise<BuiltTransaction>;
   prove(circuits: Uint8Array): Promise<ArrayBuffer>;
-  query(gql?: string, options?: RequestInit): Promise<JsonObject>;
+  query(
+    gql: string | GraphQLRequest,
+    options?: RequestInit,
+  ): Promise<JsonObject>;
 
   readonly dataDrivers: dataDrivers.DataDriverRegistry;
   readonly node: NodeComponent;

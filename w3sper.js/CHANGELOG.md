@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add entrypoint type declarations and symbol documentation.
 - Parallelize Phoenix note ownership scanning during sync based on available logical cores.
+- Use the canonical `/graphql` endpoint for `Network.query()` requests instead
+  of the legacy RUES GraphQL route.
 
 ### Fixed
 
