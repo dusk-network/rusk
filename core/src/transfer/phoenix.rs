@@ -720,7 +720,7 @@ impl Payload {
         let chain_id = u8::from_reader(&mut buf)?;
         let tx_skeleton = parse_skeleton(read_len_prefixed(&mut buf)?)?;
         let fee = parse_fee(&mut buf)?;
-        let data = TransactionData::from_slice(&mut buf)?;
+        let data = TransactionData::from_slice(buf)?;
 
         Ok(Self {
             chain_id,

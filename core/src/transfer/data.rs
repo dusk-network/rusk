@@ -153,52 +153,53 @@ impl TransactionData {
     ///
     /// # Errors
     /// Errors when the bytes are not canonical.
-    pub fn from_slice(buf: &mut &[u8]) -> Result<Option<Self>, BytesError> {
+    pub fn from_slice(buf: &[u8]) -> Result<Option<Self>, BytesError> {
+        let mut buf = buf;
+
         // deserialize optional transaction data
-        let data = match u8::from_reader(buf)? {
-            Self::NONE_ID => None,
+        match u8::from_reader(&mut buf)? {
+            Self::NONE_ID => {
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+                Ok(None)
+            }
             Self::CALL_ID => {
                 let call = ContractCall::from_slice(buf)?;
-                *buf = &[];
-                Some(TransactionData::Call(call))
+                Ok(Some(TransactionData::Call(call)))
             }
             Self::DEPLOY_ID => {
                 let deploy = ContractDeploy::from_slice(buf)?;
-                *buf = &[];
-                Some(TransactionData::Deploy(deploy))
+                Ok(Some(TransactionData::Deploy(deploy)))
             }
             Self::MEMO_ID => {
                 // we only build for 64-bit so this truncation is impossible
                 #[allow(clippy::cast_possible_truncation)]
-                let size = u64::from_reader(buf)? as usize;
+                let size = u64::from_reader(&mut buf)? as usize;
 
                 if buf.len() != size || size > MAX_MEMO_SIZE {
                     return Err(BytesError::InvalidData);
                 }
 
                 let memo = buf[..size].to_vec();
-                *buf = &[];
-                Some(TransactionData::Memo(memo))
+                Ok(Some(TransactionData::Memo(memo)))
             }
             Self::BLOB_ID => {
-                let blobs_len = u8::from_reader(buf)?;
+                let blobs_len = u8::from_reader(&mut buf)?;
                 let mut blobs = Vec::with_capacity(blobs_len as usize);
                 for _ in 0..blobs_len {
-                    let blob = BlobData::from_buf(buf)?;
+                    let blob = BlobData::from_buf(&mut buf)?;
                     blobs.push(blob);
                 }
-                Some(TransactionData::Blob(blobs))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
 
-        if !buf.is_empty() {
-            return Err(BytesError::InvalidData);
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+
+                Ok(Some(TransactionData::Blob(blobs)))
+            }
+            _ => Err(BytesError::InvalidData),
         }
-
-        Ok(data)
     }
 }
 
