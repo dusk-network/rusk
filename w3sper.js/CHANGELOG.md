@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a `ContractDeployment` builder and `BookEntry.deploy()` API for programmatic smart contract deployment.
+
 ### Changed
 
 - Add entrypoint type declarations and symbol documentation.

@@ -332,7 +332,7 @@ export class AddressSyncer extends EventTarget {
       profiles.length > 0;
     const workerThresholdBytes = entrySize.item * this.#ownershipChunkSize;
     const wasmSource = new URL(
-      "/static/drivers/wallet-core-1.6.0.wasm",
+      "/static/drivers/wallet-core-1.6.1.wasm",
       this.#network.url,
     ).toString();
     const indexes = profiles.map((profile) => +profile);

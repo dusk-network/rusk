@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename dashboard action to `Import Different Wallet` and clarify that import replaces the current wallet (backup kept as `wallet.dat.old`)
 - Parallelize Phoenix note ownership scanning during sync across available logical cores
 - Increase default transfer gas limit to `50_000_000` and split built-in wallet actions into a `150_000_000` gas bucket for Boreas-era transaction costs
+- Delegate contract-id derivation to the canonical `dusk-core` deployment helper
 
 ### Fixed
 

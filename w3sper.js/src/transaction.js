@@ -13,10 +13,38 @@ export const TRANSFER =
 import { AddressSyncer } from "./network/syncer/address.js";
 import * as ProtocolDriver from "./protocol-driver/mod.js";
 import { Profile, ProfileGenerator } from "./profile.js";
+import * as base16 from "./encoders/b16.js";
 import * as base58 from "./encoders/b58.js";
 import { Gas } from "./gas.js";
 
 const _attributes = Symbol("builder::attributes");
+
+function bytesFrom(value, name, options = {}) {
+  const allowEmpty = options.allowEmpty === true;
+  let bytes;
+
+  if (value instanceof Uint8Array) {
+    bytes = value;
+  } else if (value instanceof ArrayBuffer) {
+    bytes = new Uint8Array(value);
+  } else if (ArrayBuffer.isView(value)) {
+    bytes = new Uint8Array(
+      value.buffer,
+      value.byteOffset,
+      value.byteLength,
+    );
+  } else if (Array.isArray(value)) {
+    bytes = new Uint8Array(value);
+  } else {
+    throw new TypeError(`${name} must be bytes`);
+  }
+
+  if (!allowEmpty && bytes.byteLength === 0) {
+    throw new TypeError(`${name} cannot be empty`);
+  }
+
+  return bytes.slice();
+}
 
 class BasicTransfer {
   [_attributes];
@@ -335,6 +363,189 @@ export class ShieldTransfer extends BasicTransfer {
       buffer,
       hash,
       nonce,
+    });
+  }
+}
+
+/**
+ * Builder for smart contract deployment transactions.
+ */
+export class ContractDeployment extends BasicTransfer {
+  constructor(from, bytecode, options = {}) {
+    super(from);
+
+    this[_attributes].bytecode = bytesFrom(bytecode, "bytecode");
+    this[_attributes].initArgs = bytesFrom(
+      options.initArgs ?? new Uint8Array(),
+      "initArgs",
+      { allowEmpty: true },
+    );
+    this[_attributes].deployNonce = BigInt(
+      options.deployNonce ?? options.nonce ?? 0n,
+    );
+    this[_attributes].payment = options.payment ?? "account";
+
+    if ("owner" in options) {
+      this.owner(options.owner);
+    }
+  }
+
+  initArgs(value) {
+    this[_attributes].initArgs = bytesFrom(value, "initArgs", {
+      allowEmpty: true,
+    });
+    return this;
+  }
+
+  nonce(value) {
+    return this.deployNonce(value);
+  }
+
+  deployNonce(value) {
+    this[_attributes].deployNonce = BigInt(value);
+    return this;
+  }
+
+  accountNonce(value) {
+    this[_attributes].accountNonce = BigInt(value);
+    return this;
+  }
+
+  chain(value) {
+    this[_attributes].chain = value;
+    return this;
+  }
+
+  owner(value) {
+    this[_attributes].owner = bytesFrom(value, "owner");
+    return this;
+  }
+
+  public() {
+    this[_attributes].payment = "account";
+    return this;
+  }
+
+  shielded() {
+    this[_attributes].payment = "address";
+    return this;
+  }
+
+  #payload(sender) {
+    const { bytecode, deployNonce, initArgs, owner } = this.attributes;
+    return Object.freeze({
+      bytecode,
+      owner: owner ?? sender.account.valueOf(),
+      initArgs,
+      deployNonce,
+    });
+  }
+
+  async #contractId(payload) {
+    const bytes = await ProtocolDriver.contractId(payload);
+    return base16.encode(bytes);
+  }
+
+  async build(network) {
+    return this.attributes.payment === "address"
+      ? await this.#buildPhoenix(network)
+      : await this.#buildMoonlight(network);
+  }
+
+  async #buildMoonlight(network) {
+    const sender = this.bookentry.profile;
+    const { attributes } = this;
+    const { gas } = attributes;
+    const payload = this.#payload(sender);
+
+    let chainId;
+    if (!isNaN(Number(attributes.chain))) {
+      chainId = Number(attributes.chain);
+    } else if (network) {
+      ({ chainId } = await network.node.info);
+    } else {
+      throw new Error("Chain ID is required.");
+    }
+
+    let nonce;
+    if ("accountNonce" in attributes) {
+      nonce = attributes.accountNonce;
+    } else if (typeof this.bookentry?.info?.balance === "function") {
+      ({ nonce } = await this.bookentry.info.balance("account"));
+    } else {
+      throw new Error("Account nonce is required.");
+    }
+
+    nonce += 1n;
+
+    const [buffer, hash] = await ProtocolDriver.moonlight({
+      sender,
+      receiver: null,
+      transfer_value: 0n,
+      deposit: 0n,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      nonce,
+      chainId,
+      data: payload,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nonce,
+      contractId: await this.#contractId(payload),
+    });
+  }
+
+  async #buildPhoenix(network) {
+    if (!network) {
+      throw new Error("A network is required for shielded deployments.");
+    }
+
+    const sender = this.bookentry.profile;
+    const { attributes } = this;
+    const { gas } = attributes;
+    const payload = this.#payload(sender);
+    const { bookkeeper } = this.bookentry;
+
+    if (!bookkeeper) {
+      throw new Error("A Bookkeeper is required for shielded deployments.");
+    }
+
+    const picked = await bookkeeper.pick(sender.address, gas.total);
+    const syncer = new AddressSyncer(network);
+    const openings = (await syncer.openings(picked)).map((opening) => {
+      return new Uint8Array(opening.slice(0));
+    });
+    const root = await syncer.root;
+    const inputs = picked.values();
+    const nullifiers = [...picked.keys()];
+    const { chainId } = await network.node.info;
+
+    const [tx, circuits] = await ProtocolDriver.phoenix({
+      sender,
+      receiver: sender.address,
+      inputs,
+      openings,
+      root,
+      transfer_value: 0n,
+      obfuscated_transaction: false,
+      deposit: 0n,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      chainId,
+      data: payload,
+    });
+
+    const proof = await network.prove(circuits);
+    const [buffer, hash] = await ProtocolDriver.intoProven(tx, proof);
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nullifiers,
+      contractId: await this.#contractId(payload),
     });
   }
 }

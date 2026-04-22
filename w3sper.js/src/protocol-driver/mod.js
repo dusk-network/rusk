@@ -447,9 +447,61 @@ export const intoProven = (tx, proof) =>
     return [buffer, hash];
   })();
 
+export const contractId = (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, contract_id },
+    { memcpy },
+  ) {
+    const ptr = Object.create(null);
+
+    const bytecode = toUint8Array(info.bytecode);
+    if (!bytecode) {
+      throw new TypeError("Contract bytecode is required");
+    }
+    await setPointers(
+      ptr,
+      "bytecode",
+      "bytecode_len",
+      bytecode,
+      malloc,
+      memcpy,
+    );
+
+    const owner = toUint8Array(info.owner);
+    if (!owner) {
+      throw new TypeError("Contract owner is required");
+    }
+    await setPointers(ptr, "owner", "owner_len", owner, malloc, memcpy);
+
+    const deployNonce = new Uint8Array(8);
+    new DataView(deployNonce.buffer).setBigUint64(
+      0,
+      BigInt(info.deployNonce ?? info.nonce ?? 0n),
+      true,
+    );
+    ptr.deploy_nonce = await malloc(8);
+    await memcpy(ptr.deploy_nonce, deployNonce);
+
+    const out = await malloc(32);
+    const code = await contract_id(
+      ptr.bytecode_len,
+      ptr.bytecode,
+      ptr.owner_len,
+      ptr.owner,
+      ptr.deploy_nonce,
+      out,
+    );
+    if (code > 0) throw DriverError.from(code);
+
+    return await memcpy(null, out, 32);
+  })();
+
 export const phoenix = (info) =>
   protocolDriverModule.task(
-    async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
+    async function (
+      { malloc, phoenix, create_tx_data, create_deploy_tx_data },
+      { memcpy },
+    ) {
       const ptr = Object.create(null);
 
       const seed = new Uint8Array(await info.sender.seed);
@@ -504,7 +556,13 @@ export const phoenix = (info) =>
       await memcpy(ptr.gas_price, gas_price);
 
       const data = info.data
-        ? await serializePayload(info.data, malloc, memcpy, create_tx_data)
+        ? await serializePayload(
+          info.data,
+          malloc,
+          memcpy,
+          create_tx_data,
+          create_deploy_tx_data,
+        )
         : null;
 
       if (data) {
@@ -568,7 +626,10 @@ export const phoenix = (info) =>
 
 export const moonlight = (info) =>
   protocolDriverModule.task(
-    async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
+    async function (
+      { malloc, moonlight, create_tx_data, create_deploy_tx_data },
+      { memcpy },
+    ) {
       const ptr = Object.create(null);
 
       const seed = new Uint8Array(await info.sender.seed);
@@ -577,9 +638,13 @@ export const moonlight = (info) =>
       await memcpy(ptr.seed, seed, 64);
 
       const sender_index = +info.sender;
-      const receiver = info.receiver.valueOf();
-      ptr.receiver = await malloc(receiver.byteLength);
-      await memcpy(ptr.receiver, receiver);
+      const receiver = info.receiver?.valueOf?.() ?? null;
+      if (receiver) {
+        ptr.receiver = await malloc(receiver.byteLength);
+        await memcpy(ptr.receiver, receiver);
+      } else {
+        ptr.receiver = null;
+      }
 
       const transfer_value = new Uint8Array(8);
       new DataView(transfer_value.buffer).setBigUint64(
@@ -614,7 +679,13 @@ export const moonlight = (info) =>
       let hash = await malloc(64);
 
       const data = info.data
-        ? await serializePayload(info.data, malloc, memcpy, create_tx_data)
+        ? await serializePayload(
+          info.data,
+          malloc,
+          memcpy,
+          create_tx_data,
+          create_deploy_tx_data,
+        )
         : null;
 
       if (data) {
@@ -1063,15 +1134,18 @@ export const withdraw = (info) =>
  * @param {string|ArrayBuffer|Uint8Array} input - Input to convert
  * @returns {Uint8Array|null} Converted Uint8Array or null for invalid input
  */
-function toUint8Array(input) {
+function toUint8Array(input, options = {}) {
+  const allowEmpty = options.allowEmpty === true;
+
   if (typeof input === "string") {
-    return new TextEncoder().encode(input);
+    const buffer = new TextEncoder().encode(input);
+    return buffer.length || allowEmpty ? buffer : null;
   }
   if (input instanceof ArrayBuffer) {
-    return input.byteLength ? new Uint8Array(input) : null;
+    return input.byteLength || allowEmpty ? new Uint8Array(input) : null;
   }
   if (input instanceof Uint8Array) {
-    return input.length ? input : null;
+    return input.length || allowEmpty ? input : null;
   }
   return null;
 }
@@ -1094,9 +1168,11 @@ async function setPointers(
   malloc,
   memcpy,
 ) {
-  ptr_obj[data_ptr_name] = await malloc(buffer.byteLength);
   const len = buffer.byteLength;
-  await memcpy(ptr_obj[data_ptr_name], buffer);
+  ptr_obj[data_ptr_name] = await malloc(Math.max(len, 1));
+  if (len > 0) {
+    await memcpy(ptr_obj[data_ptr_name], buffer.slice());
+  }
 
   const len_buf = new Uint8Array(4);
   new DataView(len_buf.buffer).setUint32(0, len, true);
@@ -1109,15 +1185,70 @@ async function setPointers(
  * @param {any} payload - object containing payload, e.g. memo or contract call data
  * @param {function} malloc - memory allocating function
  * @param {function} memcpy - memory copying function
- * @param {function} create_tx_data - low level function performing the actual serialization
+ * @param {function} create_tx_data - low level function performing call/memo serialization
+ * @param {function} create_deploy_tx_data - low level function performing deploy serialization
  * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Buffer containing serialized data
  */
-async function serializePayload(payload, malloc, memcpy, create_tx_data) {
+async function serializePayload(
+  payload,
+  malloc,
+  memcpy,
+  create_tx_data,
+  create_deploy_tx_data,
+) {
   const ptr = Object.create(null);
   let code;
   let ret;
 
-  if ("memo" in payload) {
+  if ("bytecode" in payload) {
+    const bytecode = toUint8Array(payload.bytecode);
+    if (!bytecode) return null;
+    await setPointers(
+      ptr,
+      "bytecode",
+      "bytecode_len",
+      bytecode,
+      malloc,
+      memcpy,
+    );
+
+    const owner = toUint8Array(payload.owner);
+    if (!owner) return null;
+    await setPointers(ptr, "owner", "owner_len", owner, malloc, memcpy);
+
+    const initArgs = toUint8Array(payload.initArgs ?? new Uint8Array(), {
+      allowEmpty: true,
+    });
+    await setPointers(
+      ptr,
+      "init_args",
+      "init_args_len",
+      initArgs,
+      malloc,
+      memcpy,
+    );
+
+    const deployNonce = new Uint8Array(8);
+    new DataView(deployNonce.buffer).setBigUint64(
+      0,
+      BigInt(payload.deployNonce ?? payload.nonce ?? 0n),
+      true,
+    );
+    ptr.deploy_nonce = await malloc(8);
+    await memcpy(ptr.deploy_nonce, deployNonce);
+
+    ret = await malloc(4);
+    code = await create_deploy_tx_data(
+      ptr.bytecode_len,
+      ptr.bytecode,
+      ptr.owner_len,
+      ptr.owner,
+      ptr.init_args_len,
+      ptr.init_args,
+      ptr.deploy_nonce,
+      ret,
+    );
+  } else if ("memo" in payload) {
     const buffer = toUint8Array(payload.memo);
     if (!buffer) return null;
     await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);

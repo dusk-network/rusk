@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
 use dusk_core::transfer::Transaction;
 use dusk_core::transfer::data::{
     BlobData, ContractBytecode, ContractCall, ContractDeploy, MAX_MEMO_SIZE,
-    TransactionData,
+    TransactionData, gen_contract_id,
 };
 use dusk_core::transfer::phoenix::{
     Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
@@ -375,5 +376,27 @@ fn blob_check_rejects_overflowing_blob_charge() {
     assert_eq!(
         tx.blob_check(u64::MAX),
         Err(TxPreconditionError::BlobChargeOverflow)
+    );
+}
+
+#[test]
+fn contract_deploy_helpers_hash_bytecode_and_derive_contract_id() {
+    let bytes = vec![1u8, 2, 3, 4];
+    let owner = vec![9u8; 32];
+    let init_args = Some(vec![7u8, 8, 9]);
+    let nonce = 42;
+
+    let deploy =
+        ContractDeploy::new(bytes.clone(), owner.clone(), init_args, nonce);
+
+    assert_eq!(deploy.bytecode, ContractBytecode::new(bytes.clone()));
+    assert_eq!(deploy.contract_id(), gen_contract_id(&bytes, nonce, &owner));
+    assert_eq!(
+        deploy.contract_id(),
+        ContractId::from_bytes([
+            27, 203, 22, 10, 138, 57, 98, 26, 119, 49, 68, 41, 17, 95, 59, 213,
+            46, 165, 171, 17, 51, 48, 3, 203, 136, 131, 168, 110, 5, 168, 54,
+            123,
+        ]),
     );
 }

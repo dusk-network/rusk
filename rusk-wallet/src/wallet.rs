@@ -21,6 +21,7 @@ use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
 };
 use dusk_core::stake::StakeData;
+use dusk_core::transfer::data::gen_contract_id;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
@@ -703,8 +704,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Generate a contract id given bytes and nonce
     ///
     /// # Errors
-    /// This method will error if the hash maps to an invalid contract-id, this
-    /// would mean there is a bug in the `blake2b_simd` hasher.
+    /// This method will error if the wallet cannot derive the owner public key
+    /// for the requested profile.
     pub fn get_contract_id(
         &self,
         profile_idx: u8,
@@ -712,15 +713,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         nonce: u64,
     ) -> Result<[u8; CONTRACT_ID_BYTES], Error> {
         let owner = self.public_key(profile_idx)?.to_bytes();
-
-        let mut hasher = blake2b_simd::Params::new()
-            .hash_length(CONTRACT_ID_BYTES)
-            .to_state();
-        hasher.update(bytes);
-        hasher.update(&nonce.to_le_bytes()[..]);
-        hasher.update(owner.as_ref());
-        hasher
-            .finalize()
+        gen_contract_id(bytes, nonce, owner)
             .as_bytes()
             .try_into()
             .map_err(|_| Error::InvalidContractId)

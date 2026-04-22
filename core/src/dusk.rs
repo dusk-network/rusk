@@ -39,6 +39,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::float_cmp)]
     fn from_to_dusk() {
         let value = 5f64;
         let dusk_value = dusk(value);

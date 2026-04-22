@@ -1748,6 +1748,8 @@ dependencies = [
  "ark-groth16",
  "ark-relations",
  "ark-serialize",
+ "blake2b_simd",
+ "blake3",
  "bls12_381-bls",
  "bytecheck",
  "c-kzg",
@@ -2079,7 +2081,6 @@ dependencies = [
 name = "dusk-wallet-core"
 version = "1.6.0"
 dependencies = [
- "blake3",
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
@@ -4810,7 +4811,6 @@ dependencies = [
  "aes-gcm",
  "anyhow",
  "base64",
- "blake2b_simd",
  "blake3",
  "block-modes",
  "bs58",

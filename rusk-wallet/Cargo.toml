@@ -45,7 +45,6 @@ flume = { workspace = true }
 base64 = { workspace = true }
 reqwest = { workspace = true, features = ["stream"] }
 dusk-bytes = { workspace = true }
-blake2b_simd = { workspace = true }
 node-data = { workspace = true }
 rayon = { workspace = true }
 

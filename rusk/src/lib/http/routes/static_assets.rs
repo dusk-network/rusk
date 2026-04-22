@@ -41,6 +41,9 @@ async fn wasm_driver_route(
         "wallet-core-1.6.0.wasm" => {
             Some(include_bytes!("../../../assets/wallet_core-1.6.0.wasm"))
         }
+        "wallet-core-1.6.1.wasm" => {
+            Some(include_bytes!("../../../assets/wallet_core-1.6.1.wasm"))
+        }
         _ => None,
     };
 

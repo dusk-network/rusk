@@ -7,11 +7,10 @@
 mod config;
 pub mod feature;
 
-use blake2b_simd::Params;
 pub use config::Config;
-use dusk_core::abi::{CONTRACT_ID_BYTES, ContractError, ContractId, Metadata};
+use dusk_core::abi::{ContractError, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
-use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::data::{ContractBytecode, gen_contract_id};
 use dusk_core::transfer::withdraw::{Withdraw, WithdrawReplayToken};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use piecrust::{CallReceipt, Session};
@@ -367,44 +366,12 @@ fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
     bytecode.hash == computed
 }
 
-/// Generates a unique identifier for a smart contract.
-///
-/// # Arguments
-/// * 'bytes` - The contract bytecode.
-/// * `nonce` - A unique nonce.
-/// * `owner` - The contract-owner.
-///
-/// # Returns
-/// A unique [`ContractId`].
-///
-/// # Panics
-/// Panics if [blake2b-hasher] doesn't produce a [`CONTRACT_ID_BYTES`]
-/// bytes long hash.
-///
-/// [blake2b-hasher]: [`blake2b_simd::Params.finalize`]
-pub fn gen_contract_id(
-    bytes: impl AsRef<[u8]>,
-    nonce: u64,
-    owner: impl AsRef<[u8]>,
-) -> ContractId {
-    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
-    hasher.update(bytes.as_ref());
-    hasher.update(&nonce.to_le_bytes()[..]);
-    hasher.update(owner.as_ref());
-    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
-        .finalize()
-        .as_bytes()
-        .try_into()
-        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
-    ContractId::from_bytes(hash_bytes)
-}
-
 #[cfg(test)]
 mod tests {
     use alloc::vec;
 
     use dusk_core::BlsScalar;
-    use dusk_core::abi::Event;
+    use dusk_core::abi::{ContractId, Event};
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
     // Dev-dependencies only used in integration tests trigger the

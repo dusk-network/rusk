@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raise the default PLONK, Groth16, and BLS memoization cache sizes from `512` to `2048`.
 - Add deterministic Boreas host-query pricing, including size-based pricing for `hash`, `keccak256`, and `sha256`, and key-count pricing for `verify_bls_multisig`.
 - Split host-query internals into `host_queries/` modules and make memoized cache keys semantics-aware through a unified execution-policy context, preventing stale cache reuse across future fork or verifier changes.
+- Delegate contract-id derivation to the canonical `dusk-core` deployment helper
 
 ## [1.6.0] - 2026-02-27
 

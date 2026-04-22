@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
   decoding.
 - Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.
+- Add static wallet-core driver endpoint `/static/drivers/wallet-core-1.6.1.wasm`.
 
 ### Changed
 

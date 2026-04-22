@@ -488,6 +488,10 @@ export interface BookEntry {
   readonly bookkeeper: Bookkeeper;
   readonly info: BookEntryInfo;
   transfer(amount: bigint): Transfer;
+  deploy(
+    bytecode: Uint8Array | ArrayBuffer | ArrayLike<number>,
+    options?: ContractDeploymentOptions,
+  ): ContractDeployment;
   unshield(amount: bigint): UnshieldTransfer;
   shield(amount: bigint): ShieldTransfer;
   stake(amount: bigint): StakeTransfer;
@@ -547,9 +551,19 @@ export type NullifierTransactionResult = Readonly<{
   nullifiers: Uint8Array[];
 }>;
 
+export type ContractDeploymentResult =
+  & (
+    | NonceTransactionResult
+    | NullifierTransactionResult
+  )
+  & Readonly<{
+    contractId: string;
+  }>;
+
 export type BuiltTransaction =
   | NonceTransactionResult
-  | NullifierTransactionResult;
+  | NullifierTransactionResult
+  | ContractDeploymentResult;
 
 export abstract class BasicTransfer {
   constructor(from: BookEntry | Profile);
@@ -569,6 +583,34 @@ export class Transfer extends BasicTransfer {
   to(
     value: string | AccountKey | AddressKey,
   ): AccountTransfer | AddressTransfer;
+}
+
+export interface ContractDeploymentOptions {
+  initArgs?: Uint8Array | ArrayBuffer | ArrayLike<number>;
+  nonce?: bigint | number;
+  deployNonce?: bigint | number;
+  owner?: Uint8Array | ArrayBuffer | ArrayLike<number>;
+  payment?: "account" | "address";
+}
+
+/**
+ * Smart contract deployment builder.
+ */
+export class ContractDeployment extends BasicTransfer {
+  constructor(
+    from: BookEntry | Profile,
+    bytecode: Uint8Array | ArrayBuffer | ArrayLike<number>,
+    options?: ContractDeploymentOptions,
+  );
+  initArgs(value: Uint8Array | ArrayBuffer | ArrayLike<number>): this;
+  nonce(value: bigint | number): this;
+  deployNonce(value: bigint | number): this;
+  accountNonce(value: bigint | number): this;
+  chain(value: number | bigint): this;
+  owner(value: Uint8Array | ArrayBuffer | ArrayLike<number>): this;
+  public(): this;
+  shielded(): this;
+  build(network?: Network): Promise<ContractDeploymentResult>;
 }
 
 /**

@@ -15,7 +15,7 @@ use dusk_core::signatures::bls::{
 };
 use dusk_core::stake::{STAKE_CONTRACT, Stake, Withdraw as StakeWithdraw};
 use dusk_core::transfer::data::{
-    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+    ContractCall, ContractDeploy, TransactionData,
 };
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::{
@@ -629,16 +629,12 @@ pub fn phoenix_deployment<R: RngCore + CryptoRng, P: Prove>(
         })
         .collect();
 
-    let bytes = bytecode.into();
-    let deploy = ContractDeploy {
-        bytecode: ContractBytecode {
-            hash: blake3::hash(&bytes).into(),
-            bytes,
-        },
-        owner: owner.to_bytes().to_vec(),
-        init_args: Some(init_args),
+    let deploy = ContractDeploy::new(
+        bytecode,
+        owner.to_bytes().to_vec(),
+        Some(init_args),
         nonce,
-    };
+    );
 
     phoenix(
         rng,
@@ -682,16 +678,12 @@ pub fn moonlight_deployment(
     let transfer_value = 0;
     let deposit = 0;
 
-    let bytes = bytecode.into();
-    let deploy = ContractDeploy {
-        bytecode: ContractBytecode {
-            hash: blake3::hash(&bytes).into(),
-            bytes,
-        },
-        owner: owner.to_bytes().to_vec(),
-        init_args: Some(init_args),
-        nonce: deploy_nonce,
-    };
+    let deploy = ContractDeploy::new(
+        bytecode,
+        owner.to_bytes().to_vec(),
+        Some(init_args),
+        deploy_nonce,
+    );
 
     moonlight(
         moonlight_sender_sk,
