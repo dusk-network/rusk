@@ -169,7 +169,7 @@ fn map_check_tx_error(tx_id: String, error: TxAcceptanceError) -> ChainError {
         | TxAcceptanceError::MaxMoonlightFutureNoncePerAccountExceeded(_)
         | TxAcceptanceError::GasPriceTooLow(_)
         | TxAcceptanceError::GasLimitTooLow(_)
-        | TxAcceptanceError::InvalidIngressFormat { .. }
+        | TxAcceptanceError::UnsupportedIngressFormat { .. }
         | TxAcceptanceError::TooLarge
         | TxAcceptanceError::MaxSizeExceeded(_) => {
             warn!("{err_msg}");
@@ -820,13 +820,12 @@ mod tests {
     }
 
     #[test]
-    fn preverify_invalid_ingress_format_maps_to_invalid_input() {
+    fn preverify_unsupported_ingress_format_maps_to_invalid_input() {
         let err = map_check_tx_error(
             "deadbeef".to_string(),
-            TxAcceptanceError::InvalidIngressFormat {
+            TxAcceptanceError::UnsupportedIngressFormat {
                 actual: TransactionFormat::PreAegis,
-                expected: TransactionFormat::Aegis,
-                block_height: 42,
+                minimum: TransactionFormat::Aegis,
             },
         );
         assert!(matches!(err, ChainError::InvalidInput(_)));
