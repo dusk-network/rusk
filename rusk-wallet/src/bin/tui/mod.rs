@@ -14,7 +14,7 @@ mod theme;
 use std::io::{self, stdout};
 use std::time::Duration;
 
-use bip39::{Language, Mnemonic};
+use bip39::{Language, Mnemonic, MnemonicType};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::execute;
 use crossterm::terminal::{
@@ -48,6 +48,7 @@ const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
 const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
 const STAKE_INFO_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_PASSWORD_ATTEMPTS: u8 = 3;
+const PRE_WALLET_TICK_RATE: Duration = Duration::from_millis(100);
 
 /// Signals from `run_inner` about why it exited.
 enum ExitReason {
@@ -61,6 +62,70 @@ enum ScreenFlow<R> {
     Done(R),
     Cancel,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WalletSetupChoice {
+    Create,
+    Restore,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WalletSetupAction {
+    Continue,
+    Cancel,
+    Select(WalletSetupChoice),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum GeneratedMnemonicVerification {
+    Match,
+    Invalid,
+    Mismatch,
+}
+
+#[derive(Clone, Copy)]
+struct MnemonicEntryScreenConfig {
+    right_title: &'static str,
+    heading: &'static str,
+    helper: Option<&'static str>,
+    enter_hint: &'static str,
+    escape_hint: &'static str,
+    mask_input: bool,
+    content_height: u16,
+    width_pct: u16,
+}
+
+struct MnemonicEntryState {
+    input: Zeroizing<String>,
+    cursor: usize,
+    error: Option<String>,
+}
+
+const RESTORE_MNEMONIC_SCREEN: MnemonicEntryScreenConfig =
+    MnemonicEntryScreenConfig {
+        right_title: "Restore",
+        heading: "Enter your 12-word mnemonic phrase:",
+        helper: None,
+        enter_hint: "Submit",
+        escape_hint: "Back",
+        mask_input: true,
+        content_height: 10,
+        width_pct: 80,
+    };
+
+const VERIFY_GENERATED_MNEMONIC_SCREEN: MnemonicEntryScreenConfig =
+    MnemonicEntryScreenConfig {
+        right_title: "Verify Backup",
+        heading: "Re-enter the generated mnemonic phrase exactly as shown:",
+        helper: Some(
+            "Use the same single-string format with spaces between words.",
+        ),
+        enter_hint: "Continue",
+        escape_hint: "Back",
+        mask_input: false,
+        content_height: 11,
+        width_pct: 84,
+    };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum SyncStage {
@@ -290,15 +355,171 @@ fn should_reset_cache_on_connect_error(err: &WalletError) -> bool {
     }
 }
 
+fn wallet_setup_action_for_key(key: KeyCode) -> WalletSetupAction {
+    match key {
+        KeyCode::Enter => WalletSetupAction::Select(WalletSetupChoice::Create),
+        KeyCode::Esc => WalletSetupAction::Cancel,
+        KeyCode::Char(c) => match c.to_ascii_lowercase() {
+            'c' => WalletSetupAction::Select(WalletSetupChoice::Create),
+            'r' => WalletSetupAction::Select(WalletSetupChoice::Restore),
+            'q' => WalletSetupAction::Cancel,
+            _ => WalletSetupAction::Continue,
+        },
+        _ => WalletSetupAction::Continue,
+    }
+}
+
+fn verify_generated_mnemonic_input(
+    input: &str,
+    expected_phrase: &str,
+) -> GeneratedMnemonicVerification {
+    match Mnemonic::from_phrase(input.trim(), Language::English) {
+        Ok(mnemonic) if mnemonic.phrase() == expected_phrase => {
+            GeneratedMnemonicVerification::Match
+        }
+        Ok(_) => GeneratedMnemonicVerification::Mismatch,
+        Err(_) => GeneratedMnemonicVerification::Invalid,
+    }
+}
+
+fn handle_mnemonic_char_input(state: &mut MnemonicEntryState, c: char) {
+    if !c.is_ascii() {
+        state.error =
+            Some("Mnemonic phrases only accept ASCII characters.".into());
+        return;
+    }
+
+    state.input.insert(state.cursor, c);
+    state.cursor += c.len_utf8();
+    state.error = None;
+}
+
+fn run_mnemonic_entry<R, Validate>(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    screen: MnemonicEntryScreenConfig,
+    mut validate: Validate,
+) -> anyhow::Result<Option<R>>
+where
+    Validate: FnMut(&mut MnemonicEntryState) -> anyhow::Result<ScreenFlow<R>>,
+{
+    run_screen(
+        terminal,
+        MnemonicEntryState {
+            input: Zeroizing::new(String::new()),
+            cursor: 0,
+            error: None,
+        },
+        PRE_WALLET_TICK_RATE,
+        |frame, s| {
+            render::render_mnemonic_entry_screen(
+                frame,
+                &render::MnemonicEntryView {
+                    screen: &screen,
+                    input: &s.input,
+                    cursor: s.cursor,
+                    error: s.error.as_deref(),
+                },
+            );
+        },
+        |s, key| match key.code {
+            KeyCode::Enter => validate(s),
+            KeyCode::Esc => {
+                s.input.zeroize();
+                Ok(ScreenFlow::Cancel)
+            }
+            KeyCode::Char(c) => {
+                handle_mnemonic_char_input(s, c);
+                Ok(ScreenFlow::Continue)
+            }
+            KeyCode::Backspace => {
+                if s.cursor > 0 {
+                    s.cursor -= 1;
+                    s.input.remove(s.cursor);
+                    s.error = None;
+                }
+                Ok(ScreenFlow::Continue)
+            }
+            KeyCode::Left => {
+                s.cursor = s.cursor.saturating_sub(1);
+                Ok(ScreenFlow::Continue)
+            }
+            KeyCode::Right => {
+                if s.cursor < s.input.len() {
+                    s.cursor += 1;
+                }
+                Ok(ScreenFlow::Continue)
+            }
+            KeyCode::Home => {
+                s.cursor = 0;
+                Ok(ScreenFlow::Continue)
+            }
+            KeyCode::End => {
+                s.cursor = s.input.len();
+                Ok(ScreenFlow::Continue)
+            }
+            _ => Ok(ScreenFlow::Continue),
+        },
+    )
+}
+
+fn validate_restore_mnemonic_entry(
+    state: &mut MnemonicEntryState,
+) -> anyhow::Result<ScreenFlow<Zeroizing<String>>> {
+    match Mnemonic::from_phrase(state.input.trim(), Language::English) {
+        Ok(mnemonic) => {
+            let validated = Zeroizing::new(mnemonic.phrase().to_string());
+            state.input.zeroize();
+            Ok(ScreenFlow::Done(validated))
+        }
+        Err(_) => {
+            state.error = Some(
+                "Invalid mnemonic. Enter 12 valid BIP39 words separated by \
+                 spaces."
+                    .into(),
+            );
+            Ok(ScreenFlow::Continue)
+        }
+    }
+}
+
+fn validate_generated_mnemonic_entry(
+    state: &mut MnemonicEntryState,
+    expected_phrase: &str,
+) -> anyhow::Result<ScreenFlow<()>> {
+    match verify_generated_mnemonic_input(state.input.as_str(), expected_phrase)
+    {
+        GeneratedMnemonicVerification::Match => {
+            state.input.zeroize();
+            Ok(ScreenFlow::Done(()))
+        }
+        GeneratedMnemonicVerification::Invalid => {
+            state.error = Some(
+                "Invalid mnemonic. Enter the generated 12-word phrase \
+                 exactly as shown."
+                    .into(),
+            );
+            Ok(ScreenFlow::Continue)
+        }
+        GeneratedMnemonicVerification::Mismatch => {
+            state.error = Some(
+                "Mnemonic does not match the generated phrase. Please try \
+                 again."
+                    .into(),
+            );
+            Ok(ScreenFlow::Continue)
+        }
+    }
+}
+
 /// Inner run function. Separated so terminal cleanup always happens.
 async fn run_inner(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     wallet_path: &WalletPath,
     settings: &Settings,
 ) -> anyhow::Result<ExitReason> {
-    // If no wallet file exists, offer to restore from mnemonic
+    // If no wallet file exists, offer to create or restore a wallet
     let mut wallet = if !wallet_path.inner().exists() {
-        match restore_wallet_flow(terminal, wallet_path, false)? {
+        match wallet_setup_flow(terminal, wallet_path, false)? {
             Some(w) => w,
             None => return Ok(ExitReason::Quit), // User cancelled
         }
@@ -531,7 +752,7 @@ async fn run_inner(
                     }
                 }
                 AppAction::ImportWallet => {
-                    match restore_wallet_flow(terminal, wallet_path, true)? {
+                    match wallet_setup_flow(terminal, wallet_path, true)? {
                         Some(_) => {
                             app.wallet.close();
                             clear_wallet_cache(wallet_path)?;
@@ -806,8 +1027,6 @@ fn enter_password(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     initial_error: Option<&str>,
 ) -> anyhow::Result<Option<String>> {
-    let tick_rate = Duration::from_millis(100);
-
     struct State {
         password: Zeroizing<String>,
         error: Option<String>,
@@ -819,7 +1038,7 @@ fn enter_password(
             password: Zeroizing::new(String::new()),
             error: initial_error.map(String::from),
         },
-        tick_rate,
+        PRE_WALLET_TICK_RATE,
         |frame, s| {
             render::render_password_screen(
                 frame,
@@ -850,78 +1069,149 @@ fn enter_password(
     )
 }
 
-/// Full restore-from-mnemonic flow for creating/replacing wallet data.
+/// Full create/restore flow for creating/replacing wallet data.
 /// Returns the created wallet, or None if the user cancelled.
-fn restore_wallet_flow(
+fn wallet_setup_flow(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     wallet_path: &WalletPath,
     replacing_existing_wallet: bool,
 ) -> anyhow::Result<Option<Wallet<WalletFile>>> {
-    // Step 1: Show welcome screen, wait for user to proceed or quit
-    if !enter_welcome(terminal, replacing_existing_wallet)? {
-        return Ok(None);
-    }
+    // Step 1: Show setup screen, wait for user to proceed or quit
+    let setup_choice =
+        match enter_wallet_setup_choice(terminal, replacing_existing_wallet)? {
+            Some(choice) => choice,
+            None => return Ok(None),
+        };
 
-    // Step 2: Get mnemonic phrase (with BIP39 validation)
-    let mut phrase = match enter_mnemonic(terminal)? {
-        Some(p) => p,
-        None => return Ok(None),
+    // Step 2: Create or enter mnemonic phrase
+    let mut phrase = match setup_choice {
+        WalletSetupChoice::Create => {
+            match enter_generated_mnemonic(terminal)? {
+                Some(phrase) => phrase,
+                None => return Ok(None),
+            }
+        }
+        WalletSetupChoice::Restore => match enter_mnemonic(terminal)? {
+            Some(p) => p,
+            None => return Ok(None),
+        },
     };
 
     // Step 3: Get new password (with confirmation)
-    let mut password = Zeroizing::new(match enter_new_password(terminal)? {
-        Some(p) => p,
-        None => return Ok(None),
-    });
+    let mut password = match enter_new_password(terminal)? {
+        Some(password) => Zeroizing::new(password),
+        None => {
+            phrase.zeroize();
+            return Ok(None);
+        }
+    };
 
     // Step 4: Create the wallet
+    let wallet = create_wallet_from_phrase(
+        wallet_path,
+        replacing_existing_wallet,
+        phrase.as_str(),
+        password.as_str(),
+    );
+    phrase.zeroize();
+    password.zeroize();
+
+    Ok(Some(wallet?))
+}
+
+fn enter_generated_mnemonic(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+) -> anyhow::Result<Option<Zeroizing<String>>> {
+    let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
+    let mut phrase = Zeroizing::new(mnemonic.phrase().to_string());
+
+    loop {
+        if !confirm_generated_mnemonic_backup(terminal, &phrase)? {
+            phrase.zeroize();
+            return Ok(None);
+        }
+
+        if verify_generated_mnemonic(terminal, &phrase)? {
+            return Ok(Some(phrase));
+        }
+    }
+}
+
+fn create_wallet_from_phrase(
+    wallet_path: &WalletPath,
+    replacing_existing_wallet: bool,
+    phrase: &str,
+    password: &str,
+) -> anyhow::Result<Wallet<WalletFile>> {
     let salt = gen_salt();
     let iv = gen_iv();
     let file_version = dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION);
-    let key = prompt::derive_key(file_version, &password, Some(&salt))?;
+    let key = prompt::derive_key(file_version, password, Some(&salt))?;
 
-    let mut wallet: Wallet<WalletFile> = match Wallet::new(phrase.as_str()) {
-        Ok(wallet) => wallet,
-        Err(err) => {
-            phrase.zeroize();
-            return Err(err.into());
-        }
-    };
-    phrase.zeroize();
+    let mut wallet = Wallet::new(phrase)?;
     if replacing_existing_wallet {
         backup_wallet(wallet_path)?;
     }
-    wallet.save_to(WalletFile {
-        path: wallet_path.clone(),
-        aes_key: key,
-        salt: Some(salt),
-        iv: Some(iv),
-    })?;
-    password.zeroize();
+    wallet
+        .save_to(WalletFile {
+            path: wallet_path.clone(),
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })
+        .inspect_err(|_| wallet.close())?;
 
-    Ok(Some(wallet))
+    Ok(wallet)
 }
 
-/// Show the restore/import welcome screen.
-/// Returns true if the user wants to proceed, false to quit.
-fn enter_welcome(
+/// Show the create/restore setup screen.
+/// Returns the selected setup flow, or None if the user cancelled.
+fn enter_wallet_setup_choice(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     replacing_existing_wallet: bool,
-) -> anyhow::Result<bool> {
-    let tick_rate = Duration::from_millis(100);
+) -> anyhow::Result<Option<WalletSetupChoice>> {
+    run_screen(
+        terminal,
+        (),
+        PRE_WALLET_TICK_RATE,
+        |frame, _| {
+            render::render_wallet_setup_screen(frame, replacing_existing_wallet)
+        },
+        |_, key| match wallet_setup_action_for_key(key.code) {
+            WalletSetupAction::Continue => Ok(ScreenFlow::Continue),
+            WalletSetupAction::Cancel => Ok(ScreenFlow::Cancel),
+            WalletSetupAction::Select(choice) => Ok(ScreenFlow::Done(choice)),
+        },
+    )
+}
 
+fn confirm_generated_mnemonic_backup(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    phrase: &str,
+) -> anyhow::Result<bool> {
     let res = run_screen(
         terminal,
         (),
-        tick_rate,
-        |frame, _| {
-            render::render_welcome_screen(frame, replacing_existing_wallet)
-        },
+        PRE_WALLET_TICK_RATE,
+        |frame, _| render::render_generated_mnemonic_screen(frame, phrase),
         |_, key| match key.code {
-            KeyCode::Enter | KeyCode::Char('r') => Ok(ScreenFlow::Done(())),
-            KeyCode::Esc | KeyCode::Char('q') => Ok(ScreenFlow::Cancel),
+            KeyCode::Enter => Ok(ScreenFlow::Done(())),
+            KeyCode::Esc => Ok(ScreenFlow::Cancel),
             _ => Ok(ScreenFlow::Continue),
         },
+    )?;
+
+    Ok(res.is_some())
+}
+
+fn verify_generated_mnemonic(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    expected_phrase: &str,
+) -> anyhow::Result<bool> {
+    let res = run_mnemonic_entry(
+        terminal,
+        VERIFY_GENERATED_MNEMONIC_SCREEN,
+        |state| validate_generated_mnemonic_entry(state, expected_phrase),
     )?;
 
     Ok(res.is_some())
@@ -931,87 +1221,11 @@ fn enter_welcome(
 /// Returns the validated phrase, or None if the user cancelled.
 fn enter_mnemonic(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-) -> anyhow::Result<Option<String>> {
-    let tick_rate = Duration::from_millis(100);
-
-    struct State {
-        input: Zeroizing<String>,
-        cursor: usize,
-        error: Option<String>,
-    }
-
-    run_screen(
+) -> anyhow::Result<Option<Zeroizing<String>>> {
+    run_mnemonic_entry(
         terminal,
-        State {
-            input: Zeroizing::new(String::new()),
-            cursor: 0,
-            error: None,
-        },
-        tick_rate,
-        |frame, s| {
-            render::render_mnemonic_screen(
-                frame,
-                &s.input,
-                s.cursor,
-                s.error.as_deref(),
-            );
-        },
-        |s, key| match key.code {
-            KeyCode::Enter => {
-                match Mnemonic::from_phrase(s.input.trim(), Language::English) {
-                    Ok(mnem) => {
-                        let validated = mnem.to_string();
-                        s.input.zeroize();
-                        Ok(ScreenFlow::Done(validated))
-                    }
-                    Err(_) => {
-                        s.error = Some(
-                            "Invalid mnemonic. Enter 12 valid BIP39 words \
-                             separated by spaces."
-                                .into(),
-                        );
-                        Ok(ScreenFlow::Continue)
-                    }
-                }
-            }
-            KeyCode::Esc => {
-                s.input.zeroize();
-                Ok(ScreenFlow::Cancel)
-            }
-            KeyCode::Char(c) => {
-                s.input.insert(s.cursor, c);
-                s.cursor += 1;
-                s.error = None;
-                Ok(ScreenFlow::Continue)
-            }
-            KeyCode::Backspace => {
-                if s.cursor > 0 {
-                    s.cursor -= 1;
-                    s.input.remove(s.cursor);
-                    s.error = None;
-                }
-                Ok(ScreenFlow::Continue)
-            }
-            KeyCode::Left => {
-                s.cursor = s.cursor.saturating_sub(1);
-                Ok(ScreenFlow::Continue)
-            }
-            KeyCode::Right => {
-                if s.cursor < s.input.len() {
-                    s.cursor += 1;
-                }
-                Ok(ScreenFlow::Continue)
-            }
-            KeyCode::Home => {
-                s.cursor = 0;
-                Ok(ScreenFlow::Continue)
-            }
-            KeyCode::End => {
-                s.cursor = s.input.len();
-                Ok(ScreenFlow::Continue)
-            }
-            _ => Ok(ScreenFlow::Continue),
-        },
+        RESTORE_MNEMONIC_SCREEN,
+        validate_restore_mnemonic_entry,
     )
 }
 
@@ -1020,8 +1234,6 @@ fn enter_mnemonic(
 fn enter_new_password(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 ) -> anyhow::Result<Option<String>> {
-    let tick_rate = Duration::from_millis(100);
-
     struct State {
         password: Zeroizing<String>,
         confirm: Zeroizing<String>,
@@ -1037,7 +1249,7 @@ fn enter_new_password(
             on_confirm: false,
             error: None,
         },
-        tick_rate,
+        PRE_WALLET_TICK_RATE,
         |frame, s| {
             render::render_new_password_screen(
                 frame,
@@ -1401,5 +1613,222 @@ fn poll_sync_channel(app: &mut App<'_>) {
 
     if sync_complete {
         refresh_cached_phoenix(app);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use crossterm::event::KeyCode;
+    use rusk_wallet::{Wallet, WalletPath, dat};
+    use tempfile::tempdir;
+    use zeroize::Zeroizing;
+
+    use super::{
+        GeneratedMnemonicVerification, MnemonicEntryState, WalletSetupAction,
+        WalletSetupChoice, clear_wallet_cache, create_wallet_from_phrase,
+        handle_mnemonic_char_input, verify_generated_mnemonic_input,
+        wallet_setup_action_for_key,
+    };
+    use crate::{WalletFile, prompt};
+
+    #[test]
+    fn enter_defaults_to_create_wallet() {
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Enter),
+            WalletSetupAction::Select(WalletSetupChoice::Create)
+        );
+    }
+
+    #[test]
+    fn create_key_selects_create_wallet() {
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('c')),
+            WalletSetupAction::Select(WalletSetupChoice::Create)
+        );
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('C')),
+            WalletSetupAction::Select(WalletSetupChoice::Create)
+        );
+    }
+
+    #[test]
+    fn restore_key_selects_restore_wallet() {
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('r')),
+            WalletSetupAction::Select(WalletSetupChoice::Restore)
+        );
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('R')),
+            WalletSetupAction::Select(WalletSetupChoice::Restore)
+        );
+    }
+
+    #[test]
+    fn quit_keys_cancel_wallet_setup() {
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('q')),
+            WalletSetupAction::Cancel
+        );
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('Q')),
+            WalletSetupAction::Cancel
+        );
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Esc),
+            WalletSetupAction::Cancel
+        );
+    }
+
+    #[test]
+    fn unrelated_keys_leave_wallet_setup_running() {
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Left),
+            WalletSetupAction::Continue
+        );
+        assert_eq!(
+            wallet_setup_action_for_key(KeyCode::Char('x')),
+            WalletSetupAction::Continue
+        );
+    }
+
+    #[test]
+    fn generated_mnemonic_verification_accepts_exact_match() {
+        let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        assert_eq!(
+            verify_generated_mnemonic_input(phrase, phrase),
+            GeneratedMnemonicVerification::Match
+        );
+    }
+
+    #[test]
+    fn generated_mnemonic_verification_rejects_mismatch() {
+        let expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let entered = "legal winner thank year wave sausage worth useful legal winner thank yellow";
+        assert_eq!(
+            verify_generated_mnemonic_input(entered, expected),
+            GeneratedMnemonicVerification::Mismatch
+        );
+    }
+
+    #[test]
+    fn generated_mnemonic_verification_rejects_invalid_phrase() {
+        let expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let entered = "not a valid mnemonic phrase";
+        assert_eq!(
+            verify_generated_mnemonic_input(entered, expected),
+            GeneratedMnemonicVerification::Invalid
+        );
+    }
+
+    #[test]
+    fn mnemonic_entry_rejects_non_ascii_input() {
+        let mut state = MnemonicEntryState {
+            input: Zeroizing::new("abandon".into()),
+            cursor: "abandon".len(),
+            error: None,
+        };
+
+        handle_mnemonic_char_input(&mut state, 'é');
+
+        assert_eq!(state.input.as_str(), "abandon");
+        assert_eq!(state.cursor, "abandon".len());
+        assert_eq!(
+            state.error.as_deref(),
+            Some("Mnemonic phrases only accept ASCII characters.")
+        );
+    }
+
+    fn load_wallet_from_path(
+        wallet_path: &WalletPath,
+        password: &str,
+    ) -> anyhow::Result<Wallet<WalletFile>> {
+        let (file_version, salt_and_iv) =
+            dat::read_file_version_and_salt_iv(wallet_path)?;
+        let salt = salt_and_iv.as_ref().map(|si| &si.0);
+        let key = prompt::derive_key(file_version, password, salt)?;
+
+        Ok(Wallet::from_file(WalletFile {
+            path: wallet_path.clone(),
+            aes_key: key,
+            salt: salt_and_iv.map(|si| si.0),
+            iv: salt_and_iv.map(|si| si.1),
+        })?)
+    }
+
+    #[test]
+    fn replacing_existing_wallet_creates_backup_and_restarts_into_new_wallet()
+    -> anyhow::Result<()> {
+        const OLD_PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        const NEW_PHRASE: &str = "legal winner thank year wave sausage worth useful legal winner thank yellow";
+        const OLD_PASSWORD: &str = "old-password";
+        const NEW_PASSWORD: &str = "new-password";
+
+        let wallet_dir = tempdir()?;
+        let mut wallet_path =
+            WalletPath::from(wallet_dir.path().join("wallet.dat"));
+        wallet_path.set_network_name(Some("test".to_string()));
+
+        let old_wallet = create_wallet_from_phrase(
+            &wallet_path,
+            false,
+            OLD_PHRASE,
+            OLD_PASSWORD,
+        )?;
+        let old_public = old_wallet.default_address();
+        let old_shielded = old_wallet.default_shielded_account();
+
+        let cache_dir = wallet_path.cache_dir();
+        fs::create_dir_all(&cache_dir)?;
+        fs::write(cache_dir.join("cache.marker"), b"stale cache")?;
+        assert!(
+            cache_dir.exists(),
+            "test setup should create a cache directory"
+        );
+
+        let replacement_wallet = create_wallet_from_phrase(
+            &wallet_path,
+            true,
+            NEW_PHRASE,
+            NEW_PASSWORD,
+        )?;
+        let new_public = replacement_wallet.default_address();
+        let new_shielded = replacement_wallet.default_shielded_account();
+
+        assert_ne!(old_public, new_public);
+        assert_ne!(old_shielded, new_shielded);
+
+        let mut backup_path = wallet_path.inner().to_path_buf();
+        backup_path.set_extension("dat.old");
+        assert!(
+            backup_path.exists(),
+            "replacing the wallet should create wallet.dat.old"
+        );
+
+        let backup_wallet_path = WalletPath::from(backup_path);
+        let backup_wallet =
+            load_wallet_from_path(&backup_wallet_path, OLD_PASSWORD)?;
+        assert_eq!(backup_wallet.default_address(), old_public);
+        assert_eq!(backup_wallet.default_shielded_account(), old_shielded);
+
+        clear_wallet_cache(&wallet_path)?;
+        assert!(
+            !cache_dir.exists(),
+            "restart path should clear the old wallet cache"
+        );
+
+        let reopened_wallet =
+            load_wallet_from_path(&wallet_path, NEW_PASSWORD)?;
+
+        assert_eq!(reopened_wallet.default_address(), new_public);
+        assert_eq!(reopened_wallet.default_shielded_account(), new_shielded);
+        assert_ne!(reopened_wallet.default_address(), old_public);
+        assert!(
+            backup_wallet_path.inner().exists(),
+            "backup wallet should remain available after restart"
+        );
+
+        Ok(())
     }
 }
