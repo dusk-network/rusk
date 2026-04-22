@@ -44,17 +44,35 @@ impl CanonicalTransaction {
         )
     }
 
-    /// Decodes transaction bytes using the ingress format for `block_height`.
+    /// Canonicalizes a native protocol transaction using the ingress format for
+    /// `block_height`.
+    pub fn canonicalize_for_ingress(
+        protocol: ProtocolTransaction,
+        block_height: u64,
+    ) -> Self {
+        Self::canonicalize(
+            protocol,
+            hard_fork::ingress_tx_format_at(block_height),
+        )
+    }
+
+    /// Decodes transaction bytes for live ingress at `block_height`.
     ///
-    /// This is the format accepted by transaction ingress at that height.
+    /// Live network ingress accepts the currently supported transport
+    /// envelopes (`Aegis` and `Boreas`) and normalizes them to the canonical
+    /// ingress format for that height. Historical `PreAegis` encodings remain
+    /// replay-only and are rejected here.
     pub fn decode_for_ingress(
         bytes: &[u8],
         block_height: u64,
     ) -> Result<Self, dusk_bytes::Error> {
-        Self::decode_with_selected_format(
-            bytes,
-            hard_fork::ingress_tx_format_at(block_height),
-        )
+        let decoded = Self::decode_any(bytes)?;
+
+        if decoded.format() == TransactionFormat::PreAegis {
+            return Err(dusk_bytes::Error::InvalidData);
+        }
+
+        Ok(decoded.reformat_for_ingress(block_height))
     }
 
     /// Decodes transaction bytes using the ledger format for `block_height`.
@@ -121,6 +139,18 @@ impl CanonicalTransaction {
     /// Returns the serialization format used for the protocol transaction.
     pub fn format(&self) -> TransactionFormat {
         self.format
+    }
+
+    /// Reformats a canonical transaction to the ingress format active at
+    /// `block_height`.
+    pub fn reformat_for_ingress(&self, block_height: u64) -> Self {
+        let expected = hard_fork::ingress_tx_format_at(block_height);
+
+        if self.format() == expected {
+            return self.clone();
+        }
+
+        Self::canonicalize(self.protocol.clone(), expected)
     }
 
     /// Encodes the native protocol transaction using its selected format.
@@ -270,10 +300,30 @@ impl LedgerTransaction {
             .into()
     }
 
+    pub fn from_protocol_for_ingress(
+        protocol: ProtocolTransaction,
+        block_height: u64,
+    ) -> Self {
+        CanonicalTransaction::canonicalize_for_ingress(protocol, block_height)
+            .into()
+    }
+
     /// Reformats a ledger transaction to the ledger format active at
     /// `block_height`.
     pub fn reformat_for_ledger(&self, block_height: u64) -> Self {
         let expected = hard_fork::ledger_tx_format_at(block_height);
+
+        if self.format() == expected {
+            return self.clone();
+        }
+
+        Self::from_protocol_with_format(self.protocol().clone(), expected)
+    }
+
+    /// Reformats a ledger transaction to the ingress format active at
+    /// `block_height`.
+    pub fn reformat_for_ingress(&self, block_height: u64) -> Self {
+        let expected = hard_fork::ingress_tx_format_at(block_height);
 
         if self.format() == expected {
             return self.clone();
@@ -479,5 +529,59 @@ pub mod faker {
             tx,
             TransactionFormat::Aegis,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dusk_core::transfer::TransactionFormat;
+
+    use super::faker::gen_dummy_tx;
+    use super::*;
+
+    #[test]
+    fn decode_for_ingress_accepts_aegis_and_normalizes_to_boreas() {
+        let tx = gen_dummy_tx(10);
+        let bytes = tx.protocol_bytes();
+
+        let decoded =
+            CanonicalTransaction::decode_for_ingress(&bytes, u64::MAX)
+                .expect("aegis bytes should decode for boreas ingress");
+
+        assert_eq!(decoded.format(), TransactionFormat::Boreas);
+        assert_eq!(decoded.id(), tx.id());
+    }
+
+    #[test]
+    fn decode_for_ingress_accepts_boreas_and_normalizes_to_aegis() {
+        let tx = gen_dummy_tx(10);
+        let bytes = tx.protocol().encode_for_format(TransactionFormat::Boreas);
+
+        let decoded = CanonicalTransaction::decode_for_ingress(&bytes, 1)
+            .expect("boreas bytes should decode for aegis ingress");
+
+        assert_eq!(decoded.format(), TransactionFormat::Aegis);
+        assert_eq!(decoded.id(), tx.id());
+    }
+
+    #[test]
+    fn reformat_for_ingress_preserves_tx_identity() {
+        let tx = gen_dummy_tx(10);
+        let reformatted = tx.reformat_for_ingress(u64::MAX);
+
+        assert_eq!(reformatted.format(), TransactionFormat::Boreas);
+        assert_eq!(reformatted.id(), tx.id());
+    }
+
+    #[test]
+    fn reformat_for_ingress_preserves_tx_identity_before_boreas() {
+        let tx = LedgerTransaction::from_protocol_with_format(
+            gen_dummy_tx(10).protocol().clone(),
+            TransactionFormat::Boreas,
+        );
+        let reformatted = tx.reformat_for_ingress(1);
+
+        assert_eq!(reformatted.format(), TransactionFormat::Aegis);
+        assert_eq!(reformatted.id(), tx.id());
     }
 }
