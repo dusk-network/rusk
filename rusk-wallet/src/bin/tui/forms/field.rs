@@ -92,14 +92,6 @@ impl FormField {
         }
     }
 
-    pub fn select(
-        name: &'static str,
-        label: &str,
-        options: Vec<String>,
-    ) -> Self {
-        Self::select_with_default(name, label, options, 0)
-    }
-
     pub fn select_with_default(
         name: &'static str,
         label: &str,

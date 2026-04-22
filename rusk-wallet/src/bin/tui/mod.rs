@@ -21,12 +21,17 @@ use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
     enable_raw_mode,
 };
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::StakeData;
 use ratatui::Terminal;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Clear;
+use rkyv::Deserialize;
 use rocksdb::ErrorKind;
 use rusk_wallet::dat::{self, LATEST_VERSION};
-use rusk_wallet::{Error as WalletError, GraphQL, Wallet, WalletPath};
+use rusk_wallet::{
+    Error as WalletError, GraphQL, RuesHttpClient, Wallet, WalletPath,
+};
 use tokio::sync::mpsc;
 use tracing::debug;
 use zeroize::{Zeroize, Zeroizing};
@@ -41,7 +46,10 @@ use crate::settings::Settings;
 
 const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
 const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
+const STAKE_INFO_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_PASSWORD_ATTEMPTS: u8 = 3;
+const STAKE_CONTRACT: &str =
+    "0200000000000000000000000000000000000000000000000000000000000000";
 
 /// Signals from `run_inner` about why it exited.
 enum ExitReason {
@@ -221,15 +229,8 @@ pub async fn run(
         match run_inner(&mut terminal, wallet_path, settings).await {
             Ok(ExitReason::Quit) => break Ok(()),
             Ok(ExitReason::ImportWallet) => {
-                // Back up old wallet, run restore flow, then re-enter
-                backup_wallet(wallet_path)?;
-                match restore_wallet_flow(&mut terminal, wallet_path, true)? {
-                    Some(_) => {
-                        clear_wallet_cache(wallet_path)?;
-                        continue;
-                    } // New wallet saved, restart
-                    None => break Ok(()), // User cancelled
-                }
+                // Replacement wallet is already saved; restart into it.
+                continue;
             }
             Err(e) => break Err(e),
         }
@@ -448,7 +449,11 @@ async fn run_inner(
             app.connection = ConnectionStatus { state: connected };
 
             if connected {
-                fetch_balances(&mut app).await;
+                refresh_dashboard_data(
+                    &mut app,
+                    "Failed to refresh initial stake info",
+                )
+                .await;
                 if !tip_poller_started {
                     spawn_tip_height_poller(tx.clone(), settings);
                     tip_poller_started = true;
@@ -475,11 +480,33 @@ async fn run_inner(
         // Poll background sync channel
         poll_sync_channel(&mut app);
 
+        if let Some(stake_refresh_tip) =
+            app.current_profile_stake_refresh_tip_to_fetch()
+        {
+            let profile_idx = app.profile_idx;
+            let stake_pk = app.current_profile().public_addr;
+            app.note_current_profile_stake_refresh_attempt(stake_refresh_tip);
+            spawn_stake_info_refresh(
+                tx.clone(),
+                settings.state.to_string(),
+                profile_idx,
+                stake_pk,
+                Some(stake_refresh_tip),
+            );
+        }
+
+        // Clear expired transient messages
+        app.expire_clipboard_msg();
+
         // Handle actions
         if let Some(action) = action {
             match action {
                 AppAction::RefreshBalance => {
-                    fetch_balances(&mut app).await;
+                    refresh_dashboard_data(
+                        &mut app,
+                        "Failed to refresh stake info after dashboard refresh",
+                    )
+                    .await;
                 }
                 AppAction::FetchHistory => {
                     execute_history(&mut app).await;
@@ -506,8 +533,16 @@ async fn run_inner(
                     }
                 }
                 AppAction::ImportWallet => {
-                    app.wallet.close();
-                    return Ok(ExitReason::ImportWallet);
+                    match restore_wallet_flow(terminal, wallet_path, true)? {
+                        Some(_) => {
+                            app.wallet.close();
+                            clear_wallet_cache(wallet_path)?;
+                            return Ok(ExitReason::ImportWallet);
+                        }
+                        None => {
+                            app.screen = AppScreen::Dashboard;
+                        }
+                    }
                 }
                 AppAction::CloseForm => {
                     app.screen = AppScreen::Dashboard;
@@ -683,6 +718,58 @@ fn spawn_tip_height_poller(
     });
 }
 
+fn spawn_stake_info_refresh(
+    tx: mpsc::UnboundedSender<AsyncResult>,
+    state_url: String,
+    profile_idx: u8,
+    stake_pk: BlsPublicKey,
+    attempted_at_tip: Option<u64>,
+) {
+    tokio::spawn(async move {
+        let client = match RuesHttpClient::new(state_url) {
+            Ok(client) => client,
+            Err(err) => {
+                debug!(
+                    "Failed to initialize HTTP client for automatic stake refresh of profile {profile_idx}: {err}"
+                );
+                return;
+            }
+        };
+
+        let stake = match tokio::time::timeout(
+            STAKE_INFO_FETCH_TIMEOUT,
+            fetch_stake_with_client(&client, &stake_pk),
+        )
+        .await
+        {
+            Ok(Ok(stake)) => stake,
+            Ok(Err(err)) => {
+                debug!(
+                    "Failed to auto-refresh stake info for profile {profile_idx}: {err}"
+                );
+                return;
+            }
+            Err(_) => {
+                debug!(
+                    "Timed out while auto-refreshing stake info for profile {profile_idx}"
+                );
+                return;
+            }
+        };
+
+        let stake = match stake {
+            Some(data) => app::StakeState::Loaded(data),
+            None => app::StakeState::NoStake,
+        };
+
+        let _ = tx.send(AsyncResult::StakeUpdate {
+            profile_idx,
+            stake,
+            attempted_at_tip,
+        });
+    });
+}
+
 /// Common key-driven screen loop: draw, poll for key presses, handle Ctrl+C.
 fn run_screen<S, R, Render, Handle>(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
@@ -784,10 +871,10 @@ fn restore_wallet_flow(
     };
 
     // Step 3: Get new password (with confirmation)
-    let password = match enter_new_password(terminal)? {
+    let mut password = Zeroizing::new(match enter_new_password(terminal)? {
         Some(p) => p,
         None => return Ok(None),
-    };
+    });
 
     // Step 4: Create the wallet
     let salt = gen_salt();
@@ -803,15 +890,16 @@ fn restore_wallet_flow(
         }
     };
     phrase.zeroize();
+    if replacing_existing_wallet {
+        backup_wallet(wallet_path)?;
+    }
     wallet.save_to(WalletFile {
         path: wallet_path.clone(),
         aes_key: key,
         salt: Some(salt),
         iv: Some(iv),
     })?;
-
-    let mut pwd = password;
-    pwd.zeroize();
+    password.zeroize();
 
     Ok(Some(wallet))
 }
@@ -1048,6 +1136,12 @@ async fn fetch_balances(app: &mut App<'_>) {
     refresh_cached_phoenix(app);
 }
 
+async fn refresh_dashboard_data(app: &mut App<'_>, stake_err_context: &str) {
+    fetch_balances(app).await;
+    let stake_refresh_tip = app.current_profile_stake_refresh_tip_to_fetch();
+    refresh_stake_info(app, stake_refresh_tip, stake_err_context).await;
+}
+
 fn refresh_cached_phoenix(app: &mut App<'_>) {
     let idx = app.profile_idx;
     match app.wallet.get_phoenix_balance_cached(idx) {
@@ -1061,23 +1155,88 @@ fn refresh_cached_phoenix(app: &mut App<'_>) {
     }
 }
 
+async fn refresh_stake_info(
+    app: &mut App<'_>,
+    stake_refresh_tip: Option<u64>,
+    err_context: &str,
+) {
+    let attempted_at_tip = stake_refresh_tip.or(app.sync_block_height);
+
+    if let Some(stake_refresh_tip) = stake_refresh_tip {
+        app.note_current_profile_stake_refresh_attempt(stake_refresh_tip);
+    }
+
+    if let Err(err) = fetch_stake_info_with_timeout(
+        app,
+        STAKE_INFO_FETCH_TIMEOUT,
+        attempted_at_tip,
+    )
+    .await
+    {
+        debug!("{err_context}: {err}");
+    }
+}
+
+async fn fetch_stake_with_client(
+    client: &RuesHttpClient,
+    stake_pk: &BlsPublicKey,
+) -> anyhow::Result<Option<StakeData>> {
+    let bytes = client
+        .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", stake_pk)
+        .await?;
+    let stake_data = rkyv::check_archived_root::<Option<StakeData>>(&bytes)
+        .map_err(|_| WalletError::Rkyv)?
+        .deserialize(&mut rkyv::Infallible)
+        .unwrap();
+
+    Ok(stake_data)
+}
+
 /// Fetch stake info for the current profile.
 /// Returns Err if the fetch failed (caller should show an error screen).
 async fn fetch_stake_info(app: &mut App<'_>) -> anyhow::Result<()> {
-    use app::StakeState;
     let idx = app.profile_idx;
-    match app.wallet.stake_info(idx).await {
-        Ok(Some(data)) => {
-            app.stake_info.insert(idx, StakeState::Loaded(data));
-        }
-        Ok(None) => {
-            app.stake_info.insert(idx, StakeState::NoStake);
-        }
-        Err(e) => {
-            return Err(e.into());
-        }
-    }
+    let attempted_at_tip = app.sync_block_height;
+    let stake = app.wallet.stake_info(idx).await?;
+    apply_stake_info(app, idx, stake, attempted_at_tip);
     Ok(())
+}
+
+async fn fetch_stake_info_with_timeout(
+    app: &mut App<'_>,
+    timeout: Duration,
+    attempted_at_tip: Option<u64>,
+) -> anyhow::Result<()> {
+    let idx = app.profile_idx;
+    let stake =
+        match tokio::time::timeout(timeout, app.wallet.stake_info(idx)).await {
+            Ok(Ok(stake)) => stake,
+            Ok(Err(err)) => return Err(err.into()),
+            Err(_) => anyhow::bail!("Timed out while fetching stake info"),
+        };
+
+    apply_stake_info(app, idx, stake, attempted_at_tip);
+    Ok(())
+}
+
+fn apply_stake_info(
+    app: &mut App<'_>,
+    profile_idx: u8,
+    stake: Option<dusk_core::stake::StakeData>,
+    attempted_at_tip: Option<u64>,
+) {
+    use app::StakeState;
+
+    let stake = match stake {
+        Some(data) => StakeState::Loaded(data),
+        None => StakeState::NoStake,
+    };
+
+    app.handle_async_result(AsyncResult::StakeUpdate {
+        profile_idx,
+        stake,
+        attempted_at_tip,
+    });
 }
 
 /// Execute a command and handle the result.
@@ -1158,10 +1317,12 @@ async fn execute_command(
                     });
                 }
                 RunResult::StakeInfo(data, _) => {
-                    app.handle_async_result(AsyncResult::StakeUpdate {
-                        profile_idx: app.profile_idx,
-                        stake: app::StakeState::Loaded(data),
-                    });
+                    apply_stake_info(
+                        app,
+                        app.profile_idx,
+                        Some(data),
+                        app.sync_block_height,
+                    );
                     app.screen = AppScreen::Dashboard;
                 }
                 RunResult::ExportedKeys(pub_key, key_pair) => {

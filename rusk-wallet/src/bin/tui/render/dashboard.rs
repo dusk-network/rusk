@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout};
+use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
@@ -47,19 +47,45 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
+    let profile = app.current_profile();
+
+    let w = inner.width.max(1);
+    let shielded_full = profile.shielded_account_string();
+    let public_full = profile.public_account_string();
+    let sh_rows = (12 + shielded_full.len() as u16).div_ceil(w);
+    let pu_rows = (12 + public_full.len() as u16).div_ceil(w);
+    // Both show full (≤2 rows each) or both fall back to the preview (1 row).
+    let use_full = sh_rows <= 2 && pu_rows <= 2;
+    let (shielded_text, public_text) = if use_full {
+        (shielded_full, public_full)
+    } else {
+        (
+            profile.shielded_account_preview(),
+            profile.public_account_preview(),
+        )
+    };
+    let info_height = if use_full { sh_rows + pu_rows } else { 2 } + 4;
+
     // Layout: info section, separator + menu, hint bar
     let layout = Layout::vertical([
-        Constraint::Length(6), // shielded + public + staking + status
-        Constraint::Min(4),    // menu (scrollable, fills remaining)
+        Constraint::Length(info_height),
+        Constraint::Min(4), // menu (scrollable, fills remaining)
         Constraint::Length(1), // hint bar
     ])
     .split(inner);
 
     let bal = app.current_balance();
-    let profile = app.current_profile();
-    let stake = app.stake_info.get(&app.profile_idx);
+    let stake = app.current_stake_state();
 
-    render_info_block(frame, layout[0], app, profile, &bal, stake);
+    render_info_block(
+        frame,
+        layout[0],
+        app,
+        &bal,
+        stake,
+        shielded_text,
+        public_text,
+    );
 
     match &app.screen {
         AppScreen::History { entries } => {
@@ -81,7 +107,35 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
         }
         AppScreen::Addresses => {
             render_addresses_panel(frame, layout[1], profile);
-            render_panel_hint_bar(frame, layout[2], &[("Esc", "Back")]);
+            render_panel_hint_bar(
+                frame,
+                layout[2],
+                &[
+                    ("s", "Copy Shielded"),
+                    ("p", "Copy Public"),
+                    ("Esc", "Back"),
+                ],
+            );
+            if let Some(msg) = app.clipboard_message() {
+                // Overlay a temporary success toast on the right side of the
+                // hint bar so the shortcuts remain visible.
+                let area = layout[2];
+                let text = format!(" {msg} ");
+                let toast_w = (text.len() as u16).min(area.width);
+                let toast = Rect {
+                    x: area.x + area.width.saturating_sub(toast_w),
+                    y: area.y,
+                    width: toast_w,
+                    height: area.height,
+                };
+                frame.render_widget(
+                    Paragraph::new(Line::from(Span::styled(
+                        text,
+                        theme::success(),
+                    ))),
+                    toast,
+                );
+            }
         }
         _ => {
             render_menu(
@@ -101,40 +155,39 @@ fn render_info_block(
     frame: &mut Frame,
     area: ratatui::layout::Rect,
     app: &App,
-    profile: &rusk_wallet::Profile,
     bal: &super::super::app::ProfileBalance,
     stake: Option<&StakeState>,
+    shielded_text: String,
+    public_text: String,
 ) {
-    let mut lines = Vec::new();
+    let lines = vec![
+        // ── Shielded ───────────────────────────────────────────────
+        Line::from(vec![
+            Span::styled("  Shielded  ", theme::heading()),
+            Span::styled(shielded_text, theme::dim()),
+        ]),
+        shielded_balance_line(bal.phoenix.as_ref()),
+        // ── Public ─────────────────────────────────────────────────
+        Line::from(vec![
+            Span::styled("  Public    ", theme::heading()),
+            Span::styled(public_text, theme::dim()),
+        ]),
+        public_balance_line(bal.moonlight),
+        // ── Staking ────────────────────────────────────────────────
+        staking_line(stake),
+        // ── Status ─────────────────────────────────────────────────
+        status_line(
+            &app.sync_status,
+            app.sync_block_height,
+            &app.network_label,
+            &app.connection,
+        ),
+    ];
 
-    // ── Shielded ─────────────────────────────────────────────────
-    let shielded_addr = profile.shielded_account_preview();
-    lines.push(Line::from(vec![
-        Span::styled("  Shielded  ", theme::heading()),
-        Span::styled(shielded_addr, theme::dim()),
-    ]));
-    lines.push(shielded_balance_line(bal.phoenix.as_ref()));
-
-    // ── Public ───────────────────────────────────────────────────
-    let public_addr = profile.public_account_preview();
-    lines.push(Line::from(vec![
-        Span::styled("  Public    ", theme::heading()),
-        Span::styled(public_addr, theme::dim()),
-    ]));
-    lines.push(public_balance_line(bal.moonlight));
-
-    // ── Staking ────────────────────────────────────────────────
-    lines.push(staking_line(stake));
-
-    // ── Status ────────────────────────────────────────────────
-    lines.push(status_line(
-        &app.sync_status,
-        app.sync_block_height,
-        &app.network_label,
-        &app.connection,
-    ));
-
-    frame.render_widget(Paragraph::new(lines), area);
+    frame.render_widget(
+        Paragraph::new(lines).wrap(ratatui::widgets::Wrap { trim: false }),
+        area,
+    );
 }
 
 fn shielded_balance_line(balance: Option<&BalanceInfo>) -> Line<'static> {
@@ -440,11 +493,6 @@ fn render_addresses_panel(
             Span::raw("    "),
             Span::styled(public, theme::value()),
         ]),
-        Line::default(),
-        Line::from(Span::styled(
-            "  Tip: use `profiles` for copy-friendly one-line output",
-            theme::dim(),
-        )),
     ];
 
     frame.render_widget(

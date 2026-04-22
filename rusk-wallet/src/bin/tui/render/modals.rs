@@ -37,9 +37,14 @@ pub fn render_confirmation_modal(frame: &mut Frame, app: &App) {
     lines.push(Line::from(vec![
         Span::raw("  "),
         Span::styled("[y]", theme::hotkey()),
-        Span::raw(" Confirm  "),
+        Span::styled(" / ", theme::dim()),
+        Span::styled("Enter", theme::dim()),
+        Span::styled(" Confirm", theme::value()),
+        Span::styled("   ·   ", theme::dim()),
         Span::styled("[n]", theme::hotkey()),
-        Span::raw(" Cancel"),
+        Span::styled(" / ", theme::dim()),
+        Span::styled("Esc", theme::dim()),
+        Span::styled(" Cancel", theme::value()),
     ]));
 
     frame.render_widget(Paragraph::new(lines), inner);

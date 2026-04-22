@@ -58,7 +58,11 @@ pub enum AsyncResult {
         moonlight: Option<Dusk>,
     },
     /// Stake data for a profile
-    StakeUpdate { profile_idx: u8, stake: StakeState },
+    StakeUpdate {
+        profile_idx: u8,
+        stake: StakeState,
+        attempted_at_tip: Option<u64>,
+    },
     /// Sync status update from background sync
     SyncStatus(String),
     /// Status message from wallet operations
