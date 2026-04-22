@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extract transaction admission checks from the mempool service and validate
   canonical transactions without re-encoding ledger envelopes on the hot path.
+- Accept Aegis and Boreas envelopes during live mempool admission and normalize them to the active ingress format
 
 ## [1.6.0] - 2026-02-27
 

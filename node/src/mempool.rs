@@ -41,7 +41,7 @@ use tokio::time::Instant;
 use tracing::{error, info, warn};
 
 use self::admission::{TxAdmission, apply_mempool_admission};
-use crate::database::Mempool;
+use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::{LongLivedService, Message, Network, database, vm};
 
@@ -70,12 +70,11 @@ pub enum TxAcceptanceError {
     #[error("gas limit lower than minimum {0}")]
     GasLimitTooLow(u64),
     #[error(
-        "transaction format {actual:?} is not valid for ingress at height {block_height}; expected {expected:?}"
+        "transaction format {actual:?} is not supported for live ingress; minimum supported format is {minimum:?}"
     )]
-    InvalidIngressFormat {
+    UnsupportedIngressFormat {
         actual: TransactionFormat,
-        expected: TransactionFormat,
-        block_height: u64,
+        minimum: TransactionFormat,
     },
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
@@ -159,22 +158,27 @@ impl From<TxPreconditionError> for TxAcceptanceError {
     }
 }
 
-fn check_ingress_tx_format(
+fn check_supported_ingress_tx_format(
     tx: &CanonicalTransaction,
-    block_height: u64,
 ) -> Result<(), TxAcceptanceError> {
-    let expected = node_data::hard_fork::ingress_tx_format_at(block_height);
-    let actual = tx.format();
-
-    if actual == expected {
-        return Ok(());
+    // Live network admission accepts both Aegis and Boreas envelopes. Only the
+    // historical PreAegis encoding remains replay-only.
+    if tx.format() == TransactionFormat::PreAegis {
+        return Err(TxAcceptanceError::UnsupportedIngressFormat {
+            actual: tx.format(),
+            minimum: TransactionFormat::Aegis,
+        });
     }
 
-    Err(TxAcceptanceError::InvalidIngressFormat {
-        actual,
-        expected,
-        block_height,
-    })
+    Ok(())
+}
+
+fn normalize_ingress_tx(
+    tx: &LedgerTransaction,
+    block_height: u64,
+) -> Result<LedgerTransaction, TxAcceptanceError> {
+    check_supported_ingress_tx_format(tx.canonical())?;
+    Ok(tx.reformat_for_ingress(block_height))
 }
 
 pub struct MempoolSrv {
@@ -398,17 +402,37 @@ impl MempoolSrv {
             )));
         };
 
+        let next_block_height = db
+            .read()
+            .await
+            .view(|db| db.latest_block())
+            .map_err(|e| {
+                TxAcceptanceError::Generic(anyhow!(
+                    "Cannot get tip block height from the database: {e}"
+                ))
+            })?
+            .header
+            .height
+            .saturating_add(1);
+        let tx = normalize_ingress_tx(tx, next_block_height)?;
+        let msg = {
+            let mut normalized = msg.clone();
+            normalized.payload = tx.clone().into();
+            normalized
+        };
+
         match Self::accept_tx(
             &self.event_sender,
             self.conf.max_mempool_txn_count,
             db,
             vm,
-            tx,
+            &tx,
         )
         .await
         {
             Ok(()) => {
-                Self::broadcast_accepted_tx(network, msg, tx, None, None).await;
+                Self::broadcast_accepted_tx(network, &msg, &tx, None, None)
+                    .await;
                 drain_unblocked_chain(
                     &self.future_nonce_retry_queue,
                     &self.event_sender,
@@ -416,7 +440,7 @@ impl MempoolSrv {
                     network,
                     db,
                     vm,
-                    tx,
+                    &tx,
                 )
                 .await;
                 Ok(())
@@ -424,9 +448,9 @@ impl MempoolSrv {
             Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
                 handle_enqueue_outcome(
                     &self.event_sender,
-                    tx,
+                    &tx,
                     self.future_nonce_retry_queue
-                        .enqueue_message_with_outcome(msg)
+                        .enqueue_message_with_outcome(&msg)
                         .await,
                 )
             }
@@ -613,35 +637,64 @@ mod tests {
     }
 
     #[test]
-    fn test_ingress_format_check_rejects_pre_aegis() {
+    fn test_supported_ingress_format_check_rejects_pre_aegis() {
         let mut rng = StdRng::seed_from_u64(42);
         let tx = CanonicalTransaction::canonicalize(
             new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
             TransactionFormat::PreAegis,
         );
 
-        let result = check_ingress_tx_format(&tx, 1);
+        let result = check_supported_ingress_tx_format(&tx);
 
         assert!(matches!(
             result,
-            Err(TxAcceptanceError::InvalidIngressFormat {
+            Err(TxAcceptanceError::UnsupportedIngressFormat {
                 actual: TransactionFormat::PreAegis,
-                expected: TransactionFormat::Aegis,
-                block_height: 1,
+                minimum: TransactionFormat::Aegis,
             })
         ));
     }
 
     #[test]
-    fn test_ingress_format_check_accepts_aegis() {
+    fn test_supported_ingress_format_check_accepts_aegis() {
         let mut rng = StdRng::seed_from_u64(42);
         let tx = CanonicalTransaction::canonicalize(
             new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
             node_data::hard_fork::ingress_tx_format_at(1),
         );
 
-        let result = check_ingress_tx_format(&tx, 1);
+        let result = check_supported_ingress_tx_format(&tx);
 
         assert!(matches!(result, Ok(())));
+    }
+
+    #[test]
+    fn test_normalize_ingress_tx_reformats_aegis_to_boreas() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = LedgerTransaction::from_protocol_with_format(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            TransactionFormat::Aegis,
+        );
+
+        let normalized = normalize_ingress_tx(&tx, u64::MAX)
+            .expect("aegis ingress should normalize to boreas");
+
+        assert_eq!(normalized.format(), TransactionFormat::Boreas);
+        assert_eq!(normalized.id(), tx.id());
+    }
+
+    #[test]
+    fn test_normalize_ingress_tx_reformats_boreas_to_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = LedgerTransaction::from_protocol_with_format(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            TransactionFormat::Boreas,
+        );
+
+        let normalized = normalize_ingress_tx(&tx, 1)
+            .expect("boreas ingress should normalize to aegis");
+
+        assert_eq!(normalized.format(), TransactionFormat::Aegis);
+        assert_eq!(normalized.id(), tx.id());
     }
 }
