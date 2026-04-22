@@ -30,7 +30,7 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{STAKE_CONTRACT, Stake};
 use dusk_core::transfer::data::{
-    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+    ContractCall, ContractDeploy, TransactionData, gen_contract_id,
 };
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::{
@@ -918,15 +918,12 @@ pub unsafe extern "C" fn create_deploy_tx_data(
         )
     };
 
-    let tx_data = TransactionData::Deploy(ContractDeploy {
-        bytecode: ContractBytecode {
-            hash: blake3::hash(&bytecode).into(),
-            bytes: bytecode,
-        },
+    let tx_data = TransactionData::Deploy(ContractDeploy::new(
+        bytecode,
         owner,
         init_args,
-        nonce: *deploy_nonce,
-    });
+        *deploy_nonce,
+    ));
 
     let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
         Ok(v) => v.to_vec(),
@@ -967,12 +964,7 @@ pub unsafe extern "C" fn contract_id(
     let bytecode = slice::from_raw_parts(bytecode_buf, *bytecode_len as usize);
     let owner = slice::from_raw_parts(owner_buf, *owner_len as usize);
 
-    let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
-    hasher.update(bytecode);
-    hasher.update(&(*deploy_nonce).to_le_bytes()[..]);
-    hasher.update(owner);
-
-    let bytes = hasher.finalize();
+    let bytes = gen_contract_id(bytecode, *deploy_nonce, owner);
     ptr::copy_nonoverlapping(
         bytes.as_bytes().as_ptr(),
         &raw mut (*contract_id_ptr)[0],

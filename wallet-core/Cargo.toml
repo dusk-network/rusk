@@ -16,7 +16,6 @@ dusk-bytes = { workspace = true }
 bytecheck = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 rand_chacha = { workspace = true }
-blake3 = { workspace = true }
 sha2 = { workspace = true }
 hkdf = { workspace = true }
 rand = { workspace = true }
@@ -25,7 +24,6 @@ dusk-core = { workspace = true }
 rkyv = { workspace = true, features = ["alloc", "validation"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-blake2b_simd = { workspace = true }
 dlmalloc = { workspace = true, features = ["global"] }
 
 [dev-dependencies]

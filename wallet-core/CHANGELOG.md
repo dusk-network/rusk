@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change FFI ABI to explicit use "C" repr
+- Delegate contract deployment assembly and contract-id derivation to the canonical `dusk-core` helpers
 
 ## [1.6.0] - 2026-02-27
 

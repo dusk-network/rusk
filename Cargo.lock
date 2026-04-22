@@ -2081,8 +2081,6 @@ dependencies = [
 name = "dusk-wallet-core"
 version = "1.6.0"
 dependencies = [
- "blake2b_simd",
- "blake3",
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
