@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Derive Rues contract entity paths from `ContractId` bytes instead of hard-coding transfer/stake IDs
 - Route wallet GraphQL queries for propagation format detection through the
   canonical `/graphql` endpoint, removing the remaining dependency on the
   legacy `/on/graphql/query` route

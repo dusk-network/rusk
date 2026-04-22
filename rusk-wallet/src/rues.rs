@@ -46,6 +46,12 @@ fn has_graphql_errors(errors: &serde_json::Value) -> bool {
     }
 }
 
+/// Encode a typed contract id into the Rues entity string used on HTTP paths.
+#[must_use]
+fn contract_entity(contract: &ContractId) -> String {
+    hex::encode(contract.as_bytes())
+}
+
 #[derive(Clone)]
 /// Rusk HTTP Binary Client
 pub struct HttpClient {
@@ -88,21 +94,20 @@ impl HttpClient {
     /// This method errors if there was an error while sending the rues request,
     /// if the response body is not in JSON format or if the value cannot be
     /// serialized using rkyv.
-    pub async fn contract_query<I, C, const N: usize>(
+    pub async fn contract_query<I, const N: usize>(
         &self,
-        contract: C,
+        contract: ContractId,
         method: &str,
         value: &I,
     ) -> Result<Vec<u8>, Error>
     where
         I: Archive,
         I: rkyv::Serialize<rkyv::ser::serializers::AllocSerializer<N>>,
-        C: Into<Option<&'static str>>,
     {
         let data = rkyv::to_bytes(value).map_err(|_| Error::Rkyv)?.to_vec();
 
         let response = self
-            .call_raw(CONTRACTS_TARGET, contract.into(), method, &data, false)
+            .call_contract_raw(CONTRACTS_TARGET, contract, method, &data, false)
             .await?;
 
         Ok(response.bytes().await?.to_vec())
@@ -150,6 +155,26 @@ impl HttpClient {
         Ok(data.to_vec())
     }
 
+    /// Send a `RuskRequest` to a contract-backed target without parsing the
+    /// response.
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the rues request,
+    /// or if the response body is not in JSON format.
+    pub(crate) async fn call_contract_raw(
+        &self,
+        target: &str,
+        contract: ContractId,
+        topic: &str,
+        data: &[u8],
+        feed: bool,
+    ) -> Result<Response, Error> {
+        let entity = contract_entity(&contract);
+
+        self.send_request(target, Some(entity.as_str()), topic, data, feed)
+            .await
+    }
+
     /// Send a `RuskRequest` to a specific target without parsing the response
     ///
     /// # Errors
@@ -166,7 +191,21 @@ impl HttpClient {
     where
         E: Into<Option<&'static str>>,
     {
-        let entity = entity.into().map(|e| format!(":{e}")).unwrap_or_default();
+        self.send_request(target, entity.into(), topic, data, feed)
+            .await
+    }
+
+    async fn send_request(
+        &self,
+        target: &str,
+        entity: Option<&str>,
+        topic: &str,
+        data: &[u8],
+        feed: bool,
+    ) -> Result<Response, Error> {
+        let entity = entity
+            .map(|entity| format!(":{entity}"))
+            .unwrap_or_default();
         let endpoint =
             self.endpoint(&format!("on/{target}{entity}/{topic}"))?;
         let mut request = self
@@ -295,7 +334,32 @@ impl HttpClient {
 
 #[cfg(test)]
 mod tests {
-    use super::{HttpClient, has_graphql_errors, normalize_base_node_url};
+    use dusk_core::abi::ContractId;
+    use dusk_core::stake::STAKE_CONTRACT;
+    use dusk_core::transfer::TRANSFER_CONTRACT;
+
+    use super::{
+        HttpClient, contract_entity, has_graphql_errors,
+        normalize_base_node_url,
+    };
+
+    #[test]
+    fn contract_entity_matches_contract_bytes_hex_encoding() {
+        let custom_contract = ContractId::from([0xabu8; 32]);
+
+        assert_eq!(
+            contract_entity(&TRANSFER_CONTRACT),
+            hex::encode(TRANSFER_CONTRACT.as_bytes())
+        );
+        assert_eq!(
+            contract_entity(&STAKE_CONTRACT),
+            hex::encode(STAKE_CONTRACT.as_bytes())
+        );
+        assert_eq!(
+            contract_entity(&custom_contract),
+            hex::encode(custom_contract.as_bytes())
+        );
+    }
 
     #[test]
     fn normalize_base_node_url_accepts_root_paths() {

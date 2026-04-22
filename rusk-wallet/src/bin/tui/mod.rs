@@ -22,7 +22,7 @@ use crossterm::terminal::{
     enable_raw_mode,
 };
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::StakeData;
+use dusk_core::stake::{STAKE_CONTRACT, StakeData};
 use ratatui::Terminal;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Clear;
@@ -48,8 +48,6 @@ const TIP_HEIGHT_POLL_INTERVAL: Duration = Duration::from_secs(10);
 const TIP_HEIGHT_POLL_TIMEOUT: Duration = Duration::from_secs(4);
 const STAKE_INFO_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_PASSWORD_ATTEMPTS: u8 = 3;
-const STAKE_CONTRACT: &str =
-    "0200000000000000000000000000000000000000000000000000000000000000";
 
 /// Signals from `run_inner` about why it exited.
 enum ExitReason {
@@ -1182,7 +1180,7 @@ async fn fetch_stake_with_client(
     stake_pk: &BlsPublicKey,
 ) -> anyhow::Result<Option<StakeData>> {
     let bytes = client
-        .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", stake_pk)
+        .contract_query::<_, 1024>(STAKE_CONTRACT, "get_stake", stake_pk)
         .await?;
     let stake_data = rkyv::check_archived_root::<Option<StakeData>>(&bytes)
         .map_err(|_| WalletError::Rkyv)?
