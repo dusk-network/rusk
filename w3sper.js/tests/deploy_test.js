@@ -18,10 +18,7 @@ const RECOVERY_PHRASE_URL = new URL(
   "../../examples/recovery-phrase.txt",
   import.meta.url,
 );
-const ALICE_WASM_URL = new URL(
-  "../../contracts/bin/alice.wasm",
-  import.meta.url,
-);
+const ALICE_WASM_URL = new URL("./assets/alice.wasm", import.meta.url);
 
 test("offline moonlight contract deployment", async () => {
   await useAsProtocolDriver(await getLocalWasmBuffer()).then(async () => {
