@@ -4811,7 +4811,6 @@ dependencies = [
  "aes-gcm",
  "anyhow",
  "base64",
- "blake2b_simd",
  "blake3",
  "block-modes",
  "bs58",
