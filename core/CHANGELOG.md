@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add canonical contract deployment helpers for bytecode hashing and contract-id derivation
+
 ### Fixed
 
 - Reject deploy transactions whose required gas charge overflows during
