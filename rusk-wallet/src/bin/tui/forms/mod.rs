@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::gas::{
     DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
-    DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
+    DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{Address, MAX_FUNCTION_NAME_SIZE, Profile};
 
@@ -380,8 +380,9 @@ impl FormState {
             }
         };
 
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
+        let gas_limit = self
+            .parse_u64("gas_limit")
+            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
         let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
         let owner = Some(self.public_addr.clone());
 
@@ -396,8 +397,9 @@ impl FormState {
 
     fn build_unstake(&mut self) -> Option<Command> {
         let address = Some(self.model_address());
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
+        let gas_limit = self
+            .parse_u64("gas_limit")
+            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
         let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
 
         Some(Command::Unstake {
@@ -421,8 +423,9 @@ impl FormState {
                 }
             }
         };
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
+        let gas_limit = self
+            .parse_u64("gas_limit")
+            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
         let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
 
         Some(Command::ClaimRewards {
@@ -442,8 +445,9 @@ impl FormState {
             }
         };
 
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
+        let gas_limit = self
+            .parse_u64("gas_limit")
+            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
         let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
 
         Some(Command::Shield {
@@ -463,8 +467,9 @@ impl FormState {
             }
         };
 
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
+        let gas_limit = self
+            .parse_u64("gas_limit")
+            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
         let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
 
         Some(Command::Unshield {
@@ -629,18 +634,30 @@ pub fn build_form(
                 "Stake amount (DUSK)",
                 moonlight_balance,
             ),
-            FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
+            FormField::number(
+                "gas_limit",
+                "Gas limit",
+                DEFAULT_LIMIT_WALLET_ACTION,
+            ),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::Unstake => vec![
             public_model_field(),
-            FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
+            FormField::number(
+                "gas_limit",
+                "Gas limit",
+                DEFAULT_LIMIT_WALLET_ACTION,
+            ),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::ClaimRewards => vec![
             public_model_field(),
             claim_rewards_amount_field(claim_rewards_max),
-            FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
+            FormField::number(
+                "gas_limit",
+                "Gas limit",
+                DEFAULT_LIMIT_WALLET_ACTION,
+            ),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::Shield => vec![
@@ -649,7 +666,11 @@ pub fn build_form(
                 "Amount to shield (DUSK)",
                 moonlight_balance,
             ),
-            FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
+            FormField::number(
+                "gas_limit",
+                "Gas limit",
+                DEFAULT_LIMIT_WALLET_ACTION,
+            ),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::Unshield => vec![
@@ -658,7 +679,11 @@ pub fn build_form(
                 "Amount to unshield (DUSK)",
                 phoenix_spendable,
             ),
-            FormField::number("gas_limit", "Gas limit", DEFAULT_LIMIT_CALL),
+            FormField::number(
+                "gas_limit",
+                "Gas limit",
+                DEFAULT_LIMIT_WALLET_ACTION,
+            ),
             FormField::number("gas_price", "Gas price (LUX)", DEFAULT_PRICE),
         ],
         FormId::ContractDeploy => vec![

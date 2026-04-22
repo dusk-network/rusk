@@ -34,7 +34,7 @@ use rusk_wallet::currency::{Dusk, Lux};
 use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::gas::{
     DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
-    DEFAULT_PRICE, Gas, MIN_PRICE_DEPLOYMENT,
+    DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE, Gas, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
     Address, EPOCH, Error, IV_SIZE, MAX_PROFILES, Profile, SALT_SIZE, Wallet,
@@ -130,7 +130,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -149,7 +149,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -184,7 +184,7 @@ pub(crate) enum Command {
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -200,7 +200,7 @@ pub(crate) enum Command {
         address: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -223,7 +223,7 @@ pub(crate) enum Command {
         reward: Option<Dusk>,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
@@ -245,7 +245,7 @@ pub(crate) enum Command {
         reward: Option<Dusk>,
 
         /// Max amount of gas for this transaction
-        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_WALLET_ACTION)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
