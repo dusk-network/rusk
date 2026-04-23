@@ -364,6 +364,19 @@ fn decode_any_preserves_format() -> Result<(), Error> {
 }
 
 #[test]
+fn network_bytes_use_aegis_transport_format() -> Result<(), Error> {
+    let mut rng = StdRng::seed_from_u64(42);
+    let transaction = new_phoenix_tx(&mut rng, None);
+
+    assert_eq!(
+        transaction.to_network_bytes(),
+        transaction.encode_for_format(TransactionFormat::Aegis)
+    );
+
+    Ok(())
+}
+
+#[test]
 fn decode_any_accepts_pre_aegis_legacy_phoenix() -> Result<(), Error> {
     let transaction_bytes = decode_hex(HISTORICAL_PRE_AEGIS_TX_HEX);
 

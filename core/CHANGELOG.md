@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add canonical contract deployment helpers for bytecode hashing and contract-id derivation
+- Add a stable client-facing transaction network serializer that stays fork-agnostic across supported envelopes
 
 ### Fixed
 

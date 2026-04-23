@@ -586,10 +586,20 @@ impl Transaction {
         bytes
     }
 
-    /// Serialize the transaction into the legacy transport format.
+    /// Serialize the transaction into the stable client-facing network format.
+    ///
+    /// Nodes accept these bytes across supported hardforks and normalize them
+    /// internally, so ordinary clients do not need fork-aware envelope
+    /// selection just to submit a transaction.
+    #[must_use]
+    pub fn to_network_bytes(&self) -> Vec<u8> {
+        self.encode_for_format(TransactionFormat::Aegis)
+    }
+
+    /// Backward-compatible alias for [`Transaction::to_network_bytes`].
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        self.encode_for_format(TransactionFormat::Aegis)
+        self.to_network_bytes()
     }
 
     /// Deserialize the transaction from a byte slice.
