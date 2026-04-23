@@ -9,6 +9,7 @@ use std::future::Future;
 
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
@@ -24,7 +25,7 @@ use zeroize::Zeroize;
 
 use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
 use crate::Error;
-use crate::clients::{Cache, TRANSFER_CONTRACT};
+use crate::clients::Cache;
 use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
 
 const SYNC_PROGRESS_BLOCK_STEP: u64 = 100;
@@ -127,7 +128,7 @@ async fn collect_fresh_notes(
         .to_vec();
 
     let mut stream = client
-        .call_raw(
+        .call_contract_raw(
             CONTRACTS_TARGET,
             TRANSFER_CONTRACT,
             "leaves_from_pos",
@@ -370,7 +371,13 @@ async fn fetch_note_at_pos(
         .map_err(|_| Error::Rkyv)?
         .to_vec();
     let mut stream = client
-        .call_raw(CONTRACTS_TARGET, TRANSFER_CONTRACT, "sync", &req, true)
+        .call_contract_raw(
+            CONTRACTS_TARGET,
+            TRANSFER_CONTRACT,
+            "sync",
+            &req,
+            true,
+        )
         .await?
         .bytes_stream();
     let mut buffer = vec![];
@@ -399,7 +406,7 @@ pub(crate) async fn fetch_existing_nullifiers_remote(
     }
     let nullifiers = nullifiers.to_vec();
     let data = client
-        .contract_query::<_, _, 1024>(
+        .contract_query::<_, 1024>(
             TRANSFER_CONTRACT,
             "existing_nullifiers",
             &nullifiers,

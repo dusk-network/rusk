@@ -11,13 +11,13 @@ use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::{StakeData, StakeFundOwner, StakeKeys};
+use dusk_core::stake::{STAKE_CONTRACT, StakeData, StakeFundOwner, StakeKeys};
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
-use dusk_core::transfer::{Transaction, TransactionFormat};
+use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction, TransactionFormat};
 use dusk_core::{BlsScalar, Error as ExecutionCoreError};
 use flume::Receiver;
 use futures::executor::block_on;
@@ -36,12 +36,6 @@ use super::cache::Cache;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
 use crate::{Address, Error, MAX_PROFILES};
-
-const TRANSFER_CONTRACT: &str =
-    "0100000000000000000000000000000000000000000000000000000000000000";
-
-const STAKE_CONTRACT: &str =
-    "0200000000000000000000000000000000000000000000000000000000000000";
 
 // Sync every 3 seconds for now
 const SYNC_INTERVAL_SECONDS: u64 = 3;
@@ -326,7 +320,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, 1024>(TRANSFER_CONTRACT, "account", pk)
+            .contract_query::<_, 1024>(TRANSFER_CONTRACT, "account", pk)
             .await?;
         let account: AccountData =
             rkyv::check_archived_root::<AccountData>(&bytes)
@@ -355,7 +349,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<(), _, 0>(TRANSFER_CONTRACT, "root", &())
+            .contract_query::<(), 0>(TRANSFER_CONTRACT, "root", &())
             .await?;
         let root: BlsScalar = rkyv::check_archived_root::<BlsScalar>(&bytes)
             .map_err(|_| Error::Rkyv)?
@@ -379,7 +373,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake", pk)
+            .contract_query::<_, 1024>(STAKE_CONTRACT, "get_stake", pk)
             .await?;
         let stake_data: Option<StakeData> =
             rkyv::check_archived_root::<Option<StakeData>>(&bytes)
@@ -406,7 +400,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, 1024>(STAKE_CONTRACT, "get_stake_keys", pk)
+            .contract_query::<_, 1024>(STAKE_CONTRACT, "get_stake_keys", pk)
             .await?;
         let stake_keys: Option<StakeKeys> =
             rkyv::check_archived_root::<Option<StakeKeys>>(&bytes)
@@ -431,7 +425,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, { u8::SIZE }>(
+            .contract_query::<_, { u8::SIZE }>(
                 TRANSFER_CONTRACT,
                 "chain_id",
                 &(),
@@ -456,11 +450,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, 1024>(
-                TRANSFER_CONTRACT,
-                "opening",
-                note.pos(),
-            )
+            .contract_query::<_, 1024>(TRANSFER_CONTRACT, "opening", note.pos())
             .await?;
         let opening: Option<NoteOpening> =
             rkyv::check_archived_root::<Option<NoteOpening>>(&bytes)
@@ -485,7 +475,7 @@ impl State {
         // of the contract-query
         let bytes = self
             .client
-            .contract_query::<_, _, { u64::SIZE }>(
+            .contract_query::<_, { u64::SIZE }>(
                 TRANSFER_CONTRACT,
                 "num_notes",
                 &(),
