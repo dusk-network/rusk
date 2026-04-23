@@ -20,9 +20,9 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
-const GAS_LIMIT_0: u64 = 20_000_000; // Enough to spend, but OOG during ICC
-const GAS_LIMIT_1: u64 = 1_000; // Not enough to spend
-const GAS_LIMIT_2: u64 = 300_000_000; // All ok
+const GAS_LIMIT_0: u64 = 204_900_000;
+const GAS_LIMIT_1: u64 = 1_000;
+const GAS_LIMIT_2: u64 = 250_000_000;
 const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
 
