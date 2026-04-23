@@ -16,8 +16,7 @@ use tokio::sync::RwLock;
 
 use super::{
     TxAcceptanceError, check_supported_ingress_tx_format,
-    should_replace_conflicting_tx,
-    check_tx_serialization,
+    check_tx_serialization, should_replace_conflicting_tx,
 };
 use crate::database::{self, Ledger, Mempool, Persist};
 use crate::vm::{self, PreverificationResult};
