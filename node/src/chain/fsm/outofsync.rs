@@ -6,23 +6,90 @@
 
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::ops::Bound::{Excluded, Unbounded};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use dusk_consensus::config::{
+    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+};
+use dusk_consensus::errors::HeaderError;
+use dusk_consensus::merkle::merkle_root;
+use node_data::get_current_timestamp;
 use node_data::ledger::Block;
-use node_data::message::payload::{GetResource, Inv, Quorum};
+use node_data::message::Metadata;
+use node_data::message::payload::{Candidate, GetResource, Inv, Quorum};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use super::PresyncInfo;
 use crate::chain::acceptor::Acceptor;
+use crate::chain::header_validation::Validator;
 use crate::{Network, database, vm};
 
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;
+const MAX_SYNC_PEERS: usize = 32;
 const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
 const SYNC_ATTEMPTS: u8 = 3;
+const LIVE_CANDIDATE_MAX_AGE: u64 = 30;
 
+// When we retry, rotate deterministically among peers that claimed they can
+// serve the next missing height. We do not rank them by the furthest height
+// they advertised, because those Quorum heights are unverified and easy to
+// exaggerate.
+fn next_sync_peer(
+    peers: &BTreeMap<SocketAddr, u64>,
+    current_peer: SocketAddr,
+    next_height: u64,
+) -> Option<SocketAddr> {
+    peers
+        .range((Excluded(current_peer), Unbounded))
+        .find(|(_, height)| **height >= next_height)
+        .or_else(|| {
+            peers
+                .range(..current_peer)
+                .find(|(_, height)| **height >= next_height)
+        })
+        .map(|(peer, _)| *peer)
+}
+
+// Keep only peers that still claim they can serve the next missing block, and
+// cap the retry set so a long or adversarial sync session does not accumulate
+// an ever-growing list of peer candidates.
+fn prune_sync_peers(
+    peers: &mut BTreeMap<SocketAddr, u64>,
+    next_height: u64,
+    keep_peer: SocketAddr,
+) {
+    peers.retain(|_, height| *height >= next_height);
+
+    while peers.len() > MAX_SYNC_PEERS {
+        let Some(peer_addr) =
+            peers.keys().copied().find(|peer| *peer != keep_peer)
+        else {
+            break;
+        };
+        peers.remove(&peer_addr);
+    }
+}
+
+// Update the retry candidate set with a peer that claimed it can serve this
+// sync session. We keep the highest target that peer advertised, then prune
+// peers that are no longer useful or exceed the retry-set cap.
+fn remember_sync_peer(
+    peers: &mut BTreeMap<SocketAddr, u64>,
+    peer_addr: SocketAddr,
+    target_height: u64,
+    next_height: u64,
+    keep_peer: SocketAddr,
+) {
+    peers
+        .entry(peer_addr)
+        .and_modify(|height| *height = (*height).max(target_height))
+        .or_insert(target_height);
+    prune_sync_peers(peers, next_height, keep_peer);
+}
 /// The `OutOfSyncImpl` struct manages the synchronization state of a node
 /// that is out of sync with the network. It handles the detection of missing
 /// blocks, requests for block data from peers, and transitions between sync
@@ -144,6 +211,9 @@ pub(super) struct OutOfSyncImpl<
     last_request: u64,
     start_time: SystemTime,
     pool: BTreeMap<u64, Block>,
+    // Peers that have recently advertised a sync target we can use for this
+    // session.
+    peers: BTreeMap<SocketAddr, u64>,
     remote_peer: SocketAddr,
     retries: u8,
 
@@ -166,6 +236,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             range: (0, 0),
             last_request: 0,
             pool: BTreeMap::new(),
+            peers: BTreeMap::new(),
             acc,
             local_peer: this_peer,
             network,
@@ -198,6 +269,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         for b in &pool {
             self.pool.insert(b.header().height, b.clone());
         }
+        self.peers.clear();
+        // Start the retry candidate set with the peer that passed presync.
+        self.peers.insert(peer_addr, self.range.1);
         self.remote_peer = peer_addr;
 
         if let Some(last_request) = self.request_pool_missing_blocks().await {
@@ -214,6 +288,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     /// performed when exiting the state
     pub async fn on_exiting(&mut self) {
         self.drain_pool().await;
+        self.peers.clear();
     }
 
     /// Removes blocks from the pool that are below the current local height,
@@ -223,17 +298,159 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.retain(|h, _| h >= &curr_height);
     }
 
-    pub async fn on_quorum(&mut self, quorum: &Quorum) {
-        let prev_quorum_height = quorum.header.round - 1;
-        if self.range.1 < prev_quorum_height {
+    pub async fn on_quorum(
+        &mut self,
+        quorum: &Quorum,
+        metadata: Option<&Metadata>,
+    ) {
+        let target_height = quorum.header.round.saturating_sub(1);
+
+        if let Some(peer_addr) = metadata.map(|m| m.src_addr) {
+            // Keep track of which peers claimed they could serve this range so
+            // a timeout can switch to another source instead of asking the
+            // same peer again.
+            remember_sync_peer(
+                &mut self.peers,
+                peer_addr,
+                target_height,
+                self.range.0,
+                self.remote_peer,
+            );
+        }
+
+        if self.range.1 < target_height {
             debug!(
                 event = "update sync target due to quorum",
                 prev = self.range.1,
-                new = prev_quorum_height,
+                new = target_height,
             );
-            self.range.1 = prev_quorum_height;
-            self.request_pool_missing_blocks().await;
+            self.range.1 = target_height;
+            if let Some(last_request) = self.request_pool_missing_blocks().await
+            {
+                self.last_request = last_request;
+            }
         }
+    }
+
+    pub async fn on_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> anyhow::Result<bool> {
+        let (tip_header, db, context_provisioners) = {
+            let acc = self.acc.read().await;
+            let tip_header = acc.tip_header().await;
+            let db = acc.db.clone();
+            let context_provisioners = {
+                let provisioners = acc.provisioners_list.read().await;
+                provisioners.clone()
+            };
+
+            (tip_header, db, context_provisioners)
+        };
+        let candidate_header = candidate.candidate.header();
+
+        // Only a Candidate that extends our current tip can prove we do
+        // not need this sync session anymore.
+        if candidate_header.height != tip_header.height + 1
+            || candidate_header.prev_block_hash != tip_header.hash
+        {
+            return Ok(false);
+        }
+
+        // Only a recent Candidate can prove the live chain is already back at
+        // our tip. Old but valid Candidates are replayable and should not be
+        // enough to abort a legitimate sync session.
+        let now = get_current_timestamp();
+        if candidate_header
+            .timestamp
+            .saturating_add(LIVE_CANDIDATE_MAX_AGE)
+            < now
+        {
+            debug!(
+                event = "ignore stale sync candidate",
+                candidate_timestamp = candidate_header.timestamp,
+                now,
+                height = candidate_header.height,
+                iter = candidate_header.iteration,
+            );
+            return Ok(false);
+        }
+
+        let expected_generator = context_provisioners.current().get_generator(
+            candidate_header.iteration,
+            tip_header.seed,
+            candidate_header.height,
+        );
+        let validator = Validator::new(db, &tip_header, &context_provisioners);
+
+        match validator
+            .verify_block_header_fields(
+                candidate_header,
+                &expected_generator,
+                false,
+            )
+            .await
+        {
+            Ok(_) => {}
+            Err(
+                err @ (HeaderError::Storage(_, _) | HeaderError::Generic(_)),
+            ) => {
+                return Err(err.into());
+            }
+            Err(err) => {
+                debug!(
+                    event = "ignore sync candidate with invalid header",
+                    ?err,
+                    height = candidate_header.height,
+                    iter = candidate_header.iteration,
+                );
+                return Ok(false);
+            }
+        }
+
+        // Authenticate the header before we spend CPU on payload-root checks.
+        // If the tip already changed, skip the expensive payload validation
+        // because this sync candidate can no longer end the current session.
+        let live_tip = self.acc.read().await.tip_header().await;
+        if live_tip.height != tip_header.height
+            || live_tip.hash != tip_header.hash
+        {
+            debug!(
+                event = "skip sync candidate after tip change",
+                snapshot_height = tip_header.height,
+                live_height = live_tip.height,
+            );
+            return Ok(false);
+        }
+
+        if let Err(err) = validate_candidate_payload(candidate) {
+            debug!(
+                event = "ignore malformed sync candidate",
+                ?err,
+                height = candidate_header.height,
+                iter = candidate_header.iteration,
+            );
+            return Ok(false);
+        }
+
+        // Recheck once more before leaving OutOfSync so payload validation does
+        // not race with a live tip change.
+        let live_tip = self.acc.read().await.tip_header().await;
+        if live_tip.height != tip_header.height
+            || live_tip.hash != tip_header.hash
+        {
+            debug!(
+                event = "skip sync candidate after tip change",
+                snapshot_height = tip_header.height,
+                live_height = live_tip.height,
+            );
+            return Ok(false);
+        }
+
+        // Restart consensus before leaving OutOfSync so the Candidate already
+        // in flight can continue through the normal acceptor path.
+        self.acc.write().await.restart_consensus().await;
+        Ok(true)
     }
 
     /// Processes incoming blocks during the out-of-sync state. Determines
@@ -326,6 +543,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 }
             }
             self.pool.retain(|k, _| k >= &self.range.0);
+            prune_sync_peers(&mut self.peers, self.range.0, self.remote_peer);
             debug!(
                 event = "pool drain",
                 pool_len = self.pool.len(),
@@ -412,6 +630,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             }
 
             self.retries += 1;
+            prune_sync_peers(&mut self.peers, self.range.0, self.remote_peer);
+
+            if let Some(peer_addr) =
+                next_sync_peer(&self.peers, self.remote_peer, self.range.0)
+            {
+                // Retry against another plausible peer before reissuing the
+                // same missing-block request window.
+                debug!(
+                    event = "rotate sync peer",
+                    prev = ?self.remote_peer,
+                    new = ?peer_addr,
+                    next_height = self.range.0,
+                );
+                self.remote_peer = peer_addr;
+            }
 
             // Request missing from local_pool blocks
             if let Some(last_request) = self.request_pool_missing_blocks().await
@@ -487,5 +720,115 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             }
         }
         last_request
+    }
+}
+
+// Reject obviously malformed Candidates before doing the more expensive
+// consensus-specific header checks.
+fn validate_candidate_payload(candidate: &Candidate) -> anyhow::Result<()> {
+    let candidate_block = &candidate.candidate;
+    let candidate_header = candidate_block.header();
+
+    if candidate_block.txs().len() > MAX_NUMBER_OF_TRANSACTIONS {
+        anyhow::bail!("candidate contains too many transactions");
+    }
+
+    if candidate_block.faults().len() > MAX_NUMBER_OF_FAULTS {
+        anyhow::bail!("candidate contains too many faults");
+    }
+
+    let candidate_size = candidate_block
+        .size()
+        .map_err(|_| anyhow::anyhow!("unknown block size"))?;
+
+    if candidate_size > MAX_BLOCK_SIZE {
+        anyhow::bail!("candidate exceeds max block size");
+    }
+
+    let tx_digests: Vec<_> =
+        candidate_block.txs().iter().map(|tx| tx.digest()).collect();
+    if merkle_root(&tx_digests[..]) != candidate_header.txroot {
+        anyhow::bail!("candidate has invalid tx merkle root");
+    }
+
+    let fault_digests: Vec<_> = candidate_block
+        .faults()
+        .iter()
+        .map(|fault| fault.digest())
+        .collect();
+    if merkle_root(&fault_digests[..]) != candidate_header.faultroot {
+        anyhow::bail!("candidate has invalid fault merkle root");
+    }
+
+    Ok(())
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn rotates_to_next_eligible_sync_peer() {
+        let current_peer: SocketAddr = "127.0.0.1:9000".parse().unwrap();
+        let alt_one: SocketAddr = "127.0.0.1:9001".parse().unwrap();
+        let alt_two: SocketAddr = "127.0.0.1:9002".parse().unwrap();
+
+        let peers = BTreeMap::from([
+            (current_peer, 100),
+            (alt_one, 105),
+            (alt_two, 110),
+        ]);
+
+        assert_eq!(next_sync_peer(&peers, current_peer, 101), Some(alt_one),);
+    }
+
+    #[test]
+    fn wraps_to_earliest_eligible_sync_peer() {
+        let first_peer: SocketAddr = "127.0.0.1:9000".parse().unwrap();
+        let second_peer: SocketAddr = "127.0.0.1:9001".parse().unwrap();
+        let current_peer: SocketAddr = "127.0.0.1:9002".parse().unwrap();
+
+        let peers = BTreeMap::from([
+            (first_peer, 104),
+            (second_peer, 105),
+            (current_peer, 110),
+        ]);
+
+        assert_eq!(next_sync_peer(&peers, current_peer, 101), Some(first_peer),);
+    }
+
+    #[test]
+    fn prunes_sync_peers_below_next_height() {
+        let keep_peer: SocketAddr = "127.0.0.1:9000".parse().unwrap();
+        let stale_peer: SocketAddr = "127.0.0.1:9001".parse().unwrap();
+        let useful_peer: SocketAddr = "127.0.0.1:9002".parse().unwrap();
+
+        let mut peers = BTreeMap::from([
+            (keep_peer, 110),
+            (stale_peer, 100),
+            (useful_peer, 111),
+        ]);
+
+        prune_sync_peers(&mut peers, 105, keep_peer);
+
+        assert_eq!(peers.len(), 2);
+        assert!(peers.contains_key(&keep_peer));
+        assert!(peers.contains_key(&useful_peer));
+        assert!(!peers.contains_key(&stale_peer));
+    }
+
+    #[test]
+    fn caps_sync_peer_set_without_dropping_current_peer() {
+        let keep_peer: SocketAddr = "127.0.0.1:9050".parse().unwrap();
+        let mut peers = BTreeMap::new();
+
+        for port in 9000..=9033 {
+            let peer: SocketAddr = format!("127.0.0.1:{port}").parse().unwrap();
+            peers.insert(peer, 200);
+        }
+        peers.insert(keep_peer, 200);
+
+        prune_sync_peers(&mut peers, 150, keep_peer);
+
+        assert_eq!(peers.len(), MAX_SYNC_PEERS);
+        assert!(peers.contains_key(&keep_peer));
     }
 }

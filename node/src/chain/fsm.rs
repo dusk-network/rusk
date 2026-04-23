@@ -18,7 +18,9 @@ use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
 use node_data::ledger::{Attestation, Block, to_str};
 use node_data::message::Metadata;
-use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
+use node_data::message::payload::{
+    Candidate, Inv, Quorum, RatificationResult, Vote,
+};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
@@ -156,8 +158,34 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         metadata: Option<&Metadata>,
     ) {
         match &mut self.curr {
-            State::OutOfSync(oos) => oos.on_quorum(quorum).await,
+            State::OutOfSync(oos) => oos.on_quorum(quorum, metadata).await,
             State::InSync(is) => is.on_quorum(quorum, metadata).await,
+        }
+    }
+
+    pub(crate) async fn on_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> anyhow::Result<()> {
+        match &mut self.curr {
+            State::InSync(_) => Ok(()),
+            State::OutOfSync(curr) => {
+                if curr.on_candidate(candidate).await? {
+                    curr.on_exiting().await;
+
+                    // A valid next-round Candidate means we are already caught
+                    // up with the live chain, so we can leave OutOfSync
+                    // immediately and resume normal consensus handling.
+                    let next = InSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                        self.blacklisted_blocks.clone(),
+                    );
+                    self.curr = State::InSync(next);
+                }
+
+                Ok(())
+            }
         }
     }
 

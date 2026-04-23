@@ -38,7 +38,10 @@ use tracing::{debug, error};
 use crate::database;
 use crate::database::Ledger;
 
-const MARGIN_TIMESTAMP: u64 = 3;
+// Small grace window, in seconds, for timestamps that are slightly ahead of
+// local wall clock. This is used both for concrete header checks and for the
+// earlier sync-target plausibility gate.
+pub(crate) const MARGIN_TIMESTAMP: u64 = 3;
 
 // TODO: Use thiserror instead of anyhow
 

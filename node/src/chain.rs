@@ -159,8 +159,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     let msg = recv?;
 
                     match msg.payload {
-                        Payload::Candidate(_)
-                        | Payload::Validation(_)
+                        Payload::Candidate(ref candidate) => {
+                            // Let the FSM inspect Candidates first. While we
+                            // are syncing, a valid next-round Candidate can be
+                            // enough to prove the sync session is unnecessary.
+                            if let Err(err) = fsm.on_candidate(candidate).await {
+                                error!(event = "fsm::on_candidate failed", src = "wire", err = ?err);
+                            }
+                            self.reroute_acceptor(msg).await;
+                        }
+
+                        Payload::Validation(_)
                         | Payload::Ratification(_)
                         | Payload::ValidationQuorum(_) => {
                             self.reroute_acceptor(msg).await;
