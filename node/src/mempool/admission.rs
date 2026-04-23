@@ -15,7 +15,8 @@ use node_data::ledger::{
 use tokio::sync::RwLock;
 
 use super::{
-    TxAcceptanceError, check_ingress_tx_format, check_tx_serialization,
+    TxAcceptanceError, check_supported_ingress_tx_format,
+    check_tx_serialization,
 };
 use crate::database::{self, Ledger, Mempool, Persist};
 use crate::vm::{self, PreverificationResult};
@@ -110,9 +111,7 @@ where
         if tx.gas_price() < 1 {
             return Err(TxAcceptanceError::GasPriceTooLow(1));
         }
-        let next_block_height = tip_height.saturating_add(1);
-
-        check_ingress_tx_format(tx, next_block_height)?;
+        check_supported_ingress_tx_format(tx)?;
 
         {
             let vm = self.vm.read().await;

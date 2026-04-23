@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Queue future-nonce Moonlight transactions during HTTP propagation instead of rejecting them on local admission gaps
 - Emit deferred transaction lifecycle events when HTTP propagation queues
   future-nonce Moonlight transactions
+- Accept Aegis transaction bytes during Boreas HTTP ingress by normalizing live transaction envelopes
 - Map invalid transaction ingress format rejections to HTTP invalid-input errors instead of failing exhaustiveness checks in preverify handling
 - Canonicalize locally sealed transactions to the active ledger format before
   committing them into blocks

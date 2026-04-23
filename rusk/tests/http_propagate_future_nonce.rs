@@ -15,6 +15,7 @@ use dusk_rusk_test::RuskVmConfig;
 use dusk_rusk_test::common::state::{
     DEFAULT_MIN_GAS_LIMIT, LOCAL_TEST_CHAIN_ID,
 };
+use dusk_vm::FeatureActivation;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node::database::{DB, DatabaseOptions, Ledger, Mempool};
@@ -23,7 +24,7 @@ use rusk::http::{
     HttpHandlers, HttpPolicyConfig, HttpServer, HttpServerConfig,
 };
 use rusk::node::driverstore::DriverStore;
-use rusk::node::{RuskNode, WellKnownVmConfig};
+use rusk::node::{FEATURE_HARDFORK_BOREAS, RuskNode, WellKnownVmConfig};
 use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 use tempfile::tempdir;
@@ -37,7 +38,7 @@ const GAS_LIMIT: u64 = 75_000;
 const GAS_PRICE: u64 = 1;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn future_nonce_http_propagate_emits_deferred_rues_event() {
+async fn future_nonce_http_propagate_accepts_aegis_bytes_after_boreas() {
     let seed = [0u8; 64];
     let sender_sk = derive_bls_sk(&seed, 0);
     let sender_pk = BlsPublicKey::from(&sender_sk);
@@ -57,6 +58,8 @@ async fn future_nonce_http_propagate_emits_deferred_rues_event() {
             vm_config.with_feature(feature, activation);
         }
     }
+    vm_config
+        .with_feature(FEATURE_HARDFORK_BOREAS, FeatureActivation::Height(1));
 
     let state_dir = tempdir().expect("creating state tempdir should succeed");
     let (_session, state_root) =

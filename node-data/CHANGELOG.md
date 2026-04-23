@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Make canonical transaction construction infallible, remove the test-only ingress helper, and move ledger reformatting onto `LedgerTransaction`
+- Accept Aegis and Boreas transaction envelopes for live ingress decoding and normalize them to the active ingress format
 
 ## [1.6.0] - 2026-02-27
 
