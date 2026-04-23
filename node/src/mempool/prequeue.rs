@@ -17,7 +17,7 @@ use tokio::sync::{Mutex as AsyncMutex, RwLock};
 use tokio::time::Instant;
 use tracing::{info, warn};
 
-use super::{MempoolSrv, TxAcceptanceError};
+use super::{MempoolSrv, TxAcceptanceError, should_replace_conflicting_tx};
 use crate::{Network, database, vm};
 
 pub(super) const RETRY_DELAY: Duration = Duration::from_millis(500);
@@ -556,10 +556,7 @@ fn should_replace_queued_tx(
     existing: &LedgerTransaction,
     incoming: &LedgerTransaction,
 ) -> bool {
-    incoming.gas_price() > existing.gas_price()
-        || (incoming.gas_price() == existing.gas_price()
-            && incoming.protocol().gas_limit()
-                > existing.protocol().gas_limit())
+    should_replace_conflicting_tx(existing, incoming)
 }
 
 fn decrement_account_count(

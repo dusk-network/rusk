@@ -16,6 +16,7 @@ use tokio::sync::RwLock;
 
 use super::{
     TxAcceptanceError, check_supported_ingress_tx_format,
+    should_replace_conflicting_tx,
     check_tx_serialization,
 };
 use crate::database::{self, Ledger, Mempool, Persist};
@@ -249,10 +250,7 @@ pub(crate) fn apply_mempool_admission<'a>(
 
     for m_tx_id in db.mempool_txs_by_spendable_ids(&facts.spend_ids) {
         if let Some(m_tx) = db.mempool_tx(m_tx_id)? {
-            if m_tx.gas_price() < tx.gas_price()
-                || (m_tx.gas_price() == tx.gas_price()
-                    && m_tx.protocol().gas_limit() < tx.protocol().gas_limit())
-            {
+            if should_replace_conflicting_tx(&m_tx, tx) {
                 for deleted in db.delete_mempool_tx(m_tx_id, false)? {
                     events.push(node_data::events::TransactionEvent::Removed(
                         deleted,
