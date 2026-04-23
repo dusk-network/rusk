@@ -12,10 +12,12 @@ mod modals;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
+use ratatui::widgets::{
+    Block, BorderType, Borders, Clear, Padding, Paragraph, Wrap,
+};
 
 use super::app::{App, AppScreen};
-use super::theme;
+use super::{MnemonicEntryScreenConfig, theme};
 
 const MIN_WIDTH: u16 = 60;
 const MIN_HEIGHT: u16 = 20;
@@ -214,6 +216,13 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 // ── Pre-wallet screens ──────────────────────────────────────────────
 
+pub(super) struct MnemonicEntryView<'a> {
+    pub screen: &'a MnemonicEntryScreenConfig,
+    pub input: &'a str,
+    pub cursor: usize,
+    pub error: Option<&'a str>,
+}
+
 pub fn render_password_screen(
     frame: &mut Frame,
     pwd_len: usize,
@@ -242,108 +251,163 @@ pub fn render_password_screen(
     );
 }
 
-pub fn render_welcome_screen(
+pub fn render_wallet_setup_screen(
     frame: &mut Frame,
     replacing_existing_wallet: bool,
 ) {
     let inner = wallet_frame(frame, None);
-    let content = center_content(inner, 10, 70);
+    let content = center_content(inner, 12, 76);
 
-    let lines = if replacing_existing_wallet {
-        vec![
-            Line::default(),
-            Line::from(Span::styled(
+    let (heading, description, detail, restore_action, quit_action, spacing) =
+        if replacing_existing_wallet {
+            (
                 "  Importing Different Wallet.",
-                theme::heading(),
-            )),
-            Line::default(),
-            Line::from(Span::styled(
-                "  This will replace the current wallet with one",
-                theme::value(),
-            )),
-            Line::from(Span::styled(
-                "  restored from a 12-word mnemonic phrase.",
-                theme::value(),
-            )),
-            Line::from(Span::styled(
-                "  A backup is kept as wallet.dat.old.",
-                theme::dim(),
-            )),
-            Line::default(),
-            Line::from(vec![
-                Span::styled("  [r]", theme::hotkey()),
-                Span::raw(" Import from mnemonic  "),
-                Span::styled("[q]", theme::hotkey()),
-                Span::raw(" Cancel"),
-            ]),
-        ]
-    } else {
-        vec![
-            Line::default(),
-            Line::from(Span::styled("  No wallet found.", theme::heading())),
-            Line::default(),
-            Line::from(Span::styled(
-                "  You can restore a wallet from an existing mnemonic",
-                theme::value(),
-            )),
-            Line::from(Span::styled("  phrase (12 words).", theme::value())),
-            Line::default(),
-            Line::default(),
-            Line::from(vec![
-                Span::styled("  [r]", theme::hotkey()),
-                Span::raw(" Restore from mnemonic  "),
-                Span::styled("[q]", theme::hotkey()),
-                Span::raw(" Quit"),
-            ]),
-        ]
-    };
+                [
+                    "  Choose whether to create a new wallet or replace",
+                    "  the current one from an existing mnemonic phrase.",
+                ],
+                Some("  A backup is kept as wallet.dat.old."),
+                " Import from mnemonic  ",
+                " Cancel",
+                1,
+            )
+        } else {
+            (
+                "  No wallet found.",
+                [
+                    "  You can restore a wallet from an existing mnemonic",
+                    "  phrase (12 words).",
+                ],
+                None,
+                " Restore from mnemonic  ",
+                " Quit",
+                2,
+            )
+        };
+
+    let mut lines = vec![
+        Line::default(),
+        Line::from(Span::styled(heading, theme::heading())),
+        Line::default(),
+    ];
+    lines.extend(
+        description
+            .into_iter()
+            .map(|line| Line::from(Span::styled(line, theme::value()))),
+    );
+    if let Some(detail) = detail {
+        lines.push(Line::from(Span::styled(detail, theme::dim())));
+    }
+    for _ in 0..spacing {
+        lines.push(Line::default());
+    }
+    lines.push(Line::from(vec![
+        Span::styled("  [c]", theme::hotkey()),
+        Span::raw(" Create new wallet  "),
+        Span::styled("  [r]", theme::hotkey()),
+        Span::raw(restore_action),
+        Span::styled("[q]", theme::hotkey()),
+        Span::raw(quit_action),
+    ]));
+
     frame.render_widget(Paragraph::new(lines), content);
 }
 
-pub fn render_mnemonic_screen(
-    frame: &mut Frame,
-    input: &str,
-    cursor: usize,
-    error: Option<&str>,
-) {
-    let inner = wallet_frame(frame, Some("Restore"));
-    let content = center_content(inner, 10, 80);
+pub fn render_generated_mnemonic_screen(frame: &mut Frame, phrase: &str) {
+    let inner = wallet_frame(frame, Some("Create Wallet"));
+    let content = center_content(inner, 13, 84);
 
+    let lines = vec![
+        Line::from(Span::styled(
+            "Write down this 12-word mnemonic phrase and store it safely:",
+            theme::heading(),
+        )),
+        Line::default(),
+        Line::from(Span::styled(phrase, theme::value())),
+        Line::default(),
+        Line::from(Span::styled(
+            "This phrase is required to restore access to your wallet.",
+            theme::value(),
+        )),
+        Line::from(Span::styled(
+            "Back it up before continuing to verification.",
+            theme::dim(),
+        )),
+    ];
+    frame.render_widget(
+        Paragraph::new(lines).wrap(Wrap { trim: false }),
+        content,
+    );
+
+    let hint_area =
+        Rect::new(content.x, content.y + content.height, content.width, 2);
+    error_or_hints(
+        frame,
+        hint_area,
+        None,
+        &[("Enter", "Continue"), ("Esc", "Cancel")],
+    );
+}
+
+pub(super) fn render_mnemonic_entry_screen(
+    frame: &mut Frame,
+    view: &MnemonicEntryView<'_>,
+) {
+    let inner = wallet_frame(frame, Some(view.screen.right_title));
+    let content = center_content(
+        inner,
+        view.screen.content_height,
+        view.screen.width_pct,
+    );
+    let heading_height = if view.screen.helper.is_some() { 2 } else { 1 };
     let rows = Layout::vertical([
-        Constraint::Length(1), // label
-        Constraint::Length(1), // spacer
-        Constraint::Length(3), // input
-        Constraint::Length(1), // spacer
-        Constraint::Length(2), // hint
+        Constraint::Length(heading_height), // label
+        Constraint::Length(1),              // spacer
+        Constraint::Length(3),              // input
+        Constraint::Length(1),              // spacer
+        Constraint::Length(2),              // hint
     ])
     .split(content);
 
+    let mut label_lines = vec![Line::from(Span::styled(
+        view.screen.heading,
+        theme::heading(),
+    ))];
+    if let Some(helper) = view.screen.helper {
+        label_lines.push(Line::from(Span::styled(helper, theme::dim())));
+    }
     frame.render_widget(
-        Paragraph::new(Span::styled(
-            "Enter your 12-word mnemonic phrase:",
-            theme::heading(),
-        )),
+        Paragraph::new(label_lines).wrap(Wrap { trim: false }),
         rows[0],
     );
 
     let field_inner = input_field(frame, rows[2], "", true);
-    let display = if input.is_empty() {
+    let display = if view.input.is_empty() {
         Span::styled("word1 word2 word3 ... word12", theme::dim())
+    } else if view.screen.mask_input {
+        Span::styled(
+            mask_mnemonic_input(view.input, view.cursor),
+            theme::value(),
+        )
     } else {
-        Span::styled(mask_mnemonic_input(input, cursor), theme::value())
+        Span::styled(view.input, theme::value())
     };
     frame.render_widget(Paragraph::new(Line::from(display)), field_inner);
 
     if field_inner.width > 0 {
-        let cx = field_inner.x + (cursor as u16).min(field_inner.width - 1);
+        let cx =
+            field_inner.x + (view.cursor as u16).min(field_inner.width - 1);
         frame.set_cursor_position((cx, field_inner.y));
     }
 
     error_or_hints(
         frame,
         rows[4],
-        error,
-        &[("Enter", "Submit"), ("Esc", "Back")],
+        view.error,
+        &[
+            ("Enter", view.screen.enter_hint),
+            ("Esc", view.screen.escape_hint),
+        ],
     );
 }
 
