@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change FFI ABI to explicit use "C" repr
 - Delegate contract deployment assembly and contract-id derivation to the canonical `dusk-core` helpers
+- Serialize exported transaction bytes with the stable client network encoding instead of selecting hardfork-specific envelopes downstream
 
 ## [1.6.0] - 2026-02-27
 
