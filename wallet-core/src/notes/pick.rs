@@ -44,7 +44,7 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
         .collect();
 
     // sort the input-notes from smallest to largest value
-    notes_values_nullifier.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
+    notes_values_nullifier.sort_by_key(|(_, aval, _)| *aval);
 
     // return an empty list if the MAX_INPUT_NOTES highest notes do not cover
     // the cost
