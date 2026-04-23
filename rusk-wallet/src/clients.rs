@@ -17,7 +17,7 @@ use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
-use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction, TransactionFormat};
+use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_core::{BlsScalar, Error as ExecutionCoreError};
 use flume::Receiver;
 use futures::executor::block_on;
@@ -175,46 +175,6 @@ impl State {
         .await
     }
 
-    async fn next_propagation_format(
-        &self,
-    ) -> Result<TransactionFormat, Error> {
-        Ok(node_data::hard_fork::ingress_tx_format_at(
-            self.latest_block_height().await?.saturating_add(1),
-        ))
-    }
-
-    async fn latest_block_height(&self) -> Result<u64, Error> {
-        #[derive(serde::Deserialize)]
-        struct LatestBlockHeader {
-            height: u64,
-        }
-
-        #[derive(serde::Deserialize)]
-        struct LatestBlock {
-            header: LatestBlockHeader,
-        }
-
-        #[derive(serde::Deserialize)]
-        struct LatestBlocksResponse {
-            blocks: Vec<LatestBlock>,
-        }
-
-        let response = self
-            .client
-            .graphql_query("query { blocks(last: 1) { header { height } } }")
-            .await?;
-        let response =
-            serde_json::from_slice::<LatestBlocksResponse>(&response).map_err(
-                |_| Error::Rusk("Failed to parse latest block height".into()),
-            )?;
-
-        response
-            .blocks
-            .first()
-            .map(|block| block.header.height)
-            .ok_or_else(|| Error::Rusk("Failed to load latest block".into()))
-    }
-
     /// Requests that a node prove the given shielded transaction.
     /// Returns the transaction unchanged for unshielded transaction.
     pub async fn prove(&self, tx: Transaction) -> Result<Transaction, Error> {
@@ -246,8 +206,7 @@ impl State {
         tx: Transaction,
     ) -> Result<Transaction, Error> {
         let status = self.status;
-        let tx_bytes =
-            tx.encode_for_format(self.next_propagation_format().await?);
+        let tx_bytes = tx.to_network_bytes();
 
         status("Attempt to preverify tx...");
         let _ = self
