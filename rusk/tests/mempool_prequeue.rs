@@ -379,7 +379,7 @@ async fn future_nonce_prequeue_replaces_staged_tx_before_gap_fill() -> Result<()
     let mut harness = MempoolHarness::new().await?;
 
     let original = harness.make_tx_with_fee(2, GAS_LIMIT, GAS_PRICE);
-    let replacement = harness.make_tx_with_fee(2, GAS_LIMIT + 1, GAS_PRICE);
+    let replacement = harness.make_tx_with_fee(2, GAS_LIMIT, GAS_PRICE + 1);
 
     harness.route_tx(original.clone()).await?;
     harness.route_tx(replacement.clone()).await?;
@@ -419,13 +419,55 @@ async fn future_nonce_prequeue_replaces_staged_tx_before_gap_fill() -> Result<()
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn future_nonce_prequeue_ignores_same_price_higher_gas_limit()
+-> Result<()> {
+    let mut harness = MempoolHarness::new().await?;
+
+    let original = harness.make_tx_with_fee(2, GAS_LIMIT, GAS_PRICE);
+    let ignored = harness.make_tx_with_fee(2, GAS_LIMIT + 1, GAS_PRICE);
+
+    harness.route_tx(original.clone()).await?;
+    harness.route_tx(ignored.clone()).await?;
+
+    sleep(QUIESCENT_WAIT).await;
+    assert_eq!(harness.mempool_count().await, 0);
+    assert_eq!(harness.broadcast_count(), 0);
+
+    harness.route_nonce(1).await?;
+    harness.wait_for_counts(2, 2).await?;
+    sleep(QUIESCENT_WAIT).await;
+
+    assert_eq!(
+        harness.mempool_tx_id_for_nonce(2).await?,
+        Some(original.id())
+    );
+    assert_ne!(ignored.id(), original.id());
+    let events = harness.drain_events();
+    assert_tx_topics(
+        &events,
+        &original,
+        &[
+            ("deferred", Some("missing_intermediate_nonce")),
+            ("included", None),
+        ],
+    );
+    assert_tx_topics(
+        &events,
+        &ignored,
+        &[("dropped", Some("superseded_by_staged_tx"))],
+    );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn future_nonce_then_mempool_replacement_prefers_later_better_tx()
 -> Result<()> {
     let mut harness = MempoolHarness::new().await?;
 
     let deferred = harness.make_tx_with_fee(2, GAS_LIMIT, GAS_PRICE);
     let mempool_replacement =
-        harness.make_tx_with_fee(2, GAS_LIMIT + 2, GAS_PRICE);
+        harness.make_tx_with_fee(2, GAS_LIMIT, GAS_PRICE + 2);
 
     harness.route_tx(deferred.clone()).await?;
     sleep(QUIESCENT_WAIT).await;
