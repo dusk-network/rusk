@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Stop selecting propagated transaction envelopes from local hardfork height and use the stable client network encoding instead
 - Improve TUI startup responsiveness by avoiding long blocking phases on initial sync
 - Stabilize sync status transitions to reduce rapid `Synced`/`Syncing` toggling around normal block cadence
 - Rename dashboard action to `Import Different Wallet` and clarify that import replaces the current wallet (backup kept as `wallet.dat.old`)

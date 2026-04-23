@@ -333,7 +333,7 @@ pub unsafe extern "C" fn into_proven(
 
     tx.set_proof(proof.to_vec());
 
-    let bytes = Transaction::Phoenix(tx.clone()).to_var_bytes();
+    let bytes = Transaction::Phoenix(tx.clone()).to_network_bytes();
 
     let len = bytes.len().to_le_bytes();
 
@@ -495,7 +495,7 @@ pub unsafe extern "C" fn moonlight(
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
-    let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
+    let bytes = Transaction::Moonlight(tx.clone()).to_network_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
@@ -627,7 +627,7 @@ pub unsafe extern "C" fn moonlight_to_phoenix(
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
-    let bytes = tx.to_var_bytes();
+    let bytes = tx.to_network_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
@@ -684,7 +684,7 @@ pub unsafe extern "C" fn moonlight_stake(
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
-    let bytes = tx.to_var_bytes();
+    let bytes = tx.to_network_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
@@ -750,7 +750,7 @@ pub unsafe extern "C" fn moonlight_unstake(
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
-    let bytes = tx.to_var_bytes();
+    let bytes = tx.to_network_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
@@ -816,7 +816,7 @@ pub unsafe extern "C" fn moonlight_stake_reward(
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
-    let bytes = tx.to_var_bytes();
+    let bytes = tx.to_network_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr_len = u32::try_from(bytes.len()).expect("bytes len to be u32");
