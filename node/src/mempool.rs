@@ -47,6 +47,13 @@ use crate::{LongLivedService, Message, Network, database, vm};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
+pub(super) fn should_replace_conflicting_tx(
+    existing: &LedgerTransaction,
+    incoming: &LedgerTransaction,
+) -> bool {
+    incoming.gas_price() > existing.gas_price()
+}
+
 #[derive(Debug, Error)]
 pub enum TxAcceptanceError {
     #[error("this transaction exists in the mempool")]

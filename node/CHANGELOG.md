@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Remove unsafe consensus spin-time environment mutation during node initialization
+- Require a higher gas price to replace conflicting mempool transactions
 - Reject deploy transactions whose gas charge overflows during mempool
   admission.
 - Reject blob transactions whose gas charge overflows during mempool
