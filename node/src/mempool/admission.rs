@@ -179,6 +179,12 @@ where
                 return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
+            check_non_replacing_mempool_conflicts(
+                view,
+                &envelope,
+                &facts.spend_ids,
+            )?;
+
             let txs_count = view.mempool_txs_count();
             if txs_count >= self.max_mempool_txn_count {
                 let (lowest_price, to_delete) = view
@@ -186,7 +192,7 @@ where
                     .next()
                     .ok_or(anyhow!("Cannot get lowest fee tx"))?;
 
-                if tx.gas_price() < lowest_price {
+                if tx.gas_price() <= lowest_price {
                     Err(TxAcceptanceError::MaxTxnCountExceeded(
                         self.max_mempool_txn_count,
                     ))
@@ -234,6 +240,22 @@ where
             tx_to_delete,
         })
     }
+}
+
+fn check_non_replacing_mempool_conflicts(
+    db: &impl Mempool,
+    incoming: &LedgerTransaction,
+    spend_ids: &[SpendingId],
+) -> Result<(), TxAcceptanceError> {
+    for m_tx_id in db.mempool_txs_by_spendable_ids(spend_ids) {
+        if let Some(m_tx) = db.mempool_tx(m_tx_id)?
+            && !should_replace_conflicting_tx(&m_tx, incoming)
+        {
+            return Err(TxAcceptanceError::SpendIdExistsInMempool);
+        }
+    }
+
+    Ok(())
 }
 
 /// Applies a successful admission result to mempool state.
