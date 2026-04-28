@@ -460,6 +460,8 @@ impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
         let mut iter = db.raw_iterator_cf(fees_cf);
         if fee_desc {
             iter.seek_to_last();
+        } else {
+            iter.seek_to_first();
         };
         MemPoolFeeIterator { iter, fee_desc }
     }

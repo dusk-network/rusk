@@ -748,6 +748,34 @@ mod tests {
     }
 
     #[test]
+    fn test_mempool_txs_ids_sorted_by_low_fee() {
+        TestWrapper::new("test_mempool_txs_ids_sorted_by_low_fee").run(
+            |path| {
+                let db =
+                    Backend::create_or_open(path, DatabaseOptions::default());
+
+                db.update(|txn| {
+                    for gas_price in [3, 1, 2] {
+                        let t = ledger::faker::gen_dummy_tx(gas_price);
+                        txn.store_mempool_tx(&t, 0)?;
+                    }
+                    Ok(())
+                })
+                .unwrap();
+
+                db.view(|txn| {
+                    let fees = txn
+                        .mempool_txs_ids_sorted_by_low_fee()
+                        .map(|(fee, _)| fee)
+                        .collect::<Vec<_>>();
+
+                    assert_eq!(fees, vec![1, 2, 3]);
+                });
+            },
+        );
+    }
+
+    #[test]
     fn test_txs_count() {
         TestWrapper::new("test_txs_count").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());

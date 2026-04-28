@@ -145,6 +145,15 @@ struct MempoolHarness {
 
 impl MempoolHarness {
     async fn new() -> Result<Self> {
+        Self::with_mempool_conf(MempoolParams {
+            mempool_download_redundancy: Some(0),
+            idle_interval: Some(Duration::from_secs(60)),
+            ..Default::default()
+        })
+        .await
+    }
+
+    async fn with_mempool_conf(conf: MempoolParams) -> Result<Self> {
         let vm_config =
             RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
         let test_context = TestContext::instantiate(
@@ -179,11 +188,6 @@ impl MempoolHarness {
 
         let (event_sender, event_receiver) =
             tokio::sync::mpsc::channel::<Event>(32);
-        let conf = MempoolParams {
-            mempool_download_redundancy: Some(0),
-            idle_interval: Some(Duration::from_secs(60)),
-            ..Default::default()
-        };
 
         let mut mempool = MempoolSrv::new(conf, event_sender);
         let network_handle = node.network();
@@ -214,13 +218,24 @@ impl MempoolHarness {
         gas_limit: u64,
         gas_price: u64,
     ) -> LedgerTransaction {
+        self.make_tx_from_with_fee(0, 1, nonce, gas_limit, gas_price)
+    }
+
+    fn make_tx_from_with_fee(
+        &self,
+        sender_index: u8,
+        receiver_index: u8,
+        nonce: u64,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> LedgerTransaction {
         let wallet = self.test_context.wallet();
         let receiver = wallet
-            .account_public_key(1)
+            .account_public_key(receiver_index)
             .expect("receiver key should exist");
         let tx = wallet
             .moonlight_transaction(
-                0,
+                sender_index,
                 Some(receiver),
                 1,
                 0,
@@ -345,6 +360,67 @@ fn assert_tx_topics(
         .map(|(topic, reason)| (*topic, reason.map(str::to_owned)))
         .collect::<Vec<_>>();
     assert_eq!(tx_topics(events, tx), expected);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn mempool_ignores_same_price_higher_gas_limit_replacement() -> Result<()>
+{
+    let mut harness = MempoolHarness::new().await?;
+
+    let original = harness.make_tx_with_fee(1, GAS_LIMIT, GAS_PRICE);
+    let ignored = harness.make_tx_with_fee(1, GAS_LIMIT + 1, GAS_PRICE);
+
+    harness.route_tx(original.clone()).await?;
+    harness.wait_for_counts(1, 1).await?;
+
+    harness.route_tx(ignored.clone()).await?;
+    sleep(QUIESCENT_WAIT).await;
+
+    assert_eq!(harness.mempool_count().await, 1);
+    assert_eq!(harness.broadcast_count(), 1);
+    assert_eq!(
+        harness.mempool_tx_id_for_nonce(1).await?,
+        Some(original.id())
+    );
+    assert_ne!(ignored.id(), original.id());
+    let events = harness.drain_events();
+    assert_tx_topics(&events, &original, &[("included", None)]);
+    assert_tx_topics(&events, &ignored, &[]);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn full_mempool_ignores_equal_price_non_conflicting_tx() -> Result<()> {
+    let mut harness = MempoolHarness::with_mempool_conf(MempoolParams {
+        max_mempool_txn_count: 1,
+        mempool_download_redundancy: Some(0),
+        idle_interval: Some(Duration::from_secs(60)),
+        ..Default::default()
+    })
+    .await?;
+
+    let original = harness.make_tx_with_fee(1, GAS_LIMIT, GAS_PRICE);
+    let ignored = harness.make_tx_from_with_fee(1, 0, 1, GAS_LIMIT, GAS_PRICE);
+
+    harness.route_tx(original.clone()).await?;
+    harness.wait_for_counts(1, 1).await?;
+
+    harness.route_tx(ignored.clone()).await?;
+    sleep(QUIESCENT_WAIT).await;
+
+    assert_eq!(harness.mempool_count().await, 1);
+    assert_eq!(harness.broadcast_count(), 1);
+    assert_eq!(
+        harness.mempool_tx_id_for_nonce(1).await?,
+        Some(original.id())
+    );
+    assert_ne!(ignored.id(), original.id());
+    let events = harness.drain_events();
+    assert_tx_topics(&events, &original, &[("included", None)]);
+    assert_tx_topics(&events, &ignored, &[]);
+
+    Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
