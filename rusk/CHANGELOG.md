@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Link Boreas DuskEVM host-query activations on mainnet/testnet and enable Boreas from genesis on devnet/localnet
 - Consolidate node config resolution and chain-upgrade policy into a single internal path.
 - Gate Boreas deployment gas rules (`deploy_remaining_gas_check` and
   `charge_init_gas`) behind feature activation so pre-fork replay semantics
