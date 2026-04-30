@@ -432,6 +432,19 @@ mod tests {
             "Driver upload should document payload-too-large responses"
         );
 
+        let contract_status =
+            operation(&spec, "/on/contract:{entity}/status", "post");
+        let contract_statuses = response_statuses(contract_status);
+        assert!(
+            contract_statuses.contains("404"),
+            "Deprecated contract status should document not-found responses"
+        );
+        assert_eq!(
+            contract_status["deprecated"].as_bool(),
+            Some(true),
+            "Deprecated contract status route should be marked deprecated"
+        );
+
         let transactions_subscribe =
             operation(&spec, "/on/transactions/{topic}", "get");
         let subscribe_statuses = response_statuses(transactions_subscribe);
@@ -455,6 +468,24 @@ mod tests {
         assert!(
             entity_unsubscribe_statuses.contains("404"),
             "Entity transaction unsubscribe should document missing subscriptions"
+        );
+        assert!(
+            operation(&spec, "/on/account:{entity}/{topic}", "post")["deprecated"]
+                .as_bool()
+                == Some(true),
+            "Legacy account route should be marked deprecated"
+        );
+        assert!(
+            operation(&spec, "/on/contract_owner:{entity}/{topic}", "post")
+                ["deprecated"]
+                .as_bool()
+                == Some(true),
+            "Legacy contract owner route should be marked deprecated"
+        );
+        assert!(
+            operation(&spec, "/on/contract:{entity}/{topic}", "post")["deprecated"]
+                .is_null(),
+            "Generic contract route should remain non-deprecated"
         );
     }
 

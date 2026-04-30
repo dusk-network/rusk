@@ -94,6 +94,7 @@ impl From<RuskApiError> for HttpError {
 #[derive(Debug, Serialize, Deserialize)]
 struct ContractMetadataResponse {
     owner: String,
+    contract_owner: String,
     driver_available: bool,
     driver_signature: Option<String>,
     created_at: Option<String>,
@@ -279,15 +280,8 @@ impl Rusk {
         &self,
         contract_id: &str,
     ) -> RuskApiResult<ResponseData> {
-        let contract_id = ContractId::try_from(contract_id.to_string())
-            .map_err(|_| RuskApiError::invalid_input("Invalid contract id"))?;
-        self.query_metadata(&contract_id)
-            .map(|metadata| ResponseData::new(metadata.owner))
-            .map_err(|e| {
-                RuskApiError::not_found(format!(
-                    "Contract owner not found: {e}"
-                ))
-            })
+        self.contract_owner_bytes(contract_id)
+            .map(ResponseData::new)
     }
 
     fn upload_driver(
@@ -362,24 +356,37 @@ impl Rusk {
     }
 
     fn metadata(&self, contract_id: &str) -> RuskApiResult<ResponseData> {
+        let owner = self.contract_owner_bytes(contract_id).unwrap_or_default();
+        let driver_store = self.driver_store.read();
         let contract_id = ContractId::try_from(contract_id.to_string())
             .map_err(|_| RuskApiError::invalid_input("Invalid contract id"))?;
-        let owner = self
-            .query_metadata(&contract_id)
-            .map(|metadata| metadata.owner)
-            .unwrap_or_default();
-        let driver_store = self.driver_store.read();
         let driver_signature =
             driver_store.get_signature(&contract_id).unwrap_or(None);
         let driver_available = driver_store.driver_available(&contract_id);
         let response = ContractMetadataResponse {
             owner: bs58::encode(&owner).into_string(),
+            contract_owner: hex::encode(&owner),
             driver_available,
             driver_signature: driver_signature.map(hex::encode),
             created_at: None,
         };
         let response_value = serde_json::to_value(&response)?;
         Ok(ResponseData::new(DataType::Json(response_value)))
+    }
+
+    fn contract_owner_bytes(
+        &self,
+        contract_id: &str,
+    ) -> RuskApiResult<Vec<u8>> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| RuskApiError::invalid_input("Invalid contract id"))?;
+        self.query_metadata(&contract_id)
+            .map(|metadata| metadata.owner)
+            .map_err(|e| {
+                RuskApiError::not_found(format!(
+                    "Contract owner not found: {e}"
+                ))
+            })
     }
 
     fn handle_contract_query(

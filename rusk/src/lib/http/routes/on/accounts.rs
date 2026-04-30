@@ -1,32 +1,36 @@
 use axum::body::{Body, Bytes};
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, Response};
+use axum::middleware::from_fn;
 use tower_http::limit::RequestBodyLimitLayer;
 use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouterExt};
 use utoipa_axum::routes;
 
 use crate::http::error::ApiError;
+use crate::http::middleware::deprecation_notice_middleware;
 use crate::http::routes::on::EntityTopicPath;
 use crate::http::{HttpAppState, HttpError, MAX_RUES_REQUEST_BODY_BYTES, rues};
 
 pub(crate) fn account_and_blob_routes(
     router: OpenApiRouter<HttpAppState>,
 ) -> OpenApiRouter<HttpAppState> {
-    router
-        .routes(
-            routes!(account_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
-        .routes(
-            routes!(blobs_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
+    #[allow(deprecated)]
+    let router = router.routes(
+        routes!(account_post)
+            .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES))
+            .layer(from_fn(deprecation_notice_middleware)),
+    );
+
+    router.routes(
+        routes!(blobs_post)
+            .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
+    )
 }
 
-/// Account state and balance queries for a specific account.
-///
-/// Query account status (balance, nonce, next nonce). The supported topic is
-/// `status`. The entity parameter is a base58-encoded BLS public key.
+/// Deprecated account status query.
+#[deprecated(
+    note = "legacy /on/account:{entity}/{topic} route; scheduled for removal"
+)]
 #[utoipa::path(
     post,
     path = "/account:{entity}/{topic}",
@@ -54,6 +58,7 @@ async fn account_post(
     let request = rues::ParsedRuesRequest::entity(
         "account", &entity, &topic, headers, body,
     )?;
+    #[allow(deprecated)]
     let result = match state.services.chain_handler() {
         Some(chain) => chain.account(&entity, &topic, request.event()).await,
         None => Err(HttpError::Unsupported),

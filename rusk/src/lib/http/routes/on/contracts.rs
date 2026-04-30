@@ -1,11 +1,14 @@
 use axum::body::{Body, Bytes};
 use axum::extract::{Path, State};
-use axum::http::{HeaderMap, Response};
+use axum::http::header::LINK;
+use axum::http::{HeaderMap, HeaderValue, Response};
+use axum::middleware::from_fn;
 use tower_http::limit::RequestBodyLimitLayer;
 use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouterExt};
 use utoipa_axum::routes;
 
 use crate::http::error::ApiError;
+use crate::http::middleware::deprecation_notice_middleware;
 use crate::http::routes::on::EntityTopicPath;
 use crate::http::{
     HttpAppState, HttpError, MAX_DRIVER_UPLOAD_BODY_BYTES,
@@ -15,30 +18,39 @@ use crate::http::{
 pub(crate) fn contract_routes(
     router: OpenApiRouter<HttpAppState>,
 ) -> OpenApiRouter<HttpAppState> {
-    router
-        .routes(
-            routes!(contracts_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
-        .routes(routes!(contracts_entity_subscribe))
-        .routes(routes!(contracts_entity_unsubscribe))
-        .routes(
-            routes!(driver_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
-        .routes(
-            routes!(contract_owner_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
-        .routes(
-            routes!(contract_upload_driver_post).layer(
-                RequestBodyLimitLayer::new(MAX_DRIVER_UPLOAD_BODY_BYTES),
-            ),
-        )
-        .routes(
-            routes!(contract_post)
-                .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
-        )
+    let router =
+        router
+            .routes(routes!(contracts_post).layer(RequestBodyLimitLayer::new(
+                MAX_RUES_REQUEST_BODY_BYTES,
+            )));
+    let router = router.routes(routes!(contracts_entity_subscribe));
+    let router = router.routes(routes!(contracts_entity_unsubscribe));
+    let router =
+        router
+            .routes(routes!(driver_post).layer(RequestBodyLimitLayer::new(
+                MAX_RUES_REQUEST_BODY_BYTES,
+            )));
+    #[allow(deprecated)]
+    let router = router.routes(
+        routes!(contract_owner_post)
+            .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES))
+            .layer(from_fn(deprecation_notice_middleware)),
+    );
+    let router = router.routes(
+        routes!(contract_upload_driver_post)
+            .layer(RequestBodyLimitLayer::new(MAX_DRIVER_UPLOAD_BODY_BYTES)),
+    );
+    #[allow(deprecated)]
+    let router = router.routes(
+        routes!(contract_status_post)
+            .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES))
+            .layer(from_fn(deprecation_notice_middleware)),
+    );
+
+    router.routes(
+        routes!(contract_post)
+            .layer(RequestBodyLimitLayer::new(MAX_RUES_REQUEST_BODY_BYTES)),
+    )
 }
 
 /// Smart contract method invocations.
@@ -219,10 +231,10 @@ async fn driver_post(
     request.into_response(result)
 }
 
-/// Contract ownership and access-control queries.
-///
-/// The current handler ignores `topic` and resolves owner by contract entity.
-/// The topic segment is preserved for legacy route compatibility.
+/// Deprecated. Use `/on/contract:{entity}/metadata.contract_owner`.
+#[deprecated(
+    note = "legacy /on/contract_owner:{entity}/{topic} route; use /on/contract:{entity}/metadata.contract_owner; scheduled for removal"
+)]
 #[utoipa::path(
     post,
     path = "/contract_owner:{entity}/{topic}",
@@ -258,13 +270,22 @@ async fn contract_owner_post(
         headers,
         body,
     )?;
+    #[allow(deprecated)]
     let result = match state.services.rusk_handler() {
         Some(rusk) => {
             rusk.contract_owner(&entity, &topic, request.event()).await
         }
         None => Err(HttpError::Unsupported),
     };
-    request.into_response(result)
+    let mut response = request.into_response(result)?;
+    response.headers_mut().insert(
+        LINK,
+        HeaderValue::from_str(&format!(
+            "</on/contract:{entity}/metadata>; rel=\"successor-version\""
+        ))
+        .expect("legacy contract owner link header should be valid"),
+    );
+    Ok(response)
 }
 
 /// Upload a contract WASM driver.
@@ -312,11 +333,49 @@ async fn contract_upload_driver_post(
     request.into_response(result)
 }
 
+/// Deprecated contract balance query.
+#[deprecated(
+    note = "legacy /on/contract:{entity}/status route; scheduled for removal"
+)]
+#[utoipa::path(
+    post,
+    path = "/contract:{entity}/status",
+    tag = "RUES / Dispatch",
+    params(
+        crate::http::openapi::VersionHeaders,
+        ("entity" = String, Path, description = "Contract address or ID (hex)")
+    ),
+    responses(
+        (status = 200, description = "Contract status response", body = serde_json::Value, content_type = "application/json"),
+        (status = 400, description = "Invalid contract request or version headers", body = crate::http::openapi::RuesErrorResponse),
+        (status = 404, description = "Contract status not found", body = crate::http::openapi::RuesErrorResponse),
+        (status = 413, description = "Request body exceeds the default RUES size limit"),
+        (status = 422, description = "Malformed request headers or payload encoding", body = crate::http::openapi::RuesErrorResponse),
+        (status = 500, description = "Internal error while resolving the contract status request", body = crate::http::openapi::RuesErrorResponse),
+        (status = 501, description = "Contract status handler not configured", body = crate::http::openapi::RuesErrorResponse)
+    )
+)]
+async fn contract_status_post(
+    State(state): State<HttpAppState>,
+    Path(entity): Path<String>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response<Body>, ApiError> {
+    let topic = "status".to_string();
+    let request = rues::ParsedRuesRequest::entity(
+        "contract", &entity, &topic, headers, body,
+    )?;
+    #[allow(deprecated)]
+    let result = match state.services.chain_handler() {
+        Some(chain) => chain.contract(&entity, &topic, request.event()).await,
+        None => Err(HttpError::Unsupported),
+    };
+    request.into_response(result)
+}
+
 /// Direct contract method invocations.
 ///
-/// Supported topics include `status` (contract balance query), `metadata`, and
-/// `download_driver`. The dedicated upload endpoint is documented separately at
-/// `/on/contract:{entity}/upload_driver`.
+/// `metadata` includes `contract_owner`.
 #[utoipa::path(
     post,
     path = "/contract:{entity}/{topic}",
@@ -324,16 +383,16 @@ async fn contract_upload_driver_post(
     params(
         crate::http::openapi::VersionHeaders,
         ("entity" = String, Path, description = "Contract address or ID (hex)"),
-        ("topic" = String, Path, description = "Contract topic: status | metadata | download_driver")
+        ("topic" = String, Path, description = "Contract topic: metadata | download_driver")
     ),
     responses(
-        (status = 200, description = "Contract status, metadata, or driver response", content(
+        (status = 200, description = "Contract metadata or driver response", content(
             (serde_json::Value = "application/json"),
             (String = "application/octet-stream"),
             (String = "text/plain")
         )),
         (status = 400, description = "Invalid contract request or version headers", body = crate::http::openapi::RuesErrorResponse),
-        (status = 404, description = "Contract metadata, driver, or status not found", body = crate::http::openapi::RuesErrorResponse),
+        (status = 404, description = "Contract metadata or driver not found", body = crate::http::openapi::RuesErrorResponse),
         (status = 413, description = "Request body exceeds the default RUES size limit"),
         (status = 422, description = "Malformed request headers or payload encoding", body = crate::http::openapi::RuesErrorResponse),
         (status = 500, description = "Internal error while resolving the contract request", body = crate::http::openapi::RuesErrorResponse),
@@ -349,17 +408,9 @@ async fn contract_post(
     let request = rues::ParsedRuesRequest::entity(
         "contract", &entity, &topic, headers, body,
     )?;
-    let result = match topic.as_str() {
-        "status" => match state.services.chain_handler() {
-            Some(chain) => {
-                chain.contract(&entity, &topic, request.event()).await
-            }
-            None => Err(HttpError::Unsupported),
-        },
-        _ => match state.services.rusk_handler() {
-            Some(rusk) => rusk.contract(&entity, &topic, request.event()).await,
-            None => Err(HttpError::Unsupported),
-        },
+    let result = match state.services.rusk_handler() {
+        Some(rusk) => rusk.contract(&entity, &topic, request.event()).await,
+        None => Err(HttpError::Unsupported),
     };
     request.into_response(result)
 }

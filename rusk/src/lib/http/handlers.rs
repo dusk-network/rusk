@@ -81,6 +81,9 @@ pub trait ChainRequestHandler: Send + Sync + 'static {
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData>;
     /// Handle `/on/account:{entity}/{topic}` requests against chain state.
+    #[deprecated(
+        note = "legacy /on/account:{entity}/{topic} handler; scheduled for removal"
+    )]
     async fn account(
         &self,
         entity: &str,
@@ -90,6 +93,9 @@ pub trait ChainRequestHandler: Send + Sync + 'static {
     /// Handle chain-owned `/on/contract:{entity}/{topic}` topics that expose
     /// chain status for a contract. Currently this is only the `status` topic
     /// (which is the contract balance).
+    #[deprecated(
+        note = "legacy /on/contract:{entity}/status handler; scheduled for removal"
+    )]
     async fn contract(
         &self,
         entity: &str,
@@ -145,6 +151,9 @@ pub trait RuskRequestHandler: Send + Sync + 'static {
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData>;
     /// Handle `/on/contract_owner:{entity}/{topic}` owner lookup routes.
+    #[deprecated(
+        note = "legacy /on/contract_owner:{entity}/{topic} handler; use /on/contract:{entity}/metadata.contract_owner; scheduled for removal"
+    )]
     async fn contract_owner(
         &self,
         entity: &str,
