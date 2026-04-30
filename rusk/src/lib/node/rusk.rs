@@ -44,14 +44,18 @@ use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::{info, warn};
 
-use super::RuskVmConfig;
 use super::fork_policy::set_hard_fork_activations;
+use super::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
     RuesEvent, Rusk, RuskTip, get_block_rewards, set_vm_host_context,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
+
+fn boreas_active(vm_config: &RuskVmConfig, block_height: u64) -> bool {
+    vm_config.feature_active_at(FEATURE_HARDFORK_BOREAS, block_height)
+}
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -159,10 +163,19 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let execution_config = self.vm_config.to_execution_config(block_height);
+        let boreas_active = boreas_active(&self.vm_config, block_height);
         let replay_spent_txs =
             |spent_txs: &[SpentTransaction]| -> Result<Session, StateTransitionError> {
                 let mut session =
                     self.new_block_session(block_height, prev_state)?;
+
+                if boreas_active {
+                    slash(&mut session, slashes.clone()).map_err(|err| {
+                        StateTransitionError::ExecutionError(format!(
+                            "{err}"
+                        ))
+                    })?;
+                }
 
                 for spent_tx in spent_txs {
                     execute(
@@ -180,6 +193,16 @@ impl Rusk {
 
                 Ok(session)
             };
+
+        if boreas_active {
+            // Apply slashes before transaction execution so in-block stake
+            // operations cannot bypass slash accounting.
+            let slash_events =
+                slash(&mut session, slashes.clone()).map_err(|err| {
+                    StateTransitionError::ExecutionError(format!("{err}"))
+                })?;
+            event_bloom.add_events(&slash_events);
+        }
 
         // We always write the faults len in a u32
         let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
@@ -352,19 +375,31 @@ impl Rusk {
             }
         }
 
-        let coinbase_events = reward_and_slash(
+        let reward_events = reward(
             &mut session,
             block_height,
             generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
+
+        if !boreas_active {
+            let slash_events = slash(&mut session, slashes).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+            event_bloom.add_events(&slash_events);
+        }
+
+        let root_update_events =
+            update_transfer_root(&mut session).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+        event_bloom.add_events(&root_update_events);
 
         let state_root = session.root();
 
@@ -687,6 +722,26 @@ impl Rusk {
 
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
+        let boreas_active = boreas_active(&self.vm_config, block_height);
+
+        if boreas_active {
+            // Apply slashes before transaction execution so in-block stake
+            // operations cannot bypass slash accounting.
+            let slash_events =
+                slash(&mut session, slashes.clone()).map_err(|err| {
+                    StateTransitionError::ExecutionError(format!("{err}"))
+                })?;
+            event_bloom.add_events(&slash_events);
+
+            let slash_events: Vec<_> = slash_events
+                .into_iter()
+                .map(|event| ContractTxEvent {
+                    event: event.into(),
+                    origin: block_hash,
+                })
+                .collect();
+            events.extend(slash_events);
+        }
 
         // Execute transactions
         for unspent_tx in txs {
@@ -735,29 +790,60 @@ impl Rusk {
             spent_txs.push(spent);
         }
 
-        // Apply rewards and slashes
-        let coinbase_events = reward_and_slash(
+        // Apply rewards.
+        let reward_events = reward(
             &mut session,
             block_height,
             &generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
 
-        let coinbase_events: Vec<_> = coinbase_events
+        let reward_events: Vec<_> = reward_events
             .into_iter()
             .map(|event| ContractTxEvent {
                 event: event.into(),
                 origin: block_hash,
             })
             .collect();
-        events.extend(coinbase_events);
+        events.extend(reward_events);
+
+        if !boreas_active {
+            // Pre-Boreas compatibility path.
+            let slash_events = slash(&mut session, slashes).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+            event_bloom.add_events(&slash_events);
+
+            let slash_events: Vec<_> = slash_events
+                .into_iter()
+                .map(|event| ContractTxEvent {
+                    event: event.into(),
+                    origin: block_hash,
+                })
+                .collect();
+            events.extend(slash_events);
+        }
+
+        let root_update_events =
+            update_transfer_root(&mut session).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+        event_bloom.add_events(&root_update_events);
+
+        let root_update_events: Vec<_> = root_update_events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event: event.into(),
+                origin: block_hash,
+            })
+            .collect();
+        events.extend(root_update_events);
 
         // Get new state root
         let state_root = session.root();
@@ -774,41 +860,15 @@ impl Rusk {
     }
 }
 
-/// Execute rewards and slashes in a VM session.
-///
-/// The Trasnfer contract's note tree root is updated accordingly.
-fn reward_and_slash(
-    session: &mut Session,
-    block_height: u64,
-    generator: &BlsPublicKey,
-    voters: &[Voter],
-    spent_amount: Dusk,
-    slashes: Vec<Slash>,
-) -> Result<Vec<Event>> {
-    let mut events = vec![];
-
-    // Apply rewards
-    events.extend(reward(
-        session,
-        block_height,
-        generator,
-        voters,
-        spent_amount,
-    )?);
-
-    // Apply slashes
-    events.extend(slash(session, slashes)?);
-
-    // Update the note tree root in the Transfer contract
+/// Updates the Transfer contract's note tree root.
+fn update_transfer_root(session: &mut Session) -> Result<Vec<Event>> {
     let r = session.call::<_, ()>(
         TRANSFER_CONTRACT,
         "update_root",
         &(),
         u64::MAX,
     )?;
-    events.extend(r.events);
-
-    Ok(events)
+    Ok(r.events)
 }
 
 /// Apply rewards by calling the `reward` method in the Stake Contract
