@@ -108,8 +108,9 @@ pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
 }
 
 pub struct HttpServer {
-    handle: task::JoinHandle<()>,
-    _shutdown: broadcast::Sender<Infallible>,
+    handle: Option<task::JoinHandle<()>>,
+    #[cfg_attr(feature = "chain", allow(dead_code))]
+    shutdown: Option<broadcast::Sender<Infallible>>,
 }
 
 pub struct HttpServerConfig {
@@ -121,8 +122,17 @@ pub struct HttpServerConfig {
 }
 
 impl HttpServer {
-    pub async fn wait(self) -> Result<(), JoinError> {
-        self.handle.await
+    pub async fn wait(&mut self) -> Result<(), JoinError> {
+        match self.handle.take() {
+            Some(handle) => handle.await,
+            None => Ok(()),
+        }
+    }
+
+    #[cfg(not(feature = "chain"))]
+    pub(crate) async fn shutdown(&mut self) -> Result<(), JoinError> {
+        self.shutdown.take(); // this closes the channel to signal shutdown
+        self.wait().await
     }
 
     pub async fn bind<A, H, P1, P2>(
@@ -160,8 +170,8 @@ impl HttpServer {
         ));
 
         let server = Self {
-            handle,
-            _shutdown: shutdown_sender,
+            handle: Some(handle),
+            shutdown: Some(shutdown_sender),
         };
         Ok((server, local_addr))
     }
@@ -275,16 +285,9 @@ async fn listening_loop<H>(
         ws_event_channel_cap,
     };
 
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(4)
-        .thread_name("http")
-        .enable_all()
-        .build()
-        .expect("http runtime to be created");
     loop {
         tokio::select! {
             _ = shutdown.recv() => {
-                runtime.shutdown_background();
                 break;
             }
             r = listener.accept() => {
@@ -298,8 +301,9 @@ async fn listening_loop<H>(
                 let stream = TokioIo::new(stream);
                 let service = service.clone();
 
-                runtime.spawn(async move {
-                    let conn = http.serve_connection_with_upgrades(stream, service);
+                task::spawn(async move {
+                    let conn =
+                        http.serve_connection_with_upgrades(stream, service);
                     conn.await
                 });
             }
