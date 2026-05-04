@@ -715,8 +715,9 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bls12_381-bls"
-version = "0.6.0-rc.0"
-source = "git+https://github.com/dusk-network/bls12_381-bls-private.git?rev=2bbf457d31d83df92f3afeca8e9fc72c3d33545b#2bbf457d31d83df92f3afeca8e9fc72c3d33545b"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c61c05b7bfa0cff7b7f6bf000589de5541fc03b702adadfbcfbb6d782a2d643"
 dependencies = [
  "bs58",
  "bytecheck",
@@ -1300,8 +1301,9 @@ dependencies = [
 
 [[package]]
 name = "crumbles"
-version = "0.4.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=66ddb31693ffb0fd5a4faac3c80930e6228e0836#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f3476b7dda7a457e938e4b958aa7b8db66eb3f6bc72894454a86f99bab3dea2"
 dependencies = [
  "libc",
  "rangemap",
@@ -1663,8 +1665,9 @@ dependencies = [
 
 [[package]]
 name = "dusk-jubjub"
-version = "0.15.1"
-source = "git+https://github.com/dusk-network/jubjub-private.git?rev=6e2b63f59edac8afa4f81a28b12d88529af37cdb#6e2b63f59edac8afa4f81a28b12d88529af37cdb"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49c388e710446aabbe7c7717109a239cea254594253ceb94e9134976c5b59509"
 dependencies = [
  "bitvec",
  "blake2b_simd",
@@ -1771,8 +1774,9 @@ dependencies = [
 
 [[package]]
 name = "dusk-plonk"
-version = "0.22.0-rc.0"
-source = "git+https://github.com/dusk-network/plonk-private.git?rev=55083f925935b67b116c089e186ee1b261e0fdf0#55083f925935b67b116c089e186ee1b261e0fdf0"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "949ec126023c47910d93a0fcb35ef20243f75eb7a726fcaa6541d8c44fadb66d"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -3141,8 +3145,9 @@ dependencies = [
 
 [[package]]
 name = "jubjub-elgamal"
-version = "0.5.0-rc.1"
-source = "git+https://github.com/dusk-network/jubjub-elgamal-private.git?rev=1f0d481fb29282c69fdc0063a0404cb89a53bd10#1f0d481fb29282c69fdc0063a0404cb89a53bd10"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22c81bad2a54e37f6eadcdba35f35761b7dba5665af26ea16f29f0d9372fb64f"
 dependencies = [
  "dusk-bytes",
  "dusk-jubjub",
@@ -3932,8 +3937,9 @@ dependencies = [
 
 [[package]]
 name = "phoenix-circuits"
-version = "0.8.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=3d5b9838d7e824b441c93de9aaa38737263b97bd#3d5b9838d7e824b441c93de9aaa38737263b97bd"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5583c3db8adc437f7854319a6a815666b95475797ba82d8cb5f9f5a9f18fe55"
 dependencies = [
  "dusk-bls12_381",
  "dusk-bytes",
@@ -3948,8 +3954,9 @@ dependencies = [
 
 [[package]]
 name = "phoenix-core"
-version = "0.35.0-rc.0"
-source = "git+https://github.com/dusk-network/phoenix-private.git?rev=3d5b9838d7e824b441c93de9aaa38737263b97bd#3d5b9838d7e824b441c93de9aaa38737263b97bd"
+version = "0.35.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1930c6dd9d1054cf0cd725325323a5381fe3854708a2cebe38ccab8699579e2e"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -3975,8 +3982,9 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.30.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=66ddb31693ffb0fd5a4faac3c80930e6228e0836#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "768a69c4aac88337ec2c1b9ac1624d4c52bd50c6ecbdaed70b5854006d56fe01"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3997,8 +4005,9 @@ dependencies = [
 
 [[package]]
 name = "piecrust-uplink"
-version = "0.20.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=66ddb31693ffb0fd5a4faac3c80930e6228e0836#66ddb31693ffb0fd5a4faac3c80930e6228e0836"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9df8d2d3f5deb052f61c65d01d892c4babe604cd884cdd2fcef7f6da4392b476"
 dependencies = [
  "bytecheck",
  "dlmalloc",
