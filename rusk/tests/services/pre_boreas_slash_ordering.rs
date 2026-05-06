@@ -8,7 +8,7 @@ use dusk_bytes::Serializable;
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
-    Attestation, Block, Header, IterationsInfo, Transaction as NodeTransaction,
+    Attestation, Block, CanonicalTransaction, Header, IterationsInfo,
 };
 use node_data::message::payload::{RatificationResult, Vote};
 use rusk::DUSK_CONSENSUS_KEY;
@@ -51,7 +51,11 @@ pub async fn slash_events_follow_tx_events_pre_boreas() -> Result<()> {
     let transfer_tx = wallet
         .moonlight_transfer(0, receiver_pk, 1, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create transfer tx");
-    let node_tx: NodeTransaction = transfer_tx.into();
+    let canonical_tx = CanonicalTransaction::canonicalize_for_ledger(
+        transfer_tx,
+        BLOCK_HEIGHT,
+    );
+    let node_tx = canonical_tx.into();
 
     let prev_state = rusk.state_root();
     let generator = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
