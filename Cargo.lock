@@ -1722,7 +1722,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-consensus"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1742,7 +1742,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-core"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "ark-bn254",
  "ark-groth16",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-data-driver"
-version = "0.3.2-alpha.1"
+version = "1.7.0-rc.0"
 dependencies = [
  "base64",
  "bytecheck",
@@ -1830,7 +1830,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-node"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1866,7 +1866,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-node-data"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "aes 0.7.5",
  "aes-gcm",
@@ -1931,7 +1931,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-rusk"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -1997,7 +1997,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-rusk-test"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -2035,7 +2035,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-stake-contract-dd"
-version = "0.3.1-alpha.1"
+version = "1.7.0-rc.0"
 dependencies = [
  "dusk-core",
  "dusk-data-driver",
@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-transfer-contract-dd"
-version = "0.3.1-alpha.1"
+version = "1.7.0-rc.0"
 dependencies = [
  "dusk-core",
  "dusk-data-driver",
@@ -2051,7 +2051,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-vm"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "blake2b_simd",
  "blake3",
@@ -2079,7 +2079,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-wallet-core"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "bytecheck",
  "dlmalloc",
@@ -4747,7 +4747,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-profile"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "blake3",
  "console",
@@ -4763,7 +4763,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-prover"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "dusk-bytes",
  "dusk-core",
@@ -4777,7 +4777,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-recovery"
-version = "1.6.0"
+version = "1.7.0-rc.0"
 dependencies = [
  "bs58",
  "cargo_toml",
