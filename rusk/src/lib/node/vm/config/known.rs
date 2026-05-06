@@ -136,7 +136,10 @@ const TESTNET_PLONK_V2_ACTIVATION: FeatureActivation =
 
 const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(2_773_727);
-const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation = NEVER;
+
+/// Estimated testnet block height for 12th May 2026 around 10:00 UTC.
+const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(3_378_000);
 
 /// Testnet VM configuration.
 static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
