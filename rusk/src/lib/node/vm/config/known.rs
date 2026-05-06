@@ -180,7 +180,7 @@ static DEVNET_CONFIG: LazyLock<WellKnownConfig> =
             (HQ_VERIFY_KZG_PROOF, GENESIS),
             (HQ_SECP256K1_RECOVER, GENESIS),
             (FEATURE_BLOB, GENESIS),
-            (FEATURE_PLONK_V2, NEVER),
+            (FEATURE_PLONK_V2, GENESIS),
             (FEATURE_HARDFORK_AEGIS, GENESIS),
             (FEATURE_HARDFORK_BOREAS, GENESIS),
             (FEATURE_DISABLE_WASM64, GENESIS),
