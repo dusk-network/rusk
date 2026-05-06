@@ -30,21 +30,21 @@ edition = "2024"
 
 [workspace.dependencies]
 # Workspace internal dependencies
-dusk-consensus = { version = "1.6.0", path = "./consensus/" }
-dusk-core = { version = "1.6.0", path = "./core/" }
-dusk-vm = { version = "1.6.0", path = "./vm/" }
-node = { version = "1.6.0", path = "./node/", package = "dusk-node" }
-node-data = { version = "1.6.0", path = "./node-data/", package = "dusk-node-data" }
-rusk-profile = { version = "1.6.0", path = "./rusk-profile/" }
-rusk-prover = { version = "1.6.0", path = "./rusk-prover/" }
-rusk-recovery = { version = "1.6.0", path = "./rusk-recovery/" }
-wallet-core = { version = "1.6.0", path = "./wallet-core/", package = "dusk-wallet-core" }
+dusk-consensus = { version = "1.7.0-rc.0", path = "./consensus/" }
+dusk-core = { version = "1.7.0-rc.0", path = "./core/" }
+dusk-vm = { version = "1.7.0-rc.0", path = "./vm/" }
+node = { version = "1.7.0-rc.0", path = "./node/", package = "dusk-node" }
+node-data = { version = "1.7.0-rc.0", path = "./node-data/", package = "dusk-node-data" }
+rusk-profile = { version = "1.7.0-rc.0", path = "./rusk-profile/" }
+rusk-prover = { version = "1.7.0-rc.0", path = "./rusk-prover/" }
+rusk-recovery = { version = "1.7.0-rc.0", path = "./rusk-recovery/" }
+wallet-core = { version = "1.7.0-rc.0", path = "./wallet-core/", package = "dusk-wallet-core" }
 
-dusk-data-driver = { version = "0.3.2-alpha.1", path = "./data-drivers/data-driver" }
+dusk-data-driver = { version = "1.7.0-rc.0", path = "./data-drivers/data-driver" }
 # dusk-data-driver = "0.3.1"
-dusk-transfer-contract-dd = { version = "0.3.1-alpha.1", path = "./data-drivers/transfer-contract" }
+dusk-transfer-contract-dd = { version = "1.7.0-rc.0", path = "./data-drivers/transfer-contract" }
 # dusk-transfer-contract-dd = "0.3.0"
-dusk-stake-contract-dd = { version = "0.3.1-alpha.1", path = "./data-drivers/stake-contract" }
+dusk-stake-contract-dd = { version = "1.7.0-rc.0", path = "./data-drivers/stake-contract" }
 # dusk-stake-contract-dd = "0.3.0"
 
 # Dusk dependencies outside the workspace

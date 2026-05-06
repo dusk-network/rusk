@@ -229,7 +229,6 @@ pub async fn slash_after_unstake_and_withdraw() -> Result<()> {
 
 /// Reproduces a same-block race where a validator is slashed and fully
 /// unstakes in the same block.
-///
 fn slash_before_same_block_unstake_impl(tc: &TestContext, expected_faults: u8) {
     let wallet = tc.wallet();
     let rusk = tc.rusk();
