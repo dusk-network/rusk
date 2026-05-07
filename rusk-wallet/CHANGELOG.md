@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-07
+
 ### Added
 
 - Select the active protocol transaction format when encoding propagated
@@ -205,7 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
 <!-- Releases -->
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.4.0...HEAD
+[0.4.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.3.0...rusk-wallet-0.4.0
 [0.3.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.2.0...rusk-wallet-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...rusk-wallet-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0
