@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `WASM_REFERENCE_TYPES` VM feature activation wiring.
 - Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
   decoding.
 - Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.

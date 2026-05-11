@@ -13,7 +13,8 @@ use dusk_vm::FeatureActivation;
 use super::feature::{
     FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
     FEATURE_HARDFORK_AEGIS, FEATURE_HARDFORK_BOREAS, FEATURE_PLONK_V2,
-    HQ_KECCAK256, HQ_SECP256K1_RECOVER, HQ_SHA256, HQ_VERIFY_KZG_PROOF,
+    FEATURE_WASM_REFERENCE_TYPES, HQ_KECCAK256, HQ_SECP256K1_RECOVER,
+    HQ_SHA256, HQ_VERIFY_KZG_PROOF,
 };
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
@@ -89,6 +90,8 @@ const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
 const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_590_904);
 const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation = NEVER;
+const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
+    MAINNET_HARDFORK_BOREAS_ACTIVATION;
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
@@ -108,6 +111,10 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
             (FEATURE_PLONK_V2, MAINNET_PLONK_V2_ACTIVATION),
             (FEATURE_HARDFORK_AEGIS, MAINNET_HARDFORK_AEGIS_ACTIVATION),
             (FEATURE_HARDFORK_BOREAS, MAINNET_HARDFORK_BOREAS_ACTIVATION),
+            (
+                FEATURE_WASM_REFERENCE_TYPES,
+                MAINNET_WASM_REFERENCE_TYPES_ACTIVATION,
+            ),
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
@@ -141,6 +148,10 @@ const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
 const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_378_000);
 
+/// Historical activation matching the 1.7.0-rc.0 rollout window on testnet.
+const TESTNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(3_345_000);
+
 /// Testnet VM configuration.
 static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
     LazyLock::new(|| WellKnownConfig {
@@ -159,6 +170,10 @@ static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
             (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
             (FEATURE_HARDFORK_BOREAS, TESTNET_HARDFORK_BOREAS_ACTIVATION),
+            (
+                FEATURE_WASM_REFERENCE_TYPES,
+                TESTNET_WASM_REFERENCE_TYPES_ACTIVATION,
+            ),
             (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
             (FEATURE_DISABLE_WASM32, NEVER),
             (FEATURE_DISABLE_3RD_PARTY, NEVER),
@@ -183,6 +198,7 @@ static DEVNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_PLONK_V2, GENESIS),
             (FEATURE_HARDFORK_AEGIS, GENESIS),
             (FEATURE_HARDFORK_BOREAS, GENESIS),
+            (FEATURE_WASM_REFERENCE_TYPES, GENESIS),
             (FEATURE_DISABLE_WASM64, GENESIS),
         ],
     });
@@ -205,6 +221,7 @@ static LOCALNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_PLONK_V2, GENESIS),
             (FEATURE_HARDFORK_AEGIS, GENESIS),
             (FEATURE_HARDFORK_BOREAS, GENESIS),
+            (FEATURE_WASM_REFERENCE_TYPES, GENESIS),
             (FEATURE_DISABLE_WASM64, GENESIS),
         ],
     });
