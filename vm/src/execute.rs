@@ -290,6 +290,12 @@ fn contract_deploy(
                 receipt.data = Err(ContractError::Panic(
                     "failed bytecode hash check".into(),
                 ))
+            } else if let Err(err) = validate_deploy_bytecode_features(
+                &deploy.bytecode.bytes,
+                config.with_reference_types,
+            ) {
+                let msg = format!("failed deployment: {err}");
+                receipt.data = Err(ContractError::Panic(msg))
             } else {
                 let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
                 let init_budget = if config.charge_init_gas {
@@ -326,6 +332,28 @@ fn contract_deploy(
             }
         }
     }
+}
+
+fn validate_deploy_bytecode_features(
+    bytecode: &[u8],
+    with_reference_types: bool,
+) -> Result<(), String> {
+    if with_reference_types {
+        return Ok(());
+    }
+
+    let mut features = WasmFeatures::default();
+    features.remove(WasmFeatures::REFERENCE_TYPES);
+
+    Validator::new_with_features(features)
+        .validate_all(bytecode)
+        .map(|_| ())
+        .map_err(|err| {
+            format!(
+                "WebAssembly validation error with reference-types disabled: \
+                 {err}"
+            )
+        })
 }
 
 fn apply_deploy_init_receipt(
@@ -575,6 +603,40 @@ mod tests {
                 expected,
             );
         }
+    }
+
+    #[test]
+    fn deploy_bytecode_reference_types_are_height_gated() {
+        const EMPTY_MODULE: &[u8] = b"\0asm\x01\0\0\0";
+        const FUNC_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x01, // type section
+            0x05, // section length
+            0x01, // type count
+            0x60, // function type
+            0x01, // one parameter
+            0x6f, // externref
+            0x00, // no results
+        ];
+
+        validate_deploy_bytecode_features(EMPTY_MODULE, false)
+            .expect("MVP bytecode should validate without reference-types");
+
+        let err = validate_deploy_bytecode_features(
+            FUNC_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types bytecode should fail before activation");
+        assert!(
+            err.contains("reference types") || err.contains("reference-types"),
+            "unexpected validation error: {err}"
+        );
+
+        validate_deploy_bytecode_features(FUNC_WITH_EXTERNREF_MODULE, true)
+            .expect(
+                "reference-types bytecode should be allowed after activation",
+            );
     }
 
     #[test]
