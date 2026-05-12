@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reject Wasm reference-types deployment bytecode before VM feature
   activation.
+- Pin pre-activation Wasm deploy validation to an explicit feature set and use
+  a stable rejection string.
 - Preserve deploy/init events in pre-Boreas replay so historical event blooms
   remain stable when deployment receipts are returned from Piecrust
 - Reuse a shared secp256k1 context in `secp256k1_recover` to avoid per-call allocations (P1.2-6)

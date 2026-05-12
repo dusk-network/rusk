@@ -17,6 +17,8 @@ use piecrust::{CallReceipt, Session};
 use rkyv::Deserialize;
 use wasmparser::*;
 
+const DEPLOY_FEATURE_VALIDATION_ERROR: &str = "failed deployment: bytecode uses WebAssembly features not permitted before reference-types activation";
+
 use crate::ExecutionError;
 
 /// Executes a transaction in the provided session.
@@ -294,8 +296,7 @@ fn contract_deploy(
                 &deploy.bytecode.bytes,
                 config.with_reference_types,
             ) {
-                let msg = format!("failed deployment: {err}");
-                receipt.data = Err(ContractError::Panic(msg))
+                receipt.data = Err(ContractError::Panic(err.into()))
             } else {
                 let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
                 let init_budget = if config.charge_init_gas {
@@ -337,23 +338,30 @@ fn contract_deploy(
 fn validate_deploy_bytecode_features(
     bytecode: &[u8],
     with_reference_types: bool,
-) -> Result<(), String> {
+) -> Result<(), &'static str> {
     if with_reference_types {
         return Ok(());
     }
 
-    let mut features = WasmFeatures::default();
-    features.remove(WasmFeatures::REFERENCE_TYPES);
-
-    Validator::new_with_features(features)
+    Validator::new_with_features(pre_reference_types_deploy_features())
         .validate_all(bytecode)
         .map(|_| ())
-        .map_err(|err| {
-            format!(
-                "WebAssembly validation error with reference-types disabled: \
-                 {err}"
-            )
-        })
+        .map_err(|_| DEPLOY_FEATURE_VALIDATION_ERROR)
+}
+
+fn pre_reference_types_deploy_features() -> WasmFeatures {
+    // Keep this independent from `WasmFeatures::default()`: that default is
+    // tied to the local wasmparser version and can grow when the dependency is
+    // bumped. This set mirrors Piecrust's historical dusk-wasmtime config
+    // before the gc feature made reference-types available, plus the explicit
+    // `wasm_memory64(true)` setting used by Piecrust.
+    WasmFeatures::WASM2
+        .difference(WasmFeatures::REFERENCE_TYPES)
+        .union(WasmFeatures::RELAXED_SIMD)
+        .union(WasmFeatures::MULTI_MEMORY)
+        .union(WasmFeatures::EXCEPTIONS)
+        .union(WasmFeatures::MEMORY64)
+        .union(WasmFeatures::EXTENDED_CONST)
 }
 
 fn apply_deploy_init_receipt(
@@ -628,15 +636,32 @@ mod tests {
             false,
         )
         .expect_err("reference-types bytecode should fail before activation");
-        assert!(
-            err.contains("reference types") || err.contains("reference-types"),
-            "unexpected validation error: {err}"
-        );
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
 
         validate_deploy_bytecode_features(FUNC_WITH_EXTERNREF_MODULE, true)
             .expect(
                 "reference-types bytecode should be allowed after activation",
             );
+    }
+
+    #[test]
+    fn pre_reference_types_deploy_features_are_pinned() {
+        let features = pre_reference_types_deploy_features();
+
+        assert!(!features.contains(WasmFeatures::REFERENCE_TYPES));
+        assert!(!features.contains(WasmFeatures::FUNCTION_REFERENCES));
+        assert!(!features.contains(WasmFeatures::GC));
+        assert!(!features.contains(WasmFeatures::THREADS));
+        assert!(!features.contains(WasmFeatures::TAIL_CALL));
+
+        assert!(features.contains(WasmFeatures::BULK_MEMORY));
+        assert!(features.contains(WasmFeatures::MULTI_VALUE));
+        assert!(features.contains(WasmFeatures::SIMD));
+        assert!(features.contains(WasmFeatures::RELAXED_SIMD));
+        assert!(features.contains(WasmFeatures::MULTI_MEMORY));
+        assert!(features.contains(WasmFeatures::EXCEPTIONS));
+        assert!(features.contains(WasmFeatures::MEMORY64));
+        assert!(features.contains(WasmFeatures::EXTENDED_CONST));
     }
 
     #[test]
