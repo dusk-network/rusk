@@ -90,8 +90,7 @@ const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
 const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_590_904);
 const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation = NEVER;
-const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
-    MAINNET_HARDFORK_BOREAS_ACTIVATION;
+const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation = NEVER;
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
