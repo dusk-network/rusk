@@ -37,7 +37,8 @@ use rusk_wallet::gas::{
     DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE, Gas, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, EPOCH, Error, IV_SIZE, MAX_PROFILES, Profile, SALT_SIZE, Wallet,
+    Address, BlobError, EPOCH, Error, IV_SIZE, MAX_PROFILES, Profile,
+    SALT_SIZE, Wallet,
 };
 use wallet_core::BalanceInfo;
 
@@ -825,10 +826,7 @@ impl Command {
             } => {
                 let address = address.unwrap_or(wallet.default_address());
                 address.public_key().map_err(|_| {
-                    Error::Blob(
-                        "Blob is unsupported for Shielded Addresses"
-                            .to_string(),
-                    )
+                    Error::Blob(BlobError::UnsupportedShieldedAddress)
                 })?;
                 let addr_idx = wallet.find_index(&address)?;
                 let gas = Gas::new(gas_limit).with_price(gas_price);
@@ -836,19 +834,28 @@ impl Command {
                 let mut tx_blobs = vec![];
                 for path in blobs {
                     let mut blob =
-                        std::fs::read(path.as_path()).map_err(|e| {
-                            Error::Blob(format!("Invalid path {path:?}: {e:?}"))
+                        std::fs::read(path.as_path()).map_err(|source| {
+                            Error::Blob(BlobError::InvalidPath {
+                                path: path.clone(),
+                                source,
+                            })
                         })?;
                     if blob.starts_with(b"0x") {
-                        blob = hex::decode(&blob[2..]).map_err(|e| {
-                            Error::Blob(format!(
-                                "Invalid hex in {path:?}: {e:?}"
-                            ))
+                        blob = hex::decode(&blob[2..]).map_err(|source| {
+                            Error::Blob(BlobError::InvalidHex {
+                                path: path.clone(),
+                                source,
+                            })
                         })?;
                     }
 
-                    let blob = BlobData::from_datapart(&blob, None)
-                        .map_err(|e| Error::Blob(format!("{e}")))?;
+                    let blob = BlobData::from_datapart(&blob, None).map_err(
+                        |error| {
+                            Error::Blob(BlobError::InvalidDataPart {
+                                message: error.to_string(),
+                            })
+                        },
+                    )?;
                     tx_blobs.push(blob);
                 }
 

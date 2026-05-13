@@ -162,7 +162,7 @@ impl TryFrom<f64> for Dusk {
     fn try_from(val: f64) -> Result<Self, Error> {
         if val < 0.0 {
             return Err(Error::Conversion(
-                "Dusk type does not support negative values".to_string(),
+                crate::ConversionError::NegativeDuskValue,
             ));
         }
         Ok(Self(dusk(val)))
@@ -193,9 +193,10 @@ impl FromStr for Dusk {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parse_result = f64::from_str(s).map_err(|e: ParseFloatError| {
-            Error::Conversion(format!("Failed to parse Dusk from string: {e}",))
-        })?;
+        let parse_result =
+            f64::from_str(s).map_err(|source: ParseFloatError| {
+                Error::Conversion(crate::ConversionError::ParseDusk { source })
+            })?;
 
         Dusk::try_from(parse_result)
     }

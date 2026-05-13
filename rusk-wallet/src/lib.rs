@@ -30,7 +30,9 @@ pub mod gas;
 
 use currency::Dusk;
 pub use dusk_core::stake::EPOCH;
-pub use error::Error;
+pub use error::{
+    BlobError, ConversionError, Error, ProverError, RuskError, TransactionError,
+};
 pub use gql::{BlockData, BlockTransaction, GraphQL};
 pub use rues::HttpClient as RuesHttpClient;
 pub use wallet::{
