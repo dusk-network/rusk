@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?\n            UNION ALL\n            SELECT origin, topic, source, data FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)\n            ",
+  "query": "SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM unfinalized_events WHERE block_height = ?\n            UNION ALL\n            SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM finalized_events WHERE block_height = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_height = ?)\n            ",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "data",
         "ordinal": 3,
         "type_info": "Blob"
+      },
+      {
+        "name": "reverted: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "2e969dc8fe8501fa7e09dbcccd849f7fd2ce8e48926ff1cd218b465fae74968c"
+  "hash": "a91a1bd71254840949faf4d5e108c9ed7dc139da977d9945f8c56cf6a1a2b8cb"
 }

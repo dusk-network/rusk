@@ -132,9 +132,9 @@ impl Archive {
 
         // query all events now that we have the block height
         let records = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_height = ?
+            r#"SELECT origin, topic, source, data, reverted as "reverted: bool" FROM unfinalized_events WHERE block_height = ?
             UNION ALL
-            SELECT origin, topic, source, data FROM finalized_events WHERE block_height = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_height = ?)
+            SELECT origin, topic, source, data, reverted as "reverted: bool" FROM finalized_events WHERE block_height = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_height = ?)
             "#,
             block_height, block_height, block_height
             ).fetch_all(&mut *conn).await?;
@@ -161,9 +161,9 @@ impl Archive {
         let mut conn = self.sqlite_reader.acquire().await?;
 
         let events = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?
+            r#"SELECT origin, topic, source, data, reverted as "reverted: bool" FROM unfinalized_events WHERE block_hash = ?
             UNION ALL
-            SELECT origin, topic, source, data FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)
+            SELECT origin, topic, source, data, reverted as "reverted: bool" FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)
             "#,
             hex_block_hash, hex_block_hash, hex_block_hash
         ).fetch_all(&mut *conn).await?;
@@ -180,7 +180,7 @@ impl Archive {
         // the largest block height
         let events = sqlx::query_as!(data::ArchivedEvent,
             r#"
-                SELECT origin, topic, source, data FROM unfinalized_events
+                SELECT origin, topic, source, data, reverted as "reverted: bool" FROM unfinalized_events
                 WHERE block_height = (SELECT MAX(block_height) FROM unfinalized_events)
             "#
         )
@@ -209,6 +209,7 @@ impl Archive {
 
         let mut rows = sqlx::query!(
             r#"SELECT id, block_height, block_hash, origin, topic, source, data
+                    , reverted as "reverted: bool"
                 FROM finalized_events
                 WHERE source = ?1
                 AND id > IFNULL(?2, -1)
@@ -238,6 +239,7 @@ impl Archive {
                 topic: r.topic,
                 source: r.source,
                 data: r.data,
+                reverted: r.reverted,
             })
             .collect();
 
@@ -253,7 +255,7 @@ impl Archive {
         hex_block_hash: &str,
     ) -> Result<Vec<ContractTxEvent>> {
         let unfinalized_events = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?"#,
+            r#"SELECT origin, topic, source, data, reverted as "reverted: bool" FROM unfinalized_events WHERE block_hash = ?"#,
             hex_block_hash
         )
         .fetch_all(conn)
@@ -383,13 +385,12 @@ impl Archive {
                 topic: event.event.topic,
                 source: event.event.target.to_string(),
                 data: event.event.data,
-                // TODO: Include reverted info here
-                // reverted:  event.event.reverted,
+                reverted: event.event.reverted,
             };
 
             sqlx::query!(
-                r#"INSERT INTO unfinalized_events (block_height, block_hash, origin, topic, source, data) VALUES (?, ?, ?, ?, ?, ?)"#,
-                block_height, hex_block_hash, event.origin, event.topic, event.source, event.data
+                r#"INSERT INTO unfinalized_events (block_height, block_hash, origin, topic, source, data, reverted) VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+                block_height, hex_block_hash, event.origin, event.topic, event.source, event.data, event.reverted
             )
             .execute(&mut *tx)
             .await?;
@@ -536,8 +537,8 @@ impl Archive {
                 let source = event.target.to_string();
 
                 sqlx::query!(
-                    r#"INSERT INTO finalized_events (block_height, block_hash, origin, topic, source, data) VALUES (?, ?, ?, ?, ?, ?)"#,
-                    finalized_block_height, hex_block_hash, origin, event.topic, source, event.data
+                    r#"INSERT INTO finalized_events (block_height, block_hash, origin, topic, source, data, reverted) VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+                    finalized_block_height, hex_block_hash, origin, event.topic, source, event.data, event.reverted
                 )
                 .execute(&mut *tx)
                 .await?;
@@ -667,6 +668,7 @@ mod data {
         pub source: String,
         #[serde(with = "As::<Hex>")]
         pub data: Vec<u8>,
+        pub reverted: bool,
     }
 
     /// Archived ContractTxEvent
@@ -680,6 +682,8 @@ mod data {
     /// - `source`: The source field is the hex encoded contract id of the
     ///   event.
     /// - `data`: The data field is the data of the event.
+    /// - `reverted`: Whether the VM reverted the execution that emitted this
+    ///   event.
     #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
     pub struct ArchivedEvent {
         pub origin: String,
@@ -687,9 +691,7 @@ mod data {
         pub source: String,
         #[serde(with = "As::<Hex>")]
         pub data: Vec<u8>,
-        // TODO: Include reverted info here
-        // #[serde(default)]
-        // pub reverted: bool,
+        pub reverted: bool,
     }
 
     impl TryFrom<ArchivedEvent> for ContractTxEvent {
@@ -716,8 +718,7 @@ mod data {
                     target,
                     topic: value.topic,
                     data: value.data,
-                    // TODO: Include reverted info here
-                    reverted: false,
+                    reverted: value.reverted,
                 },
                 origin: origin_array,
             })
@@ -806,7 +807,7 @@ mod tests {
                     target: ContractId::from_bytes([1; 32]),
                     topic: "contract2".to_string(),
                     data: vec![1, 2, 3],
-                    reverted: false,
+                    reverted: true,
                 },
                 origin: [1; 32],
             },
@@ -839,6 +840,10 @@ mod tests {
             );
             assert_eq!(contract_tx_event.event.topic, fetched_event.topic);
             assert_eq!(contract_tx_event.event.data, fetched_event.data);
+            assert_eq!(
+                contract_tx_event.event.reverted,
+                fetched_event.reverted
+            );
             assert_eq!(
                 contract_tx_event.origin,
                 &hex::decode(&fetched_event.origin).unwrap()[..]
@@ -882,6 +887,12 @@ mod tests {
             .finalize_archive_data(blk_height, &hex_blk_hash)
             .await
             .unwrap();
+
+        let finalized_events = archive
+            .fetch_events_by_height(blk_height as i64)
+            .await
+            .unwrap();
+        assert_eq!(finalized_events[1].reverted, events[1].event.reverted);
 
         assert!(
             !archive

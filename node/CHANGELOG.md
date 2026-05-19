@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reject historical transaction formats during live mempool admission while
   preserving ledger replay compatibility
 - Discard reverted stake events from provisioner's selective update
+- Preserve reverted VM event metadata in SQLite archive storage.
 
 ### Changed
 

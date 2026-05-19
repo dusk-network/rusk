@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                SELECT origin, topic, source, data FROM unfinalized_events\n                WHERE block_height = (SELECT MAX(block_height) FROM unfinalized_events)\n            ",
+  "query": "\n                SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM unfinalized_events\n                WHERE block_height = (SELECT MAX(block_height) FROM unfinalized_events)\n            ",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "name": "data",
         "ordinal": 3,
         "type_info": "Blob"
+      },
+      {
+        "name": "reverted: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "0ea0095fd1d173e4d259bce7877000866b46c0e5c5bdbc39721dd993b831533e"
+  "hash": "7ee1558b82cded3692b12bc5dff98f4b8c5e3af276fa3b4f696f7281cf71c288"
 }
