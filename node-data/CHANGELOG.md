@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add explicit `CanonicalTransaction` and `LedgerTransaction`
   boundaries to separate canonical transaction data from persisted ledger
   envelopes.
+- Add `reverted` field to `ContractEvent` struct
 
 ### Fixed
 
