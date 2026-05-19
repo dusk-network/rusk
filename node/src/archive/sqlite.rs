@@ -383,6 +383,8 @@ impl Archive {
                 topic: event.event.topic,
                 source: event.event.target.to_string(),
                 data: event.event.data,
+                // TODO: Include reverted info here
+                // reverted:  event.event.reverted,
             };
 
             sqlx::query!(
@@ -685,6 +687,9 @@ mod data {
         pub source: String,
         #[serde(with = "As::<Hex>")]
         pub data: Vec<u8>,
+        // TODO: Include reverted info here
+        // #[serde(default)]
+        // pub reverted: bool,
     }
 
     impl TryFrom<ArchivedEvent> for ContractTxEvent {
@@ -711,6 +716,8 @@ mod data {
                     target,
                     topic: value.topic,
                     data: value.data,
+                    // TODO: Include reverted info here
+                    reverted: false,
                 },
                 origin: origin_array,
             })
