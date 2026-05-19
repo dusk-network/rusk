@@ -17,9 +17,10 @@ use piecrust::{CallReceipt, Session};
 use rkyv::Deserialize;
 use wasmparser::*;
 
-const DEPLOY_FEATURE_VALIDATION_ERROR: &str = "failed deployment: bytecode uses WebAssembly features not permitted before reference-types activation";
-
 use crate::ExecutionError;
+
+const DEPLOY_FEATURE_VALIDATION_ERROR: &str =
+    "failed deployment: bytecode validation rejected";
 
 /// Executes a transaction in the provided session.
 ///
@@ -627,6 +628,16 @@ mod tests {
             0x6f, // externref
             0x00, // no results
         ];
+        const TABLE_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x04, // table section
+            0x04, // section length
+            0x01, // table count
+            0x6f, // externref
+            0x00, // min-only limits
+            0x01, // minimum table size
+        ];
 
         validate_deploy_bytecode_features(EMPTY_MODULE, false)
             .expect("MVP bytecode should validate without reference-types");
@@ -636,6 +647,13 @@ mod tests {
             false,
         )
         .expect_err("reference-types bytecode should fail before activation");
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
+
+        let err = validate_deploy_bytecode_features(
+            TABLE_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types table should fail before activation");
         assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
 
         validate_deploy_bytecode_features(FUNC_WITH_EXTERNREF_MODULE, true)
