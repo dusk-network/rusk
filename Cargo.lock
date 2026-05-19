@@ -414,7 +414,7 @@ dependencies = [
  "async-io",
  "async-trait",
  "asynk-strim",
- "base64",
+ "base64 0.22.1",
  "bytes",
  "fast_chemail",
  "fnv",
@@ -582,7 +582,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b52af3cb4058c895d37317bb27508dccc8e5f2d39454016b297bf4a400597b8"
 dependencies = [
  "axum-core",
- "base64",
+ "base64 0.22.1",
  "bytes",
  "form_urlencoded",
  "futures-util",
@@ -629,6 +629,12 @@ dependencies = [
  "tower-service",
  "tracing",
 ]
+
+[[package]]
+name = "base64"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
@@ -1394,7 +1400,7 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.4.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96#7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96"
 dependencies = [
  "libc",
  "rangemap",
@@ -1768,7 +1774,7 @@ dependencies = [
  "rkyv",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 3.18.0",
  "sha2 0.10.9",
 ]
 
@@ -1776,7 +1782,7 @@ dependencies = [
 name = "dusk-data-driver"
 version = "1.7.0-rc.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytecheck",
  "dusk-core",
  "dusk-wasmtime",
@@ -1854,7 +1860,7 @@ dependencies = [
  "rocksdb",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 3.18.0",
  "smallvec",
  "sqlx",
  "tempfile",
@@ -1872,7 +1878,7 @@ dependencies = [
  "aes-gcm",
  "anyhow",
  "async-channel",
- "base64",
+ "base64 0.22.1",
  "block-modes",
  "bs58",
  "chrono",
@@ -1884,7 +1890,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 3.18.0",
  "sha2 0.10.9",
  "sha3",
  "tempfile",
@@ -1938,7 +1944,7 @@ dependencies = [
  "async-graphql-axum",
  "async-trait",
  "axum",
- "base64",
+ "base64 0.22.1",
  "blake3",
  "bs58",
  "bytecheck",
@@ -1977,7 +1983,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 3.18.0",
  "sha3",
  "tempfile",
  "thiserror 1.0.69",
@@ -2757,9 +2763,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "hex-conservative"
@@ -2939,7 +2942,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -3568,7 +3571,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d58e362dc7206e9456ddbcdbd53c71ba441020e62104703075a69151e38d85f"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "http-body-util",
  "hyper",
  "hyper-tls",
@@ -4067,7 +4070,7 @@ version = "0.35.0"
 source = "git+https://github.com/dusk-network/phoenix-private.git?rev=68d48a1d6ad124bfd17b6d4770f6308778422d02#68d48a1d6ad124bfd17b6d4770f6308778422d02"
 dependencies = [
  "aes-gcm",
- "base64",
+ "base64 0.22.1",
  "bs58",
  "bytecheck",
  "dusk-bls12_381",
@@ -4082,7 +4085,7 @@ dependencies = [
  "rand 0.8.5",
  "rkyv",
  "serde",
- "serde_with",
+ "serde_with 3.18.0",
  "sha2 0.10.9",
  "subtle",
  "zeroize",
@@ -4091,7 +4094,7 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.30.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96#7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4113,13 +4116,14 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.20.0"
-source = "git+https://github.com/dusk-network/piecrust-private.git?rev=3aa3fd3105906bb150355dcfe7533f9574494a76#3aa3fd3105906bb150355dcfe7533f9574494a76"
+source = "git+https://github.com/dusk-network/piecrust-private.git?rev=7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96#7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96"
 dependencies = [
  "bytecheck",
  "dlmalloc",
  "hex",
  "rkyv",
  "serde",
+ "serde_with 2.3.3",
  "tracing",
 ]
 
@@ -4635,7 +4639,7 @@ version = "0.12.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -4810,7 +4814,7 @@ dependencies = [
  "aes 0.7.5",
  "aes-gcm",
  "anyhow",
- "base64",
+ "base64 0.22.1",
  "blake3",
  "block-modes",
  "bs58",
@@ -4836,7 +4840,7 @@ dependencies = [
  "rocksdb",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 3.18.0",
  "sha2 0.10.9",
  "sha3",
  "tempfile",
@@ -5144,11 +5148,25 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
+version = "2.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
+dependencies = [
+ "base64 0.13.1",
+ "chrono",
+ "hex",
+ "serde",
+ "serde_json",
+ "time",
+]
+
+[[package]]
+name = "serde_with"
 version = "3.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd5414fad8e6907dbdd5bc441a50ae8d6e26151a03b1de04d89a5576de61d01f"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "chrono",
  "hex",
  "serde_core",
@@ -5350,7 +5368,7 @@ version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee6798b1838b6a0f69c007c133b8df5866302197e404e8b6ee8ed3e3a5e68dc6"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "crc",
  "crossbeam-queue",
@@ -5424,7 +5442,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa003f0038df784eb8fecbbac13affe3da23b45194bd57dba231c8f48199c526"
 dependencies = [
  "atoi",
- "base64",
+ "base64 0.22.1",
  "bitflags",
  "byteorder",
  "bytes",
@@ -5466,7 +5484,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db58fcd5a53cf07c184b154801ff91347e4c30d17a3562a635ff028ad5deda46"
 dependencies = [
  "atoi",
- "base64",
+ "base64 0.22.1",
  "bitflags",
  "byteorder",
  "crc",
@@ -6368,7 +6386,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d047458f1b5b65237c2f6dc6db136945667f40a7668627b3490b9513a3d43a55"
 dependencies = [
  "axum",
- "base64",
+ "base64 0.22.1",
  "mime_guess",
  "regex",
  "rust-embed",
