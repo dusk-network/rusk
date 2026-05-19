@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Canonicalize locally sealed transactions to the active ledger format before
   committing them into blocks
 - Discard reverted stake events from provisioner's selective update
+- Expose reverted VM event metadata in archive GraphQL responses.
 
 
 ### Changed
