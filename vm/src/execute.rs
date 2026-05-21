@@ -353,16 +353,14 @@ fn validate_deploy_bytecode_features(
 fn pre_reference_types_deploy_features() -> WasmFeatures {
     // Keep this independent from `WasmFeatures::default()`: that default is
     // tied to the local wasmparser version and can grow when the dependency is
-    // bumped. This set mirrors Piecrust's historical dusk-wasmtime config
-    // before the gc feature made reference-types available, plus the explicit
-    // `wasm_memory64(true)` setting used by Piecrust.
+    // bumped. This set mirrors dusk-wasmtime defaults before Piecrust enabled
+    // the `gc` feature, plus the explicit `wasm_memory64(true)` setting used by
+    // Piecrust.
     WasmFeatures::WASM2
         .difference(WasmFeatures::REFERENCE_TYPES)
         .union(WasmFeatures::RELAXED_SIMD)
         .union(WasmFeatures::MULTI_MEMORY)
-        .union(WasmFeatures::EXCEPTIONS)
         .union(WasmFeatures::MEMORY64)
-        .union(WasmFeatures::EXTENDED_CONST)
 }
 
 fn apply_deploy_init_receipt(
@@ -656,10 +654,12 @@ mod tests {
         .expect_err("reference-types table should fail before activation");
         assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
 
-        validate_deploy_bytecode_features(FUNC_WITH_EXTERNREF_MODULE, true)
-            .expect(
-                "reference-types bytecode should be allowed after activation",
-            );
+        Validator::new_with_features(
+            pre_reference_types_deploy_features()
+                .union(WasmFeatures::REFERENCE_TYPES),
+        )
+        .validate_all(FUNC_WITH_EXTERNREF_MODULE)
+        .expect("reference-types bytecode should validate when enabled");
     }
 
     #[test]
@@ -677,9 +677,9 @@ mod tests {
         assert!(features.contains(WasmFeatures::SIMD));
         assert!(features.contains(WasmFeatures::RELAXED_SIMD));
         assert!(features.contains(WasmFeatures::MULTI_MEMORY));
-        assert!(features.contains(WasmFeatures::EXCEPTIONS));
         assert!(features.contains(WasmFeatures::MEMORY64));
-        assert!(features.contains(WasmFeatures::EXTENDED_CONST));
+        assert!(!features.contains(WasmFeatures::EXCEPTIONS));
+        assert!(!features.contains(WasmFeatures::EXTENDED_CONST));
     }
 
     #[test]
