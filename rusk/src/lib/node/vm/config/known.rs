@@ -92,7 +92,7 @@ const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
 const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation = NEVER;
 /// Historical activation matching the mainnet 1.5/PLONK_V2 activation point.
 const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
-    FeatureActivation::Height(3_470_360);
+    MAINNET_PLONK_V2_ACTIVATION;
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
@@ -149,9 +149,9 @@ const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
 const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_378_000);
 
-/// Historical activation required by canonical testnet replay.
+/// Historical activation matching the testnet 1.5/PLONK_V2 activation point.
 const TESTNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
-    FeatureActivation::Height(2_681_685);
+    TESTNET_PLONK_V2_ACTIVATION;
 
 /// Testnet VM configuration.
 static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
