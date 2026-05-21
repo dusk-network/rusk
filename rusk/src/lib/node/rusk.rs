@@ -261,7 +261,7 @@ impl Rusk {
 
             match execute(&mut session, ledger_tx.protocol(), &execution_config)
             {
-                Ok(receipt) => {
+                Ok(mut receipt) => {
                     let gas_spent = receipt.gas_spent;
 
                     // If the transaction went over the block gas limit we
@@ -286,6 +286,9 @@ impl Rusk {
                     let error = receipt.data.err().map(|e| format!("{e}"));
                     info!(event = "Tx executed", tx_id, gas_spent, error);
 
+                    if boreas_active {
+                        receipt.events.retain(|event| !event.reverted);
+                    }
                     event_bloom.add_events(&receipt.events);
 
                     gas_left -= gas_spent;
@@ -747,7 +750,7 @@ impl Rusk {
         for unspent_tx in txs {
             let tx = unspent_tx.protocol();
             let tx_id = unspent_tx.id();
-            let receipt = execute(&mut session, tx, &execution_config)
+            let mut receipt = execute(&mut session, tx, &execution_config)
                 .map_err(|err| {
                     StateTransitionError::ExecutionError(format!(
                         "Tx {} is discarded {err}",
@@ -755,6 +758,9 @@ impl Rusk {
                     ))
                 })?;
 
+            if boreas_active {
+                receipt.events.retain(|event| !event.reverted);
+            }
             event_bloom.add_events(&receipt.events);
 
             let tx_events: Vec<_> = receipt
