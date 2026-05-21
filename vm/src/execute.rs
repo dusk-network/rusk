@@ -19,6 +19,9 @@ use wasmparser::*;
 
 use crate::ExecutionError;
 
+const DEPLOY_FEATURE_VALIDATION_ERROR: &str =
+    "failed deployment: bytecode validation rejected";
+
 /// Executes a transaction in the provided session.
 ///
 /// This function processes the transaction, invoking smart contracts or
@@ -290,6 +293,11 @@ fn contract_deploy(
                 receipt.data = Err(ContractError::Panic(
                     "failed bytecode hash check".into(),
                 ))
+            } else if let Err(err) = validate_deploy_bytecode_features(
+                &deploy.bytecode.bytes,
+                config.with_reference_types,
+            ) {
+                receipt.data = Err(ContractError::Panic(err.into()))
             } else {
                 let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
                 let init_budget = if config.charge_init_gas {
@@ -326,6 +334,33 @@ fn contract_deploy(
             }
         }
     }
+}
+
+fn validate_deploy_bytecode_features(
+    bytecode: &[u8],
+    with_reference_types: bool,
+) -> Result<(), &'static str> {
+    if with_reference_types {
+        return Ok(());
+    }
+
+    Validator::new_with_features(pre_reference_types_deploy_features())
+        .validate_all(bytecode)
+        .map(|_| ())
+        .map_err(|_| DEPLOY_FEATURE_VALIDATION_ERROR)
+}
+
+fn pre_reference_types_deploy_features() -> WasmFeatures {
+    // Keep this independent from `WasmFeatures::default()`: that default is
+    // tied to the local wasmparser version and can grow when the dependency is
+    // bumped. This set mirrors dusk-wasmtime defaults before Piecrust enabled
+    // the `gc` feature, plus the explicit `wasm_memory64(true)` setting used by
+    // Piecrust.
+    WasmFeatures::WASM2
+        .difference(WasmFeatures::REFERENCE_TYPES)
+        .union(WasmFeatures::RELAXED_SIMD)
+        .union(WasmFeatures::MULTI_MEMORY)
+        .union(WasmFeatures::MEMORY64)
 }
 
 fn apply_deploy_init_receipt(
@@ -575,6 +610,76 @@ mod tests {
                 expected,
             );
         }
+    }
+
+    #[test]
+    fn deploy_bytecode_reference_types_are_height_gated() {
+        const EMPTY_MODULE: &[u8] = b"\0asm\x01\0\0\0";
+        const FUNC_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x01, // type section
+            0x05, // section length
+            0x01, // type count
+            0x60, // function type
+            0x01, // one parameter
+            0x6f, // externref
+            0x00, // no results
+        ];
+        const TABLE_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x04, // table section
+            0x04, // section length
+            0x01, // table count
+            0x6f, // externref
+            0x00, // min-only limits
+            0x01, // minimum table size
+        ];
+
+        validate_deploy_bytecode_features(EMPTY_MODULE, false)
+            .expect("MVP bytecode should validate without reference-types");
+
+        let err = validate_deploy_bytecode_features(
+            FUNC_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types bytecode should fail before activation");
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
+
+        let err = validate_deploy_bytecode_features(
+            TABLE_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types table should fail before activation");
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
+
+        Validator::new_with_features(
+            pre_reference_types_deploy_features()
+                .union(WasmFeatures::REFERENCE_TYPES),
+        )
+        .validate_all(FUNC_WITH_EXTERNREF_MODULE)
+        .expect("reference-types bytecode should validate when enabled");
+    }
+
+    #[test]
+    fn pre_reference_types_deploy_features_are_pinned() {
+        let features = pre_reference_types_deploy_features();
+
+        assert!(!features.contains(WasmFeatures::REFERENCE_TYPES));
+        assert!(!features.contains(WasmFeatures::FUNCTION_REFERENCES));
+        assert!(!features.contains(WasmFeatures::GC));
+        assert!(!features.contains(WasmFeatures::THREADS));
+        assert!(!features.contains(WasmFeatures::TAIL_CALL));
+
+        assert!(features.contains(WasmFeatures::BULK_MEMORY));
+        assert!(features.contains(WasmFeatures::MULTI_VALUE));
+        assert!(features.contains(WasmFeatures::SIMD));
+        assert!(features.contains(WasmFeatures::RELAXED_SIMD));
+        assert!(features.contains(WasmFeatures::MULTI_MEMORY));
+        assert!(features.contains(WasmFeatures::MEMORY64));
+        assert!(!features.contains(WasmFeatures::EXCEPTIONS));
+        assert!(!features.contains(WasmFeatures::EXTENDED_CONST));
     }
 
     #[test]

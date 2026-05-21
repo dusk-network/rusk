@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `WASM_REFERENCE_TYPES` VM feature activation wiring.
 - Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
   decoding.
 - Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Set historical mainnet/testnet `WASM_REFERENCE_TYPES` activation heights.
 - Link Boreas DuskEVM host-query activations on mainnet/testnet and enable Boreas from genesis on devnet/localnet
 - Consolidate node config resolution and chain-upgrade policy into a single internal path.
 - Gate Boreas deployment gas rules (`deploy_remaining_gas_check` and

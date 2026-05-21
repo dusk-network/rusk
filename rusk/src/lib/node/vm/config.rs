@@ -65,6 +65,7 @@ pub(crate) mod feature {
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
     pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
+    pub const FEATURE_WASM_REFERENCE_TYPES: &str = "WASM_REFERENCE_TYPES";
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
     pub const HQ_SHA256: &str = "HQ_SHA256";
     pub const HQ_VERIFY_KZG_PROOF: &str = "HQ_VERIFY_KZG_PROOF";
@@ -143,6 +144,10 @@ impl Config {
             feature::FEATURE_DISABLE_3RD_PARTY,
             block_height,
         );
+        let with_reference_types = self.feature_active_at(
+            feature::FEATURE_WASM_REFERENCE_TYPES,
+            block_height,
+        );
         let phoenix_refund_check = self
             .feature_active_at(feature::FEATURE_HARDFORK_AEGIS, block_height);
         let boreas_active = self
@@ -160,6 +165,7 @@ impl Config {
             disable_wasm64,
             disable_wasm32,
             disable_3rd_party,
+            with_reference_types,
             phoenix_refund_check,
             deploy_remaining_gas_check,
             charge_init_gas,

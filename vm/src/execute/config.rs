@@ -33,6 +33,9 @@ pub struct Config {
     /// Disable calls to 3rd party contracts
     pub disable_3rd_party: bool,
 
+    /// Enable WebAssembly reference-types in deployed contract bytecode.
+    pub with_reference_types: bool,
+
     /// Enforce phoenix fee refund stealth address matches change note
     pub phoenix_refund_check: bool,
 
@@ -67,6 +70,7 @@ impl Config {
         disable_wasm64: false,
         disable_wasm32: false,
         disable_3rd_party: false,
+        with_reference_types: false,
         phoenix_refund_check: false,
         deploy_remaining_gas_check: false,
         charge_init_gas: false,
