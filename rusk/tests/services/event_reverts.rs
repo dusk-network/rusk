@@ -12,8 +12,8 @@ use dusk_core::transfer::data::ContractCall;
 use dusk_rusk_test::TestContext;
 use dusk_vm::{FeatureActivation, gen_contract_id};
 use node_data::ledger::{Block, CanonicalTransaction, Header};
-use rusk::DUSK_CONSENSUS_KEY;
 use rusk::node::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
+use rusk::{Bloom, DUSK_CONSENSUS_KEY};
 
 use crate::common::*;
 
@@ -165,31 +165,9 @@ fn event_bloom_contains(
     contract: ContractId,
     topic: &str,
 ) -> bool {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(&contract.to_bytes());
-    hasher.update(topic.as_bytes());
-    let hash = hasher.finalize().into();
-    let (i0, v0, i1, v1, i2, v2) = bloom_values(&hash);
-
-    v0 == v0 & bloom[i0] && v1 == v1 & bloom[i1] && v2 == v2 & bloom[i2]
-}
-
-fn bloom_values(
-    hash: &[u8; blake3::OUT_LEN],
-) -> (usize, u8, usize, u8, usize, u8) {
-    let v0 = 1 << (hash[1] & 0x7);
-    let v1 = 1 << (hash[3] & 0x7);
-    let v2 = 1 << (hash[5] & 0x7);
-
-    let i0 = BLOOM_BYTE_LEN
-        - ((u16::from_be_bytes([hash[0], hash[1]]) & 0x7ff) >> 3) as usize
-        - 1;
-    let i1 = BLOOM_BYTE_LEN
-        - ((u16::from_be_bytes([hash[2], hash[3]]) & 0x7ff) >> 3) as usize
-        - 1;
-    let i2 = BLOOM_BYTE_LEN
-        - ((u16::from_be_bytes([hash[4], hash[5]]) & 0x7ff) >> 3) as usize
-        - 1;
-
-    (i0, v0, i1, v1, i2, v2)
+    let mut bloom = Bloom::from_bytes(bloom).unwrap();
+    let mut iuf = bloom.iuf();
+    iuf.update(contract.to_bytes());
+    iuf.update(topic.as_bytes());
+    iuf.contains()
 }
