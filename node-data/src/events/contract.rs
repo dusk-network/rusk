@@ -32,6 +32,7 @@ pub struct ContractEvent {
     pub topic: String,
     #[serde(with = "As::<Hex>")]
     pub data: Vec<u8>,
+    #[serde(default)]
     pub reverted: bool,
 }
 
