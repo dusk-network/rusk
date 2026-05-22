@@ -41,88 +41,18 @@ async fn aegis_stake_state() -> Result<TestContext> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn boreas_discard_reverted_stake_events() -> Result<()> {
-    logger();
-
-    let tc = aegis_stake_state().await?;
-    let rusk = tc.rusk();
-    let wallet = tc.wallet();
-    let contract_id = deploy_proxy_contract(&tc);
-
-    let sk = wallet.account_secret_key(0).unwrap();
-    let stake = Stake::new_from_contract(
-        &sk,
-        contract_id,
-        DEFAULT_MINIMUM_STAKE,
-        rusk.chain_id().unwrap(),
-    );
-    let call = ContractCall::new(contract_id, "stake_then_panic")
-        .with_args(&stake)
-        .expect("call to be successful");
-    let stake_from_contract = wallet
-        .moonlight_execute(
-            0,
-            0,
-            DEFAULT_MINIMUM_STAKE,
-            GAS_LIMIT,
-            GAS_PRICE,
-            Some(call),
-        )
-        .expect("stake to be successful");
-
-    let node_tx = CanonicalTransaction::canonicalize_for_ledger(
-        stake_from_contract,
-        BOREAS_HEIGHT,
-    )
-    .into();
-    let prev_state = rusk.state_root();
-    let generator = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
-    let block = Block::new(
-        Header {
-            height: BOREAS_HEIGHT,
-            gas_limit: BLOCK_GAS_LIMIT,
-            generator_bls_pubkey: *generator.bytes(),
-            state_hash: prev_state,
-            ..Default::default()
-        },
-        vec![node_tx],
-        vec![],
-    )
-    .expect("valid block");
-
-    let cert_voters = vec![(generator, 1)];
-    let (spent, transition_result, events, _session) = rusk
-        .execute_state_transition(prev_state, &block, &cert_voters)
-        .expect("executing transition should succeed");
-
-    assert_eq!(spent.len(), 1);
-    assert_eq!(
-        spent[0].err.as_deref(),
-        Some("Panic: revert after stake_from_contract")
-    );
-    assert!(
-        events.iter().all(|event| !event.event.reverted),
-        "reverted events should not be returned"
-    );
-    assert!(
-        !events.iter().any(|event| {
-            event.event.target == STAKE_CONTRACT && event.event.topic == "stake"
-        }),
-        "reverted stake event should not be returned"
-    );
-    assert!(
-        !event_bloom_contains(
-            &transition_result.event_bloom,
-            STAKE_CONTRACT,
-            "stake"
-        ),
-        "reverted stake event should not be included in bloom"
-    );
-
-    Ok(())
+    reverted_stake_events(BOREAS_HEIGHT, false).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn aegis_include_reverted_stake_events() -> Result<()> {
+    reverted_stake_events(AEGIS_HEIGHT, true).await
+}
+
+async fn reverted_stake_events(
+    height: u64,
+    reverted_events_expected: bool,
+) -> Result<()> {
     logger();
 
     let tc = aegis_stake_state().await?;
@@ -153,14 +83,15 @@ pub async fn aegis_include_reverted_stake_events() -> Result<()> {
 
     let node_tx = CanonicalTransaction::canonicalize_for_ledger(
         stake_from_contract,
-        AEGIS_HEIGHT,
+        height,
     )
     .into();
+
     let prev_state = rusk.state_root();
     let generator = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
     let block = Block::new(
         Header {
-            height: AEGIS_HEIGHT,
+            height,
             gas_limit: BLOCK_GAS_LIMIT,
             generator_bls_pubkey: *generator.bytes(),
             state_hash: prev_state,
@@ -181,19 +112,24 @@ pub async fn aegis_include_reverted_stake_events() -> Result<()> {
         spent[0].err.as_deref(),
         Some("Panic: revert after stake_from_contract")
     );
-    assert!(
-        events.iter().any(|event| {
-            event.event.target == STAKE_CONTRACT && event.event.topic == "stake"
-        }),
-        "reverted stake event should be returned before BOREAS"
+
+    let stake_event = events.iter().find(|event| {
+        event.event.target == STAKE_CONTRACT && event.event.topic == "stake"
+    });
+
+    assert_eq!(
+        stake_event.map(|event| event.event.reverted),
+        reverted_events_expected.then_some(true),
+        "reverted stake event status does not match hard-fork expectation"
     );
-    assert!(
+    assert_eq!(
         event_bloom_contains(
             &transition_result.event_bloom,
             STAKE_CONTRACT,
             "stake"
         ),
-        "reverted stake event should be included in bloom before BOREAS"
+        reverted_events_expected,
+        "reverted stake event bloom inclusion does not match hard-fork expectation"
     );
 
     Ok(())
