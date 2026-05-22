@@ -3,6 +3,7 @@ help: ## Display this help screen
 
 test: ## Run Node tests
 	@RUST_LOG=error cargo test --release
+	@RUST_LOG=error cargo test --features archive --release
 
 test-debug: ## Run Node tests with full output
 	@cargo test --release -- --nocapture

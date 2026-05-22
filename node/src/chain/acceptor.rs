@@ -146,6 +146,10 @@ fn slash_event(data: &[u8]) -> SlashEvent {
 
 impl ProvisionerChange {
     pub fn from_event(event: &ContractEvent) -> Option<ProvisionerChange> {
+        // Skip reverted event, cause they don't represent a provisioner change
+        if event.reverted {
+            return None;
+        }
         let event = match event.topic.as_str() {
             "stake" => ProvisionerChange::Stake(stake_event(&event.data)),
             "unstake" => ProvisionerChange::Unstake(stake_event(&event.data)),

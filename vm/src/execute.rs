@@ -688,6 +688,7 @@ mod tests {
             source: ContractId::from_bytes([7; 32]),
             topic: "runtime_update".into(),
             data: vec![1, 2, 3, 4],
+            reverted: false,
         };
         let build_init_receipt = || CallReceipt {
             gas_spent: 123,

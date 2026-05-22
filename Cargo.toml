@@ -187,9 +187,9 @@ overflow-checks = true
 [patch.crates-io]
 # New version of dusk plonk requiring "compiler: guard prover/verifier length arithmetic from overflow"
 dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", rev = "f63cfb0c4a5e5f485361c83ae15584257d3339ab" }
-piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "3aa3fd3105906bb150355dcfe7533f9574494a76" }
-# New version of piecrust requiring "Add `call-hook` feature"
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "3aa3fd3105906bb150355dcfe7533f9574494a76" }
+# New version of piecrust requiring "Add `call-hook` feature" and "Reverted events"
+piecrust = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust-private.git", rev = "7fe0eb3523a6f67cb9c86e87f79cb2acdd755c96" }
 # New version of phoenix requiring "core: add legacy transaction decode helpers"
 phoenix-core = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "68d48a1d6ad124bfd17b6d4770f6308778422d02" }
 phoenix-circuits = { git = "https://github.com/dusk-network/phoenix-private.git", rev = "68d48a1d6ad124bfd17b6d4770f6308778422d02" }

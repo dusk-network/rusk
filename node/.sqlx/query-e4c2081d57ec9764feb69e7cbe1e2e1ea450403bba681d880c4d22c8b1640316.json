@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, block_height, block_hash, origin, topic, source, data\n                FROM finalized_events\n                WHERE source = ?1\n                AND id > IFNULL(?2, -1)\n                ORDER BY id ASC\n                LIMIT ?3",
+  "query": "SELECT id, block_height, block_hash, origin, topic, source, data\n                    , reverted as \"reverted: bool\"\n                FROM finalized_events\n                WHERE source = ?1\n                AND id > IFNULL(?2, -1)\n                ORDER BY id ASC\n                LIMIT ?3",
   "describe": {
     "columns": [
       {
@@ -37,6 +37,11 @@
         "name": "data",
         "ordinal": 6,
         "type_info": "Blob"
+      },
+      {
+        "name": "reverted: bool",
+        "ordinal": 7,
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -49,8 +54,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "acba7d8e6a50f8279bf358d48ef6273c5e8ba284b3baa1cc0114ec317e256606"
+  "hash": "e4c2081d57ec9764feb69e7cbe1e2e1ea450403bba681d880c4d22c8b1640316"
 }

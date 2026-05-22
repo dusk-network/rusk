@@ -1633,6 +1633,7 @@ mod tests {
                 target: SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [0; 32],
         });
@@ -1644,6 +1645,7 @@ mod tests {
                 target: MAYBE_SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [1; 32],
         });
@@ -1654,6 +1656,7 @@ mod tests {
                 target: NON_SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [2; 32],
         });
