@@ -6,12 +6,13 @@
 
 use anyhow::Result;
 use dusk_bytes::Serializable;
+use dusk_consensus::operations::StateTransitionData;
 use dusk_core::abi::ContractId;
 use dusk_core::stake::{DEFAULT_MINIMUM_STAKE, STAKE_CONTRACT, Stake};
 use dusk_core::transfer::data::ContractCall;
 use dusk_rusk_test::TestContext;
 use dusk_vm::{FeatureActivation, gen_contract_id};
-use node_data::ledger::{Block, CanonicalTransaction, Header};
+use node_data::ledger::{Block, Header, LedgerTransaction};
 use rusk::node::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
 use rusk::{Bloom, DUSK_CONSENSUS_KEY};
 
@@ -81,14 +82,43 @@ async fn reverted_stake_events(
         )
         .expect("stake to be successful");
 
-    let node_tx = CanonicalTransaction::canonicalize_for_ledger(
+    let ledger_tx = LedgerTransaction::from_protocol_for_ledger(
         stake_from_contract,
         height,
-    )
-    .into();
+    );
 
     let prev_state = rusk.state_root();
     let generator = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
+    let cert_voters = vec![(generator.clone(), 1)];
+    let transition_data = StateTransitionData {
+        round: height,
+        generator: generator.clone(),
+        slashes: vec![],
+        cert_voters: cert_voters.clone(),
+        max_txs_bytes: usize::MAX,
+        prev_state_root: prev_state,
+    };
+
+    let (created_spent, discarded, create_transition_result) = rusk
+        .create_state_transition(&transition_data, vec![ledger_tx].into_iter())
+        .expect("creating transition should succeed");
+
+    assert!(discarded.is_empty());
+    assert_spent_transaction(&created_spent);
+    assert_eq!(
+        event_bloom_contains(
+            &create_transition_result.event_bloom,
+            STAKE_CONTRACT,
+            "stake"
+        ),
+        reverted_events_expected,
+        "create_state_transition bloom inclusion does not match hard-fork expectation"
+    );
+
+    let block_txs = created_spent
+        .iter()
+        .map(|spent| spent.inner.clone())
+        .collect();
     let block = Block::new(
         Header {
             height,
@@ -97,21 +127,20 @@ async fn reverted_stake_events(
             state_hash: prev_state,
             ..Default::default()
         },
-        vec![node_tx],
+        block_txs,
         vec![],
     )
     .expect("valid block");
 
-    let cert_voters = vec![(generator, 1)];
     let (spent, transition_result, events, _session) = rusk
         .execute_state_transition(prev_state, &block, &cert_voters)
         .expect("executing transition should succeed");
 
-    assert_eq!(spent.len(), 1);
     assert_eq!(
-        spent[0].err.as_deref(),
-        Some("Panic: revert after stake_from_contract")
+        create_transition_result.event_bloom, transition_result.event_bloom,
+        "create_state_transition and execute_state_transition should produce the same bloom"
     );
+    assert_spent_transaction(&spent);
 
     let stake_event = events.iter().find(|event| {
         event.event.target == STAKE_CONTRACT && event.event.topic == "stake"
@@ -133,6 +162,14 @@ async fn reverted_stake_events(
     );
 
     Ok(())
+}
+
+fn assert_spent_transaction(spent: &[node_data::ledger::SpentTransaction]) {
+    assert_eq!(spent.len(), 1);
+    assert_eq!(
+        spent[0].err.as_deref(),
+        Some("Panic: revert after stake_from_contract")
+    );
 }
 
 fn deploy_proxy_contract(tc: &TestContext) -> ContractId {
