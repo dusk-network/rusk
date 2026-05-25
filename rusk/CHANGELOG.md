@@ -30,9 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
 - Enforce HTTP ingress policy with ACL and endpoint-class global limits (`http.policy`), returning `403` on ACL deny and `429` with `Retry-After` on limit rejections.
 - Split HTTP server routing into dedicated `graphql_http` and `rues_http` modules while keeping API behavior unchanged.
-- Deprecate the legacy `/on/account:{entity}/{topic}` status route.
-- Deprecate the legacy `/on/contract:{entity}/status` route.
-- Deprecate the legacy `/on/contract_owner:{entity}/{topic}` route.
+- Route transaction ingress and node execution through explicit canonical
+  ledger transaction boundaries.
 
 ### Fixed
 
@@ -47,11 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Discard reverted stake events from provisioner's selective update
 - Expose reverted VM event metadata in archive GraphQL responses.
 
+### Removed
 
-### Changed
-
-- Route transaction ingress and node execution through explicit canonical
-  ledger transaction boundaries.
+- Remove reverted events from header's bloom filter after Boreas
+- Deprecate the legacy `/on/account:{entity}/{topic}` status route.
+- Deprecate the legacy `/on/contract:{entity}/status` route.
+- Deprecate the legacy `/on/contract_owner:{entity}/{topic}` route.
 
 ## [1.6.0] - 2026-02-27
 

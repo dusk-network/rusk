@@ -23,6 +23,7 @@ use std::sync::LazyLock;
 pub use builder::Builder;
 pub use version::{VERSION, VERSION_BUILD};
 
+pub use crate::bloom::Bloom;
 pub use crate::error::Error;
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 

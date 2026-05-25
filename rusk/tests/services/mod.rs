@@ -8,6 +8,7 @@ pub mod contract_deployment;
 pub mod contract_stake;
 pub mod conversion;
 //pub mod deploy;
+pub mod event_reverts;
 pub mod fee_refund_inflation;
 pub mod fee_refund_overflow;
 pub mod fee_refund_stealth_redirect;
