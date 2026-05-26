@@ -1,6 +1,6 @@
 [package]
 name = "dusk-transfer-contract-dd"
-version = "1.7.0-rc.0"
+version = "1.7.0-rc.1"
 edition = "2024"
 
 description = "Data driver for Dusk Transfer Contract"
