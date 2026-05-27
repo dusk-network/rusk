@@ -150,15 +150,23 @@ impl FormState {
 
     /// Cycle select field to next option.
     pub fn cycle_next(&mut self) {
+        let updates_stake_amount_max = self.focused_field_is("model");
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.cycle_next();
+        }
+        if updates_stake_amount_max {
+            self.update_stake_amount_max();
         }
     }
 
     /// Cycle select field to previous option.
     pub fn cycle_prev(&mut self) {
+        let updates_stake_amount_max = self.focused_field_is("model");
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.cycle_prev();
+        }
+        if updates_stake_amount_max {
+            self.update_stake_amount_max();
         }
     }
 
@@ -250,6 +258,28 @@ impl FormState {
         }
     }
 
+    fn stake_amount_max_for_model(&self) -> Option<Dusk> {
+        match self.field_selected("model") {
+            Some(0) => Some(self.transfer_shielded_max),
+            Some(_) => Some(self.transfer_public_max),
+            None => None,
+        }
+    }
+
+    fn update_stake_amount_max(&mut self) {
+        if self.id != FormId::Stake {
+            return;
+        }
+
+        let max = self.stake_amount_max_for_model();
+        if let Some(field) =
+            self.fields.iter_mut().find(|field| field.name == "amount")
+            && let field::FieldKind::Amount { max: field_max } = &mut field.kind
+        {
+            *field_max = max;
+        }
+    }
+
     /// Returns true if the currently focused field is a select.
     pub fn is_select_field(&self) -> bool {
         self.fields
@@ -278,6 +308,12 @@ impl FormState {
             .iter()
             .find(|f| f.name == name)
             .and_then(|f| f.selected_option)
+    }
+
+    fn focused_field_is(&self, name: &str) -> bool {
+        self.fields
+            .get(self.focused)
+            .is_some_and(|field| field.name == name)
     }
 
     /// Try to build a Command from the current form values.
@@ -752,6 +788,20 @@ mod tests {
         )
     }
 
+    fn stake_form() -> FormState {
+        let temp_dir = std::env::temp_dir();
+
+        build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &[test_profile()],
+            temp_dir.as_path(),
+        )
+    }
+
     fn set_recipient(form: &mut FormState, address: &Address) {
         let field = form
             .fields
@@ -830,5 +880,18 @@ mod tests {
         field.cursor = field.value.len();
         form.update_transfer_amount_max();
         assert_eq!(amount_max(&form), None);
+    }
+
+    #[test]
+    fn stake_amount_max_tracks_selected_transaction_model() {
+        let mut form = stake_form();
+
+        assert_eq!(amount_max(&form), Some(Dusk::from(22)));
+
+        form.cycle_prev();
+        assert_eq!(amount_max(&form), Some(Dusk::from(11)));
+
+        form.cycle_next();
+        assert_eq!(amount_max(&form), Some(Dusk::from(22)));
     }
 }
