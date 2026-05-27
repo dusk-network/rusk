@@ -10,6 +10,7 @@ use std::str::Utf8Error;
 use hex::FromHexError;
 use node_data::bls::ConsensusKeysError;
 use rand::Error as RngError;
+use url::ParseError;
 
 use crate::gql::GraphQLError;
 
@@ -83,9 +84,32 @@ pub enum Error {
     /// Invalid address
     #[error("Invalid address")]
     BadAddress,
+    /// Invalid endpoint URL override
+    #[error("Invalid {endpoint} endpoint URL `{value}`: {source}")]
+    InvalidEndpointUrl {
+        /// Endpoint name being overridden.
+        endpoint: &'static str,
+        /// Raw override value provided by the user.
+        value: String,
+        #[source]
+        /// URL parsing failure for the provided override.
+        source: ParseError,
+    },
     /// Insecure transport was requested without explicit opt-in
     #[error("Refusing insecure HTTP connection to {0}")]
     InsecureTransport(String),
+    /// Endpoint URL uses an unsupported scheme.
+    #[error(
+        "Unsupported {endpoint} endpoint URL scheme `{scheme}` in `{value}`; expected `https` or `http`"
+    )]
+    UnsupportedEndpointScheme {
+        /// Endpoint name being configured.
+        endpoint: &'static str,
+        /// Unsupported URL scheme.
+        scheme: String,
+        /// URL value provided by the user or config.
+        value: String,
+    },
     /// Address does not belong to this wallet
     #[error("Address does not belong to this wallet")]
     AddressNotOwned,

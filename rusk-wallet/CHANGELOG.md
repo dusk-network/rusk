@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `Error::InvalidEndpointUrl` and `Error::UnsupportedEndpointScheme` variants for endpoint validation failures
+
+### Changed
+
+- Treat `0.0.0.0` and `::` HTTP endpoints as insecure unless `--allow-insecure` is set
+- Reject endpoint URLs with unsupported schemes instead of accepting non-HTTP(S) values during settings validation
+- Initialize logging from CLI flags before loading config so config parse/setup errors are captured by the selected logger
+- Warn when creating or writing the default config fails before falling back to embedded defaults
+
+### Fixed
+
+- Reject malformed `--state`, `--prover`, and `--archiver` URL overrides instead of silently falling back to config values
+
 ## [0.4.0] - 2026-05-07
 
 ### Added

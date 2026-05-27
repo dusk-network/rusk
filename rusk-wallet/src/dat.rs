@@ -23,7 +23,7 @@ pub const MAGIC: u32 = 0x72_736b;
 pub const LATEST_VERSION: Version = (0, 0, 2, 0, false);
 /// The type info of the dat file we'll save
 pub const FILE_TYPE: u16 = 0x0200;
-/// Reserved for futures use, 0 for now
+/// Reserved for future use; always 0 in the current format.
 pub const RESERVED: u16 = 0x0000;
 /// (Major, Minor, Patch, Pre, Pre-Higher)
 type Version = (u8, u8, u8, u8, bool);

@@ -83,6 +83,33 @@ fn render_cli_error(err: &anyhow::Error) -> String {
     }
 }
 
+fn init_logging(
+    level: &settings::LogLevel,
+    format: &LogFormat,
+) -> anyhow::Result<()> {
+    let level: Level = level.into();
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_max_level(level)
+        .with_writer(std::io::stderr);
+
+    match format {
+        LogFormat::Json => {
+            let subscriber = subscriber.json().flatten_event(true).finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+        LogFormat::Plain => {
+            let subscriber = subscriber.with_ansi(false).finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+        LogFormat::Coloured => {
+            let subscriber = subscriber.finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+    };
+
+    Ok(())
+}
+
 async fn connect<F>(
     mut wallet: Wallet<F>,
     settings: &Settings,
@@ -151,65 +178,28 @@ where
 }
 
 async fn exec() -> anyhow::Result<()> {
-    // parse user args
     let args = WalletArgs::parse();
-    // get the subcommand, if it is `None` we run the wallet in interactive mode
+    let log_level = args.log_level.clone();
+    let log_format = args.log_type.clone();
     let cmd = args.command.clone();
 
-    // Get the initial settings from the args
-    let mut settings_builder = Settings::args(args)?;
+    init_logging(&log_level, &log_format)?;
 
-    // Obtain the wallet dir from the settings
+    let mut settings_builder = Settings::args(args)?;
     let wallet_dir = settings_builder.wallet_dir().clone();
 
     fs::create_dir_all(wallet_dir.as_path())
         .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
-    // prepare wallet path
     let mut wallet_path =
         WalletPath::from(wallet_dir.as_path().join("wallet.dat"));
 
-    // load configuration (or use default)
     let cfg = Config::load(&wallet_dir)
         .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
     wallet_path.set_network_name(settings_builder.args.network.clone());
 
-    // Finally complete the settings by setting the network
     let mut settings = settings_builder.network(cfg.network)?;
-
-    // generate a subscriber with the desired log level
-    //
-    // TODO: we should have the logger instantiate sooner, otherwise we cannot
-    // catch errors that are happened before its instantiation.
-    //
-    // Therefore, the logger details such as `type` and `level` cannot be part
-    // of the configuration, since it won't catch any configuration error
-    // otherwise.
-    //
-    // See: <https://github.com/dusk-network/wallet-cli/issues/73>
-    //
-    let level = &settings.logging.level;
-    let level: Level = level.into();
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(level)
-        .with_writer(std::io::stderr);
-
-    // set the subscriber as global
-    match settings.logging.format {
-        LogFormat::Json => {
-            let subscriber = subscriber.json().flatten_event(true).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        LogFormat::Plain => {
-            let subscriber = subscriber.with_ansi(false).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        LogFormat::Coloured => {
-            let subscriber = subscriber.finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-    };
 
     for (name, url) in settings.nonlocal_insecure_endpoints() {
         warn!(
@@ -438,9 +428,8 @@ async fn get_wallet(
             Command::Restore { file } => {
                 match file {
                     Some(file) => {
-                        // if we restore and old version file make sure we
-                        // know the corrrect version before asking for the
-                        // password
+                        // Determine the legacy file version before prompting
+                        // for a password.
                         let (file_version, salt_and_iv) =
                             dat::read_file_version_and_salt_iv(file)?;
 

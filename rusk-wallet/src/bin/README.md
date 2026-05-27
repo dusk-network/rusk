@@ -107,9 +107,9 @@ rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080 --archi
 For a persistent local override, update `[network.local]` in either
 `{wallet_dir}/config.toml` or `$HOME/.config/rusk-wallet/config.toml`.
 
-Wallet CLI URL overrides currently use `Url::parse(...).ok().unwrap_or(...)`.
-Malformed endpoint values therefore fall back to config/default values instead
-of failing fast.
+Wallet CLI URL overrides are parsed eagerly. Malformed `--state`,
+`--prover`, or `--archiver` values fail fast instead of silently falling back
+to config/default values.
 
 **Note:** When using Windows, connection will default to TCP/IP even if UDS is explicitly specified.
 

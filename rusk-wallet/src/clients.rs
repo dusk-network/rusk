@@ -37,8 +37,13 @@ use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
 use crate::{Address, Error, MAX_PROFILES};
 
-// Sync every 3 seconds for now
 const SYNC_INTERVAL_SECONDS: u64 = 3;
+
+fn report_sync_status(sync_tx: &flume::Sender<String>, status: &str) {
+    if let Err(err) = sync_tx.send(status.to_string()) {
+        tracing::debug!("Dropping sync status update `{status}`: {err}");
+    }
+}
 
 /// SIZE of the tree leaf
 pub const TREE_LEAF: usize = std::mem::size_of::<ArchivedNoteLeaf>();
@@ -148,12 +153,20 @@ impl State {
                     biased;
                     () = shutdown_signal.notified() => break,
                     () = sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)) => {
-                        let _ = sync_tx.send("Syncing..".to_string());
+                        report_sync_status(&sync_tx, "Syncing..");
 
-                        let _ = match sync_db(&client, &cache, &store, |_| {}, allow_cache_reset).await {
-                            Ok(()) => sync_tx.send("Syncing Complete".to_string()),
-                            Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
-                        };
+                        match sync_db(&client, &cache, &store, |_| {}, allow_cache_reset).await {
+                            Ok(()) => {
+                                report_sync_status(&sync_tx, "Syncing Complete");
+                            }
+                            Err(e) => {
+                                let status = format!("Error during sync:.. {e}");
+                                report_sync_status(
+                                    &sync_tx,
+                                    &status,
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -417,7 +430,6 @@ impl State {
                 .deserialize(&mut rkyv::Infallible)
                 .unwrap();
 
-        // return an error here if the note opening couldn't be fetched
         let opening = opening.ok_or(Error::NoteNotFound)?;
 
         status("Note opening received!");
@@ -454,7 +466,6 @@ impl State {
         self.cache().close();
         let store = &mut self.store;
 
-        // if there's sync handle we abort it
         if let Some((shutdown, handle)) = self.sync_shutdown.take() {
             shutdown.notify_one();
             if let Err(e) = block_on(handle) {

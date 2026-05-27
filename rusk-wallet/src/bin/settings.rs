@@ -7,7 +7,7 @@
 use std::fmt;
 use std::path::PathBuf;
 
-use rusk_wallet::{Error, RuesHttpClient};
+use rusk_wallet::Error;
 use serde::Deserialize;
 use tracing::Level;
 use url::{Host, Url};
@@ -45,7 +45,6 @@ pub(crate) struct Logging {
     pub format: LogFormat,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Settings {
     pub(crate) network_name: Option<String>,
@@ -96,23 +95,26 @@ impl SettingsBuilder {
             }
             .unwrap_or(network);
 
-        let state = args
-            .state
-            .as_ref()
-            .and_then(|value| Url::parse(value).ok())
-            .unwrap_or(network.state);
+        let state = parse_endpoint_override(
+            "state",
+            args.state.as_deref(),
+            network.state,
+        )
+        .inspect_err(|_| args.password.zeroize())?;
 
-        let prover = args
-            .prover
-            .as_ref()
-            .and_then(|value| Url::parse(value).ok())
-            .unwrap_or(network.prover);
+        let prover = parse_endpoint_override(
+            "prover",
+            args.prover.as_deref(),
+            network.prover,
+        )
+        .inspect_err(|_| args.password.zeroize())?;
 
-        let archiver = args
-            .archiver
-            .as_ref()
-            .and_then(|value| Url::parse(value).ok())
-            .unwrap_or_else(|| network.archiver.unwrap_or(state.clone()));
+        let archiver = parse_endpoint_override(
+            "archiver",
+            args.archiver.as_deref(),
+            network.archiver.unwrap_or_else(|| state.clone()),
+        )
+        .inspect_err(|_| args.password.zeroize())?;
 
         let explorer = network.explorer;
         let allow_insecure = args.allow_insecure;
@@ -148,29 +150,47 @@ impl SettingsBuilder {
     }
 }
 
+fn parse_endpoint_override(
+    endpoint: &'static str,
+    value: Option<&str>,
+    default: Url,
+) -> Result<Url, Error> {
+    match value {
+        Some(value) => {
+            Url::parse(value).map_err(|source| Error::InvalidEndpointUrl {
+                endpoint,
+                value: value.to_string(),
+                source,
+            })
+        }
+        None => Ok(default),
+    }
+}
+
 fn validate_transport(
-    endpoint: &str,
+    endpoint: &'static str,
     url: &Url,
     allow_insecure: bool,
 ) -> Result<(), Error> {
-    if url.scheme() != "http" {
-        return Ok(());
+    match url.scheme() {
+        "https" => Ok(()),
+        "http" if is_local_host(url) || allow_insecure => Ok(()),
+        "http" => Err(Error::InsecureTransport(format!(
+            "{endpoint} endpoint {url}"
+        ))),
+        scheme => Err(Error::UnsupportedEndpointScheme {
+            endpoint,
+            scheme: scheme.to_string(),
+            value: url.to_string(),
+        }),
     }
-
-    if is_local_host(url) || allow_insecure {
-        return Ok(());
-    }
-
-    Err(Error::InsecureTransport(format!(
-        "{endpoint} endpoint {url}"
-    )))
 }
 
 fn is_local_host(url: &Url) -> bool {
     match url.host() {
         Some(Host::Domain("localhost")) => true,
-        Some(Host::Ipv4(ip)) => ip.is_loopback() || ip.is_unspecified(),
-        Some(Host::Ipv6(ip)) => ip.is_loopback() || ip.is_unspecified(),
+        Some(Host::Ipv4(ip)) => ip.is_loopback(),
+        Some(Host::Ipv6(ip)) => ip.is_loopback(),
         _ => false,
     }
 }
@@ -189,30 +209,6 @@ impl Settings {
         };
 
         Ok(SettingsBuilder { wallet_dir, args })
-    }
-
-    #[allow(dead_code)]
-    pub async fn check_state_con(&self) -> Result<(), Error> {
-        RuesHttpClient::new(self.state.as_ref())?
-            .check_connection()
-            .await
-            .map_err(Error::from)
-    }
-
-    #[allow(dead_code)]
-    pub async fn check_prover_con(&self) -> Result<(), Error> {
-        RuesHttpClient::new(self.prover.as_ref())?
-            .check_connection()
-            .await
-            .map_err(Error::from)
-    }
-
-    #[allow(dead_code)]
-    pub async fn check_archiver_con(&self) -> Result<(), Error> {
-        RuesHttpClient::new(self.archiver.as_ref())?
-            .check_connection()
-            .await
-            .map_err(Error::from)
     }
 
     pub fn nonlocal_insecure_endpoints(&self) -> Vec<(&'static str, &Url)> {
@@ -398,7 +394,7 @@ mod tests {
         let settings = builder
             .network(network(
                 "http://127.0.0.1:8080",
-                "http://0.0.0.0:8080",
+                "http://[::1]:8080",
                 Some("http://localhost:8080"),
             ))
             .unwrap();
@@ -426,22 +422,66 @@ mod tests {
     }
 
     #[test]
-    fn allows_ipv6_unspecified_http_without_opt_in() {
+    fn rejects_ipv4_unspecified_http_without_opt_in() {
         let wallet_dir = tempdir().unwrap();
         let builder = SettingsBuilder {
             wallet_dir: wallet_dir.path().to_path_buf(),
             args: wallet_args(),
         };
 
-        let settings = builder
+        let err = builder
+            .network(network(
+                "http://0.0.0.0:8080",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InsecureTransport(_)));
+    }
+
+    #[test]
+    fn rejects_ipv6_unspecified_http_without_opt_in() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let err = builder
             .network(network(
                 "http://[::]:8080",
                 "https://prover.example.com",
                 None,
             ))
-            .unwrap();
+            .unwrap_err();
 
-        assert!(!settings.allow_insecure);
+        assert!(matches!(err, Error::InsecureTransport(_)));
+    }
+
+    #[test]
+    fn rejects_unsupported_endpoint_scheme() {
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args: wallet_args(),
+        };
+
+        let err = builder
+            .network(network(
+                "ftp://example.com:8080",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap_err();
+
+        assert!(matches!(
+            err,
+            Error::UnsupportedEndpointScheme {
+                endpoint: "state",
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -467,6 +507,62 @@ mod tests {
     }
 
     #[test]
+    fn rejects_invalid_state_override_url() {
+        let mut args = wallet_args();
+        args.state = Some("not a url".into());
+
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args,
+        };
+
+        let err = builder
+            .network(network(
+                "https://state.example.com",
+                "https://prover.example.com",
+                None,
+            ))
+            .unwrap_err();
+
+        assert!(matches!(
+            err,
+            Error::InvalidEndpointUrl {
+                endpoint: "state",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_archiver_override_url() {
+        let mut args = wallet_args();
+        args.archiver = Some(":://broken".into());
+
+        let wallet_dir = tempdir().unwrap();
+        let builder = SettingsBuilder {
+            wallet_dir: wallet_dir.path().to_path_buf(),
+            args,
+        };
+
+        let err = builder
+            .network(network(
+                "https://state.example.com",
+                "https://prover.example.com",
+                Some("https://archiver.example.com"),
+            ))
+            .unwrap_err();
+
+        assert!(matches!(
+            err,
+            Error::InvalidEndpointUrl {
+                endpoint: "archiver",
+                ..
+            }
+        ));
+    }
+
+    #[test]
     fn nonlocal_insecure_endpoints_skip_local_urls() {
         let wallet_dir = tempdir().unwrap();
         let settings = Settings {
@@ -486,8 +582,10 @@ mod tests {
 
         let endpoints = settings.nonlocal_insecure_endpoints();
 
-        assert_eq!(endpoints.len(), 1);
-        assert_eq!(endpoints[0].0, "prover");
-        assert_eq!(endpoints[0].1.as_str(), "http://prover.example.com:8080/");
+        assert_eq!(endpoints.len(), 2);
+        assert_eq!(endpoints[0].0, "state");
+        assert_eq!(endpoints[0].1.as_str(), "http://0.0.0.0:8080/");
+        assert_eq!(endpoints[1].0, "prover");
+        assert_eq!(endpoints[1].1.as_str(), "http://prover.example.com:8080/");
     }
 }

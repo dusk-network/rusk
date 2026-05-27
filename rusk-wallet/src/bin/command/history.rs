@@ -14,8 +14,8 @@ use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
+use crate::io::status;
 use crate::settings::Settings;
-use crate::tui::tui_status;
 
 #[derive(Debug, PartialEq)]
 pub struct TransactionHistory {
@@ -116,7 +116,7 @@ pub(crate) async fn transaction_from_notes(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        tui_status,
+        status::headless,
     )?;
 
     let nullifiers = notes
@@ -259,7 +259,7 @@ pub(crate) async fn moonlight_history(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        tui_status,
+        status::headless,
     )?;
 
     let history = gql
