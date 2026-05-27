@@ -356,10 +356,16 @@ impl<'a> App<'a> {
             KeyCode::Esc => {
                 return Some(AppAction::CloseForm);
             }
-            KeyCode::Tab | KeyCode::Down => {
+            KeyCode::Tab => {
                 form.next_field();
             }
-            KeyCode::BackTab | KeyCode::Up => {
+            KeyCode::BackTab => {
+                form.prev_field();
+            }
+            KeyCode::Down => {
+                form.next_field();
+            }
+            KeyCode::Up => {
                 form.prev_field();
             }
             KeyCode::Enter => {
@@ -1350,10 +1356,25 @@ fn infer_network_label(state_url: &url::Url) -> &'static str {
 
 #[cfg(test)]
 mod tests {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use rusk_wallet::Profile;
+    use rusk_wallet::currency::Dusk;
+    use wallet_core::Seed;
+    use wallet_core::keys::{derive_bls_pk, derive_phoenix_pk};
+
     use super::{
-        CachedStakeInfo, StakeState, apply_stake_update,
+        App, CachedStakeInfo, StakeState, apply_stake_update,
         stake_refresh_tip_to_fetch,
     };
+    use crate::tui::forms::{FormId, build_form};
+
+    fn test_profile_at(index: u8) -> Profile {
+        let seed: Seed = [7u8; 64];
+        Profile {
+            shielded_addr: derive_phoenix_pk(&seed, index),
+            public_addr: derive_bls_pk(&seed, index),
+        }
+    }
 
     #[test]
     fn missing_stake_info_is_refreshable() {
@@ -1394,5 +1415,160 @@ mod tests {
 
         assert!(matches!(entry.state, Some(StakeState::NoStake)));
         assert_eq!(entry.attempted_at_tip, Some(42));
+    }
+
+    #[test]
+    fn right_arrow_cycles_focused_stake_owner_field() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+
+        App::handle_form_key(
+            &mut form,
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            &None,
+        );
+
+        assert_eq!(form.fields[owner_idx].selected_option, Some(1));
+    }
+
+    #[test]
+    fn down_arrow_moves_past_focused_stake_owner_field() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+
+        App::handle_form_key(
+            &mut form,
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &None,
+        );
+
+        assert_eq!(form.focused, owner_idx + 1);
+        assert_eq!(form.fields[owner_idx].selected_option, Some(0));
+    }
+
+    #[test]
+    fn up_arrow_moves_before_focused_stake_owner_field() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+
+        App::handle_form_key(
+            &mut form,
+            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
+            &None,
+        );
+
+        assert_eq!(form.focused, owner_idx - 1);
+        assert_eq!(form.fields[owner_idx].selected_option, Some(0));
+    }
+
+    #[test]
+    fn arrows_on_single_stake_owner_show_no_additional_profile_error() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+
+        for key in [KeyCode::Left, KeyCode::Right] {
+            form.error = None;
+
+            App::handle_form_key(
+                &mut form,
+                KeyEvent::new(key, KeyModifiers::NONE),
+                &None,
+            );
+
+            assert_eq!(
+                form.error.as_deref(),
+                Some("No additional profile created")
+            );
+            assert_eq!(form.fields[owner_idx].selected_option, Some(0));
+        }
+    }
+
+    #[test]
+    fn number_key_does_not_select_focused_stake_owner_profile() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+
+        App::handle_form_key(
+            &mut form,
+            KeyEvent::new(KeyCode::Char('2'), KeyModifiers::NONE),
+            &None,
+        );
+
+        assert_eq!(form.fields[owner_idx].selected_option, Some(0));
     }
 }

@@ -238,27 +238,16 @@ fn render_form_field(
     match &field.kind {
         FieldKind::Select { options } => {
             let selected = field.selected_option.unwrap_or(0);
-            let display: Vec<Span> = options
-                .iter()
-                .enumerate()
-                .flat_map(|(i, opt)| {
-                    if i == selected {
-                        vec![
-                            Span::styled(
-                                if focused { " \u{25C0} " } else { " " },
-                                theme::dim(),
-                            ),
-                            Span::styled(format!(" {opt} "), theme::selected()),
-                            Span::styled(
-                                if focused { " \u{25B6} " } else { " " },
-                                theme::dim(),
-                            ),
-                        ]
-                    } else {
-                        vec![Span::styled(format!("  {opt}  "), theme::dim())]
-                    }
-                })
-                .collect();
+            let current = options.get(selected).map_or("", String::as_str);
+            let display = if focused {
+                vec![
+                    Span::styled(" \u{25C0} ", theme::dim()),
+                    Span::styled(format!(" {current} "), theme::selected()),
+                    Span::styled(" \u{25B6} ", theme::dim()),
+                ]
+            } else {
+                vec![Span::styled(format!(" {current} "), theme::value())]
+            };
             frame.render_widget(Paragraph::new(Line::from(display)), inner);
         }
         _ => {
@@ -296,7 +285,10 @@ fn field_title(field: &FormField) -> String {
 
 #[cfg(test)]
 mod tests {
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
     use ratatui::layout::Rect;
+    use rusk_wallet::Address;
     use rusk_wallet::Profile;
     use rusk_wallet::currency::Dusk;
     use wallet_core::Seed;
@@ -305,16 +297,20 @@ mod tests {
     use super::{
         FIELD_HEIGHT, FORM_MIN_WIDTH, RESIZE_WARNING_MIN_HEIGHT,
         RESIZE_WARNING_MIN_WIDTH, form_fits, form_modal_area,
-        required_form_height, resize_warning_area,
+        render_form_modal, required_form_height, resize_warning_area,
     };
     use crate::tui::forms::{FormId, build_form};
 
-    fn test_profile() -> Profile {
+    fn test_profile_at(index: u8) -> Profile {
         let seed: Seed = [7u8; 64];
         Profile {
-            shielded_addr: derive_phoenix_pk(&seed, 0),
-            public_addr: derive_bls_pk(&seed, 0),
+            shielded_addr: derive_phoenix_pk(&seed, index),
+            public_addr: derive_bls_pk(&seed, index),
         }
+    }
+
+    fn test_profile() -> Profile {
+        test_profile_at(0)
     }
 
     fn form(id: FormId) -> crate::tui::forms::FormState {
@@ -329,6 +325,23 @@ mod tests {
             &[test_profile()],
             temp_dir.as_path(),
         )
+    }
+
+    fn rendered_form(form: &crate::tui::forms::FormState) -> String {
+        let backend = TestBackend::new(FORM_MIN_WIDTH, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        terminal
+            .draw(|frame| render_form_modal(frame, form))
+            .unwrap();
+
+        terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>()
     }
 
     #[test]
@@ -382,5 +395,34 @@ mod tests {
 
         assert_eq!(area.width, RESIZE_WARNING_MIN_WIDTH);
         assert_eq!(area.height, RESIZE_WARNING_MIN_HEIGHT);
+    }
+
+    #[test]
+    fn selected_stake_owner_is_visible_at_min_width() {
+        let temp_dir = std::env::temp_dir();
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &profiles,
+            temp_dir.as_path(),
+        );
+        let owner_idx = form
+            .fields
+            .iter()
+            .position(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        form.focused = owner_idx;
+        form.cycle_next();
+
+        let rendered = rendered_form(&form);
+
+        assert!(rendered.contains("Profile 2"));
+        assert!(rendered.contains(
+            Address::Public(profiles[1].public_addr).preview().as_str()
+        ));
     }
 }
