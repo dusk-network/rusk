@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add public `BlobError`, `ConversionError`, `RuskError`, `TransactionError`, and `ProverError` error types, re-exported from `rusk_wallet`
 - Add `Error::InvalidEndpointUrl` and `Error::UnsupportedEndpointScheme` variants for endpoint validation failures
+- Show the stake owner in the TUI stake info view
 
 ### Changed
 

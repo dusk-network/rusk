@@ -288,9 +288,8 @@ mod tests {
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
     use ratatui::layout::Rect;
-    use rusk_wallet::Address;
-    use rusk_wallet::Profile;
     use rusk_wallet::currency::Dusk;
+    use rusk_wallet::{Address, Profile};
     use wallet_core::Seed;
     use wallet_core::keys::{derive_bls_pk, derive_phoenix_pk};
 

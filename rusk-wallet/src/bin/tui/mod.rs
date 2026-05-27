@@ -30,7 +30,8 @@ use rkyv::Deserialize;
 use rocksdb::ErrorKind;
 use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::{
-    Error as WalletError, GraphQL, RuesHttpClient, Wallet, WalletPath,
+    Address, Error as WalletError, GraphQL, Profile, RuesHttpClient, Wallet,
+    WalletPath,
 };
 use tokio::sync::mpsc;
 use tracing::debug;
@@ -732,7 +733,11 @@ async fn run_inner(
                 }
                 AppAction::FetchStakeInfo => {
                     match fetch_stake_info(&mut app).await {
-                        Ok(()) => app.screen = AppScreen::StakeInfo,
+                        Ok(()) => {
+                            let owner =
+                                fetch_current_stake_owner_label(&app).await;
+                            app.screen = AppScreen::StakeInfo { owner };
+                        }
                         Err(e) => app.handle_async_result(AsyncResult::Error(
                             e.to_string(),
                         )),
@@ -1402,6 +1407,37 @@ async fn fetch_stake_with_client(
     Ok(stake_data)
 }
 
+async fn fetch_current_stake_owner_label(app: &App<'_>) -> Option<String> {
+    if !matches!(app.current_stake_state(), Some(app::StakeState::Loaded(_))) {
+        return None;
+    }
+
+    let stake_pk = app.current_profile().public_addr;
+    match app.wallet.find_stake_owner_account(&stake_pk).await {
+        Ok(owner) => Some(stake_owner_label(app.wallet.profiles(), &owner)),
+        Err(WalletError::NotStaked) => None,
+        Err(err) => {
+            debug!("Failed to fetch stake owner: {err}");
+            Some("Unavailable".into())
+        }
+    }
+}
+
+fn stake_owner_label(profiles: &[Profile], owner: &Address) -> String {
+    let label = match owner {
+        Address::Public(public_key) => profiles
+            .iter()
+            .position(|profile| profile.public_addr == *public_key)
+            .map_or_else(
+                || "External profile".to_string(),
+                |idx| format!("Profile {}", idx + 1),
+            ),
+        Address::Shielded(_) => "External profile".to_string(),
+    };
+
+    format!("{label} - {}", owner.preview())
+}
+
 /// Fetch stake info for the current profile.
 /// Returns Err if the fetch failed (caller should show an error screen).
 async fn fetch_stake_info(app: &mut App<'_>) -> anyhow::Result<()> {
@@ -1424,7 +1460,6 @@ async fn fetch_stake_info_with_timeout(
             Ok(Err(err)) => return Err(err.into()),
             Err(_) => anyhow::bail!("Timed out while fetching stake info"),
         };
-
     apply_stake_info(app, idx, stake, attempted_at_tip);
     Ok(())
 }

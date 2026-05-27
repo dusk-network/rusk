@@ -198,7 +198,7 @@ pub fn render(frame: &mut Frame, app: &App) {
     match &app.screen {
         AppScreen::Dashboard
         | AppScreen::History { .. }
-        | AppScreen::StakeInfo
+        | AppScreen::StakeInfo { .. }
         | AppScreen::Addresses => {}
         AppScreen::Form { form } => forms::render_form_modal(frame, form),
         AppScreen::Confirmation => {

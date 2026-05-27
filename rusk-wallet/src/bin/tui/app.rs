@@ -101,7 +101,7 @@ pub enum AppScreen {
     /// Transaction history browser (replaces menu area)
     History { entries: Vec<TransactionHistory> },
     /// Stake info display (replaces menu area)
-    StakeInfo,
+    StakeInfo { owner: Option<String> },
     /// Full address display (replaces menu area)
     Addresses,
     /// Help overlay showing keybindings
@@ -222,7 +222,7 @@ impl<'a> App<'a> {
                 self.handle_result_key(key);
                 None
             }
-            AppScreen::History { .. } | AppScreen::StakeInfo => {
+            AppScreen::History { .. } | AppScreen::StakeInfo { .. } => {
                 self.handle_history_key(key);
                 None
             }
