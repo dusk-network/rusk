@@ -167,6 +167,10 @@ make prepare-dev
 `make prepare-dev` only prepares the example consensus keys and example state.
 It does not create any rusk toml config.
 
+If you change `examples/genesis.toml`, delete `/tmp/example.state` before
+running `make prepare-dev` again. The target keeps an existing example state
+instead of overwriting it.
+
 #### Run a Node
 
 ```bash
@@ -234,6 +238,14 @@ rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080 --archi
 
 For a persistent wallet-side override, update `[network.local]` in
 `~/.config/rusk-wallet/config.toml` or `{wallet_dir}/config.toml`.
+
+#### Use the unstaked example wallet
+
+The default example recovery phrase in `examples/recovery-phrase.txt` is funded
+and staked. For localnet testing with a funded wallet that has no active stake,
+use `make run-dev-second` from `rusk-wallet/`. The target copies
+`examples/wallet-unstaked.dat` into an explicit wallet directory on first use.
+The matching recovery phrase is stored in `examples/recovery-phrase-unstaked.txt`.
 
 #### Run a Prover Node
 
