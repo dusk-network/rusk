@@ -5,13 +5,139 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::io;
+use std::num::ParseFloatError;
+use std::path::PathBuf;
 use std::str::Utf8Error;
 
 use hex::FromHexError;
 use node_data::bls::ConsensusKeysError;
 use rand::Error as RngError;
+use serde_json::Value;
+use url::ParseError;
 
 use crate::gql::GraphQLError;
+
+/// Errors produced while talking to Rusk HTTP or GraphQL endpoints.
+#[derive(Debug, thiserror::Error)]
+pub enum RuskError {
+    /// Invalid base node URI provided to the HTTP client.
+    #[error("Invalid base node URI `{uri}`: {source}")]
+    InvalidBaseNodeUri {
+        /// Raw URI string provided by the caller.
+        uri: String,
+        /// URL parsing failure for the provided URI.
+        #[source]
+        source: ParseError,
+    },
+    /// Invalid node endpoint path derived from the base URI.
+    #[error("Invalid node endpoint path `{path}`: {source}")]
+    InvalidEndpointPath {
+        /// Relative endpoint path that failed to join.
+        path: String,
+        /// URL parsing failure for the joined endpoint.
+        #[source]
+        source: ParseError,
+    },
+    /// Remote Rusk service returned an error payload.
+    #[error("Rusk service returned an error: {message}")]
+    Response {
+        /// Response body or synthesized error text returned by the service.
+        message: String,
+    },
+    /// GraphQL response contained an `errors` payload.
+    #[error("GraphQL response contained errors: {errors}")]
+    GraphqlErrors {
+        /// Raw GraphQL `errors` payload returned by the service.
+        errors: Value,
+    },
+    /// GraphQL response did not contain the expected `data` field.
+    #[error("GraphQL response missing data")]
+    MissingGraphqlData,
+}
+
+/// Errors reported by transaction submission or confirmation flows.
+#[derive(Debug, thiserror::Error)]
+pub enum TransactionError {
+    /// The transaction was rejected as a replay.
+    #[error("Replay")]
+    Replay,
+    /// The node rejected the transaction with a message.
+    #[error("{message}")]
+    Rejected {
+        /// Free-form rejection message returned by the node.
+        message: String,
+    },
+}
+
+/// Errors surfaced while proving Phoenix transactions.
+#[derive(Debug, thiserror::Error)]
+pub enum ProverError {
+    /// Circuit generation or verification failed.
+    #[error("{message}")]
+    Circuit {
+        /// Error text returned by the proving stack.
+        message: String,
+    },
+    /// External prover invocation failed.
+    #[error("{message}")]
+    Backend {
+        /// Error text returned by the proving backend.
+        message: String,
+    },
+}
+
+/// Errors reported while preparing or validating blob inputs.
+#[derive(Debug, thiserror::Error)]
+pub enum BlobError {
+    /// Blob transactions were requested for a shielded sender.
+    #[error("Blob is unsupported for Shielded Addresses")]
+    UnsupportedShieldedAddress,
+    /// Blob input file could not be read.
+    #[error("Invalid path {}: {source}", path.display())]
+    InvalidPath {
+        /// Blob file path that could not be read.
+        path: PathBuf,
+        /// Filesystem error returned while reading the blob.
+        #[source]
+        source: io::Error,
+    },
+    /// Blob file contained invalid hex data.
+    #[error("Invalid hex in {}: {source}", path.display())]
+    InvalidHex {
+        /// Blob file path that contained invalid hex bytes.
+        path: PathBuf,
+        /// Hex decoding failure.
+        #[source]
+        source: FromHexError,
+    },
+    /// Blob payload could not be encoded as a data part.
+    #[error("{message}")]
+    InvalidDataPart {
+        /// Data part validation message.
+        message: String,
+    },
+    /// Blob failure reported by an upstream dependency.
+    #[error("{message}")]
+    Upstream {
+        /// Free-form error text returned by the upstream dependency.
+        message: String,
+    },
+}
+
+/// Errors converting into or parsing DUSK values.
+#[derive(Debug, thiserror::Error)]
+pub enum ConversionError {
+    /// DUSK values cannot be negative.
+    #[error("Dusk type does not support negative values")]
+    NegativeDuskValue,
+    /// String input could not be parsed as a DUSK amount.
+    #[error("Failed to parse Dusk from string: {source}")]
+    ParseDusk {
+        /// Float parser error for the original input.
+        #[source]
+        source: ParseFloatError,
+    },
+}
 
 /// Errors returned by this library
 #[derive(Debug, thiserror::Error)]
@@ -23,8 +149,8 @@ pub enum Error {
     #[error("Unauthorized access to this address")]
     Unauthorized,
     /// Rusk error
-    #[error("Rusk error occurred: {0}")]
-    Rusk(String),
+    #[error(transparent)]
+    Rusk(#[from] RuskError),
     /// Filesystem errors
     #[error(transparent)]
     IO(#[from] io::Error),
@@ -83,9 +209,32 @@ pub enum Error {
     /// Invalid address
     #[error("Invalid address")]
     BadAddress,
+    /// Invalid endpoint URL override
+    #[error("Invalid {endpoint} endpoint URL `{value}`: {source}")]
+    InvalidEndpointUrl {
+        /// Endpoint name being overridden.
+        endpoint: &'static str,
+        /// Raw override value provided by the user.
+        value: String,
+        #[source]
+        /// URL parsing failure for the provided override.
+        source: ParseError,
+    },
     /// Insecure transport was requested without explicit opt-in
     #[error("Refusing insecure HTTP connection to {0}")]
     InsecureTransport(String),
+    /// Endpoint URL uses an unsupported scheme.
+    #[error(
+        "Unsupported {endpoint} endpoint URL scheme `{scheme}` in `{value}`; expected `https` or `http`"
+    )]
+    UnsupportedEndpointScheme {
+        /// Endpoint name being configured.
+        endpoint: &'static str,
+        /// Unsupported URL scheme.
+        scheme: String,
+        /// URL value provided by the user or config.
+        value: String,
+    },
     /// Address does not belong to this wallet
     #[error("Address does not belong to this wallet")]
     AddressNotOwned,
@@ -126,8 +275,8 @@ pub enum Error {
     #[error("Status callback needs to be set before connecting")]
     StatusWalletConnected,
     /// Transaction error
-    #[error("Transaction error: {0}")]
-    Transaction(String),
+    #[error(transparent)]
+    Transaction(#[from] TransactionError),
     /// Rocksdb cache database error
     #[error("Rocks cache database error: {0}")]
     RocksDB(rocksdb::Error),
@@ -140,8 +289,8 @@ pub enum Error {
     #[error("Cache database corrupted")]
     CacheDatabaseCorrupted,
     /// Prover errors from dusk-core
-    #[error("Prover Error: {0}")]
-    ProverError(String),
+    #[error(transparent)]
+    ProverError(#[from] ProverError),
     /// Memo provided is too large
     #[error("Memo too large {0}")]
     MemoTooLarge(usize),
@@ -164,17 +313,20 @@ pub enum Error {
     #[error("Invalid environment variable value {0}")]
     InvalidEnvVar(String),
     /// Error while processing blob data
-    #[error("Error while processing blob data: {0}")]
-    Blob(String),
+    #[error(transparent)]
+    Blob(#[from] BlobError),
     /// Conversion error
-    #[error("Conversion error: {0}")]
-    Conversion(String),
+    #[error(transparent)]
+    Conversion(#[from] ConversionError),
     /// GraphQL error
     #[error("GraphQL error: {0}")]
     GraphQLError(GraphQLError),
-    /// Error while querying archival node
-    #[error("Archive node query error: {0}")]
-    ArchiveJsonError(String),
+    /// Archive node request failed
+    #[error("Archive node request failed: {0}")]
+    ArchiveQuery(#[source] Box<Error>),
+    /// Archive node JSON decoding failed
+    #[error("Archive node JSON decoding failed: {0}")]
+    ArchiveJson(#[source] serde_json::Error),
     /// Consensus keys error
     #[error("Error while saving consensus keys: {0}")]
     ConsensusKeysError(ConsensusKeysError),
@@ -205,10 +357,16 @@ impl From<dusk_core::Error> for Error {
     fn from(e: dusk_core::Error) -> Self {
         match e {
             dusk_core::Error::InsufficientBalance => Self::NotEnoughBalance,
-            dusk_core::Error::Replay => Self::Transaction("Replay".to_string()),
+            dusk_core::Error::Replay => {
+                Self::Transaction(TransactionError::Replay)
+            }
             dusk_core::Error::PhoenixOwnership => Self::AddressNotOwned,
-            dusk_core::Error::PhoenixCircuit(s)
-            | dusk_core::Error::PhoenixProver(s) => Self::ProverError(s),
+            dusk_core::Error::PhoenixCircuit(message) => {
+                Self::ProverError(ProverError::Circuit { message })
+            }
+            dusk_core::Error::PhoenixProver(message) => {
+                Self::ProverError(ProverError::Backend { message })
+            }
             dusk_core::Error::InvalidData => {
                 Self::Bytes(dusk_bytes::Error::InvalidData)
             }
@@ -220,7 +378,9 @@ impl From<dusk_core::Error> for Error {
             }
             dusk_core::Error::Rkyv(_) => Self::Rkyv,
             dusk_core::Error::MemoTooLarge(m) => Self::MemoTooLarge(m),
-            dusk_core::Error::Blob(s) => Self::Blob(s),
+            dusk_core::Error::Blob(message) => {
+                Self::Blob(BlobError::Upstream { message })
+            }
         }
     }
 }

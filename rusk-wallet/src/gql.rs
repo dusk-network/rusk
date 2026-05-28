@@ -10,7 +10,6 @@
 
 use dusk_core::abi::ContractId;
 use dusk_core::stake::StakeEvent;
-use dusk_core::transfer::phoenix::StealthAddress;
 use dusk_core::transfer::{
     ConvertEvent, DepositEvent, MoonlightTransactionEvent, Transaction,
     WithdrawEvent,
@@ -22,7 +21,7 @@ use serde_with::{As, DisplayFromStr};
 use tokio::time::{Duration, sleep};
 
 use crate::rues::HttpClient as RuesHttpClient;
-use crate::{Address, Error};
+use crate::{Address, Error, TransactionError};
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -46,47 +45,57 @@ pub struct BlockTransaction {
     pub gas_spent: u64,
 }
 
-#[derive(Deserialize)]
-struct SpentTx {
-    pub id: String,
-    #[serde(default)]
-    pub raw: String,
-    pub err: Option<String>,
-    #[serde(alias = "gasSpent", default)]
-    pub gas_spent: u64,
-}
+mod wire {
+    use dusk_core::transfer::phoenix::StealthAddress;
+    use serde::Deserialize;
 
-#[derive(Deserialize)]
-struct Block {
-    pub transactions: Vec<SpentTx>,
-}
+    #[derive(Deserialize)]
+    pub(super) struct SpentTx {
+        pub id: String,
+        #[serde(default)]
+        pub raw: String,
+        pub err: Option<String>,
+        #[serde(alias = "gasSpent", default)]
+        pub gas_spent: u64,
+    }
 
-#[derive(Deserialize)]
-struct BlockResponse {
-    pub block: Option<Block>,
-}
+    #[derive(Deserialize)]
+    pub(super) struct Block {
+        pub transactions: Vec<SpentTx>,
+    }
 
-#[derive(Deserialize)]
-struct HeaderHeightResponse {
-    pub height: u64,
-}
+    #[derive(Deserialize)]
+    pub(super) struct BlockResponse {
+        pub block: Option<Block>,
+    }
 
-#[derive(Deserialize)]
-struct LastBlockHeightResponse {
-    pub header: HeaderHeightResponse,
-}
+    #[derive(Deserialize)]
+    pub(super) struct HeaderHeightResponse {
+        pub height: u64,
+    }
 
-#[derive(Deserialize)]
-struct BlocksResponse {
-    pub blocks: Vec<LastBlockHeightResponse>,
-}
+    #[derive(Deserialize)]
+    pub(super) struct LastBlockHeightResponse {
+        pub header: HeaderHeightResponse,
+    }
 
-// See `PhoenixTransactionEventSubset` for the reason for this struct
-// and allowing dead code here.
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-struct NoteAddress {
-    stealth_address: StealthAddress,
+    #[derive(Deserialize)]
+    pub(super) struct BlocksResponse {
+        pub blocks: Vec<LastBlockHeightResponse>,
+    }
+
+    // See `PhoenixTransactionEventSubset` for the reason for this struct
+    // and allowing dead code here.
+    #[derive(Deserialize, Debug, Clone)]
+    #[allow(dead_code)]
+    pub(super) struct NoteAddress {
+        pub stealth_address: StealthAddress,
+    }
+
+    #[derive(Deserialize)]
+    pub(super) struct SpentTxResponse {
+        pub tx: Option<SpentTx>,
+    }
 }
 
 // This struct is used instead of the one in `dusk_core::transfer`
@@ -99,7 +108,7 @@ struct NoteAddress {
 pub struct PhoenixTransactionEventSubset {
     /// Notes produced during the transaction.
     #[serde(rename(deserialize = "notes"))]
-    note_addresses: Vec<NoteAddress>,
+    note_addresses: Vec<wire::NoteAddress>,
     /// The memo included in the transaction.
     #[serde(with = "As::<Hex>")]
     memo: Vec<u8>,
@@ -108,7 +117,7 @@ pub struct PhoenixTransactionEventSubset {
     gas_spent: u64,
     /// Optional gas-refund note if the refund is positive.
     #[serde(rename(deserialize = "refund_note"))]
-    refund_note_address: Option<NoteAddress>,
+    refund_note_address: Option<wire::NoteAddress>,
 }
 
 /// Deserialized block data in the full moonlight history.
@@ -156,14 +165,9 @@ pub struct FullMoonlightHistory {
     pub full_moonlight_history: Option<MoonlightHistoryJson>,
 }
 
-#[derive(Deserialize)]
-struct SpentTxResponse {
-    pub tx: Option<SpentTx>,
-}
-
 /// Transaction status
 #[derive(Debug)]
-pub enum TxStatus {
+enum TxStatus {
     Ok,
     NotFound,
     Error(String),
@@ -203,7 +207,11 @@ impl GraphQL {
 
             match status {
                 TxStatus::Ok => break,
-                TxStatus::Error(err) => return Err(Error::Transaction(err))?,
+                TxStatus::Error(message) => {
+                    return Err(Error::Transaction(
+                        TransactionError::Rejected { message },
+                    ))?;
+                }
                 TxStatus::NotFound => {
                     (self.status)(
                         "Waiting for tx to be included into a block...",
@@ -225,10 +233,13 @@ impl GraphQL {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
         let response = self.query_state(&query).await?;
-        let response = serde_json::from_slice::<SpentTxResponse>(&response)?.tx;
+        let response =
+            serde_json::from_slice::<wire::SpentTxResponse>(&response)?.tx;
 
         match response {
-            Some(SpentTx { err: Some(err), .. }) => Ok(TxStatus::Error(err)),
+            Some(wire::SpentTx { err: Some(err), .. }) => {
+                Ok(TxStatus::Error(err))
+            }
             Some(_) => Ok(TxStatus::Ok),
             None => Ok(TxStatus::NotFound),
         }
@@ -248,7 +259,7 @@ impl GraphQL {
 
         let response = self.query_state(&query).await?;
         let response =
-            serde_json::from_slice::<BlockResponse>(&response)?.block;
+            serde_json::from_slice::<wire::BlockResponse>(&response)?.block;
         let block = response.ok_or(GraphQLError::BlockInfo)?;
         let mut ret = vec![];
 
@@ -276,7 +287,7 @@ impl GraphQL {
         let query = "query { blocks(last: 1) { header { height } } }";
         let response = self.query_state(query).await?;
         let blocks =
-            serde_json::from_slice::<BlocksResponse>(&response)?.blocks;
+            serde_json::from_slice::<wire::BlocksResponse>(&response)?.blocks;
         blocks
             .first()
             .map(|block| block.header.height)
@@ -314,11 +325,11 @@ impl GraphQL {
         let response = self
             .query_archiver(&query)
             .await
-            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+            .map_err(|err| Error::ArchiveQuery(Box::new(err)))?;
 
         let response =
             serde_json::from_slice::<FullMoonlightHistory>(&response)
-                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+                .map_err(Error::ArchiveJson)?;
 
         Ok(response)
     }
@@ -341,11 +352,11 @@ impl GraphQL {
         let response = self
             .query_archiver(&query)
             .await
-            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+            .map_err(|err| Error::ArchiveQuery(Box::new(err)))?;
 
         let response =
             serde_json::from_slice::<FullMoonlightHistory>(&response)
-                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+                .map_err(Error::ArchiveJson)?;
 
         Ok(response)
     }
@@ -465,13 +476,13 @@ async fn test() -> Result<(), Error> {
 #[tokio::test]
 async fn deser() -> Result<(), Box<dyn std::error::Error>> {
     let block_not_found = r#"{"block":null}"#;
-    serde_json::from_str::<BlockResponse>(block_not_found).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_not_found).unwrap();
 
     let block_without_tx = r#"{"block":{"transactions":[]}}"#;
-    serde_json::from_str::<BlockResponse>(block_without_tx).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_without_tx).unwrap();
 
     let block_with_tx = r#"{"block":{"transactions":[{"id":"88e6804989cc2f3fd5bf94dcd39a4e7b7da9a1114d9b8bf4e0515264bc81c50f"}]}}"#;
-    serde_json::from_str::<BlockResponse>(block_with_tx).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_with_tx).unwrap();
 
     let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
     serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)

@@ -42,7 +42,6 @@ impl WalletPath {
     #[must_use]
     pub fn new(wallet: &Path) -> Self {
         let wallet = wallet.to_path_buf();
-        // The wallet should be in the profile folder
         let mut profile_dir = wallet.clone();
 
         profile_dir.pop();

@@ -11,7 +11,7 @@ use reqwest::{Body, Response};
 use rkyv::Archive;
 use url::Url;
 
-use crate::Error;
+use crate::{Error, RuskError};
 
 /// Supported Rusk version
 const REQUIRED_RUSK_VERSION: &str = "1.0.0-rc.0";
@@ -23,8 +23,12 @@ const GRAPHQL_PING_QUERY: &str = "query { __typename }";
 pub const CONTRACTS_TARGET: &str = "contracts";
 
 fn normalize_base_node_url(uri: &str) -> Result<Url, Error> {
-    let mut url = Url::parse(uri)
-        .map_err(|_| Error::Rusk("Invalid base node URI".into()))?;
+    let mut url = Url::parse(uri).map_err(|source| {
+        Error::Rusk(RuskError::InvalidBaseNodeUri {
+            uri: uri.to_string(),
+            source,
+        })
+    })?;
     url.set_query(None);
     url.set_fragment(None);
 
@@ -83,9 +87,12 @@ impl HttpClient {
     }
 
     fn endpoint(&self, path: &str) -> Result<Url, Error> {
-        self.base_url
-            .join(path)
-            .map_err(|_| Error::Rusk("Invalid node endpoint path".into()))
+        self.base_url.join(path).map_err(|source| {
+            Error::Rusk(RuskError::InvalidEndpointPath {
+                path: path.to_string(),
+                source,
+            })
+        })
     }
 
     /// Utility for querying the rusk VM
@@ -234,7 +241,7 @@ impl HttpClient {
                 error
             };
 
-            Err(Error::Rusk(msg))
+            Err(Error::Rusk(RuskError::Response { message: msg }))
         } else {
             Ok(response)
         }
@@ -275,7 +282,7 @@ impl HttpClient {
 
             let msg = format!("{status}: {error}");
 
-            Err(Error::Rusk(msg))
+            Err(Error::Rusk(RuskError::Response { message: msg }))
         } else {
             let data = response.bytes().await?;
             Ok(data.to_vec())
@@ -315,19 +322,21 @@ impl HttpClient {
         if status.is_client_error() || status.is_server_error() {
             let error = String::from_utf8(body.to_vec())
                 .unwrap_or_else(|_| "unparsable error".into());
-            return Err(Error::Rusk(error));
+            return Err(Error::Rusk(RuskError::Response { message: error }));
         }
 
         let payload: serde_json::Value = serde_json::from_slice(&body)?;
         if let Some(errors) = payload.get("errors")
             && has_graphql_errors(errors)
         {
-            return Err(Error::Rusk(errors.to_string()));
+            return Err(Error::Rusk(RuskError::GraphqlErrors {
+                errors: errors.clone(),
+            }));
         }
 
         match payload.get("data") {
             Some(data) => serde_json::to_vec(data).map_err(Error::from),
-            None => Err(Error::Rusk("GraphQL response missing data".into())),
+            None => Err(Error::Rusk(RuskError::MissingGraphqlData)),
         }
     }
 }

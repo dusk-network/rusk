@@ -322,6 +322,46 @@ impl FormState {
         })
     }
 
+    fn parse_gas(&self, limit_default: u64, price_default: u64) -> (u64, u64) {
+        (
+            self.parse_u64("gas_limit").unwrap_or(limit_default),
+            self.parse_u64("gas_price").unwrap_or(price_default),
+        )
+    }
+
+    fn require_dusk(&mut self, name: &str, error: &str) -> Option<Dusk> {
+        match self.parse_dusk(name) {
+            Some(value) => Some(value),
+            None => {
+                self.error = Some(error.into());
+                None
+            }
+        }
+    }
+
+    fn parse_optional_dusk(
+        &mut self,
+        name: &str,
+        error: &str,
+    ) -> Option<Option<Dusk>> {
+        let is_empty = self.field_value(name).unwrap_or("").trim().is_empty();
+        if is_empty {
+            return Some(None);
+        }
+
+        self.require_dusk(name, error).map(Some)
+    }
+
+    fn require_hex(&mut self, name: &str, error: &str) -> Option<Vec<u8>> {
+        match self.parse_hex(name) {
+            Some(value) => Some(value),
+            None => {
+                self.error = Some(error.into());
+                None
+            }
+        }
+    }
+
     /// Get the address for the selected transaction model (shielded/public).
     fn model_address(&self) -> Address {
         if self.field_selected("model") == Some(0) {
@@ -342,18 +382,10 @@ impl FormState {
 
         let sender = self.transfer_sender_for_address(&rcvr);
 
-        let amt = match self.parse_dusk("amount") {
-            Some(a) => a,
-            None => {
-                self.error = Some("Invalid amount".into());
-                return None;
-            }
-        };
+        let amt = self.require_dusk("amount", "Invalid amount")?;
 
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_TRANSFER);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE);
         let memo = self
             .field_value("memo")
             .map(|s| s.to_string())
@@ -372,18 +404,10 @@ impl FormState {
     fn build_stake(&mut self) -> Option<Command> {
         let address = Some(self.model_address());
 
-        let amt = match self.parse_dusk("amount") {
-            Some(a) => a,
-            None => {
-                self.error = Some("Invalid amount".into());
-                return None;
-            }
-        };
+        let amt = self.require_dusk("amount", "Invalid amount")?;
 
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
         let owner = Some(self.public_addr.clone());
 
         Some(Command::Stake {
@@ -397,10 +421,8 @@ impl FormState {
 
     fn build_unstake(&mut self) -> Option<Command> {
         let address = Some(self.model_address());
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
         Some(Command::Unstake {
             address,
@@ -411,22 +433,10 @@ impl FormState {
 
     fn build_claim_rewards(&mut self) -> Option<Command> {
         let address = Some(self.model_address());
-        let reward_raw = self.field_value("amount").unwrap_or("").trim();
-        let reward = if reward_raw.is_empty() {
-            None
-        } else {
-            match self.parse_dusk("amount") {
-                Some(r) => Some(r),
-                None => {
-                    self.error = Some("Invalid claim amount".into());
-                    return None;
-                }
-            }
-        };
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let reward =
+            self.parse_optional_dusk("amount", "Invalid claim amount")?;
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
         Some(Command::ClaimRewards {
             address,
@@ -437,18 +447,10 @@ impl FormState {
     }
 
     fn build_shield(&mut self) -> Option<Command> {
-        let amt = match self.parse_dusk("amount") {
-            Some(a) => a,
-            None => {
-                self.error = Some("Invalid amount".into());
-                return None;
-            }
-        };
+        let amt = self.require_dusk("amount", "Invalid amount")?;
 
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
         Some(Command::Shield {
             profile_idx: Some(self.profile_idx),
@@ -459,18 +461,10 @@ impl FormState {
     }
 
     fn build_unshield(&mut self) -> Option<Command> {
-        let amt = match self.parse_dusk("amount") {
-            Some(a) => a,
-            None => {
-                self.error = Some("Invalid amount".into());
-                return None;
-            }
-        };
+        let amt = self.require_dusk("amount", "Invalid amount")?;
 
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_WALLET_ACTION);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
         Some(Command::Unshield {
             profile_idx: Some(self.profile_idx),
@@ -492,18 +486,8 @@ impl FormState {
             return None;
         }
 
-        let init_raw = self.field_value("init_args").unwrap_or("").trim();
-        let init_args = if init_raw.is_empty() {
-            Vec::new()
-        } else {
-            match self.parse_hex("init_args") {
-                Some(v) => v,
-                None => {
-                    self.error = Some("Init args must be valid hex".into());
-                    return None;
-                }
-            }
-        };
+        let init_args =
+            self.require_hex("init_args", "Init args must be valid hex")?;
         let deploy_nonce = match self.parse_u64("nonce") {
             Some(n) => n,
             None => {
@@ -512,11 +496,8 @@ impl FormState {
             }
         };
 
-        let gas_limit = self
-            .parse_u64("gas_limit")
-            .unwrap_or(DEFAULT_LIMIT_DEPLOYMENT);
-        let gas_price =
-            self.parse_u64("gas_price").unwrap_or(MIN_PRICE_DEPLOYMENT);
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_DEPLOYMENT, MIN_PRICE_DEPLOYMENT);
 
         Some(Command::ContractDeploy {
             address,
@@ -546,34 +527,14 @@ impl FormState {
             return None;
         }
 
-        let args_raw = self.field_value("fn_args").unwrap_or("").trim();
-        let fn_args = if args_raw.is_empty() {
-            Vec::new()
-        } else {
-            match self.parse_hex("fn_args") {
-                Some(v) => v,
-                None => {
-                    self.error = Some("Function args must be valid hex".into());
-                    return None;
-                }
-            }
-        };
+        let fn_args =
+            self.require_hex("fn_args", "Function args must be valid hex")?;
 
-        let deposit_raw = self.field_value("deposit").unwrap_or("").trim();
-        let deposit = if deposit_raw.is_empty() {
-            Dusk::from(0)
-        } else {
-            match self.parse_dusk("deposit") {
-                Some(d) => d,
-                None => {
-                    self.error = Some("Invalid deposit amount".into());
-                    return None;
-                }
-            }
-        };
-        let gas_limit =
-            self.parse_u64("gas_limit").unwrap_or(DEFAULT_LIMIT_CALL);
-        let gas_price = self.parse_u64("gas_price").unwrap_or(DEFAULT_PRICE);
+        let deposit = self
+            .parse_optional_dusk("deposit", "Invalid deposit amount")?
+            .unwrap_or(Dusk::from(0));
+        let (gas_limit, gas_price) =
+            self.parse_gas(DEFAULT_LIMIT_CALL, DEFAULT_PRICE);
 
         Some(Command::ContractCall {
             address,
