@@ -18,6 +18,10 @@ use rusk_wallet::{Address, MAX_FUNCTION_NAME_SIZE, Profile};
 use self::field::FormField;
 use crate::Command;
 
+const NO_ADDITIONAL_PROFILE_ERROR: &str = "No additional profile created";
+const STAKE_OWNER_LOCKED_ERROR: &str =
+    "Stake owner is locked by existing stake";
+
 /// Identifiers for the different form types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormId {
@@ -56,6 +60,10 @@ pub struct FormState {
     transfer_shielded_max: Dusk,
     /// Max spendable public balance for transfers.
     transfer_public_max: Dusk,
+    /// Public addresses that can own stake funds.
+    stake_owner_addrs: Vec<Address>,
+    /// True when an existing stake already fixes the owner key.
+    stake_owner_locked: bool,
 }
 
 impl FormState {
@@ -150,15 +158,43 @@ impl FormState {
 
     /// Cycle select field to next option.
     pub fn cycle_next(&mut self) {
+        if self.focused_stake_owner_is_locked() {
+            self.error = Some(STAKE_OWNER_LOCKED_ERROR.into());
+            return;
+        }
+
+        if self.focused_stake_owner_is_single_profile() {
+            self.error = Some(NO_ADDITIONAL_PROFILE_ERROR.into());
+            return;
+        }
+
+        let updates_stake_amount_max = self.focused_field_is("model");
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.cycle_next();
+        }
+        if updates_stake_amount_max {
+            self.update_stake_amount_max();
         }
     }
 
     /// Cycle select field to previous option.
     pub fn cycle_prev(&mut self) {
+        if self.focused_stake_owner_is_locked() {
+            self.error = Some(STAKE_OWNER_LOCKED_ERROR.into());
+            return;
+        }
+
+        if self.focused_stake_owner_is_single_profile() {
+            self.error = Some(NO_ADDITIONAL_PROFILE_ERROR.into());
+            return;
+        }
+
+        let updates_stake_amount_max = self.focused_field_is("model");
         if let Some(field) = self.fields.get_mut(self.focused) {
             field.cycle_prev();
+        }
+        if updates_stake_amount_max {
+            self.update_stake_amount_max();
         }
     }
 
@@ -250,6 +286,28 @@ impl FormState {
         }
     }
 
+    fn stake_amount_max_for_model(&self) -> Option<Dusk> {
+        match self.field_selected("model") {
+            Some(0) => Some(self.transfer_shielded_max),
+            Some(_) => Some(self.transfer_public_max),
+            None => None,
+        }
+    }
+
+    fn update_stake_amount_max(&mut self) {
+        if self.id != FormId::Stake {
+            return;
+        }
+
+        let max = self.stake_amount_max_for_model();
+        if let Some(field) =
+            self.fields.iter_mut().find(|field| field.name == "amount")
+            && let field::FieldKind::Amount { max: field_max } = &mut field.kind
+        {
+            *field_max = max;
+        }
+    }
+
     /// Returns true if the currently focused field is a select.
     pub fn is_select_field(&self) -> bool {
         self.fields
@@ -278,6 +336,51 @@ impl FormState {
             .iter()
             .find(|f| f.name == name)
             .and_then(|f| f.selected_option)
+    }
+
+    fn focused_field_is(&self, name: &str) -> bool {
+        self.fields
+            .get(self.focused)
+            .is_some_and(|field| field.name == name)
+    }
+
+    fn focused_stake_owner_is_single_profile(&self) -> bool {
+        self.id == FormId::Stake
+            && self.focused_field_is("owner")
+            && self.stake_owner_addrs.len() <= 1
+    }
+
+    fn focused_stake_owner_is_locked(&self) -> bool {
+        self.id == FormId::Stake
+            && self.focused_field_is("owner")
+            && self.stake_owner_locked
+    }
+
+    pub fn lock_stake_owner(&mut self, owner: &Address) -> bool {
+        if self.id != FormId::Stake {
+            return false;
+        }
+
+        let Some(owner_idx) =
+            self.stake_owner_addrs.iter().position(|addr| addr == owner)
+        else {
+            return false;
+        };
+
+        if let Some(field) =
+            self.fields.iter_mut().find(|field| field.name == "owner")
+            && let field::FieldKind::Select { options } = &field.kind
+            && let Some(option) = options.get(owner_idx)
+        {
+            field.selected_option = Some(owner_idx);
+            field.value = option.clone();
+            field.label = "Stake owner (set)".into();
+            self.stake_owner_locked = true;
+            self.error = None;
+            return true;
+        }
+
+        false
     }
 
     /// Try to build a Command from the current form values.
@@ -408,7 +511,7 @@ impl FormState {
 
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
-        let owner = Some(self.public_addr.clone());
+        let owner = Some(self.stake_owner_address());
 
         Some(Command::Stake {
             address,
@@ -564,6 +667,17 @@ impl FormState {
             export_pwd: None,
         })
     }
+
+    fn stake_owner_address(&self) -> Address {
+        let owner_idx = self
+            .field_selected("owner")
+            .unwrap_or(self.profile_idx as usize);
+
+        self.stake_owner_addrs
+            .get(owner_idx)
+            .cloned()
+            .unwrap_or_else(|| self.public_addr.clone())
+    }
 }
 
 /// Build a form for the given operation.
@@ -579,6 +693,10 @@ pub fn build_form(
     let profile = &profiles[profile_idx as usize];
     let shielded_addr = Address::Shielded(profile.shielded_addr);
     let public_addr = Address::Public(profile.public_addr);
+    let stake_owner_addrs = profiles
+        .iter()
+        .map(|profile| Address::Public(profile.public_addr))
+        .collect();
 
     let fields = match id {
         FormId::Transfer => vec![
@@ -595,6 +713,7 @@ pub fn build_form(
                 "Stake amount (DUSK)",
                 moonlight_balance,
             ),
+            stake_owner_field(profiles, profile_idx),
             FormField::number(
                 "gas_limit",
                 "Gas limit",
@@ -702,6 +821,8 @@ pub fn build_form(
         public_addr,
         transfer_shielded_max: phoenix_spendable,
         transfer_public_max: moonlight_balance,
+        stake_owner_addrs,
+        stake_owner_locked: false,
     }
 }
 
@@ -712,6 +833,24 @@ fn public_model_field() -> FormField {
         vec!["Shielded".into(), "Public".into()],
         1,
     )
+}
+
+fn stake_owner_field(profiles: &[Profile], profile_idx: u8) -> FormField {
+    let current_idx = profile_idx as usize;
+    let options = profiles
+        .iter()
+        .enumerate()
+        .map(|(idx, profile)| {
+            let address = Address::Public(profile.public_addr);
+            let mut label = format!("Profile {}", idx + 1);
+            if idx == current_idx {
+                label.push_str(" (current)");
+            }
+            format!("{label} - {}", address.preview())
+        })
+        .collect();
+
+    FormField::select_with_default("owner", "Stake owner", options, current_idx)
 }
 
 fn claim_rewards_amount_field(max: Option<Dusk>) -> FormField {
@@ -730,12 +869,16 @@ mod tests {
 
     use super::*;
 
-    fn test_profile() -> Profile {
+    fn test_profile_at(index: u8) -> Profile {
         let seed: Seed = [7u8; 64];
         Profile {
-            shielded_addr: derive_phoenix_pk(&seed, 0),
-            public_addr: derive_bls_pk(&seed, 0),
+            shielded_addr: derive_phoenix_pk(&seed, index),
+            public_addr: derive_bls_pk(&seed, index),
         }
+    }
+
+    fn test_profile() -> Profile {
+        test_profile_at(0)
     }
 
     fn transfer_form() -> FormState {
@@ -748,6 +891,37 @@ mod tests {
             Dusk::from(22),
             None,
             &[test_profile()],
+            temp_dir.as_path(),
+        )
+    }
+
+    fn stake_form() -> FormState {
+        let temp_dir = std::env::temp_dir();
+
+        build_form(
+            FormId::Stake,
+            0,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            &[test_profile()],
+            temp_dir.as_path(),
+        )
+    }
+
+    fn stake_form_with_profiles(
+        profile_idx: u8,
+        profiles: &[Profile],
+    ) -> FormState {
+        let temp_dir = std::env::temp_dir();
+
+        build_form(
+            FormId::Stake,
+            profile_idx,
+            Dusk::from(11),
+            Dusk::from(22),
+            None,
+            profiles,
             temp_dir.as_path(),
         )
     }
@@ -772,6 +946,24 @@ mod tests {
             field::FieldKind::Amount { max } => max,
             _ => panic!("amount field should use amount kind"),
         }
+    }
+
+    fn focus_field(form: &mut FormState, name: &str) {
+        form.focused = form
+            .fields
+            .iter()
+            .position(|field| field.name == name)
+            .expect("form should have requested field");
+    }
+
+    fn set_amount(form: &mut FormState, amount: &str) {
+        let field = form
+            .fields
+            .iter_mut()
+            .find(|field| field.name == "amount")
+            .expect("form should have an amount field");
+        field.value = amount.to_string();
+        field.cursor = field.value.len();
     }
 
     #[test]
@@ -830,5 +1022,70 @@ mod tests {
         field.cursor = field.value.len();
         form.update_transfer_amount_max();
         assert_eq!(amount_max(&form), None);
+    }
+
+    #[test]
+    fn stake_amount_max_tracks_selected_transaction_model() {
+        let mut form = stake_form();
+
+        assert_eq!(amount_max(&form), Some(Dusk::from(22)));
+
+        form.cycle_prev();
+        assert_eq!(amount_max(&form), Some(Dusk::from(11)));
+
+        form.cycle_next();
+        assert_eq!(amount_max(&form), Some(Dusk::from(22)));
+    }
+
+    #[test]
+    fn stake_can_select_different_owner_profile() {
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = stake_form_with_profiles(0, &profiles);
+
+        form.cycle_prev();
+        focus_field(&mut form, "owner");
+        form.cycle_next();
+        set_amount(&mut form, "1");
+
+        let command = form.try_build_command().expect("valid stake command");
+        let Command::Stake { address, owner, .. } = command else {
+            panic!("expected stake command");
+        };
+
+        assert_eq!(address, Some(Address::Shielded(profiles[0].shielded_addr)));
+        assert_eq!(owner, Some(Address::Public(profiles[1].public_addr)));
+    }
+
+    #[test]
+    fn locked_stake_owner_cannot_be_changed() {
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = stake_form_with_profiles(0, &profiles);
+        let locked_owner = Address::Public(profiles[1].public_addr);
+
+        assert!(form.lock_stake_owner(&locked_owner));
+        focus_field(&mut form, "owner");
+
+        form.cycle_next();
+
+        let owner_field = form
+            .fields
+            .iter()
+            .find(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        assert_eq!(owner_field.selected_option, Some(1));
+        assert_eq!(
+            form.error.as_deref(),
+            Some("Stake owner is locked by existing stake")
+        );
+
+        form.error = None;
+        set_amount(&mut form, "1");
+
+        let command = form.try_build_command().expect("valid stake command");
+        let Command::Stake { owner, .. } = command else {
+            panic!("expected stake command");
+        };
+
+        assert_eq!(owner, Some(locked_owner));
     }
 }

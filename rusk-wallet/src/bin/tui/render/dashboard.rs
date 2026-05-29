@@ -76,7 +76,6 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
 
     let bal = app.current_balance();
     let stake = app.current_stake_state();
-
     render_info_block(
         frame,
         layout[0],
@@ -101,8 +100,8 @@ pub fn render_dashboard(frame: &mut Frame, app: &App) {
                 &[("\u{2191}\u{2193}", "Scroll"), ("Esc", "Back")],
             );
         }
-        AppScreen::StakeInfo => {
-            render_stake_panel(frame, layout[1], stake);
+        AppScreen::StakeInfo { owner } => {
+            render_stake_panel(frame, layout[1], stake, owner.as_deref());
             render_panel_hint_bar(frame, layout[2], &[("Esc", "Back")]);
         }
         AppScreen::Addresses => {
@@ -554,6 +553,7 @@ fn render_stake_panel(
     frame: &mut Frame,
     area: ratatui::layout::Rect,
     stake: Option<&StakeState>,
+    owner: Option<&str>,
 ) {
     let block = Block::default()
         .borders(Borders::TOP)
@@ -567,6 +567,14 @@ fn render_stake_panel(
 
     match stake {
         Some(StakeState::Loaded(data)) => {
+            if let Some(owner) = owner {
+                lines.push(Line::from(vec![
+                    Span::styled("  Owner        ", theme::label()),
+                    Span::styled(owner, theme::value()),
+                ]));
+                lines.push(Line::default());
+            }
+
             if let Some(amt) = &data.amount {
                 let eligible: Dusk = amt.value.into();
                 let locked: Dusk = amt.locked.into();

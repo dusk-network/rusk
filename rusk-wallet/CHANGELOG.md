@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add public `BlobError`, `ConversionError`, `RuskError`, `TransactionError`, and `ProverError` error types, re-exported from `rusk_wallet`
 - Add `Error::InvalidEndpointUrl` and `Error::UnsupportedEndpointScheme` variants for endpoint validation failures
+- Show the stake owner in the TUI stake info view
 
 ### Changed
 
@@ -24,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Reject malformed `--state`, `--prover`, and `--archiver` URL overrides instead of silently falling back to config values
+- Update the TUI stake amount max when switching between shielded and public staking
+- Restore TUI stake owner profile selection
+- Show an error when changing the TUI stake owner without another profile
+- Lock the TUI stake owner selection when topping up an existing stake
 
 ## [0.4.0] - 2026-05-07
 
