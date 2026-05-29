@@ -734,14 +734,24 @@ async fn run_inner(
                 AppAction::FetchStakeInfo => {
                     match fetch_stake_info(&mut app).await {
                         Ok(()) => {
-                            let owner =
-                                fetch_current_stake_owner_label(&app).await;
+                            let owner = fetch_current_stake_owner(&app)
+                                .await
+                                .map(|owner| {
+                                    stake_owner_label(
+                                        app.wallet.profiles(),
+                                        &owner,
+                                    )
+                                });
                             app.screen = AppScreen::StakeInfo { owner };
                         }
                         Err(e) => app.handle_async_result(AsyncResult::Error(
                             e.to_string(),
                         )),
                     }
+                }
+                AppAction::OpenStakeForm => {
+                    let locked_owner = fetch_current_stake_owner(&app).await;
+                    app.open_stake_form(locked_owner);
                 }
                 AppAction::OpenClaimRewardsForm => {
                     // Fetch fresh stake info so the reward max is up to date,
@@ -1407,18 +1417,14 @@ async fn fetch_stake_with_client(
     Ok(stake_data)
 }
 
-async fn fetch_current_stake_owner_label(app: &App<'_>) -> Option<String> {
-    if !matches!(app.current_stake_state(), Some(app::StakeState::Loaded(_))) {
-        return None;
-    }
-
+async fn fetch_current_stake_owner(app: &App<'_>) -> Option<Address> {
     let stake_pk = app.current_profile().public_addr;
     match app.wallet.find_stake_owner_account(&stake_pk).await {
-        Ok(owner) => Some(stake_owner_label(app.wallet.profiles(), &owner)),
+        Ok(owner) => Some(owner),
         Err(WalletError::NotStaked) => None,
         Err(err) => {
             debug!("Failed to fetch stake owner: {err}");
-            Some("Unavailable".into())
+            None
         }
     }
 }

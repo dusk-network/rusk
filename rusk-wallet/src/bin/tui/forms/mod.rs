@@ -19,6 +19,8 @@ use self::field::FormField;
 use crate::Command;
 
 const NO_ADDITIONAL_PROFILE_ERROR: &str = "No additional profile created";
+const STAKE_OWNER_LOCKED_ERROR: &str =
+    "Stake owner is locked by existing stake";
 
 /// Identifiers for the different form types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,6 +62,8 @@ pub struct FormState {
     transfer_public_max: Dusk,
     /// Public addresses that can own stake funds.
     stake_owner_addrs: Vec<Address>,
+    /// True when an existing stake already fixes the owner key.
+    stake_owner_locked: bool,
 }
 
 impl FormState {
@@ -154,6 +158,11 @@ impl FormState {
 
     /// Cycle select field to next option.
     pub fn cycle_next(&mut self) {
+        if self.focused_stake_owner_is_locked() {
+            self.error = Some(STAKE_OWNER_LOCKED_ERROR.into());
+            return;
+        }
+
         if self.focused_stake_owner_is_single_profile() {
             self.error = Some(NO_ADDITIONAL_PROFILE_ERROR.into());
             return;
@@ -170,6 +179,11 @@ impl FormState {
 
     /// Cycle select field to previous option.
     pub fn cycle_prev(&mut self) {
+        if self.focused_stake_owner_is_locked() {
+            self.error = Some(STAKE_OWNER_LOCKED_ERROR.into());
+            return;
+        }
+
         if self.focused_stake_owner_is_single_profile() {
             self.error = Some(NO_ADDITIONAL_PROFILE_ERROR.into());
             return;
@@ -334,6 +348,39 @@ impl FormState {
         self.id == FormId::Stake
             && self.focused_field_is("owner")
             && self.stake_owner_addrs.len() <= 1
+    }
+
+    fn focused_stake_owner_is_locked(&self) -> bool {
+        self.id == FormId::Stake
+            && self.focused_field_is("owner")
+            && self.stake_owner_locked
+    }
+
+    pub fn lock_stake_owner(&mut self, owner: &Address) -> bool {
+        if self.id != FormId::Stake {
+            return false;
+        }
+
+        let Some(owner_idx) =
+            self.stake_owner_addrs.iter().position(|addr| addr == owner)
+        else {
+            return false;
+        };
+
+        if let Some(field) =
+            self.fields.iter_mut().find(|field| field.name == "owner")
+            && let field::FieldKind::Select { options } = &field.kind
+            && let Some(option) = options.get(owner_idx)
+        {
+            field.selected_option = Some(owner_idx);
+            field.value = option.clone();
+            field.label = "Stake owner (set)".into();
+            self.stake_owner_locked = true;
+            self.error = None;
+            return true;
+        }
+
+        false
     }
 
     /// Try to build a Command from the current form values.
@@ -775,6 +822,7 @@ pub fn build_form(
         transfer_shielded_max: phoenix_spendable,
         transfer_public_max: moonlight_balance,
         stake_owner_addrs,
+        stake_owner_locked: false,
     }
 }
 
@@ -1006,5 +1054,38 @@ mod tests {
 
         assert_eq!(address, Some(Address::Shielded(profiles[0].shielded_addr)));
         assert_eq!(owner, Some(Address::Public(profiles[1].public_addr)));
+    }
+
+    #[test]
+    fn locked_stake_owner_cannot_be_changed() {
+        let profiles = vec![test_profile_at(0), test_profile_at(1)];
+        let mut form = stake_form_with_profiles(0, &profiles);
+        let locked_owner = Address::Public(profiles[1].public_addr);
+
+        assert!(form.lock_stake_owner(&locked_owner));
+        focus_field(&mut form, "owner");
+
+        form.cycle_next();
+
+        let owner_field = form
+            .fields
+            .iter()
+            .find(|field| field.name == "owner")
+            .expect("stake form should have owner field");
+        assert_eq!(owner_field.selected_option, Some(1));
+        assert_eq!(
+            form.error.as_deref(),
+            Some("Stake owner is locked by existing stake")
+        );
+
+        form.error = None;
+        set_amount(&mut form, "1");
+
+        let command = form.try_build_command().expect("valid stake command");
+        let Command::Stake { owner, .. } = command else {
+            panic!("expected stake command");
+        };
+
+        assert_eq!(owner, Some(locked_owner));
     }
 }

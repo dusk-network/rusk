@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update the TUI stake amount max when switching between shielded and public staking
 - Restore TUI stake owner profile selection
 - Show an error when changing the TUI stake owner without another profile
+- Lock the TUI stake owner selection when topping up an existing stake
 
 ## [0.4.0] - 2026-05-07
 

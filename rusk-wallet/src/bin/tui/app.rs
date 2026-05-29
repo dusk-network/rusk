@@ -307,10 +307,7 @@ impl<'a> App<'a> {
                 self.open_form(FormId::Transfer);
                 None
             }
-            "s" => {
-                self.open_form(FormId::Stake);
-                None
-            }
+            "s" => Some(AppAction::OpenStakeForm),
             "u" => {
                 self.open_form(FormId::Unstake);
                 None
@@ -701,6 +698,27 @@ impl<'a> App<'a> {
             self.wallet.profiles(),
             &self.settings.wallet_dir,
         );
+
+        self.screen = AppScreen::Form {
+            form: Box::new(form),
+        };
+    }
+
+    pub fn open_stake_form(&mut self, locked_owner: Option<Address>) {
+        let (phoenix_spendable, moonlight_bal) = self.form_balances();
+        let mut form = forms::build_form(
+            FormId::Stake,
+            self.profile_idx,
+            phoenix_spendable,
+            moonlight_bal,
+            self.claim_rewards_max(),
+            self.wallet.profiles(),
+            &self.settings.wallet_dir,
+        );
+
+        if let Some(owner) = locked_owner {
+            form.lock_stake_owner(&owner);
+        }
 
         self.screen = AppScreen::Form {
             form: Box::new(form),
@@ -1149,6 +1167,7 @@ pub enum AppAction {
     RefreshBalance,
     FetchHistory,
     FetchStakeInfo,
+    OpenStakeForm,
     OpenClaimRewardsForm,
     ImportWallet,
     CloseForm,
