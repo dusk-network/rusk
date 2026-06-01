@@ -519,7 +519,8 @@ impl<'a> App<'a> {
                 let entry = self.stake_info.entry(profile_idx).or_default();
                 apply_stake_update(entry, stake, attempted_at_tip);
             }
-            AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
+            AsyncResult::WalletStatus(status) => {
+                let msg = status.to_string();
                 if let Some(height) = parse_block_height(&msg) {
                     self.sync_block_height = Some(
                         self.sync_block_height

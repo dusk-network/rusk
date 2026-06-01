@@ -4,9 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use tracing::info;
+use rusk_wallet::{WalletStatus, WalletSyncStatus};
+use tracing::{error, info, warn};
 
-/// Logs a status message at info level (headless mode).
-pub(crate) fn headless(status: &str) {
-    info!("{status}");
+/// Logs a typed wallet status update (headless mode).
+pub(crate) fn wallet_headless(status: WalletStatus) {
+    match &status {
+        WalletStatus::Warning(_) => warn!("{status}"),
+        WalletStatus::Sync(WalletSyncStatus::Error(_)) => error!("{status}"),
+        _ => info!("{status}"),
+    }
 }

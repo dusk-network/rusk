@@ -15,6 +15,7 @@ use dusk_core::transfer::phoenix::{
 use rkyv::Deserialize;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options, WriteBatch};
 
+use crate::WalletStatus;
 use crate::clients::TREE_LEAF;
 use crate::error::Error;
 
@@ -32,9 +33,9 @@ impl Cache {
     pub(crate) fn new<T: AsRef<Path>>(
         path: T,
         cfs: Vec<String>,
-        status: fn(&str),
+        status: fn(WalletStatus),
     ) -> Result<Self, Error> {
-        status("Opening notes database");
+        status(WalletStatus::Info("Opening notes database".into()));
 
         let mut opts = Options::default();
         opts.create_if_missing(true);

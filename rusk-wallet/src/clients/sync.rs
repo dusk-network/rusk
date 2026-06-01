@@ -24,9 +24,9 @@ use wallet_core::keys::{
 use zeroize::Zeroize;
 
 use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
-use crate::Error;
 use crate::clients::Cache;
 use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
+use crate::{Error, WalletStatus, WalletSyncStatus};
 
 const SYNC_PROGRESS_BLOCK_STEP: u64 = 100;
 const DEFAULT_OWNERSHIP_CHUNK_SIZE: usize = 512;
@@ -39,13 +39,16 @@ struct OwnedNote {
     note: Note,
 }
 
-pub(crate) async fn sync_db(
+pub(crate) async fn sync_db<S>(
     client: &RuesHttpClient,
     cache: &Cache,
     store: &LocalStore,
-    status: fn(&str),
+    status: S,
     allow_cache_reset: bool,
-) -> Result<(), Error> {
+) -> Result<(), Error>
+where
+    S: Fn(WalletStatus) + Clone,
+{
     let seed = store.get_seed();
 
     let mut keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> =
@@ -63,7 +66,10 @@ pub(crate) async fn sync_db(
             })
             .collect();
 
-    status("Getting cached note position...");
+    status(WalletStatus::Sync(WalletSyncStatus::Starting));
+    status(WalletStatus::Sync(
+        WalletSyncStatus::ReadingCachedNotePosition,
+    ));
 
     let last_pos = cache.last_pos().inspect_err(|_| {
         zeroize_secret_keys(&mut keys);
@@ -79,7 +85,7 @@ pub(crate) async fn sync_db(
             &pks,
             |pos| fetch_note_at_pos(client, pos),
             allow_cache_reset,
-            status,
+            status.clone(),
         )
         .await
         .inspect_err(|_| zeroize_secret_keys(&mut keys))?
@@ -89,13 +95,14 @@ pub(crate) async fn sync_db(
     }
 
     if pos_to_search > 0 {
-        status(&format!(
-            "Resuming sync from cached note position {pos_to_search}"
+        status(WalletStatus::Sync(
+            WalletSyncStatus::ResumingFromCachedNotePosition(pos_to_search),
         ));
     }
 
     let (last_pos, max_block_height, note_data) =
-        collect_fresh_notes(client, pos_to_search, &mut keys, status).await?;
+        collect_fresh_notes(client, pos_to_search, &mut keys, status.clone())
+            .await?;
 
     let owned_notes = collect_owned_notes(&keys, note_data.as_slice());
     persist_owned_notes(client, cache, &keys, &owned_notes).await?;
@@ -108,20 +115,24 @@ pub(crate) async fn sync_db(
     // insert last post after the notes has been inserted
     // to prevent false reporting of sync completion
     cache.insert_last_pos(last_pos)?;
-    status(&format!(
-        "Syncing Complete at block {max_block_height} (note position {last_pos})"
-    ));
+    status(WalletStatus::Sync(WalletSyncStatus::Complete(
+        max_block_height,
+        last_pos,
+    )));
 
     Ok(())
 }
 
-async fn collect_fresh_notes(
+async fn collect_fresh_notes<S>(
     client: &RuesHttpClient,
     pos_to_search: u64,
     keys: &mut [(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
-    status: fn(&str),
-) -> Result<(u64, u64, Vec<(u64, Note)>), Error> {
-    status("Fetching fresh notes...");
+    status: S,
+) -> Result<(u64, u64, Vec<(u64, Note)>), Error>
+where
+    S: Fn(WalletStatus),
+{
+    status(WalletStatus::Sync(WalletSyncStatus::FetchingFreshNotes));
 
     let req = rkyv::to_bytes::<_, 8>(&(pos_to_search))
         .map_err(|_| Error::Rkyv)?
@@ -139,8 +150,8 @@ async fn collect_fresh_notes(
         .inspect_err(|_| zeroize_secret_keys(keys))?
         .bytes_stream();
 
-    status("Connection established...");
-    status("Streaming notes...");
+    status(WalletStatus::Sync(WalletSyncStatus::NoteStreamConnected));
+    status(WalletStatus::Sync(WalletSyncStatus::StreamingNotes));
 
     let mut last_pos = pos_to_search.saturating_sub(1);
     let mut max_block_height = 0_u64;
@@ -172,8 +183,8 @@ async fn collect_fresh_notes(
             if max_block_height
                 >= last_reported_block + SYNC_PROGRESS_BLOCK_STEP
             {
-                status(&format!(
-                    "Syncing chain state at block {max_block_height}"
+                status(WalletStatus::Sync(
+                    WalletSyncStatus::StreamingProgress(max_block_height),
                 ));
                 last_reported_block = max_block_height;
             }
@@ -337,7 +348,7 @@ async fn check_stale_cache<F, Fut>(
     pks: &[PhoenixPublicKey],
     fetch_note: F,
     allow_cache_reset: bool,
-    status: fn(&str),
+    status: impl Fn(WalletStatus),
 ) -> Result<bool, Error>
 where
     F: Fn(u64) -> Fut,
@@ -354,7 +365,7 @@ where
                 note_pos,
                 "cached note mismatch — resetting stale cache"
             );
-            status("Stale cache detected — resetting note cache...");
+            status(WalletStatus::Sync(WalletSyncStatus::CacheResetting));
             cache.clear_notes(pks)?;
             return Ok(true);
         }

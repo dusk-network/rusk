@@ -21,7 +21,7 @@ use serde_with::{As, DisplayFromStr};
 use tokio::time::{Duration, sleep};
 
 use crate::rues::HttpClient as RuesHttpClient;
-use crate::{Address, Error, TransactionError};
+use crate::{Address, Error, TransactionError, WalletStatus};
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -31,7 +31,7 @@ use crate::{Address, Error, TransactionError};
 pub struct GraphQL {
     state_client: RuesHttpClient,
     archiver_client: RuesHttpClient,
-    status: fn(&str),
+    status: fn(WalletStatus),
 }
 
 /// The `tx_for_block` returns a Vec<BlockTransaction> which contains
@@ -187,7 +187,7 @@ impl GraphQL {
     pub fn new<S: Into<String>>(
         state_url: S,
         archiver_url: S,
-        status: fn(&str),
+        status: fn(WalletStatus),
     ) -> Result<Self, Error> {
         Ok(Self {
             state_client: RuesHttpClient::new(state_url)?,
@@ -213,9 +213,9 @@ impl GraphQL {
                     ))?;
                 }
                 TxStatus::NotFound => {
-                    (self.status)(
-                        "Waiting for tx to be included into a block...",
-                    );
+                    (self.status)(WalletStatus::Info(
+                        "Waiting for tx to be included into a block...".into(),
+                    ));
                     sleep(Duration::from_millis(1000)).await;
                 }
             }
@@ -446,8 +446,8 @@ impl GraphQL {
 #[tokio::test]
 async fn test() -> Result<(), Error> {
     let gql = GraphQL {
-        status: |s| {
-            println!("{s}");
+        status: |status| {
+            println!("{status}");
         },
         state_client: RuesHttpClient::new(
             "http://testnet.nodes.dusk.network:9500",

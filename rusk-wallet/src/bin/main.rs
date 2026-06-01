@@ -27,7 +27,7 @@ use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
     EPOCH, Error, GraphQL, IV_SIZE, Profile, SALT_SIZE, SecureWalletFile,
-    Wallet, WalletPath,
+    Wallet, WalletPath, WalletStatus,
 };
 use tracing::{Level, error, info, warn};
 use zeroize::Zeroize;
@@ -116,7 +116,7 @@ fn init_logging(
 async fn connect<F>(
     mut wallet: Wallet<F>,
     settings: &Settings,
-    status: fn(&str),
+    status: fn(WalletStatus),
 ) -> anyhow::Result<Wallet<F>>
 where
     F: SecureWalletFile + std::fmt::Debug,
@@ -248,7 +248,7 @@ async fn exec() -> anyhow::Result<()> {
         })?;
     }
 
-    wallet = connect(wallet, &settings, status::headless)
+    wallet = connect(wallet, &settings, status::wallet_headless)
         .await
         .inspect_err(|_| {
             settings.password.zeroize();
@@ -374,7 +374,7 @@ async fn print_operation_result(
             let gql = GraphQL::new(
                 settings.state.clone(),
                 settings.archiver.clone(),
-                status::headless,
+                status::wallet_headless,
             )?;
             gql.wait_for(&tx_id).await?;
 
@@ -388,7 +388,7 @@ async fn print_operation_result(
             let gql = GraphQL::new(
                 settings.state.clone(),
                 settings.archiver.clone(),
-                status::headless,
+                status::wallet_headless,
             )?;
             gql.wait_for(&tx_id).await?;
 

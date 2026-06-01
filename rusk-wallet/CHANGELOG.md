@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace string wallet status callbacks with typed wallet status models.
 - Decouple TUI form submission state from the CLI command enum with a dedicated TUI request model.
 - Share CLI/TUI balance and operation result models.
 - Treat `0.0.0.0` and `::` HTTP endpoints as insecure unless `--allow-insecure` is set

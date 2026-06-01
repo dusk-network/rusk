@@ -32,7 +32,7 @@ use rocksdb::ErrorKind;
 use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::{
     Address, Error as WalletError, GraphQL, Profile, RuesHttpClient, Wallet,
-    WalletPath,
+    WalletPath, WalletStatus, WalletSyncStatus,
 };
 use tokio::sync::mpsc;
 use tracing::debug;
@@ -682,8 +682,10 @@ async fn run_inner(
                     tip_poller_started = true;
                 }
             } else {
-                app.handle_async_result(AsyncResult::StatusMessage(
-                    "Offline mode: unable to reach node services".into(),
+                app.handle_async_result(AsyncResult::WalletStatus(
+                    WalletStatus::Warning(
+                        "Offline mode: unable to reach node services".into(),
+                    ),
                 ));
             }
         }
@@ -883,8 +885,8 @@ fn ingest_startup_result(
     result: AsyncResult,
 ) {
     match result {
-        AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
-            progress.push_status(msg);
+        AsyncResult::WalletStatus(status) => {
+            progress.push_status(status.to_string());
         }
         AsyncResult::Operation(OperationResult::Error { message }) => {
             progress.push_status(format!("Error: {message}"));
@@ -1510,8 +1512,10 @@ async fn execute_command(
                 RunResult::Operation(result) => match result {
                     OperationResult::Tx(hash) => {
                         let tx_id = hex::encode(hash.to_bytes());
-                        let _ = tx.send(AsyncResult::StatusMessage(
-                            "Waiting for confirmation...".into(),
+                        let _ = tx.send(AsyncResult::WalletStatus(
+                            WalletStatus::Info(
+                                "Waiting for confirmation...".into(),
+                            ),
                         ));
 
                         if let Ok(gql) = GraphQL::new(
@@ -1536,8 +1540,10 @@ async fn execute_command(
                     }
                     OperationResult::DeployTx { hash, contract_id } => {
                         let tx_id = hex::encode(hash.to_bytes());
-                        let _ = tx.send(AsyncResult::StatusMessage(
-                            "Waiting for confirmation...".into(),
+                        let _ = tx.send(AsyncResult::WalletStatus(
+                            WalletStatus::Info(
+                                "Waiting for confirmation...".into(),
+                            ),
                         ));
 
                         if let Ok(gql) = GraphQL::new(
@@ -1632,26 +1638,29 @@ async fn execute_history(app: &mut App<'_>) {
 
 /// Poll the background sync channel from the wallet.
 fn poll_sync_channel(app: &mut App<'_>) {
-    let messages: Vec<String> = app
+    let statuses: Vec<WalletStatus> = app
         .wallet
         .state()
         .ok()
         .and_then(|state| state.sync_rx.as_ref())
         .map(|rx| {
-            let mut msgs = Vec::new();
-            while let Ok(msg) = rx.try_recv() {
-                msgs.push(msg);
+            let mut statuses = Vec::new();
+            while let Ok(status) = rx.try_recv() {
+                statuses.push(status);
             }
-            msgs
+            statuses
         })
         .unwrap_or_default();
 
     let mut sync_complete = false;
-    for msg in messages {
-        if msg.contains("Complete") || msg.contains("complete") {
+    for status in statuses {
+        if matches!(
+            status,
+            WalletStatus::Sync(WalletSyncStatus::Complete(_, _))
+        ) {
             sync_complete = true;
         }
-        app.handle_async_result(AsyncResult::SyncStatus(msg));
+        app.handle_async_result(AsyncResult::WalletStatus(status));
     }
 
     if sync_complete {

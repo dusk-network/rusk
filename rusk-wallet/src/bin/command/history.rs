@@ -27,7 +27,7 @@ pub(crate) async fn transaction_from_notes(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        status::headless,
+        status::wallet_headless,
     )?;
 
     let nullifiers = notes
@@ -170,7 +170,7 @@ pub(crate) async fn moonlight_history(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        status::headless,
+        status::wallet_headless,
     )?;
 
     let history = gql

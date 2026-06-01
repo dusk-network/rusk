@@ -6,6 +6,7 @@
 
 use std::sync::Mutex;
 
+use rusk_wallet::WalletStatus;
 use tokio::sync::mpsc;
 
 use super::app::StakeState;
@@ -14,9 +15,10 @@ use crate::transaction_history::TransactionHistory;
 
 /// Global channel for status callbacks from the wallet library.
 ///
-/// The wallet uses `fn(&str)` function pointers for status updates, which
-/// cannot capture state. We bridge that gap with a replaceable global sender so
-/// we can re-enter the TUI (e.g. after import) without losing status updates.
+/// The wallet uses `fn(WalletStatus)` function pointers for status updates,
+/// which cannot capture state. We bridge that gap with a replaceable global
+/// sender so we can re-enter the TUI (e.g. after import) without losing status
+/// updates.
 static STATUS_TX: Mutex<Option<mpsc::UnboundedSender<AsyncResult>>> =
     Mutex::new(None);
 
@@ -31,22 +33,21 @@ pub fn clear_status_channel() {
     *STATUS_TX.lock().expect("status mutex poisoned") = None;
 }
 
-/// Status callback function compatible with the wallet library's `fn(&str)`
-/// signature. Sends status messages to the TUI via the global channel.
-pub fn tui_status(msg: &str) {
+/// Typed status callback for wallet operations.
+pub fn tui_status(status: WalletStatus) {
     if let Some(tx) = STATUS_TX.lock().expect("status mutex poisoned").as_ref()
     {
-        let _ = tx.send(AsyncResult::StatusMessage(msg.to_string()));
+        let _ = tx.send(AsyncResult::WalletStatus(status));
     } else {
-        // In headless mode (or if the TUI hasn't initialized yet), fall back to
-        // standard status logging so callers can always use `tui_status`.
-        crate::io::status::headless(msg);
+        crate::io::status::wallet_headless(status);
     }
 }
 
 /// Results from async wallet operations sent back to the TUI event loop.
 #[derive(Debug)]
 pub enum AsyncResult {
+    /// Typed wallet status update.
+    WalletStatus(WalletStatus),
     /// Balance data for a profile
     BalanceUpdate {
         profile_idx: u8,
@@ -58,10 +59,6 @@ pub enum AsyncResult {
         stake: StakeState,
         attempted_at_tip: Option<u64>,
     },
-    /// Sync status update from background sync
-    SyncStatus(String),
-    /// Status message from wallet operations
-    StatusMessage(String),
     /// Current chain tip height from GraphQL
     ChainTipHeight(u64),
     /// Frontend-facing operation result

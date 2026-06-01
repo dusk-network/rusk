@@ -35,13 +35,17 @@ use self::sync::sync_db;
 use super::cache::Cache;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
-use crate::{Address, Error, MAX_PROFILES};
+use crate::{Address, Error, MAX_PROFILES, WalletStatus, WalletSyncStatus};
 
 const SYNC_INTERVAL_SECONDS: u64 = 3;
 
-fn report_sync_status(sync_tx: &flume::Sender<String>, status: &str) {
-    if let Err(err) = sync_tx.send(status.to_string()) {
-        tracing::debug!("Dropping sync status update `{status}`: {err}");
+fn report_sync_status(
+    sync_tx: &flume::Sender<WalletStatus>,
+    status: WalletStatus,
+) {
+    let message = status.to_string();
+    if let Err(err) = sync_tx.send(status) {
+        tracing::debug!("Dropping sync status update `{message}`: {err}");
     }
 }
 
@@ -65,11 +69,11 @@ impl Prove for Prover {
 /// The state struct is responsible for managing the state of the wallet
 pub struct State {
     cache: Mutex<Arc<Cache>>,
-    status: fn(&str),
+    status: fn(WalletStatus),
     client: RuesHttpClient,
     prover: RuesHttpClient,
     store: LocalStore,
-    pub sync_rx: Option<Receiver<String>>,
+    pub sync_rx: Option<Receiver<WalletStatus>>,
     sync_shutdown: Option<(Arc<Notify>, JoinHandle<()>)>,
     /// Auto-reset stale cache on mismatch (only for local dev nodes).
     allow_cache_reset: bool,
@@ -79,7 +83,7 @@ impl State {
     /// Creates a new state instance. Should only be called once.
     pub(crate) fn new(
         data_dir: &Path,
-        status: fn(&str),
+        status: fn(WalletStatus),
         client: RuesHttpClient,
         prover: RuesHttpClient,
         store: LocalStore,
@@ -135,7 +139,7 @@ impl State {
     }
 
     pub fn register_sync(&mut self) {
-        let (sync_tx, sync_rx) = flume::unbounded::<String>();
+        let (sync_tx, sync_rx) = flume::unbounded::<WalletStatus>();
 
         self.sync_rx = Some(sync_rx);
 
@@ -153,17 +157,27 @@ impl State {
                     biased;
                     () = shutdown_signal.notified() => break,
                     () = sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)) => {
-                        report_sync_status(&sync_tx, "Syncing..");
+                        let sync_status = {
+                            let sync_tx = sync_tx.clone();
+                            move |status: WalletStatus| {
+                                report_sync_status(&sync_tx, status);
+                            }
+                        };
 
-                        match sync_db(&client, &cache, &store, |_| {}, allow_cache_reset).await {
+                        match sync_db(
+                            &client,
+                            &cache,
+                            &store,
+                            sync_status,
+                            allow_cache_reset,
+                        ).await {
                             Ok(()) => {
-                                report_sync_status(&sync_tx, "Syncing Complete");
                             }
                             Err(e) => {
-                                let status = format!("Error during sync:.. {e}");
                                 report_sync_status(
                                     &sync_tx,
-                                    &status,
+                                    WalletSyncStatus::Error(e.to_string())
+                                        .into(),
                                 );
                             }
                         }
@@ -198,7 +212,7 @@ impl State {
             let status = self.status;
             let proof = utx.proof();
 
-            status("Attempt to prove tx...");
+            status(WalletStatus::Info("Attempt to prove tx...".into()));
 
             let proof =
                 prover.call("prover", None, "prove", proof).await.map_err(
@@ -207,7 +221,7 @@ impl State {
 
             utx.set_proof(proof);
 
-            status("Proving sucesss!");
+            status(WalletStatus::Info("Proving success!".into()));
         }
 
         Ok(tx)
@@ -221,19 +235,19 @@ impl State {
         let status = self.status;
         let tx_bytes = tx.to_network_bytes();
 
-        status("Attempt to preverify tx...");
+        status(WalletStatus::Info("Attempt to preverify tx...".into()));
         let _ = self
             .client
             .call("transactions", None, "preverify", &tx_bytes)
             .await?;
-        status("Preverify success!");
+        status(WalletStatus::Info("Preverify success!".into()));
 
-        status("Propagating tx...");
+        status(WalletStatus::Info("Propagating tx...".into()));
         let _ = self
             .client
             .call("transactions", None, "propagate", &tx_bytes)
             .await?;
-        status("Transaction propagated!");
+        status(WalletStatus::Info("Transaction propagated!".into()));
 
         Ok(tx)
     }
@@ -286,7 +300,7 @@ impl State {
         pk: &BlsPublicKey,
     ) -> Result<AccountData, Error> {
         let status = self.status;
-        status("Fetching account-data...");
+        status(WalletStatus::Info("Fetching account-data...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -300,7 +314,7 @@ impl State {
                 .deserialize(&mut rkyv::Infallible)
                 .unwrap();
 
-        status("account-data received!");
+        status(WalletStatus::Info("account-data received!".into()));
 
         Ok(account)
     }
@@ -315,7 +329,7 @@ impl State {
     /// Fetch the current root of the state.
     pub(crate) async fn fetch_root(&self) -> Result<BlsScalar, Error> {
         let status = self.status;
-        status("Fetching root...");
+        status(WalletStatus::Info("Fetching root...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -328,7 +342,7 @@ impl State {
             .deserialize(&mut rkyv::Infallible)
             .unwrap();
 
-        status("root received!");
+        status(WalletStatus::Info("root received!".into()));
 
         Ok(root)
     }
@@ -339,7 +353,7 @@ impl State {
         pk: &BlsPublicKey,
     ) -> Result<Option<StakeData>, Error> {
         let status = self.status;
-        status("Fetching stake...");
+        status(WalletStatus::Info("Fetching stake...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -353,9 +367,12 @@ impl State {
                 .deserialize(&mut rkyv::Infallible)
                 .unwrap();
 
-        status("Stake received!");
+        status(WalletStatus::Info("Stake received!".into()));
 
-        status(&format!("Stake account: {}", Address::Public(*pk)));
+        status(WalletStatus::Info(format!(
+            "Stake account: {}",
+            Address::Public(*pk)
+        )));
 
         Ok(stake_data)
     }
@@ -366,7 +383,7 @@ impl State {
         pk: &BlsPublicKey,
     ) -> Result<Option<StakeFundOwner>, Error> {
         let status = self.status;
-        status("Fetching stake owner...");
+        status(WalletStatus::Info("Fetching stake owner...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -391,7 +408,7 @@ impl State {
 
     pub(crate) async fn fetch_chain_id(&self) -> Result<u8, Error> {
         let status = self.status;
-        status("Fetching chain_id...");
+        status(WalletStatus::Info("Fetching chain_id...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -408,7 +425,7 @@ impl State {
             .deserialize(&mut rkyv::Infallible)
             .unwrap();
 
-        status("Chain id received!");
+        status(WalletStatus::Info("Chain id received!".into()));
 
         Ok(chain_id)
     }
@@ -416,7 +433,7 @@ impl State {
     /// Queries the node to find the merkle-tree opening for a specific note.
     async fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Error> {
         let status = self.status;
-        status("Fetching note opening...");
+        status(WalletStatus::Info("Fetching note opening...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -432,7 +449,7 @@ impl State {
 
         let opening = opening.ok_or(Error::NoteNotFound)?;
 
-        status("Note opening received!");
+        status(WalletStatus::Info("Note opening received!".into()));
 
         Ok(opening)
     }
@@ -440,7 +457,7 @@ impl State {
     /// Queries the transfer contract for the number of notes.
     pub async fn fetch_num_notes(&self) -> Result<u64, Error> {
         let status = self.status;
-        status("Fetching note count...");
+        status(WalletStatus::Info("Fetching note count...".into()));
 
         // the target type of the deserialization has to match the return type
         // of the contract-query
@@ -457,7 +474,7 @@ impl State {
             .deserialize(&mut rkyv::Infallible)
             .unwrap();
 
-        status("Latest note count received!");
+        status(WalletStatus::Info("Latest note count received!".into()));
 
         Ok(note_count)
     }
@@ -472,7 +489,6 @@ impl State {
                 eprintln!("Error while closing sync handle: {e}");
             }
         }
-
         store.inner_mut().zeroize();
     }
 }
