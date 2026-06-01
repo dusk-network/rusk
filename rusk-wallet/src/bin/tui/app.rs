@@ -14,20 +14,13 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use dusk_core::stake::StakeData;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::{Address, MAX_PROFILES, Profile, Wallet};
-use wallet_core::BalanceInfo;
 
 use super::action::AsyncResult;
 use super::forms::{self, FormId, FormState};
-use crate::command::TransactionHistory;
+use crate::frontend::{BalanceView, OperationResult};
 use crate::settings::Settings;
+use crate::transaction_history::TransactionHistory;
 use crate::{Command, WalletFile};
-
-/// Cached balance data for a profile.
-#[derive(Debug, Clone, Default)]
-pub struct ProfileBalance {
-    pub phoenix: Option<BalanceInfo>,
-    pub moonlight: Option<Dusk>,
-}
 
 /// Connection status to Rusk services.
 #[derive(Debug, Clone, Default)]
@@ -64,27 +57,6 @@ pub enum SyncStatus {
 const SYNCING_STATUS_GRACE_AFTER_COMPLETE: Duration = Duration::from_secs(8);
 const MAX_DISPLAYABLE_ERROR_LEN: usize = 180;
 
-/// Result info for display after a command completes.
-#[derive(Debug, Clone)]
-pub enum ResultInfo {
-    TxSent {
-        tx_hash: String,
-        explorer_url: Option<String>,
-    },
-    DeployTxSent {
-        tx_hash: String,
-        contract_id: String,
-        explorer_url: Option<String>,
-    },
-    ExportedKeys {
-        pub_key_path: String,
-        key_pair_path: String,
-    },
-    Error {
-        message: String,
-    },
-}
-
 /// The currently active screen in the TUI.
 #[derive(Debug)]
 pub enum AppScreen {
@@ -97,7 +69,7 @@ pub enum AppScreen {
     /// Command is executing (loading state)
     Executing { description: String },
     /// Result display after command execution
-    Result { info: ResultInfo },
+    Result { info: OperationResult },
     /// Transaction history browser (replaces menu area)
     History { entries: Vec<TransactionHistory> },
     /// Stake info display (replaces menu area)
@@ -141,7 +113,7 @@ pub struct App<'a> {
     pub menu_selected: usize,
 
     // Cached data
-    pub balances: HashMap<u8, ProfileBalance>,
+    pub balances: HashMap<u8, BalanceView>,
     stake_info: HashMap<u8, CachedStakeInfo>,
     pub sync_status: SyncStatus,
     pub sync_block_height: Option<u64>,
@@ -438,12 +410,8 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('r') => {
                 // Retry: re-open the last form if this was an error
-                if matches!(
-                    &self.screen,
-                    AppScreen::Result {
-                        info: ResultInfo::Error { .. }
-                    }
-                ) && let Some(form) = self.last_form.take()
+                if matches!(&self.screen, AppScreen::Result { info } if info.is_error())
+                    && let Some(form) = self.last_form.take()
                 {
                     self.screen = AppScreen::Form { form };
                     return;
@@ -451,19 +419,12 @@ impl<'a> App<'a> {
                 self.screen = AppScreen::Dashboard;
             }
             KeyCode::Char('o') => {
-                let explorer_url = match &self.screen {
-                    AppScreen::Result {
-                        info:
-                            ResultInfo::TxSent {
-                                explorer_url: Some(url),
-                                ..
-                            }
-                            | ResultInfo::DeployTxSent {
-                                explorer_url: Some(url),
-                                ..
-                            },
-                    } => Some(url.clone()),
-                    _ => None,
+                let (explorer_url, has_explorer_target) = match &self.screen {
+                    AppScreen::Result { info } => (
+                        info.explorer_url(self.settings.explorer.as_ref()),
+                        info.has_explorer_target(),
+                    ),
+                    _ => (None, false),
                 };
 
                 if let Some(url) = explorer_url {
@@ -471,23 +432,19 @@ impl<'a> App<'a> {
                         Ok(()) => self.screen = AppScreen::Dashboard,
                         Err(err) => {
                             self.screen = AppScreen::Result {
-                                info: ResultInfo::Error {
-                                    message: format!(
-                                        "Could not open explorer automatically.\n\
-                                         Copy this URL in your browser:\n{url}\n\
-                                         Launcher error:\n{err}"
-                                    ),
-                                },
+                                info: OperationResult::error(format!(
+                                    "Could not open explorer automatically.\n\
+                                     Copy this URL in your browser:\n{url}\n\
+                                     Launcher error:\n{err}"
+                                )),
                             };
                         }
                     }
-                } else {
+                } else if has_explorer_target {
                     self.screen = AppScreen::Result {
-                        info: ResultInfo::Error {
-                            message:
-                                "No explorer URL configured for this network."
-                                    .into(),
-                        },
+                        info: OperationResult::error(
+                            "No explorer URL configured for this network.",
+                        ),
                     };
                 }
             }
@@ -548,16 +505,10 @@ impl<'a> App<'a> {
         match result {
             AsyncResult::BalanceUpdate {
                 profile_idx,
-                phoenix,
-                moonlight,
+                balance,
             } => {
                 let entry = self.balances.entry(profile_idx).or_default();
-                if let Some(p) = phoenix {
-                    entry.phoenix = Some(p);
-                }
-                if let Some(m) = moonlight {
-                    entry.moonlight = Some(m);
-                }
+                entry.merge(balance);
             }
             AsyncResult::StakeUpdate {
                 profile_idx,
@@ -592,54 +543,20 @@ impl<'a> App<'a> {
                         .map_or(height, |current| current.max(height)),
                 );
             }
-            AsyncResult::TxComplete(hash) => {
-                let tx_hash = hex::encode(hash.to_bytes());
-                let explorer_url = self
-                    .settings
-                    .explorer
-                    .as_ref()
-                    .map(|e| format!("{e}{tx_hash}"));
-                self.screen = AppScreen::Result {
-                    info: ResultInfo::TxSent {
-                        tx_hash,
-                        explorer_url,
-                    },
+            AsyncResult::Operation(info) => {
+                let info = match info {
+                    OperationResult::Error { message } => {
+                        OperationResult::error(sanitize_error_for_display(
+                            &message,
+                        ))
+                    }
+                    info => info,
                 };
-            }
-            AsyncResult::DeployTxComplete(hash, contract_id) => {
-                let tx_hash = hex::encode(hash.to_bytes());
-                let cid = hex::encode(contract_id.as_bytes());
-                let explorer_url = self
-                    .settings
-                    .explorer
-                    .as_ref()
-                    .map(|e| format!("{e}{tx_hash}"));
-                self.screen = AppScreen::Result {
-                    info: ResultInfo::DeployTxSent {
-                        tx_hash,
-                        contract_id: cid,
-                        explorer_url,
-                    },
-                };
+                self.screen = AppScreen::Result { info };
             }
             AsyncResult::HistoryFetched(entries) => {
                 self.history_selected = 0;
                 self.screen = AppScreen::History { entries };
-            }
-            AsyncResult::ExportedKeys(pub_key, key_pair) => {
-                self.screen = AppScreen::Result {
-                    info: ResultInfo::ExportedKeys {
-                        pub_key_path: pub_key.display().to_string(),
-                        key_pair_path: key_pair.display().to_string(),
-                    },
-                };
-            }
-            AsyncResult::Error(msg) => {
-                self.screen = AppScreen::Result {
-                    info: ResultInfo::Error {
-                        message: sanitize_error_for_display(&msg),
-                    },
-                };
             }
         }
     }
@@ -751,11 +668,8 @@ impl<'a> App<'a> {
 
     fn form_balances(&self) -> (Dusk, Dusk) {
         let bal = self.current_balance();
-        let phoenix_spendable = bal
-            .phoenix
-            .as_ref()
-            .map(|b| Dusk::from(b.spendable))
-            .unwrap_or(Dusk::from(0));
+        let phoenix_spendable =
+            bal.shielded_spendable().unwrap_or(Dusk::from(0));
         let moonlight_bal = bal.moonlight.unwrap_or(Dusk::from(0));
 
         (phoenix_spendable, moonlight_bal)
@@ -769,7 +683,7 @@ impl<'a> App<'a> {
         &self.wallet.profiles()[self.profile_idx as usize]
     }
 
-    pub fn current_balance(&self) -> ProfileBalance {
+    pub fn current_balance(&self) -> BalanceView {
         self.balances
             .get(&self.profile_idx)
             .cloned()
@@ -811,7 +725,7 @@ impl<'a> App<'a> {
             self.pending_cmd = None;
             self.pending_cmd_description.clear();
             self.screen = AppScreen::Result {
-                info: ResultInfo::Error { message: err },
+                info: OperationResult::error(err),
             };
             return;
         }
@@ -824,10 +738,7 @@ impl<'a> App<'a> {
     fn balance_precheck_error(&self, cmd: &Command) -> Option<String> {
         let current = self.current_balance();
         let moonlight_bal = current.moonlight;
-        let phoenix_spendable = current
-            .phoenix
-            .as_ref()
-            .map(|bal| Dusk::from(bal.spendable));
+        let phoenix_spendable = current.shielded_spendable();
 
         let (balance_type, to_deduct) = max_deduction(cmd);
         match balance_type {

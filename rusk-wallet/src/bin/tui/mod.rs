@@ -42,6 +42,7 @@ use self::action::{AsyncResult, clear_status_channel, init_status_channel};
 use self::app::{App, AppAction, AppScreen, ConnectionStatus};
 use crate::WalletFile;
 use crate::command::{gen_iv, gen_salt};
+use crate::frontend::OperationResult;
 use crate::io::prompt;
 use crate::settings::Settings;
 
@@ -744,9 +745,11 @@ async fn run_inner(
                                 });
                             app.screen = AppScreen::StakeInfo { owner };
                         }
-                        Err(e) => app.handle_async_result(AsyncResult::Error(
-                            e.to_string(),
-                        )),
+                        Err(e) => {
+                            app.handle_async_result(AsyncResult::Operation(
+                                OperationResult::error(e.to_string()),
+                            ))
+                        }
                     }
                 }
                 AppAction::OpenStakeForm => {
@@ -881,16 +884,14 @@ fn ingest_startup_result(
         AsyncResult::SyncStatus(msg) | AsyncResult::StatusMessage(msg) => {
             progress.push_status(msg);
         }
-        AsyncResult::Error(msg) => {
-            progress.push_status(format!("Error: {msg}"));
+        AsyncResult::Operation(OperationResult::Error { message }) => {
+            progress.push_status(format!("Error: {message}"));
         }
         AsyncResult::BalanceUpdate { .. }
         | AsyncResult::StakeUpdate { .. }
         | AsyncResult::ChainTipHeight(_)
-        | AsyncResult::TxComplete(_)
-        | AsyncResult::DeployTxComplete(_, _)
-        | AsyncResult::HistoryFetched(_)
-        | AsyncResult::ExportedKeys(_, _) => {}
+        | AsyncResult::Operation(_)
+        | AsyncResult::HistoryFetched(_) => {}
     }
 }
 
@@ -1509,62 +1510,67 @@ async fn execute_command(
         Ok(run_result) => {
             use crate::RunResult;
             match run_result {
-                RunResult::Tx(hash) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-                    let _ = tx.send(AsyncResult::StatusMessage(
-                        "Waiting for confirmation...".into(),
-                    ));
+                RunResult::Operation(result) => match result {
+                    OperationResult::Tx(hash) => {
+                        let tx_id = hex::encode(hash.to_bytes());
+                        let _ = tx.send(AsyncResult::StatusMessage(
+                            "Waiting for confirmation...".into(),
+                        ));
 
-                    if let Ok(gql) = GraphQL::new(
-                        app.settings.state.to_string(),
-                        app.settings.archiver.to_string(),
-                        tui_status,
-                    ) {
-                        let _ = gql.wait_for(&tx_id).await;
+                        if let Ok(gql) = GraphQL::new(
+                            app.settings.state.to_string(),
+                            app.settings.archiver.to_string(),
+                            tui_status,
+                        ) {
+                            let _ = gql.wait_for(&tx_id).await;
+                        }
+
+                        app.handle_async_result(AsyncResult::Operation(
+                            OperationResult::Tx(hash),
+                        ));
+                        fetch_balances(app).await;
+                        if refresh_stake_info
+                            && let Err(err) = fetch_stake_info(app).await
+                        {
+                            debug!(
+                                "Failed to refresh stake info after confirmed transaction: {err}"
+                            );
+                        }
                     }
+                    OperationResult::DeployTx { hash, contract_id } => {
+                        let tx_id = hex::encode(hash.to_bytes());
+                        let _ = tx.send(AsyncResult::StatusMessage(
+                            "Waiting for confirmation...".into(),
+                        ));
 
-                    app.handle_async_result(AsyncResult::TxComplete(hash));
-                    fetch_balances(app).await;
-                    if refresh_stake_info
-                        && let Err(err) = fetch_stake_info(app).await
-                    {
-                        debug!(
-                            "Failed to refresh stake info after confirmed transaction: {err}"
-                        );
+                        if let Ok(gql) = GraphQL::new(
+                            app.settings.state.to_string(),
+                            app.settings.archiver.to_string(),
+                            tui_status,
+                        ) {
+                            let _ = gql.wait_for(&tx_id).await;
+                        }
+
+                        app.handle_async_result(AsyncResult::Operation(
+                            OperationResult::DeployTx { hash, contract_id },
+                        ));
+                        fetch_balances(app).await;
                     }
-                }
-                RunResult::DeployTx(hash, contract_id) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-                    let _ = tx.send(AsyncResult::StatusMessage(
-                        "Waiting for confirmation...".into(),
-                    ));
-
-                    if let Ok(gql) = GraphQL::new(
-                        app.settings.state.to_string(),
-                        app.settings.archiver.to_string(),
-                        tui_status,
-                    ) {
-                        let _ = gql.wait_for(&tx_id).await;
+                    OperationResult::ExportedKeys { pub_key, key_pair } => {
+                        app.handle_async_result(AsyncResult::Operation(
+                            OperationResult::ExportedKeys { pub_key, key_pair },
+                        ));
                     }
-
-                    app.handle_async_result(AsyncResult::DeployTxComplete(
-                        hash,
-                        contract_id,
-                    ));
-                    fetch_balances(app).await;
-                }
-                RunResult::PhoenixBalance(balance, _) => {
+                    OperationResult::Error { message } => {
+                        app.handle_async_result(AsyncResult::Operation(
+                            OperationResult::error(message),
+                        ));
+                    }
+                },
+                RunResult::Balance { balance, .. } => {
                     app.handle_async_result(AsyncResult::BalanceUpdate {
                         profile_idx: app.profile_idx,
-                        phoenix: Some(balance),
-                        moonlight: None,
-                    });
-                }
-                RunResult::MoonlightBalance(balance) => {
-                    app.handle_async_result(AsyncResult::BalanceUpdate {
-                        profile_idx: app.profile_idx,
-                        phoenix: None,
-                        moonlight: Some(balance),
+                        balance,
                     });
                 }
                 RunResult::StakeInfo(data, _) => {
@@ -1575,11 +1581,6 @@ async fn execute_command(
                         app.sync_block_height,
                     );
                     app.screen = AppScreen::Dashboard;
-                }
-                RunResult::ExportedKeys(pub_key, key_pair) => {
-                    app.handle_async_result(AsyncResult::ExportedKeys(
-                        pub_key, key_pair,
-                    ));
                 }
                 RunResult::History(entries) => {
                     app.handle_async_result(AsyncResult::HistoryFetched(
@@ -1598,7 +1599,9 @@ async fn execute_command(
             }
         }
         Err(err) => {
-            app.handle_async_result(AsyncResult::Error(err.to_string()));
+            app.handle_async_result(AsyncResult::Operation(
+                OperationResult::error(err.to_string()),
+            ));
         }
     }
 }
@@ -1620,7 +1623,9 @@ async fn execute_history(app: &mut App<'_>) {
             app.screen = AppScreen::History { entries };
         }
         Err(err) => {
-            app.handle_async_result(AsyncResult::Error(err.to_string()));
+            app.handle_async_result(AsyncResult::Operation(
+                OperationResult::error(err.to_string()),
+            ));
         }
         _ => {
             app.screen = AppScreen::Dashboard;

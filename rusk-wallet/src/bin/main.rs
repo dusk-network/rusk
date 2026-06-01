@@ -6,8 +6,10 @@
 
 mod command;
 mod config;
+mod frontend;
 mod io;
 mod settings;
+mod transaction_history;
 mod tui;
 
 use std::fs;
@@ -17,6 +19,7 @@ use clap::Parser;
 pub(crate) use command::{Command, RunResult};
 use command::{gen_iv, gen_salt};
 use config::Config;
+use frontend::{BalanceView, OperationResult};
 use io::prompt::{Prompter, ask_pwd, derive_key};
 use io::{WalletArgs, prompt, status};
 use rocksdb::ErrorKind;
@@ -271,111 +274,134 @@ async fn run_command_or_enter_loop(
             // TUI mode is handled earlier in exec() — this is unreachable
             unreachable!("TUI mode should be handled before this point");
         }
-        Some(cmd) => {
-            match cmd.run(wallet, settings).await? {
-                RunResult::PhoenixBalance(balance, spendable) => {
-                    if spendable {
-                        println!("{}", Dusk::from(balance.spendable));
-                    } else {
-                        println!("{}", Dusk::from(balance.value));
-                    }
-                }
-                RunResult::MoonlightBalance(balance) => {
-                    println!("Total: {balance}")
-                }
-                RunResult::Profile((profile_idx, profile)) => {
+        Some(cmd) => match cmd.run(wallet, settings).await? {
+            RunResult::Balance { balance, spendable } => {
+                print_balance_result(&balance, spendable);
+            }
+            RunResult::Profile((profile_idx, profile)) => {
+                println!(
+                    "> {}\n>   {}\n>   {}\n",
+                    Profile::index_string(profile_idx),
+                    profile.shielded_account_string(),
+                    profile.public_account_string(),
+                );
+            }
+            RunResult::Profiles(addrs) => {
+                for (profile_idx, profile) in addrs.iter().enumerate() {
                     println!(
-                        "> {}\n>   {}\n>   {}\n",
-                        Profile::index_string(profile_idx),
+                        "> {}\n>   {}\n>   {}\n\n",
+                        Profile::index_string(profile_idx as u8),
                         profile.shielded_account_string(),
                         profile.public_account_string(),
                     );
                 }
-                RunResult::Profiles(addrs) => {
-                    for (profile_idx, profile) in addrs.iter().enumerate() {
-                        println!(
-                            "> {}\n>   {}\n>   {}\n\n",
-                            Profile::index_string(profile_idx as u8),
-                            profile.shielded_account_string(),
-                            profile.public_account_string(),
-                        );
-                    }
-                }
-                RunResult::Tx(hash) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-
-                    // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(
-                        settings.state.clone(),
-                        settings.archiver.clone(),
-                        status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
-
-                    println!("{tx_id}");
-                }
-                RunResult::DeployTx(hash, contract_id) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-                    let contract_id = hex::encode(contract_id.as_bytes());
-                    println!("Deploying {contract_id}",);
-
-                    // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(
-                        settings.state.clone(),
-                        settings.archiver.clone(),
-                        status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
-
-                    println!("{tx_id}");
-                }
-                RunResult::StakeInfo(info, reward) => {
-                    let rewards = Dusk::from(info.reward);
-                    if reward {
-                        println!("{rewards}");
-                    } else {
-                        if let Some(amt) = info.amount {
-                            let amount = Dusk::from(amt.value);
-                            let locked = Dusk::from(amt.locked);
-                            let eligibility = amt.eligibility;
-                            let epoch = amt.eligibility / EPOCH;
-
-                            println!("Eligible stake: {amount} DUSK");
-                            println!(
-                                "Reclaimable slashed stake: {locked} DUSK"
-                            );
-                            println!(
-                                "Stake active from block #{eligibility} (Epoch {epoch})"
-                            );
-                        } else {
-                            println!("No active stake found for this key");
-                        }
-                        let faults = info.faults;
-                        let hard_faults = info.hard_faults;
-                        let rewards = Dusk::from(info.reward);
-
-                        println!("Slashes: {faults}");
-                        println!("Hard Slashes: {hard_faults}");
-                        println!("Accumulated rewards is: {rewards} DUSK");
-                    }
-                }
-                RunResult::ExportedKeys(pub_key, key_pair) => {
-                    println!("{},{}", pub_key.display(), key_pair.display())
-                }
-                RunResult::History(txns) => {
-                    if let Err(err) = crate::prompt::tx_history_list(&txns) {
-                        eprintln!(
-                            "Failed to output transaction history: {err}"
-                        );
-                    }
-                }
-                RunResult::ContractId(id) => println!("Contract ID: {id:?}"),
-                RunResult::Settings() => {}
-                RunResult::Create() | RunResult::Restore() => {}
-                RunResult::DriverDeployResult(_) => {}
             }
-        }
+            RunResult::Operation(result) => {
+                print_operation_result(settings, result).await?;
+            }
+            RunResult::StakeInfo(info, reward) => {
+                let rewards = Dusk::from(info.reward);
+                if reward {
+                    println!("{rewards}");
+                } else {
+                    if let Some(amt) = info.amount {
+                        let amount = Dusk::from(amt.value);
+                        let locked = Dusk::from(amt.locked);
+                        let eligibility = amt.eligibility;
+                        let epoch = amt.eligibility / EPOCH;
+
+                        println!("Eligible stake: {amount} DUSK");
+                        println!("Reclaimable slashed stake: {locked} DUSK");
+                        println!(
+                            "Stake active from block #{eligibility} (Epoch {epoch})"
+                        );
+                    } else {
+                        println!("No active stake found for this key");
+                    }
+                    let faults = info.faults;
+                    let hard_faults = info.hard_faults;
+                    let rewards = Dusk::from(info.reward);
+
+                    println!("Slashes: {faults}");
+                    println!("Hard Slashes: {hard_faults}");
+                    println!("Accumulated rewards is: {rewards} DUSK");
+                }
+            }
+            RunResult::History(txns) => {
+                if let Err(err) = crate::prompt::tx_history_list(&txns) {
+                    eprintln!("Failed to output transaction history: {err}");
+                }
+            }
+            RunResult::ContractId(id) => println!("Contract ID: {id:?}"),
+            RunResult::Settings() => {}
+            RunResult::Create() | RunResult::Restore() => {}
+            RunResult::DriverDeployResult(contract_id) => {
+                println!(
+                    "Driver deployed for contract: {}",
+                    hex::encode(contract_id.to_bytes())
+                );
+            }
+        },
     };
+    Ok(())
+}
+
+fn print_balance_result(balance: &BalanceView, spendable: bool) {
+    if let Some(balance) = balance.moonlight {
+        println!("Total: {balance}");
+        return;
+    }
+
+    let amount = if spendable {
+        balance.shielded_spendable()
+    } else {
+        balance.shielded_total()
+    };
+
+    if let Some(amount) = amount {
+        println!("{amount}");
+    }
+}
+
+async fn print_operation_result(
+    settings: &Settings,
+    result: OperationResult,
+) -> anyhow::Result<()> {
+    match result {
+        OperationResult::Tx(hash) => {
+            let tx_id = hex::encode(hash.to_bytes());
+
+            let gql = GraphQL::new(
+                settings.state.clone(),
+                settings.archiver.clone(),
+                status::headless,
+            )?;
+            gql.wait_for(&tx_id).await?;
+
+            println!("{tx_id}");
+        }
+        OperationResult::DeployTx { hash, contract_id } => {
+            let tx_id = hex::encode(hash.to_bytes());
+            let contract_id = hex::encode(contract_id.as_bytes());
+            println!("Deploying {contract_id}");
+
+            let gql = GraphQL::new(
+                settings.state.clone(),
+                settings.archiver.clone(),
+                status::headless,
+            )?;
+            gql.wait_for(&tx_id).await?;
+
+            println!("{tx_id}");
+        }
+        OperationResult::ExportedKeys { pub_key, key_pair } => {
+            println!("{},{}", pub_key.display(), key_pair.display());
+        }
+        OperationResult::Error { message } => {
+            return Err(anyhow::anyhow!(message));
+        }
+    }
+
     Ok(())
 }
 

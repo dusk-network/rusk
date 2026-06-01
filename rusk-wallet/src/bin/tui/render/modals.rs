@@ -7,9 +7,11 @@
 use ratatui::Frame;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Wrap};
+use url::Url;
 
 use super::centered_rect;
-use crate::tui::app::{App, ResultInfo};
+use crate::frontend::OperationResult;
+use crate::tui::app::App;
 use crate::tui::theme;
 
 pub fn render_confirmation_modal(frame: &mut Frame, app: &App) {
@@ -115,12 +117,16 @@ pub fn render_loading_modal(
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
+pub fn render_result_modal(
+    frame: &mut Frame,
+    info: &OperationResult,
+    explorer: Option<&Url>,
+) {
     let area = centered_rect(55, 35, frame.area());
     frame.render_widget(Clear, area);
 
     let (title, style) = match info {
-        ResultInfo::Error { .. } => (" Error ", theme::error()),
+        OperationResult::Error { .. } => (" Error ", theme::error()),
         _ => (" Success ", theme::success()),
     };
 
@@ -136,10 +142,7 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
     let mut lines = Vec::new();
 
     match info {
-        ResultInfo::TxSent {
-            tx_hash,
-            explorer_url,
-        } => {
+        OperationResult::Tx(_) => {
             lines.push(Line::from(Span::styled(
                 "  Transaction sent!",
                 theme::success(),
@@ -147,9 +150,12 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
             lines.push(Line::default());
             lines.push(Line::from(vec![
                 Span::styled("  TX: ", theme::label()),
-                Span::styled(tx_hash, theme::value()),
+                Span::styled(
+                    info.tx_hash_hex().unwrap_or_default(),
+                    theme::value(),
+                ),
             ]));
-            if explorer_url.is_some() {
+            if info.explorer_url(explorer).is_some() {
                 lines.push(Line::default());
                 lines.push(Line::from(vec![
                     Span::raw("  "),
@@ -160,24 +166,26 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
                 ]));
             }
         }
-        ResultInfo::DeployTxSent {
-            tx_hash,
-            contract_id,
-            explorer_url,
-        } => {
+        OperationResult::DeployTx { .. } => {
             lines.push(Line::from(Span::styled(
                 "  Contract deployed!",
                 theme::success(),
             )));
             lines.push(Line::from(vec![
                 Span::styled("  Contract: ", theme::label()),
-                Span::styled(contract_id, theme::value()),
+                Span::styled(
+                    info.contract_id_hex().unwrap_or_default(),
+                    theme::value(),
+                ),
             ]));
             lines.push(Line::from(vec![
                 Span::styled("  TX: ", theme::label()),
-                Span::styled(tx_hash, theme::value()),
+                Span::styled(
+                    info.tx_hash_hex().unwrap_or_default(),
+                    theme::value(),
+                ),
             ]));
-            if explorer_url.is_some() {
+            if info.explorer_url(explorer).is_some() {
                 lines.push(Line::default());
                 lines.push(Line::from(vec![
                     Span::raw("  "),
@@ -188,24 +196,21 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
                 ]));
             }
         }
-        ResultInfo::ExportedKeys {
-            pub_key_path,
-            key_pair_path,
-        } => {
+        OperationResult::ExportedKeys { pub_key, key_pair } => {
             lines.push(Line::from(Span::styled(
                 "  Keys exported!",
                 theme::success(),
             )));
             lines.push(Line::from(vec![
                 Span::styled("  Public key: ", theme::label()),
-                Span::styled(pub_key_path, theme::value()),
+                Span::styled(pub_key.display().to_string(), theme::value()),
             ]));
             lines.push(Line::from(vec![
                 Span::styled("  Key pair: ", theme::label()),
-                Span::styled(key_pair_path, theme::value()),
+                Span::styled(key_pair.display().to_string(), theme::value()),
             ]));
         }
-        ResultInfo::Error { message } => {
+        OperationResult::Error { message } => {
             let mut had_line = false;
             for line in message.lines() {
                 had_line = true;
@@ -232,16 +237,7 @@ pub fn render_result_modal(frame: &mut Frame, info: &ResultInfo) {
     }
 
     // Close hint for non-error, non-explorer results
-    if !matches!(
-        info,
-        ResultInfo::TxSent {
-            explorer_url: Some(_),
-            ..
-        } | ResultInfo::DeployTxSent {
-            explorer_url: Some(_),
-            ..
-        } | ResultInfo::Error { .. }
-    ) {
+    if !info.is_error() && info.explorer_url(explorer).is_none() {
         lines.push(Line::default());
         lines.push(Line::from(vec![
             Span::raw("  "),

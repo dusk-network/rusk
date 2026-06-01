@@ -4,17 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::PathBuf;
 use std::sync::Mutex;
 
-use dusk_core::BlsScalar;
-use dusk_core::abi::ContractId;
-use rusk_wallet::currency::Dusk;
 use tokio::sync::mpsc;
-use wallet_core::BalanceInfo;
 
 use super::app::StakeState;
-use crate::command::TransactionHistory;
+use crate::frontend::{BalanceView, OperationResult};
+use crate::transaction_history::TransactionHistory;
 
 /// Global channel for status callbacks from the wallet library.
 ///
@@ -54,8 +50,7 @@ pub enum AsyncResult {
     /// Balance data for a profile
     BalanceUpdate {
         profile_idx: u8,
-        phoenix: Option<BalanceInfo>,
-        moonlight: Option<Dusk>,
+        balance: BalanceView,
     },
     /// Stake data for a profile
     StakeUpdate {
@@ -69,14 +64,8 @@ pub enum AsyncResult {
     StatusMessage(String),
     /// Current chain tip height from GraphQL
     ChainTipHeight(u64),
-    /// Transaction completed
-    TxComplete(BlsScalar),
-    /// Deploy transaction completed
-    DeployTxComplete(BlsScalar, ContractId),
+    /// Frontend-facing operation result
+    Operation(OperationResult),
     /// Transaction history fetched
     HistoryFetched(Vec<TransactionHistory>),
-    /// Exported keys result
-    ExportedKeys(PathBuf, PathBuf),
-    /// An error occurred
-    Error(String),
 }
