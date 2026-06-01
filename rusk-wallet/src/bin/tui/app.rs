@@ -17,10 +17,11 @@ use rusk_wallet::{Address, MAX_PROFILES, Profile, Wallet};
 
 use super::action::AsyncResult;
 use super::forms::{self, FormId, FormState};
+use super::request::TuiCommand;
+use crate::WalletFile;
 use crate::frontend::{BalanceView, OperationResult};
 use crate::settings::Settings;
 use crate::transaction_history::TransactionHistory;
-use crate::{Command, WalletFile};
 
 /// Connection status to Rusk services.
 #[derive(Debug, Clone, Default)]
@@ -122,7 +123,7 @@ pub struct App<'a> {
     last_sync_complete_at: Option<Instant>,
 
     // Pending command for confirmation flow
-    pub pending_cmd: Option<Command>,
+    pub pending_cmd: Option<TuiCommand>,
     pub pending_cmd_description: Vec<String>,
 
     // Status messages from wallet operations
@@ -716,7 +717,7 @@ impl<'a> App<'a> {
     }
 
     /// Build confirmation details for a command.
-    pub fn prepare_confirmation(&mut self, cmd: Command) {
+    pub fn prepare_confirmation(&mut self, cmd: TuiCommand) {
         // Save the current form for retry on error
         if let AppScreen::Form { form } = &self.screen {
             self.last_form = Some(form.clone());
@@ -729,13 +730,13 @@ impl<'a> App<'a> {
             };
             return;
         }
-        let details = build_confirmation_details(&cmd, self.wallet);
+        let details = build_confirmation_details(&cmd);
         self.pending_cmd_description = details;
         self.pending_cmd = Some(cmd);
         self.screen = AppScreen::Confirmation;
     }
 
-    fn balance_precheck_error(&self, cmd: &Command) -> Option<String> {
+    fn balance_precheck_error(&self, cmd: &TuiCommand) -> Option<String> {
         let current = self.current_balance();
         let moonlight_bal = current.moonlight;
         let phoenix_spendable = current.shielded_spendable();
@@ -772,115 +773,83 @@ enum BalanceType {
     Shielded,
 }
 
-fn max_deduction(cmd: &Command) -> (BalanceType, Dusk) {
+fn max_deduction(cmd: &TuiCommand) -> (BalanceType, Dusk) {
     match cmd {
-        Command::Shield { amt, .. }
-        | Command::Unshield { amt, .. }
-        | Command::ContractCall { deposit: amt, .. }
-        | Command::Stake { amt, .. }
-        | Command::Transfer { amt, .. } => {
+        TuiCommand::Shield { amt, .. }
+        | TuiCommand::Unshield { amt, .. }
+        | TuiCommand::ContractCall { deposit: amt, .. }
+        | TuiCommand::Stake { amt, .. }
+        | TuiCommand::Transfer { amt, .. } => {
             let (bal_type, fee) = max_fee(cmd);
             (bal_type, fee + *amt)
         }
-        Command::Balance { .. }
-        | Command::Blob { .. }
-        | Command::CalculateContractId { .. }
-        | Command::ClaimRewards { .. }
-        | Command::Create { .. }
-        | Command::Restore { .. }
-        | Command::Settings
-        | Command::Export { .. }
-        | Command::History { .. }
-        | Command::Profiles { .. }
-        | Command::Withdraw { .. }
-        | Command::StakeInfo { .. }
-        | Command::Unstake { .. }
-        | Command::ContractDeploy { .. }
-        | Command::DriverDeploy { .. } => max_fee(cmd),
+        TuiCommand::ClaimRewards { .. }
+        | TuiCommand::Export { .. }
+        | TuiCommand::Unstake { .. }
+        | TuiCommand::ContractDeploy { .. } => max_fee(cmd),
     }
 }
 
-fn max_fee(cmd: &Command) -> (BalanceType, Dusk) {
+fn max_fee(cmd: &TuiCommand) -> (BalanceType, Dusk) {
     let gas_fee = |gas_limit: &u64, gas_price: &u64| {
         Dusk::from(gas_limit.saturating_mul(*gas_price))
     };
 
     match cmd {
-        Command::Blob {
+        TuiCommand::ClaimRewards {
             address,
             gas_limit,
             gas_price,
             ..
         }
-        | Command::Withdraw {
+        | TuiCommand::ContractDeploy {
             address,
             gas_limit,
             gas_price,
             ..
         }
-        | Command::ClaimRewards {
+        | TuiCommand::ContractCall {
             address,
             gas_limit,
             gas_price,
             ..
         }
-        | Command::ContractDeploy {
+        | TuiCommand::Stake {
             address,
             gas_limit,
             gas_price,
             ..
         }
-        | Command::ContractCall {
-            address,
-            gas_limit,
-            gas_price,
-            ..
-        }
-        | Command::Stake {
-            address,
-            gas_limit,
-            gas_price,
-            ..
-        }
-        | Command::Transfer {
+        | TuiCommand::Transfer {
             sender: address,
             gas_limit,
             gas_price,
             ..
         }
-        | Command::Unstake {
+        | TuiCommand::Unstake {
             address,
             gas_limit,
             gas_price,
             ..
-        } => match address {
-            Some(Address::Shielded(_)) => {
+        } => match address.as_ref() {
+            Address::Shielded(_) => {
                 (BalanceType::Shielded, gas_fee(gas_limit, gas_price))
             }
-            Some(Address::Public(_)) | None => {
+            Address::Public(_) => {
                 (BalanceType::Public, gas_fee(gas_limit, gas_price))
             }
         },
-        Command::Shield {
+        TuiCommand::Shield {
             gas_limit,
             gas_price,
             ..
         } => (BalanceType::Public, gas_fee(gas_limit, gas_price)),
-        Command::Unshield {
+        TuiCommand::Unshield {
             gas_limit,
             gas_price,
             ..
         } => (BalanceType::Shielded, gas_fee(gas_limit, gas_price)),
-        Command::Settings
-        | Command::CalculateContractId { .. }
-        | Command::Create { .. }
-        | Command::Restore { .. }
-        | Command::StakeInfo { .. }
-        | Command::Profiles { .. }
-        | Command::Balance { .. }
-        | Command::History { .. }
-        | Command::Export { .. }
-        | Command::DriverDeploy { .. } => (BalanceType::Public, Dusk::from(0)),
+        TuiCommand::Export { .. } => (BalanceType::Public, Dusk::from(0)),
     }
 }
 
@@ -1082,22 +1051,20 @@ pub enum AppAction {
     OpenClaimRewardsForm,
     ImportWallet,
     CloseForm,
-    ConfirmCommand(Command),
-    ExecuteCommand(Command),
+    ConfirmCommand(TuiCommand),
+    ExecuteCommand(TuiCommand),
 }
 
 /// Build human-readable confirmation details for a command.
-fn build_confirmation_details(
-    cmd: &Command,
-    _wallet: &Wallet<WalletFile>,
-) -> Vec<String> {
+fn build_confirmation_details(cmd: &TuiCommand) -> Vec<String> {
     let mut d = Vec::new();
-    let fee =
-        |gl: &u64, gp: &u64| format!("Max fee: {} DUSK", Dusk::from(gl * gp));
+    let fee = |gl: &u64, gp: &u64| {
+        format!("Max fee: {} DUSK", Dusk::from(gl.saturating_mul(*gp)))
+    };
     let payer = |a: &Address| format!("Pay with: {}", a.preview());
 
     match cmd {
-        Command::Transfer {
+        TuiCommand::Transfer {
             sender,
             rcvr,
             amt,
@@ -1105,61 +1072,51 @@ fn build_confirmation_details(
             gas_price,
             memo,
         } => {
-            if let Some(s) = sender {
-                d.push(payer(s));
-            }
+            d.push(payer(sender.as_ref()));
             d.push(format!("Recipient: {}", rcvr.preview()));
             d.push(format!("Amount: {amt} DUSK"));
             if matches!(memo, Some(m) if !m.is_empty()) {
                 d.push(format!("Memo: {}", memo.as_deref().unwrap()));
             }
             d.push(fee(gas_limit, gas_price));
-            if matches!(sender, Some(Address::Public(_))) {
+            if matches!(sender.as_ref(), Address::Public(_)) {
                 d.push("PUBLIC TRANSACTION".into());
             }
         }
-        Command::Stake {
+        TuiCommand::Stake {
             address,
             owner,
             amt,
             gas_limit,
             gas_price,
         } => {
-            if let Some(a) = address {
-                d.push(payer(a));
-            }
-            if let Some(o) = owner {
-                d.push(format!("Stake owner: {}", o.preview()));
-            }
+            d.push(payer(address.as_ref()));
+            d.push(format!("Stake owner: {}", owner.preview()));
             d.push(format!("Amount: {amt} DUSK"));
             d.push(fee(gas_limit, gas_price));
         }
-        Command::Unstake {
+        TuiCommand::Unstake {
             address,
             gas_limit,
             gas_price,
         } => {
-            if let Some(a) = address {
-                d.push(payer(a));
-            }
+            d.push(payer(address.as_ref()));
             d.push(fee(gas_limit, gas_price));
         }
-        Command::ClaimRewards {
+        TuiCommand::ClaimRewards {
             address,
             reward,
             gas_limit,
             gas_price,
         } => {
-            if let Some(a) = address {
-                d.push(payer(a));
-            }
+            d.push(payer(address.as_ref()));
             d.push(match reward {
                 Some(r) => format!("Claiming: {r} DUSK"),
                 None => "Claiming: all rewards".into(),
             });
             d.push(fee(gas_limit, gas_price));
         }
-        Command::Shield {
+        TuiCommand::Shield {
             amt,
             gas_limit,
             gas_price,
@@ -1168,7 +1125,7 @@ fn build_confirmation_details(
             d.push(format!("Shield amount: {amt} DUSK"));
             d.push(fee(gas_limit, gas_price));
         }
-        Command::Unshield {
+        TuiCommand::Unshield {
             amt,
             gas_limit,
             gas_price,
@@ -1177,7 +1134,7 @@ fn build_confirmation_details(
             d.push(format!("Unshield amount: {amt} DUSK"));
             d.push(fee(gas_limit, gas_price));
         }
-        Command::ContractDeploy {
+        TuiCommand::ContractDeploy {
             address,
             code,
             deploy_nonce,
@@ -1185,14 +1142,12 @@ fn build_confirmation_details(
             gas_price,
             ..
         } => {
-            if let Some(a) = address {
-                d.push(payer(a));
-            }
+            d.push(payer(address.as_ref()));
             d.push(format!("Code: {code:?}"));
             d.push(format!("Nonce: {deploy_nonce}"));
             d.push(fee(gas_limit, gas_price));
         }
-        Command::ContractCall {
+        TuiCommand::ContractCall {
             address,
             contract_id,
             fn_name,
@@ -1201,9 +1156,7 @@ fn build_confirmation_details(
             deposit,
             ..
         } => {
-            if let Some(a) = address {
-                d.push(payer(a));
-            }
+            d.push(payer(address.as_ref()));
             d.push(format!("Contract: {}", hex::encode(contract_id)));
             d.push(format!("Function: {fn_name}"));
             if *deposit > Dusk::from(0) {
@@ -1211,13 +1164,10 @@ fn build_confirmation_details(
             }
             d.push(fee(gas_limit, gas_price));
         }
-        Command::Export {
-            profile_idx, dir, ..
-        } => {
-            d.push(format!("Profile: {}", profile_idx.unwrap_or(0)));
+        TuiCommand::Export { profile_idx, dir } => {
+            d.push(format!("Profile: {profile_idx}"));
             d.push(format!("Directory: {}", dir.display()));
         }
-        _ => {}
     }
 
     d
@@ -1287,16 +1237,17 @@ fn infer_network_label(state_url: &url::Url) -> &'static str {
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use rusk_wallet::Profile;
     use rusk_wallet::currency::Dusk;
+    use rusk_wallet::{Address, Profile};
     use wallet_core::Seed;
     use wallet_core::keys::{derive_bls_pk, derive_phoenix_pk};
 
     use super::{
         App, CachedStakeInfo, StakeState, apply_stake_update,
-        stake_refresh_tip_to_fetch,
+        build_confirmation_details, stake_refresh_tip_to_fetch,
     };
     use crate::tui::forms::{FormId, build_form};
+    use crate::tui::request::TuiCommand;
 
     fn test_profile_at(index: u8) -> Profile {
         let seed: Seed = [7u8; 64];
@@ -1345,6 +1296,26 @@ mod tests {
 
         assert!(matches!(entry.state, Some(StakeState::NoStake)));
         assert_eq!(entry.attempted_at_tip, Some(42));
+    }
+
+    #[test]
+    fn confirmation_details_saturate_max_fee() {
+        let profile = test_profile_at(0);
+        let cmd = TuiCommand::Transfer {
+            sender: Box::new(Address::Public(profile.public_addr)),
+            rcvr: Box::new(Address::Shielded(profile.shielded_addr)),
+            amt: Dusk::from(1),
+            gas_limit: u64::MAX,
+            gas_price: 2,
+            memo: None,
+        };
+
+        let details = build_confirmation_details(&cmd);
+
+        assert!(
+            details
+                .contains(&format!("Max fee: {} DUSK", Dusk::from(u64::MAX)))
+        );
     }
 
     #[test]

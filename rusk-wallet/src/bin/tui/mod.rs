@@ -9,6 +9,7 @@ mod app;
 mod event;
 pub mod forms;
 mod render;
+mod request;
 mod theme;
 
 use std::io::{self, stdout};
@@ -40,6 +41,7 @@ use zeroize::{Zeroize, Zeroizing};
 pub use self::action::tui_status;
 use self::action::{AsyncResult, clear_status_channel, init_status_channel};
 use self::app::{App, AppAction, AppScreen, ConnectionStatus};
+use self::request::TuiCommand;
 use crate::WalletFile;
 use crate::command::{gen_iv, gen_salt};
 use crate::frontend::OperationResult;
@@ -1494,16 +1496,11 @@ fn apply_stake_info(
 /// Execute a command and handle the result.
 async fn execute_command(
     app: &mut App<'_>,
-    cmd: crate::Command,
+    cmd: TuiCommand,
     tx: &mpsc::UnboundedSender<AsyncResult>,
 ) {
-    let refresh_stake_info = matches!(
-        &cmd,
-        crate::Command::Stake { .. }
-            | crate::Command::Unstake { .. }
-            | crate::Command::ClaimRewards { .. }
-            | crate::Command::Withdraw { .. }
-    );
+    let refresh_stake_info = cmd.refreshes_stake_info();
+    let cmd = cmd.into_command();
     let result = cmd.run(app.wallet, app.settings).await;
 
     match result {
