@@ -542,8 +542,8 @@ impl Rusk {
     /// Fetches the previous state data for stake changes in the contract.
     ///
     /// Communicates with the stake contract to obtain information about the
-    /// state data before the last changes. Optionally takes a base commit
-    /// hash to query changes since a specific point in time.
+    /// state data before the last changes. Optionally takes a base header to
+    /// query changes since a specific point in time.
     ///
     /// # Arguments
     ///
@@ -603,14 +603,22 @@ impl Rusk {
         Ok(session)
     }
 
-    /// Opens a session for query, setting a block height of zero since this
-    /// doesn't affect the result. If no header is provided, the current tip
-    /// header is used.
+    /// Opens a session for query at the provided header height.
+    ///
+    /// If no header is provided, the current tip header is used.
     pub(crate) fn query_session(
         &self,
         header: Option<&Header>,
     ) -> Result<Session> {
-        self._session(0, header.map(|header| header.state_hash))
+        let (block_height, state_hash) = match header {
+            Some(header) => (header.height, header.state_hash),
+            None => {
+                let tip = self.tip.read();
+                (tip.current.height, tip.current.state_hash)
+            }
+        };
+
+        self._session(block_height, Some(state_hash))
     }
 
     /// Opens a new session with the specified block height and state root.
