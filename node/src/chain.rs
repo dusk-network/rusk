@@ -24,6 +24,7 @@ use dusk_consensus::config::is_emergency_block;
 use dusk_consensus::errors::ConsensusError;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+pub use genesis::generate_block as genesis_block;
 pub use header_validation::verify_att;
 use node_data::events::Event;
 use node_data::ledger::{BlockWithLabel, Label, to_str};

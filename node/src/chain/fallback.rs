@@ -37,7 +37,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         &self,
         local: &Header,
         remote: &Header,
-        revert_target: RevertTarget,
+        revert_target: RevertTarget<'_>,
     ) -> Result<()> {
         match (local.height, remote.iteration.cmp(&local.iteration)) {
             (0, _) => Err(anyhow!("cannot fallback over genesis block")),
