@@ -8,13 +8,11 @@ mod driver_upload;
 mod history;
 
 use dusk_core::transfer::data::BlobData;
-pub use history::TransactionHistory;
 use zeroize::Zeroize;
 
 #[cfg(all(test, feature = "e2e-test"))]
 mod tests;
 
-use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 #[cfg(unix)]
@@ -24,7 +22,6 @@ use std::path::PathBuf;
 use aes_gcm::{AeadCore, Aes256Gcm};
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Subcommand;
-use dusk_core::BlsScalar;
 use dusk_core::abi::{CONTRACT_ID_BYTES, ContractId};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
@@ -37,14 +34,15 @@ use rusk_wallet::gas::{
     DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE, Gas, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, BlobError, EPOCH, Error, IV_SIZE, MAX_PROFILES, Profile,
-    SALT_SIZE, Wallet,
+    Address, BlobError, Error, IV_SIZE, MAX_PROFILES, Profile, SALT_SIZE,
+    Wallet,
 };
-use wallet_core::BalanceInfo;
 
+use crate::frontend::{BalanceView, OperationResult};
 use crate::io::prompt;
 use crate::prompt::Prompt;
 use crate::settings::Settings;
+use crate::transaction_history::TransactionHistory;
 use crate::{WalletFile, WalletPath};
 
 /// Commands that can be run against the Dusk wallet
@@ -403,9 +401,12 @@ impl Command {
                 let addr_idx = wallet.find_index(&address)?;
 
                 match address {
-                    Address::Public(_) => Ok(RunResult::MoonlightBalance(
-                        wallet.get_moonlight_balance(addr_idx).await?,
-                    )),
+                    Address::Public(_) => Ok(RunResult::Balance {
+                        balance: BalanceView::public(
+                            wallet.get_moonlight_balance(addr_idx).await?,
+                        ),
+                        spendable,
+                    }),
                     Address::Shielded(_) => {
                         let sync_result = wallet.sync().await;
                         if let Err(e) = sync_result {
@@ -420,7 +421,10 @@ impl Command {
 
                         let balance =
                             wallet.get_phoenix_balance(addr_idx).await?;
-                        Ok(RunResult::PhoenixBalance(balance, spendable))
+                        Ok(RunResult::Balance {
+                            balance: BalanceView::shielded(balance),
+                            spendable,
+                        })
                     }
                 }
             }
@@ -486,7 +490,7 @@ impl Command {
                     }
                 };
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::Stake {
                 address,
@@ -515,7 +519,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::Unstake {
                 address,
@@ -536,7 +540,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::Withdraw {
                 address,
@@ -573,7 +577,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::StakeInfo {
                 profile_idx,
@@ -616,7 +620,10 @@ impl Command {
 
                 let (pub_key, key_pair) = res?;
 
-                Ok(RunResult::ExportedKeys(pub_key, key_pair))
+                Ok(RunResult::Operation(OperationResult::ExportedKeys {
+                    pub_key,
+                    key_pair,
+                }))
             }
             Command::History { profile_idx } => {
                 let profile_idx = profile_idx.unwrap_or_default();
@@ -664,7 +671,7 @@ impl Command {
 
                 let tx =
                     wallet.phoenix_to_moonlight(profile_idx, amt, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::Shield {
                 profile_idx,
@@ -679,7 +686,7 @@ impl Command {
 
                 let tx =
                     wallet.moonlight_to_phoenix(profile_idx, amt, gas).await?;
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::ContractCall {
                 address,
@@ -727,7 +734,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
 
             Self::ContractDeploy {
@@ -778,7 +785,10 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::DeployTx(tx.hash(), contract_id.into()))
+                Ok(RunResult::Operation(OperationResult::DeployTx {
+                    hash: tx.hash(),
+                    contract_id: contract_id.into(),
+                }))
             }
             Self::DriverDeploy {
                 profile_idx,
@@ -868,7 +878,7 @@ impl Command {
                         Some(tx_blobs),
                     )
                     .await?;
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::Operation(OperationResult::Tx(tx.hash())))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
@@ -952,130 +962,22 @@ impl Command {
     }
 }
 
-/// Possible results of running a command in interactive mode
+/// Possible results of running a command
 pub enum RunResult<'a> {
-    Tx(BlsScalar),
-    DeployTx(BlsScalar, ContractId),
-    PhoenixBalance(BalanceInfo, bool),
-    MoonlightBalance(Dusk),
+    Balance {
+        balance: BalanceView,
+        spendable: bool,
+    },
+    Operation(OperationResult),
     StakeInfo(StakeData, bool),
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
     ContractId([u8; CONTRACT_ID_BYTES]),
-    ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
     Settings(),
     History(Vec<TransactionHistory>),
     DriverDeployResult(ContractId),
-}
-
-impl fmt::Display for RunResult<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use RunResult::*;
-        match self {
-            PhoenixBalance(balance, _) => {
-                let total = Dusk::from(balance.value);
-                let spendable = Dusk::from(balance.spendable);
-                write!(
-                    f,
-                    "> Total shielded balance: {total} DUSK\n\
-                     > Maximum spendable per TX: {spendable} DUSK",
-                )
-            }
-            MoonlightBalance(balance) => {
-                write!(f, "> Total public balance: {balance} DUSK")
-            }
-            Profile((profile_idx, profile)) => {
-                write!(
-                    f,
-                    "> {}\n>   {}\n>   {}",
-                    crate::Profile::index_string(*profile_idx),
-                    profile.shielded_account_string(),
-                    profile.public_account_string(),
-                )
-            }
-            Profiles(addrs) => {
-                let profiles_string = addrs
-                    .iter()
-                    .enumerate()
-                    .map(|(profile_idx, profile)| {
-                        format!(
-                            "> {}\n>   {}\n>   {}\n",
-                            crate::Profile::index_string(profile_idx as u8),
-                            profile.shielded_account_string(),
-                            profile.public_account_string(),
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
-
-                write!(f, "{profiles_string}")
-            }
-            Tx(hash) => {
-                let hash = hex::encode(hash.to_bytes());
-                write!(f, "> Transaction sent: {hash}",)
-            }
-            DeployTx(hash, contract_id) => {
-                let contract_id = hex::encode(contract_id.as_bytes());
-                writeln!(f, "> Deploying contract: {contract_id}",)?;
-                let hash = hex::encode(hash.to_bytes());
-                write!(f, "> Transaction sent: {hash}",)
-            }
-            StakeInfo(data, _) => {
-                if let Some(amt) = data.amount {
-                    let amount = Dusk::from(amt.value);
-                    let locked = Dusk::from(amt.locked);
-                    let eligibility = amt.eligibility;
-                    let epoch = amt.eligibility / EPOCH;
-
-                    writeln!(f, "> Eligible stake: {amount} DUSK")?;
-                    writeln!(f, "> Reclaimable slashed stake: {locked} DUSK")?;
-                    writeln!(
-                        f,
-                        "> Stake active from block #{eligibility} (Epoch {epoch})"
-                    )?;
-                } else {
-                    writeln!(f, "> No active stake found for this key")?;
-                }
-                let faults = data.faults;
-                let hard_faults = data.hard_faults;
-                let rewards = Dusk::from(data.reward);
-
-                writeln!(f, "> Slashes: {faults}")?;
-                writeln!(f, "> Hard Slashes: {hard_faults}")?;
-                write!(f, "> Accumulated rewards is: {rewards} DUSK")
-            }
-            ContractId(bytes) => {
-                write!(f, "> Contract ID: {}", hex::encode(bytes))
-            }
-            ExportedKeys(pk, kp) => {
-                let pk = pk.display();
-                let kp = kp.display();
-                write!(
-                    f,
-                    "> Public key exported to: {pk}\n\
-                     > Key pair exported to: {kp}",
-                )
-            }
-            History(txns) => {
-                writeln!(f, "{}", TransactionHistory::header())?;
-                for th in txns {
-                    writeln!(f, "{th}")?;
-                }
-                Ok(())
-            }
-            DriverDeployResult(contract_id) => {
-                writeln!(
-                    f,
-                    "Driver deployed for contract: {}",
-                    hex::encode(contract_id.to_bytes())
-                )?;
-                Ok(())
-            }
-            Create() | Restore() | Settings() => unreachable!(),
-        }
-    }
 }
 
 pub(crate) fn gen_salt() -> [u8; SALT_SIZE] {

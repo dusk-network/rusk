@@ -14,7 +14,8 @@ use ratatui::widgets::{
 use rusk_wallet::currency::Dusk;
 use wallet_core::BalanceInfo;
 
-use crate::command::TransactionHistory;
+use crate::frontend::BalanceView;
+use crate::transaction_history::TransactionHistory;
 use crate::tui::app::{App, AppScreen, MENU_ITEMS, StakeState, SyncStatus};
 use crate::tui::theme;
 
@@ -154,7 +155,7 @@ fn render_info_block(
     frame: &mut Frame,
     area: ratatui::layout::Rect,
     app: &App,
-    bal: &super::super::app::ProfileBalance,
+    bal: &BalanceView,
     stake: Option<&StakeState>,
     shielded_text: String,
     public_text: String,

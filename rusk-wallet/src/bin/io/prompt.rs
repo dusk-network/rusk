@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 use thiserror::Error as ThisError;
 use zeroize::{Zeroize, Zeroizing};
 
-use crate::command::TransactionHistory;
+use crate::transaction_history::TransactionHistory;
 
 #[derive(Debug, ThisError)]
 pub(crate) enum PromptAbort {

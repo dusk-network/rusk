@@ -209,7 +209,11 @@ pub fn render(frame: &mut Frame, app: &App) {
             description,
             &app.status_messages,
         ),
-        AppScreen::Result { info } => modals::render_result_modal(frame, info),
+        AppScreen::Result { info } => modals::render_result_modal(
+            frame,
+            info,
+            app.settings.explorer.as_ref(),
+        ),
         AppScreen::Help => help::render_help(frame),
     }
 }

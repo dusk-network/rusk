@@ -17,8 +17,9 @@ use tracing_subscriber::EnvFilter;
 use url::Url;
 
 use super::*;
-use crate::command::history::TransactionDirection;
+use crate::frontend::OperationResult;
 use crate::settings::{LogLevel, Logging};
+use crate::transaction_history::{TransactionDirection, TransactionHistory};
 use crate::{LogFormat, connect, status};
 
 #[derive(Default)]
@@ -175,7 +176,7 @@ async fn execute_tx_command(
     settings: &Settings,
 ) -> anyhow::Result<String> {
     let run_result = cmd.run(wallet, settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
+    let RunResult::Operation(OperationResult::Tx(tx_hash)) = run_result else {
         unreachable!()
     };
     Ok(hex::encode(&tx_hash.to_bytes()))

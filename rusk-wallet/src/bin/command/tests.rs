@@ -8,8 +8,8 @@ use dusk_core::dusk;
 use rusk_wallet::GraphQL;
 
 use super::*;
-use crate::command::history::TransactionDirection;
 use crate::status;
+use crate::transaction_history::TransactionDirection;
 
 mod utils;
 use utils::*;
