@@ -17,7 +17,6 @@ use dusk_rusk_test::common::{self, *};
 use dusk_rusk_test::{RuskVmConfig, TestContext};
 use dusk_vm::VM;
 use ff::Field;
-use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rkyv::Deserialize;
@@ -25,7 +24,7 @@ use rusk::node::{Rusk, RuskTip};
 use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::state::new_state;
+use crate::common::state::{header_from_root, new_state};
 
 const BLOCK_HEIGHT: u64 = 1;
 const CHAIN_ID: u8 = 0xFA;
@@ -63,7 +62,7 @@ fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
 
 fn push_note<'a, F, T>(rusk: &'a Rusk, after_push: F) -> T
 where
-    F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
+    F: FnOnce(&mut RuskTip, &'a VM) -> T,
 {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -86,29 +85,29 @@ where
         sender_blinder,
     );
 
-    with_tip(&rusk, |mut tip, vm| {
-        let current_commit = tip.current;
-        let mut session = vm
-            .session(current_commit, CHAIN_ID, BLOCK_HEIGHT)
-            .expect("current commit should exist");
+    let current_commit = rusk.state_root();
+    let mut session = rusk
+        .vm
+        .session(current_commit, CHAIN_ID, BLOCK_HEIGHT)
+        .expect("current commit should exist");
 
-        session
-            .call::<_, Note>(
-                TRANSFER_CONTRACT,
-                "push_note",
-                &(0u64, note),
-                u64::MAX,
-            )
-            .expect("Pushing note should succeed");
-        session
-            .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
-            .expect("Updating root should succeed");
+    session
+        .call::<_, Note>(
+            TRANSFER_CONTRACT,
+            "push_note",
+            &(0u64, note),
+            u64::MAX,
+        )
+        .expect("Pushing note should succeed");
+    session
+        .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
+        .expect("Updating root should succeed");
 
-        let commit_id = session.commit().expect("Committing should succeed");
-        tip.current = commit_id;
+    let header = header_from_root(session.root());
+    rusk.commit_session(session, &header)
+        .expect("Committing should succeed");
 
-        after_push(tip, vm)
-    })
+    with_tip(rusk, after_push)
 }
 
 #[tokio::test]
@@ -150,8 +149,8 @@ pub async fn rusk_state_finalized() -> Result<()> {
     let tc = initial_state().await?;
     let rusk = tc.rusk();
 
-    push_note(&rusk, |mut tip, _vm| {
-        tip.base = tip.current;
+    push_note(&rusk, |tip: &mut RuskTip, _vm| {
+        tip.base = tip.current.clone();
     });
 
     let leaves = leaves_from_height(&rusk, 0)?;
@@ -307,8 +306,8 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
 /// for too long of a period of time.
 fn with_tip<'a, F, T>(rusk: &'a Rusk, closure: F) -> T
 where
-    F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
+    F: FnOnce(&mut RuskTip, &'a VM) -> T,
 {
-    let tip = rusk.tip.write();
-    closure(tip, &rusk.vm)
+    let mut tip = rusk.tip.write();
+    closure(&mut tip, &rusk.vm)
 }

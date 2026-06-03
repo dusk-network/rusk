@@ -27,7 +27,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{
-    DEFAULT_MIN_GAS_LIMIT, ExecuteResult, generator_procedure,
+    DEFAULT_MIN_GAS_LIMIT, ExecuteResult, generator_procedure, header_from_root,
 };
 use crate::common::wallet::{
     TestStateClient, TestStore, test_wallet as wallet,
@@ -79,6 +79,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         CHAIN_ID,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,

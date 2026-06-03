@@ -13,7 +13,7 @@ use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_rusk_test::RuskVmConfig;
 use dusk_rusk_test::common::state::{
-    DEFAULT_MIN_GAS_LIMIT, LOCAL_TEST_CHAIN_ID,
+    DEFAULT_MIN_GAS_LIMIT, LOCAL_TEST_CHAIN_ID, header_from_root,
 };
 use dusk_vm::FeatureActivation;
 #[cfg(feature = "archive")]
@@ -72,6 +72,7 @@ async fn future_nonce_http_propagate_accepts_aegis_bytes_after_boreas() {
         tempdir().expect("creating archive tempdir should succeed");
     let rusk = Rusk::new(
         state_dir.path(),
+        |state_root| Ok(header_from_root(state_root)),
         chain_id,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,
