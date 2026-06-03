@@ -405,3 +405,117 @@ impl RuskNodeBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use node::database::{DB as _, Ledger as _};
+    use node_data::ledger::Label;
+    use tempfile::tempdir;
+
+    use super::*;
+
+    fn test_header(height: u64, state: u8, hash: u8, prev_hash: u8) -> Header {
+        Header {
+            height,
+            state_hash: [state; 32],
+            hash: [hash; 32],
+            prev_block_hash: [prev_hash; 32],
+            ..Default::default()
+        }
+    }
+
+    fn store_header(
+        db: &rocksdb::Backend,
+        header: &Header,
+    ) -> crate::Result<()> {
+        db.update(|tx| {
+            tx.store_block(header, &[], &[], Label::Final(0))?;
+            Ok(())
+        })
+        .map_err(|err| io::Error::other(format!("{err}")))?;
+        Ok(())
+    }
+
+    // Covers the restart path where the persisted finalized state root is
+    // behind the chain DB tip and must be matched by walking back headers.
+    #[test]
+    fn finds_header_by_state_root_before_tip() -> crate::Result<()> {
+        let dir = tempdir()?;
+        let db = rocksdb::Backend::create_or_open(
+            dir.path(),
+            DatabaseOptions::default(),
+        );
+
+        let genesis = test_header(0, 1, 10, 0);
+        let block_one = test_header(1, 2, 11, 10);
+        let tip = test_header(2, 3, 12, 11);
+
+        store_header(&db, &genesis)?;
+        store_header(&db, &block_one)?;
+        store_header(&db, &tip)?;
+
+        let recovered =
+            find_block_header_by_state_root(&db, block_one.state_hash)?
+                .expect("header should be found");
+
+        assert_eq!(recovered.height, block_one.height);
+        assert_eq!(recovered.hash, block_one.hash);
+        assert_eq!(recovered.state_hash, block_one.state_hash);
+
+        Ok(())
+    }
+
+    // Covers corrupted/incomplete chain metadata: once tip metadata exists,
+    // a missing state root must be reported instead of falling back to genesis.
+    #[test]
+    fn errors_when_metadata_exists_but_state_root_is_missing()
+    -> crate::Result<()> {
+        let dir = tempdir()?;
+        let db = rocksdb::Backend::create_or_open(
+            dir.path(),
+            DatabaseOptions::default(),
+        );
+
+        let genesis = test_header(0, 1, 10, 0);
+        let tip = test_header(1, 2, 11, 10);
+
+        store_header(&db, &genesis)?;
+        store_header(&db, &tip)?;
+
+        let err = find_block_header_by_state_root(&db, [99; 32])
+            .expect_err("missing state root should be an error");
+
+        assert!(
+            err.to_string().contains("Cannot find block header"),
+            "unexpected error: {err}"
+        );
+
+        Ok(())
+    }
+
+    // Covers first-start initialization where no chain metadata exists yet and
+    // the builder decides to use the genesis header fallback.
+    #[test]
+    fn empty_db_allows_genesis_header_fallback() -> crate::Result<()> {
+        let dir = tempdir()?;
+        let db = rocksdb::Backend::create_or_open(
+            dir.path(),
+            DatabaseOptions::default(),
+        );
+
+        let state_root = [42; 32];
+        let timestamp = 1234;
+        let recovered = find_block_header_by_state_root(&db, state_root)?
+            .unwrap_or_else(|| {
+                node::chain::genesis_block(state_root, timestamp)
+                    .header()
+                    .clone()
+            });
+
+        assert_eq!(recovered.height, 0);
+        assert_eq!(recovered.timestamp, timestamp);
+        assert_eq!(recovered.state_hash, state_root);
+
+        Ok(())
+    }
+}
