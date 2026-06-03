@@ -519,10 +519,9 @@ impl RuskNode {
                 .map_err(|e| {
                     ChainError::database(format!("Failed to load the tip: {e}"))
                 })?
-                .ok_or_else(|| {
-                    ChainError::database("Could not find the tip")
-                })?;
-            let height = tip.header.height.saturating_add(1);
+                .ok_or_else(|| ChainError::database("Could not find the tip"))?
+                .header;
+            let height = tip.height.saturating_add(1);
             let tx = CanonicalTransaction::decode_for_ingress(tx, height)
                 .map_err(|e| {
                     ChainError::invalid_input(format!(
@@ -538,7 +537,7 @@ impl RuskNode {
             let _host_query_policy_guard =
                 set_vm_host_context(&vm_handler.vm_config, height);
             let session = vm_handler
-                .new_block_session(height, vm_handler.tip.read().current)
+                .new_block_session(height, tip.state_hash)
                 .map_err(|e| {
                     ChainError::vm(format!(
                         "Failed to initialize a session: {e}"

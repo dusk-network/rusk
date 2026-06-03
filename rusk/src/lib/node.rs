@@ -25,16 +25,17 @@ use node::archive::Archive;
 use node::database::rocksdb::{self, Backend};
 use node::mempool::FutureNonceRetryHandle;
 use node::network::Kadcast;
+use node_data::ledger::Header;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
 
 use crate::http::{DriverExecutor, RuesEvent};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RuskTip {
-    pub current: [u8; 32],
-    pub base: [u8; 32],
+    pub current: Header,
+    pub base: Header,
 }
 
 #[derive(Clone)]

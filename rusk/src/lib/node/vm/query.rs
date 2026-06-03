@@ -11,6 +11,7 @@ use dusk_core::abi::{ContractId, StandardBufSerializer};
 use dusk_vm::ContractMetadata;
 use dusk_vm::Error::ContractDoesNotExist;
 use node::vm::VMExecution;
+use node_data::ledger::Header;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
@@ -117,13 +118,13 @@ impl Rusk {
         call_name: &str,
         call_arg: &A,
         feeder: mpsc::Sender<Vec<u8>>,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<()>
     where
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
         A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
     {
-        let mut session = self.query_session(base_commit)?;
+        let mut session = self.query_session(base_header)?;
 
         // For feeder queries we use the gas limit set in the config
         session.feeder_call::<_, ()>(

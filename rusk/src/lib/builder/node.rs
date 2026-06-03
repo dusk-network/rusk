@@ -5,13 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::io;
 use std::path::PathBuf;
 
 use kadcast::config::Config as KadcastConfig;
 #[cfg(feature = "archive")]
 use node::archive::conf::Params as ArchiveParam;
 use node::chain::ChainSrv;
-use node::database::{DB, DatabaseOptions, rocksdb};
+use node::database::rocksdb::MD_HASH_KEY;
+use node::database::{DB, DatabaseOptions, Ledger, Metadata, rocksdb};
 use node::databroker::DataBrokerSrv;
 use node::databroker::conf::Params as BrokerParam;
 use node::mempool::MempoolSrv;
@@ -19,6 +21,7 @@ use node::mempool::conf::Params as MempoolParam;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
+use node_data::ledger::{Header, to_str};
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]
@@ -30,6 +33,61 @@ use crate::node::{
     Services, WellKnownVmConfig,
 };
 use crate::{Rusk, VERSION};
+
+/// Finds the stored block header matching `state_root`.
+///
+/// Returns `Ok(None)` only when the chain DB has no tip metadata stored yet,
+/// which means the consumer must decide how to initialize the header. If tip
+/// metadata exists, the matching header must be present and missing data is
+/// reported as an error.
+fn find_block_header_by_state_root<DB>(
+    db: &DB,
+    state_root: [u8; 32],
+) -> crate::Result<Option<Header>>
+where
+    DB: node::database::DB,
+{
+    db.view(|db| {
+        if db
+            .op_read(MD_HASH_KEY)
+            .map_err(|err| io::Error::other(format!("{err}")))?
+            .is_none()
+        {
+            return Ok(None);
+        }
+
+        let latest = db
+            .latest_block()
+            .map_err(|err| io::Error::other(format!("{err}")))?;
+
+        let mut height = latest.header.height;
+        loop {
+            let block = db
+                .block_by_height(height)
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .ok_or_else(|| {
+                    io::Error::other(format!(
+                        "Cannot load block at height {height}"
+                    ))
+                })?;
+            let header = block.header();
+
+            if header.state_hash == state_root {
+                return Ok(Some(header.clone()));
+            }
+
+            if height == 0 {
+                return Err(io::Error::other(format!(
+                    "Cannot find block header for state root {}",
+                    to_str(&state_root)
+                ))
+                .into());
+            }
+
+            height -= 1;
+        }
+    })
+}
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
@@ -219,8 +277,26 @@ impl RuskNodeBuilder {
         let blob_expire_after =
             self.blob_expire_after.unwrap_or(DEFAULT_BLOB_EXPIRE_AFTER);
 
+        let db = rocksdb::Backend::create_or_open(
+            self.db_path.clone(),
+            self.db_options.clone(),
+        );
+
         let rusk = Rusk::new(
             self.state_dir,
+            |state_root| {
+                let header = find_block_header_by_state_root(&db, state_root)?
+                    .unwrap_or_else(|| {
+                        node::chain::genesis_block(
+                            state_root,
+                            self.genesis_timestamp,
+                        )
+                        .header()
+                        .clone()
+                    });
+
+                Ok(header)
+            },
             self.kadcast.kadcast_id.unwrap_or_default(),
             vm_config,
             min_gas_limit,
@@ -234,10 +310,6 @@ impl RuskNodeBuilder {
         info!("Rusk VM loaded");
 
         let node = {
-            let db = rocksdb::Backend::create_or_open(
-                self.db_path.clone(),
-                self.db_options.clone(),
-            );
             let net = Kadcast::new(self.kadcast)?;
             let future_nonce_retry_queue =
                 node::mempool::FutureNonceRetryHandle::new(
@@ -312,8 +384,8 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         {
             if archive.fetch_active_accounts().await? == 0 {
-                let base_commit = None;
-                let accounts = rusk.moonlight_accounts(base_commit);
+                let base_header = None;
+                let accounts = rusk.moonlight_accounts(base_header);
 
                 let accounts = accounts
                     .map_err(|e| {

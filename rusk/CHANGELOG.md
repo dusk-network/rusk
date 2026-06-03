@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   remain unchanged.
 - Pass the Boreas hardfork context through to `dusk-vm` so Boreas-specific VM host-query pricing can activate independently of backend changes.
 - Pass a unified host-query execution policy into `dusk-vm` so memoized VM cache keys stay aligned with the active verifier and hard-fork semantics.
+- Store full ledger headers in `RuskTip` instead of only state root hashes.
 - Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
 - Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
 - Enforce HTTP ingress policy with ACL and endpoint-class global limits (`http.policy`), returning `403` on ACL deny and `429` with `Retry-After` on limit rejections.

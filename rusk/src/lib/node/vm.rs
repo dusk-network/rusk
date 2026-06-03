@@ -108,7 +108,7 @@ impl VMExecution for Rusk {
         check_transition_result(&transition_result, blk.header())?;
 
         // Commit state transition
-        self.commit_session(session).map_err(|err| {
+        self.commit_session(session, blk.header()).map_err(|err| {
             StateTransitionError::PersistenceError(format!("{err}"))
         })?;
 
@@ -123,20 +123,20 @@ impl VMExecution for Rusk {
         Ok((executed_txs, contract_events))
     }
 
-    fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
-        self.query_session(Some(commit))
+    fn move_to_header(&self, header: &Header) -> anyhow::Result<()> {
+        self.query_session(Some(header))
             .map_err(|e| anyhow::anyhow!("Cannot open session {e}"))?;
-        self.set_current_commit(commit);
+        self.set_current_header(header);
         Ok(())
     }
 
     fn finalize_state(
         &self,
-        commit: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()> {
         debug!("Received finalize request");
-        self.finalize_state(commit, to_merge)
+        self.finalize_state(header, to_merge)
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
@@ -238,16 +238,16 @@ impl VMExecution for Rusk {
 
     fn get_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Provisioners> {
-        self.query_provisioners(Some(base_commit))
+        self.query_provisioners(Some(base_header))
     }
 
     fn get_changed_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
-        self.query_provisioners_change(Some(base_commit))
+        self.query_provisioners_change(Some(base_header))
     }
 
     fn get_provisioner(
@@ -269,9 +269,9 @@ impl VMExecution for Rusk {
         Ok(self.base_root())
     }
 
-    fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]> {
+    fn revert(&self, header: &Header) -> anyhow::Result<[u8; 32]> {
         let state_hash = self
-            .revert(state_hash)
+            .revert(header)
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
 
         Ok(state_hash)
@@ -358,11 +358,11 @@ where
 impl Rusk {
     fn query_provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> anyhow::Result<Provisioners> {
         info!("Received get_provisioners request");
         let provisioners = self
-            .provisioners(base_commit)
+            .provisioners(base_header)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .map(|(pk, stake)| {
                 (PublicKey::new(pk.account), Self::to_stake(stake))
@@ -380,11 +380,11 @@ impl Rusk {
 
     fn query_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         info!("Received get_provisioners_change request");
         Ok(self
-            .last_provisioners_change(base_commit)
+            .last_provisioners_change(base_header)
             .map_err(|e| {
                 anyhow::anyhow!("Cannot get provisioners change: {e}")
             })?
