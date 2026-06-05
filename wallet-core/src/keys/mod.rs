@@ -9,11 +9,18 @@
 pub mod eip2333;
 pub mod eip2334;
 pub mod legacy;
+pub mod phoenix_hd;
 
-// Re-export all phoenix functions, as they are not influenced by EIP-2333
-// Temporarily Re-export bls functions as well, until we migrate consuming apps
-// to using EIP-2334
+// Re-export legacy APIs for backward compatibility while consumers migrate.
 pub use legacy::{
     derive_bls_pk, derive_bls_sk, derive_multiple_phoenix_sk,
     derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+};
+
+// Re-export Phoenix HD v1 account APIs.
+pub use phoenix_hd::{
+    phoenix_account, phoenix_dual_scan_accounts, phoenix_legacy_account,
+    phoenix_master_from_seed, phoenix_migration_account, PhoenixAccount,
+    PhoenixDerivationPath, PhoenixHdError, PhoenixLegacyAccount,
+    PhoenixMasterKey, PhoenixMigrationAccount, DUSK_COIN_TYPE, PHOENIX_PURPOSE,
 };

@@ -1980,6 +1980,7 @@ dependencies = [
 name = "dusk-wallet-core"
 version = "1.4.1-alpha.1"
 dependencies = [
+ "blake2b_simd",
  "blake3",
  "bytecheck",
  "dlmalloc",

@@ -58,8 +58,8 @@
 //!  - `HKDF-Extract`: defined in RFC5869, instantiated with SHA256
 //!  - `HKDF-Expand`: defined in RFC5869, instantiated with SHA256
 
-use dusk_core::BlsScalar;
 use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
+use dusk_core::BlsScalar;
 
 use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
@@ -505,7 +505,7 @@ mod tests {
     #[test]
     fn test_child_derivation() {
         // All test cases are taken from the EIP2333 specification
-        let test_cases = vec![
+        let test_cases = [
             TestCase {
                 seed: "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
                 master_sk: "6083874454709270928345386274498605044986640685124978867557563392430687146096",
@@ -532,7 +532,7 @@ mod tests {
             },
         ];
 
-        for t in test_cases.iter() {
+        for t in &test_cases {
             let seed = decode(t.seed).unwrap();
 
             let master_sk = BlsSecretKey::from_bytes(
@@ -545,7 +545,7 @@ mod tests {
             )
             .unwrap();
 
-            let child_index = u32::from_str_radix(t.child_index, 10).unwrap();
+            let child_index = t.child_index.parse::<u32>().unwrap();
 
             let child_sk = BlsSecretKey::from_bytes(
                 &t.child_sk
@@ -600,7 +600,7 @@ mod tests {
             let path = test.0;
             let child_key = test.1;
 
-            let master_sk = derive_master_sk(&seed_bytes)
+            let master_sk = derive_master_sk(seed_bytes)
                 .expect("Master SK derivation failed");
 
             let derived_key = derive_bls_sk(&master_sk, path).unwrap();

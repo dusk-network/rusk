@@ -17,6 +17,7 @@ bytecheck = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 rand_chacha = { workspace = true }
 blake3 = { workspace = true }
+blake2b_simd = { workspace = true, default-features = false }
 sha2 = { workspace = true }
 hkdf = { workspace = true }
 rand = { workspace = true }

@@ -4,8 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Module to generate phoenix and moonlight keys from a seed and index based on
-//! the legacy key derivation method.
+//! Legacy key derivation functions.
+//!
+//! This module is kept for backward compatibility and migration from historical
+//! wallets. New integrations should prefer the HD APIs in `keys::phoenix_hd`
+//! and `keys::eip2334`.
 
 use alloc::vec::Vec;
 use core::ops::Range;
@@ -47,7 +50,7 @@ pub fn derive_bls_pk(seed: &Seed, index: u8) -> BlsPublicKey {
     pk
 }
 
-/// Generates a [`PhoenixSecretKey`] from a seed and index.
+/// Generates a legacy [`PhoenixSecretKey`] from a seed and index.
 ///
 /// The randomness is generated using [`rng_with_index`].
 #[must_use]
@@ -58,7 +61,7 @@ pub fn derive_phoenix_sk(seed: &Seed, index: u8) -> PhoenixSecretKey {
     PhoenixSecretKey::random(&mut rng_with_index(seed, index, b"SSK"))
 }
 
-/// Generates multiple [`PhoenixSecretKey`] from a seed and a range of
+/// Generates multiple legacy [`PhoenixSecretKey`] from a seed and a range of
 /// indices.
 ///
 /// The randomness is generated using [`rng_with_index`].
@@ -72,7 +75,7 @@ pub fn derive_multiple_phoenix_sk(
         .collect()
 }
 
-/// Generates a [`PhoenixPublicKey`] from its seed and index.
+/// Generates a legacy [`PhoenixPublicKey`] from its seed and index.
 ///
 /// First the [`PhoenixSecretKey`] is derived with [`derive_phoenix_sk`],
 /// then the public key is generated from it and the secret key is
@@ -86,7 +89,7 @@ pub fn derive_phoenix_pk(seed: &Seed, index: u8) -> PhoenixPublicKey {
     pk
 }
 
-/// Generates a [`PhoenixViewKey`] from its seed and index.
+/// Generates a legacy [`PhoenixViewKey`] from its seed and index.
 ///
 /// First the [`PhoenixSecretKey`] is derived with [`derive_phoenix_sk`],
 /// then the view key is generated from it and the secret key is erased
