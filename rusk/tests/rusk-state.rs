@@ -142,6 +142,35 @@ pub async fn rusk_state_accepted() -> Result<()> {
 }
 
 #[tokio::test]
+pub async fn commit_session_rejects_mismatched_header() -> Result<()> {
+    logger();
+
+    let tc = initial_state().await?;
+    let rusk = tc.rusk();
+    let current_commit = rusk.state_root();
+    let session = rusk
+        .vm
+        .session(current_commit, CHAIN_ID, BLOCK_HEIGHT)
+        .expect("current commit should exist");
+
+    let mut header = header_from_root([1; 32]);
+    if header.state_hash == session.root() {
+        header.state_hash = [2; 32];
+    }
+
+    let err = rusk
+        .commit_session(session, &header)
+        .expect_err("mismatched header state root should be rejected");
+
+    assert!(
+        err.to_string().contains("does not match header state root"),
+        "unexpected error: {err}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 pub async fn rusk_state_finalized() -> Result<()> {
     // Setup the logger
     logger();
