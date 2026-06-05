@@ -218,27 +218,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         new_iter = remote_header.iteration,
                     );
 
-                    // Retrieve prev_block state
-                    let prev_state = acc
+                    // Retrieve prev_block header
+                    let prev_header = acc
                         .db
                         .read()
                         .await
                         .view(|t| {
-                            let res = t
-                                .block_header(&remote_header.prev_block_hash)?
-                                .map(|prev| prev.state_hash);
-
-                            anyhow::Ok(res)
+                            t.block_header(&remote_header.prev_block_hash)
                         })?
                         .ok_or_else(|| {
-                            anyhow::anyhow!("could not retrieve state_hash")
+                            anyhow::anyhow!("could not retrieve prev header")
                         })?;
 
                     match fallback::WithContext::new(acc.deref())
                         .try_revert(
                             local_header,
                             remote_header,
-                            RevertTarget::Commit(prev_state),
+                            RevertTarget::Commit(&prev_header),
                         )
                         .await
                     {

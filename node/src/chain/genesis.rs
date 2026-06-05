@@ -6,8 +6,8 @@
 
 use node_data::ledger::{Block, Header};
 
-/// Generates the genesis state for the chain per specified network type
-pub(crate) fn generate_block(state_hash: [u8; 32], timestamp: u64) -> Block {
+/// Generates the genesis block for the given state root and timestamp.
+pub fn generate_block(state_hash: [u8; 32], timestamp: u64) -> Block {
     Block::new(
         Header {
             timestamp,

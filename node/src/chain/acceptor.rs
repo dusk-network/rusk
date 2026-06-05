@@ -58,23 +58,16 @@ const CANDIDATES_DELETION_OFFSET: u64 = 10;
 /// future message.
 const OFFSET_FUTURE_MSGS: u64 = 5;
 
-struct Identifiers {
-    /// Block hash of the newly finalized block
-    block_hash: [u8; 32],
-    /// State root of the newly finalized block
-    state_root: [u8; 32],
-}
-
 struct RollingFinalityResult {
     /// State root of the last finalized block
     prev_final_state_root: [u8; 32],
     /// New finalized blocks
-    new_finals: BTreeMap<u64, Identifiers>,
+    new_finals: BTreeMap<u64, ledger::Header>,
 }
 
 #[allow(dead_code)]
-pub(crate) enum RevertTarget {
-    Commit([u8; 32]),
+pub(crate) enum RevertTarget<'a> {
+    Commit(&'a ledger::Header),
     LastFinalizedState,
     LastEpoch,
 }
@@ -217,15 +210,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         module_shading: HashMap<ContractId, Vec<(u64, u64)>>,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
-        let tip_state_hash = tip.inner().header().state_hash;
+        let tip_header = tip.inner().header().clone();
+        let tip_state_hash = tip_header.state_hash;
         let provisioners_list =
-            vm.read().await.get_provisioners(tip_state_hash)?;
+            vm.read().await.get_provisioners(&tip_header)?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
         if tip.inner().header().height > 0 {
             let changed_provisioners =
-                vm.read().await.get_changed_provisioners(tip_state_hash)?;
+                vm.read().await.get_changed_provisioners(&tip_header)?;
             provisioners_list.apply_changes(changed_provisioners);
         }
 
@@ -258,7 +252,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         );
 
         if tip_height > 0 && tip_state_hash != state_root {
-            if let Err(error) = vm.read().await.move_to_commit(tip_state_hash) {
+            if let Err(error) = vm.read().await.move_to_header(&tip_header) {
                 warn!(
                     event = "Cannot move to tip_state_hash",
                     ?error,
@@ -698,11 +692,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         let vm = self.vm.read().await;
-        let current_prov = vm.get_provisioners(blk.header().state_hash)?;
+        let current_prov = vm.get_provisioners(blk.header())?;
         provisioners_list.update(current_prov);
 
-        let changed_provisioners =
-            vm.get_changed_provisioners(blk.header().state_hash)?;
+        let changed_provisioners = vm.get_changed_provisioners(blk.header())?;
         provisioners_list.apply_changes(changed_provisioners);
 
         *tip = BlockWithLabel::new_with_label(blk.clone(), label);
@@ -830,14 +823,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 if let Some(RollingFinalityResult { new_finals, .. }) =
                     &finality.1
                 {
-                    for (height, Identifiers { block_hash, .. }) in
-                        new_finals.iter()
-                    {
+                    for (height, header) in new_finals.iter() {
                         if let Err(e) = self
                             .archive
                             .finalize_archive_data(
                                 *height,
-                                &hex::encode(block_hash),
+                                &hex::encode(header.hash),
                             )
                             .await
                         {
@@ -902,8 +893,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
-                let state_hash = blk.header().state_hash;
-                let new_prov = vm.get_provisioners(state_hash)?;
+                let new_prov = vm.get_provisioners(blk.header())?;
                 provisioners_list.update_and_swap(new_prov)
             }
 
@@ -923,13 +913,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let new_final_heights: Vec<_> =
                     new_finals.keys().cloned().collect();
 
-                let (_, new_final_state) =
+                let (_, new_final_header) =
                     new_finals.pop_last().expect("new_finals to be not empty");
-                let new_final_state_root = new_final_state.state_root;
                 // old final state roots to merge too
                 let new_finals = new_finals
                     .into_values()
-                    .map(|finalized_info| finalized_info.state_root)
+                    .map(|header| header.state_hash)
                     .collect::<Vec<_>>();
 
                 let old_final_state_roots = if legacy {
@@ -938,7 +927,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     [vec![prev_final_state_root], new_finals].concat()
                 };
 
-                vm.finalize_state(new_final_state_root, old_final_state_roots)?;
+                vm.finalize_state(&new_final_header, old_final_state_roots)?;
 
                 if self.blob_expire_after > 0 {
                     let _ = self.db.read().await.update(|db| {
@@ -1213,25 +1202,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     events.push(event.into());
                     db.store_block_label(height, &hash, label)?;
 
-                    let state_root = db
-                        .block_header(&hash)?
-                        .map(|h| h.state_hash)
-                        .ok_or(anyhow!(
-                            "Cannot get header for hash {}",
-                            to_str(&hash)
-                        ))?;
-                    let finalized = Identifiers {
-                        block_hash: hash,
-                        state_root,
-                    };
+                    let finalized = db.block_header(&hash)?.ok_or(anyhow!(
+                        "Cannot get header for hash {}",
+                        to_str(&hash)
+                    ))?;
                     info!(
                         event = "block finalized",
                         src = "rolling_finality",
                         current_height,
                         height,
                         finalized_after,
-                        hash = to_str(&finalized.block_hash),
-                        state_root = to_str(&finalized.state_root),
+                        hash = to_str(&finalized.hash),
+                        state_root = to_str(&finalized.state_hash),
                     );
 
                     finalized_blocks.insert(height, finalized);
@@ -1254,7 +1236,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Implements the algorithm of full revert to any of supported targets.
     ///
     /// This incorporates both VM state revert and Ledger state revert.
-    pub async fn try_revert(&self, target: RevertTarget) -> Result<()> {
+    pub async fn try_revert(&self, target: RevertTarget<'_>) -> Result<()> {
         let curr_height = self.get_curr_height().await;
 
         let target_state_hash = match target {
@@ -1270,9 +1252,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 anyhow::Ok(state_hash)
             }
-            RevertTarget::Commit(state_hash) => {
+            RevertTarget::Commit(header) => {
                 let vm = self.vm.read().await;
-                let state_hash = vm.revert(state_hash)?;
+                let state_hash = vm.revert(header)?;
                 let is_final = vm.get_finalized_state_root()? == state_hash;
 
                 info!(
@@ -1608,11 +1590,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             ))
         })?;
 
-        let provisioners_list = self
-            .vm
-            .read()
-            .await
-            .get_provisioners(prev_header.state_hash)?;
+        let provisioners_list =
+            self.vm.read().await.get_provisioners(&prev_header)?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
@@ -1620,7 +1599,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .vm
             .read()
             .await
-            .get_changed_provisioners(prev_header.state_hash)?;
+            .get_changed_provisioners(&prev_header)?;
         provisioners_list.apply_changes(changed_provisioners);
 
         // Ensure header of the new block is valid according to prev_block

@@ -9,7 +9,7 @@ extern crate alloc;
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 
-use common::state::new_state;
+use common::state::{header_from_root, new_state};
 use criterion::measurement::WallTime;
 use criterion::{
     BenchmarkGroup, BenchmarkId, Criterion, criterion_group, criterion_main,
@@ -149,11 +149,12 @@ fn bench_accept(
                     let blk = Block::new(header, txs, vec![])
                         .expect("Creating a block should succeed");
 
-                    let (_, _, _, session) = rusk
+                    let (_, transition_result, _, session) = rusk
                         .execute_state_transition(prev_state, &blk, &[])
                         .expect("Executing state transition should succeed");
 
-                    rusk.commit_session(session)
+                    let header = header_from_root(transition_result.state_root);
+                    rusk.commit_session(session, &header)
                         .expect("Committing the session should succeed");
 
                     rusk.revert_to_base_root()

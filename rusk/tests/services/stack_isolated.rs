@@ -34,7 +34,7 @@ use tracing::info;
 use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
+use crate::common::state::{DEFAULT_MIN_GAS_LIMIT, header_from_root};
 use crate::common::wallet::test_wallet::Wallet;
 use crate::common::wallet::{
     TestStateClient, TestStore, test_wallet as wallet,
@@ -92,6 +92,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         CHAIN_ID,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,
@@ -165,9 +166,8 @@ pub async fn test_isolated() -> Result<(), Error> {
     .unwrap();
     let mut base_a: [u8; 32] = [0u8; 32];
     base_a.copy_from_slice(&base);
-    let mut lock = f.rusk.tip.write();
-    lock.current = base_a;
-    drop(lock);
+    let base_a = header_from_root(base_a);
+    f.rusk.set_current_header(&base_a);
 
     use rand::SeedableRng;
     let mut rng = rand::rngs::StdRng::seed_from_u64(64);
@@ -183,10 +183,10 @@ pub async fn test_isolated() -> Result<(), Error> {
     // inject rusk session with the isolated contracts and test accounts
     //
 
-    f.rusk.tip.write().current = base_a;
+    f.rusk.set_current_header(&base_a);
     let mut session = f
         .rusk
-        .new_block_session(1, f.rusk.tip.read().current)
+        .new_block_session(1, base_a.state_hash)
         .expect("creating a session should be possible");
 
     // deploy alice
@@ -271,7 +271,8 @@ pub async fn test_isolated() -> Result<(), Error> {
         .expect("Adding balance should succeed");
 
     // commit the session
-    f.rusk.commit_session(session)?;
+    let header = header_from_root(session.root());
+    f.rusk.commit_session(session, &header)?;
 
     //
     // generate the transaction
@@ -337,7 +338,7 @@ pub async fn test_isolated() -> Result<(), Error> {
         slashes: vec![],
         cert_voters: voters,
         max_txs_bytes: 5000,
-        prev_state_root: f.rusk.tip.read().current,
+        prev_state_root: f.rusk.state_root(),
     };
 
     let txs = vec![

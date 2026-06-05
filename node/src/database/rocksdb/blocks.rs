@@ -169,14 +169,21 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
         Ok(faults)
     }
 
-    fn latest_block(&self) -> Result<LightBlock> {
-        let tip_hash = self
-            .op_read(MD_HASH_KEY)?
-            .ok_or(error::RocksDbError::TipMetadataMissing)?;
+    fn latest_block_opt(&self) -> Result<Option<LightBlock>> {
+        let Some(tip_hash) = self.op_read(MD_HASH_KEY)? else {
+            return Ok(None);
+        };
 
         let tip_block = self
             .light_block(&tip_hash)?
             .ok_or(error::RocksDbError::TipBlockMissing)?;
+        Ok(Some(tip_block))
+    }
+
+    fn latest_block(&self) -> Result<LightBlock> {
+        let tip_block = self
+            .latest_block_opt()?
+            .ok_or(error::RocksDbError::TipMetadataMissing)?;
         Ok(tip_block)
     }
 

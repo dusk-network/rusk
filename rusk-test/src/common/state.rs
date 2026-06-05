@@ -35,6 +35,13 @@ use tracing::info;
 pub const LOCAL_TEST_CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 
+pub fn header_from_root(state_hash: [u8; 32]) -> Header {
+    Header {
+        state_hash,
+        ..Default::default()
+    }
+}
+
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(
     dir: P,
@@ -80,6 +87,7 @@ where
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         chain_id,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,

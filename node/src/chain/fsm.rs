@@ -284,7 +284,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 );
                 let mut acc = self.acc.write().await;
 
-                let prev_local_state_root = acc.db.read().await.view(|t| {
+                let prev_local_header = acc.db.read().await.view(|t| {
                     let local_blk = t
                         .block_header(&local_hash_at_fork)?
                         .expect("local hash should exist");
@@ -293,11 +293,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         .block_header(&local_blk.prev_block_hash)?
                         .expect("prev block hash should exist");
 
-                    anyhow::Ok(prev_blk.state_hash)
+                    anyhow::Ok(prev_blk)
                 })?;
 
                 match acc
-                    .try_revert(RevertTarget::Commit(prev_local_state_root))
+                    .try_revert(RevertTarget::Commit(&prev_local_header))
                     .await
                 {
                     Ok(_) => {

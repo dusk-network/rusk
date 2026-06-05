@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::io;
 use std::path::PathBuf;
 
 use kadcast::config::Config as KadcastConfig;
@@ -219,8 +220,29 @@ impl RuskNodeBuilder {
         let blob_expire_after =
             self.blob_expire_after.unwrap_or(DEFAULT_BLOB_EXPIRE_AFTER);
 
+        let db = rocksdb::Backend::create_or_open(
+            self.db_path.clone(),
+            self.db_options.clone(),
+        );
+
         let rusk = Rusk::new(
             self.state_dir,
+            |state_root| {
+                let header = node::chain::find_block_header_by_state_root(
+                    &db, state_root,
+                )
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(
+                        state_root,
+                        self.genesis_timestamp,
+                    )
+                    .header()
+                    .clone()
+                });
+
+                Ok(header)
+            },
             self.kadcast.kadcast_id.unwrap_or_default(),
             vm_config,
             min_gas_limit,
@@ -234,10 +256,6 @@ impl RuskNodeBuilder {
         info!("Rusk VM loaded");
 
         let node = {
-            let db = rocksdb::Backend::create_or_open(
-                self.db_path.clone(),
-                self.db_options.clone(),
-            );
             let net = Kadcast::new(self.kadcast)?;
             let future_nonce_retry_queue =
                 node::mempool::FutureNonceRetryHandle::new(
@@ -312,8 +330,8 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         {
             if archive.fetch_active_accounts().await? == 0 {
-                let base_commit = None;
-                let accounts = rusk.moonlight_accounts(base_commit);
+                let base_header = None;
+                let accounts = rusk.moonlight_accounts(base_header);
 
                 let accounts = accounts
                     .map_err(|e| {
@@ -329,6 +347,42 @@ impl RuskNodeBuilder {
         }
 
         node.inner().spawn_all(service_list).await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use node::database::DB as _;
+    use tempfile::tempdir;
+
+    use super::*;
+
+    // Covers first-start initialization where no chain metadata exists yet and
+    // the builder decides to use the genesis header fallback.
+    #[test]
+    fn empty_db_allows_genesis_header_fallback() -> crate::Result<()> {
+        let dir = tempdir()?;
+        let db = rocksdb::Backend::create_or_open(
+            dir.path(),
+            DatabaseOptions::default(),
+        );
+
+        let state_root = [42; 32];
+        let timestamp = 1234;
+        let recovered =
+            node::chain::find_block_header_by_state_root(&db, state_root)
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(state_root, timestamp)
+                        .header()
+                        .clone()
+                });
+
+        assert_eq!(recovered.height, 0);
+        assert_eq!(recovered.timestamp, timestamp);
+        assert_eq!(recovered.state_hash, state_root);
 
         Ok(())
     }

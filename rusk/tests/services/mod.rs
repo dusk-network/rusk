@@ -22,6 +22,7 @@ pub mod moonlight_stake;
 pub mod multi_transfer;
 pub mod owner_calls;
 pub mod phoenix_stake;
+pub mod query_block_height;
 pub mod sequential_nonce;
 pub mod shade_module;
 pub mod transfer;

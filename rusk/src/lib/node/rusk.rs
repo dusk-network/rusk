@@ -36,7 +36,7 @@ use dusk_vm::{
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{
-    Block, LedgerTransaction, Slash, SpentTransaction, to_str,
+    Block, Header, LedgerTransaction, Slash, SpentTransaction, to_str,
 };
 use parking_lot::RwLock;
 use rkyv::Deserialize;
@@ -59,8 +59,9 @@ fn boreas_active(vm_config: &RuskVmConfig, block_height: u64) -> bool {
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
-    pub fn new<P: AsRef<Path>>(
+    pub fn new<P, F>(
         dir: P,
+        initial_header: F,
         chain_id: u8,
         vm_config: RuskVmConfig,
         min_gas_limit: u64,
@@ -68,7 +69,11 @@ impl Rusk {
         event_sender: broadcast::Sender<RuesEvent>,
         #[cfg(feature = "archive")] archive: Archive,
         driver_store: DriverStore,
-    ) -> Result<Self> {
+    ) -> Result<Self>
+    where
+        P: AsRef<Path>,
+        F: FnOnce([u8; 32]) -> Result<Header>,
+    {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
 
@@ -86,6 +91,7 @@ impl Rusk {
         }
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
+        let initial_tip = initial_header(base_commit)?;
 
         let mut vm = VM::new(dir)?;
         for (feat, activation) in vm_config.features() {
@@ -98,8 +104,8 @@ impl Rusk {
         let vm = Arc::new(vm);
 
         let tip = Arc::new(RwLock::new(RuskTip {
-            current: base_commit,
-            base: base_commit,
+            current: initial_tip.clone(),
+            base: initial_tip,
         }));
 
         Ok(Self {
@@ -418,40 +424,42 @@ impl Rusk {
 
     pub fn finalize_state(
         &self,
-        commit: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.set_base_and_merge(commit, to_merge)?;
+        self.set_base_and_merge(header, to_merge)?;
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
-        fs::write(commit_id_path, commit)?;
+        fs::write(commit_id_path, header.state_hash)?;
         Ok(())
     }
 
-    pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
+    pub fn revert(&self, header: &Header) -> Result<[u8; 32]> {
         let mut tip = self.tip.write();
+        let state_hash = header.state_hash;
 
         let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
             return Err(RuskError::CommitNotFound(state_hash));
         }
 
-        tip.current = state_hash;
-        Ok(tip.current)
+        tip.current = header.clone();
+        Ok(tip.current.state_hash)
     }
 
     pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
-        self.revert(self.base_root())
+        let header = self.tip.read().base.clone();
+        self.revert(&header)
     }
 
     /// Get the base root.
     pub fn base_root(&self) -> [u8; 32] {
-        self.tip.read().base
+        self.tip.read().base.state_hash
     }
 
     /// Get the current state root.
     pub fn state_root(&self) -> [u8; 32] {
-        self.tip.read().current
+        self.tip.read().current.state_hash
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -466,10 +474,10 @@ impl Rusk {
     /// Returns the stakes.
     pub fn provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<impl Iterator<Item = (StakeKeys, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
-        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
+        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_header)?;
         Ok(receiver.into_iter().map(|bytes| {
             let root = rkyv::check_archived_root::<(StakeKeys, StakeData)>(
                 &bytes,
@@ -484,7 +492,7 @@ impl Rusk {
     /// Return the active moonlight accounts
     pub fn moonlight_accounts(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<impl Iterator<Item = (AccountData, BlsPublicKey)>> {
         let (sender, receiver) = mpsc::channel();
         let sync_range = (0u64, u64::MAX);
@@ -493,7 +501,7 @@ impl Rusk {
             "sync_accounts",
             &sync_range,
             sender,
-            base_commit,
+            base_header,
         )?;
 
         Ok(receiver.into_iter().map(|bytes| {
@@ -534,13 +542,13 @@ impl Rusk {
     /// Fetches the previous state data for stake changes in the contract.
     ///
     /// Communicates with the stake contract to obtain information about the
-    /// state data before the last changes. Optionally takes a base commit
-    /// hash to query changes since a specific point in time.
+    /// state data before the last changes. Optionally takes a base header to
+    /// query changes since a specific point in time.
     ///
     /// # Arguments
     ///
-    /// - `base_commit`: An optional base commit hash indicating the starting
-    ///   point for querying changes.
+    /// - `base_header`: An optional base header indicating the starting point
+    ///   for querying changes.
     ///
     /// # Returns
     ///
@@ -549,7 +557,7 @@ impl Rusk {
     /// state data before the last changes in the stake contract.
     pub fn last_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
@@ -557,7 +565,7 @@ impl Rusk {
             "prev_state_changes",
             &(),
             sender,
-            base_commit,
+            base_header,
         )?;
         Ok(receiver.into_iter().map(|bytes| {
             let root =
@@ -595,16 +603,25 @@ impl Rusk {
         Ok(session)
     }
 
-    /// Opens a session for query, setting a block height of zero since this
-    /// doesn't affect the result.
+    /// Opens a session for query at the provided header height.
+    ///
+    /// If no header is provided, the current tip header is used.
     pub(crate) fn query_session(
         &self,
-        commit: Option<[u8; 32]>,
+        header: Option<&Header>,
     ) -> Result<Session> {
-        self._session(0, commit)
+        let (block_height, state_hash) = match header {
+            Some(header) => (header.height, header.state_hash),
+            None => {
+                let tip = self.tip.read();
+                (tip.current.height, tip.current.state_hash)
+            }
+        };
+
+        self._session(block_height, Some(state_hash))
     }
 
-    /// Opens a new session with the specified block height and commit hash.
+    /// Opens a new session with the specified block height and state root.
     ///
     /// # Warning
     /// This is a low-level function intended for internal use only.
@@ -618,8 +635,8 @@ impl Rusk {
     /// # Parameters
     /// - `block_height`: The height of the block for which the session is
     ///   created.
-    /// - `commit`: The optional commit hash. If not provided, the current tip
-    ///   is used.
+    /// - `commit`: The optional state root. If not provided, the current tip
+    ///   header state root is used.
     ///
     /// # Returns
     /// - A `Result` containing a `Session` if successful, or an error if the
@@ -635,7 +652,7 @@ impl Rusk {
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
-            tip.current
+            tip.current.state_hash
         });
 
         let session = self.vm.session(commit, self.chain_id, block_height)?;
@@ -643,24 +660,36 @@ impl Rusk {
         Ok(session)
     }
 
-    pub fn set_current_commit(&self, commit: [u8; 32]) {
+    pub fn set_current_header(&self, header: &Header) {
         let mut tip = self.tip.write();
-        tip.current = commit;
+        tip.current = header.clone();
     }
 
-    pub fn commit_session(&self, session: Session) -> Result<()> {
+    pub fn commit_session(
+        &self,
+        session: Session,
+        header: &Header,
+    ) -> Result<()> {
         let commit = session.commit()?;
-        self.set_current_commit(commit);
-
+        if commit != header.state_hash {
+            return Err(io::Error::other(format!(
+                "Committed state root {} does not match header state root {}",
+                to_str(&commit),
+                to_str(&header.state_hash)
+            ))
+            .into());
+        }
+        self.set_current_header(header);
         Ok(())
     }
 
     pub(crate) fn set_base_and_merge(
         &self,
-        base: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.tip.write().base = base;
+        self.tip.write().base = header.clone();
+        let base = header.state_hash;
         for d in to_merge {
             if d == base {
                 // Don't finalize the new tip, otherwise it will not be
@@ -713,7 +742,7 @@ impl Rusk {
             ?slashes
         );
 
-        // Start a VM session on top of prev_state
+        // Start a VM session on top of prev_state.
         let mut session =
             self.new_block_session(blk.header().height, prev_state)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
@@ -1076,7 +1105,9 @@ mod tests {
         TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
         TransactionFormat,
     };
-    use dusk_rusk_test::common::state::DEFAULT_MIN_GAS_LIMIT;
+    use dusk_rusk_test::common::state::{
+        DEFAULT_MIN_GAS_LIMIT, header_from_root,
+    };
     use rand::SeedableRng;
     use rusk_recovery_tools::state::restore_state;
     use tempfile::tempdir;
@@ -1128,9 +1159,9 @@ mod tests {
             RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
         vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
         vm_config.with_feature(FEATURE_HARDFORK_AEGIS, u64::MAX);
-
         Rusk::new(
             dir,
+            |state_root| Ok(header_from_root(state_root)),
             HISTORICAL_CHAIN_ID,
             vm_config,
             DEFAULT_MIN_GAS_LIMIT,
@@ -1161,7 +1192,7 @@ mod tests {
         .expect("historical base root should decode");
         let mut base_a = [0u8; 32];
         base_a.copy_from_slice(&base);
-        rusk.tip.write().current = base_a;
+        rusk.set_current_header(&header_from_root(base_a));
 
         let mut rng = rand::rngs::StdRng::seed_from_u64(77);
         let sender_sk = bls::SecretKey::random(&mut rng);
@@ -1170,7 +1201,7 @@ mod tests {
         let receiver_pk = bls::PublicKey::from(&receiver_sk);
 
         let mut session = rusk
-            .new_block_session(1, rusk.tip.read().current)
+            .new_block_session(1, base_a)
             .expect("historical session should open");
         session
             .call::<(_, u64), ()>(
@@ -1180,7 +1211,8 @@ mod tests {
                 HISTORICAL_GAS_LIMIT,
             )
             .expect("sender balance should be injected");
-        rusk.commit_session(session)
+        let header = header_from_root(session.root());
+        rusk.commit_session(session, &header)
             .expect("historical funding session should commit");
 
         let protocol_tx = moonlight(
@@ -1213,7 +1245,7 @@ mod tests {
             slashes: vec![],
             cert_voters: voters,
             max_txs_bytes: 5_000,
-            prev_state_root: rusk.tip.read().current,
+            prev_state_root: rusk.state_root(),
         };
 
         let (spent, discarded, _) = rusk

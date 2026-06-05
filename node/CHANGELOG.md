@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add a bounded pre-admission retry queue for non-consecutive Moonlight transactions
+- Export genesis block generation through `node::chain::genesis_block`.
+- Add `node::chain::find_block_header_by_state_root` for recovering stored
+  headers from persisted state roots.
+- Add `Ledger::latest_block_opt` to distinguish empty tip metadata from
+  missing tip blocks.
 
 ### Fixed
 
@@ -35,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extract transaction admission checks from the mempool service and validate
   canonical transactions without re-encoding ledger envelopes on the hot path.
 - Accept Aegis and Boreas envelopes during live mempool admission and normalize them to the active ingress format
+- Change `VMExecution` state movement, finalization, provisioner lookup, and
+  revert APIs to use block headers instead of raw state roots.
 
 ## [1.6.0] - 2026-02-27
 
