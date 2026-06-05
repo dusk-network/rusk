@@ -27,7 +27,7 @@ use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 pub use genesis::generate_block as genesis_block;
 pub use header_validation::verify_att;
 use node_data::events::Event;
-use node_data::ledger::{BlockWithLabel, Label, to_str};
+use node_data::ledger::{BlockWithLabel, Header, Label, to_str};
 use node_data::message::payload::RatificationResult;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use tokio::sync::RwLock;
@@ -53,6 +53,49 @@ const TOPICS: &[u8] = &[
 ];
 
 const HEARTBEAT_SEC: Duration = Duration::from_secs(3);
+
+/// Finds the stored block header matching `state_root`.
+///
+/// Returns `Ok(None)` only when the chain DB has no tip metadata stored yet,
+/// which means the consumer must decide how to initialize the header. If tip
+/// metadata exists, the matching header must be present and missing data is
+/// reported as an error.
+pub fn find_block_header_by_state_root<DB>(
+    db: &DB,
+    state_root: [u8; 32],
+) -> Result<Option<Header>>
+where
+    DB: database::DB,
+{
+    db.view(|db| {
+        let Some(latest) = db.latest_block_opt()? else {
+            return Ok(None);
+        };
+
+        let mut header = latest.header;
+
+        loop {
+            if header.state_hash == state_root {
+                return Ok(Some(header));
+            }
+
+            if header.height == 0 {
+                return Err(anyhow::anyhow!(
+                    "Cannot find block header for state root {}",
+                    to_str(&state_root)
+                ));
+            }
+
+            let prev_hash = header.prev_block_hash;
+            header = db.block_header(&prev_hash)?.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Cannot get header for hash {}",
+                    to_str(&prev_hash)
+                )
+            })?;
+        }
+    })
+}
 
 pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Inbound wire messages queue
