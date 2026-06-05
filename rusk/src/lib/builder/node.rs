@@ -12,8 +12,7 @@ use kadcast::config::Config as KadcastConfig;
 #[cfg(feature = "archive")]
 use node::archive::conf::Params as ArchiveParam;
 use node::chain::ChainSrv;
-use node::database::rocksdb::MD_HASH_KEY;
-use node::database::{DB, DatabaseOptions, Ledger, Metadata, rocksdb};
+use node::database::{DB, DatabaseOptions, rocksdb};
 use node::databroker::DataBrokerSrv;
 use node::databroker::conf::Params as BrokerParam;
 use node::mempool::MempoolSrv;
@@ -21,7 +20,6 @@ use node::mempool::conf::Params as MempoolParam;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
-use node_data::ledger::{Header, to_str};
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]
@@ -33,61 +31,6 @@ use crate::node::{
     Services, WellKnownVmConfig,
 };
 use crate::{Rusk, VERSION};
-
-/// Finds the stored block header matching `state_root`.
-///
-/// Returns `Ok(None)` only when the chain DB has no tip metadata stored yet,
-/// which means the consumer must decide how to initialize the header. If tip
-/// metadata exists, the matching header must be present and missing data is
-/// reported as an error.
-fn find_block_header_by_state_root<DB>(
-    db: &DB,
-    state_root: [u8; 32],
-) -> crate::Result<Option<Header>>
-where
-    DB: node::database::DB,
-{
-    db.view(|db| {
-        if db
-            .op_read(MD_HASH_KEY)
-            .map_err(|err| io::Error::other(format!("{err}")))?
-            .is_none()
-        {
-            return Ok(None);
-        }
-
-        let latest = db
-            .latest_block()
-            .map_err(|err| io::Error::other(format!("{err}")))?;
-
-        let mut height = latest.header.height;
-        loop {
-            let block = db
-                .block_by_height(height)
-                .map_err(|err| io::Error::other(format!("{err}")))?
-                .ok_or_else(|| {
-                    io::Error::other(format!(
-                        "Cannot load block at height {height}"
-                    ))
-                })?;
-            let header = block.header();
-
-            if header.state_hash == state_root {
-                return Ok(Some(header.clone()));
-            }
-
-            if height == 0 {
-                return Err(io::Error::other(format!(
-                    "Cannot find block header for state root {}",
-                    to_str(&state_root)
-                ))
-                .into());
-            }
-
-            height -= 1;
-        }
-    })
-}
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
@@ -285,15 +228,18 @@ impl RuskNodeBuilder {
         let rusk = Rusk::new(
             self.state_dir,
             |state_root| {
-                let header = find_block_header_by_state_root(&db, state_root)?
-                    .unwrap_or_else(|| {
-                        node::chain::genesis_block(
-                            state_root,
-                            self.genesis_timestamp,
-                        )
-                        .header()
-                        .clone()
-                    });
+                let header = node::chain::find_block_header_by_state_root(
+                    &db, state_root,
+                )
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(
+                        state_root,
+                        self.genesis_timestamp,
+                    )
+                    .header()
+                    .clone()
+                });
 
                 Ok(header)
             },
@@ -409,7 +355,7 @@ impl RuskNodeBuilder {
 #[cfg(test)]
 mod tests {
     use node::database::{DB as _, Ledger as _};
-    use node_data::ledger::Label;
+    use node_data::ledger::{Header, Label};
     use tempfile::tempdir;
 
     use super::*;
@@ -454,9 +400,12 @@ mod tests {
         store_header(&db, &block_one)?;
         store_header(&db, &tip)?;
 
-        let recovered =
-            find_block_header_by_state_root(&db, block_one.state_hash)?
-                .expect("header should be found");
+        let recovered = node::chain::find_block_header_by_state_root(
+            &db,
+            block_one.state_hash,
+        )
+        .map_err(|err| io::Error::other(format!("{err}")))?
+        .expect("header should be found");
 
         assert_eq!(recovered.height, block_one.height);
         assert_eq!(recovered.hash, block_one.hash);
@@ -482,7 +431,8 @@ mod tests {
         store_header(&db, &genesis)?;
         store_header(&db, &tip)?;
 
-        let err = find_block_header_by_state_root(&db, [99; 32])
+        let err = node::chain::find_block_header_by_state_root(&db, [99; 32])
+            .map_err(|err| io::Error::other(format!("{err}")))
             .expect_err("missing state root should be an error");
 
         assert!(
@@ -505,12 +455,14 @@ mod tests {
 
         let state_root = [42; 32];
         let timestamp = 1234;
-        let recovered = find_block_header_by_state_root(&db, state_root)?
-            .unwrap_or_else(|| {
-                node::chain::genesis_block(state_root, timestamp)
-                    .header()
-                    .clone()
-            });
+        let recovered =
+            node::chain::find_block_header_by_state_root(&db, state_root)
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(state_root, timestamp)
+                        .header()
+                        .clone()
+                });
 
         assert_eq!(recovered.height, 0);
         assert_eq!(recovered.timestamp, timestamp);
