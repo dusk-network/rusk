@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Decouple TUI form submission state from the CLI command enum with a dedicated TUI request model.
 - Share CLI/TUI balance and operation result models.
 - Treat `0.0.0.0` and `::` HTTP endpoints as insecure unless `--allow-insecure` is set
 - Reject endpoint URLs with unsupported schemes instead of accepting non-HTTP(S) values during settings validation

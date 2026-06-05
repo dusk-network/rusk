@@ -16,7 +16,7 @@ use rusk_wallet::gas::{
 use rusk_wallet::{Address, MAX_FUNCTION_NAME_SIZE, Profile};
 
 use self::field::FormField;
-use crate::Command;
+use super::request::TuiCommand;
 
 const NO_ADDITIONAL_PROFILE_ERROR: &str = "No additional profile created";
 const STAKE_OWNER_LOCKED_ERROR: &str =
@@ -43,7 +43,7 @@ pub(crate) enum TransferModel {
     Unknown,
 }
 
-/// A form with multiple input fields that can build a Command.
+/// A form with multiple input fields that can build a TUI request.
 #[derive(Debug, Clone)]
 pub struct FormState {
     pub id: FormId,
@@ -383,9 +383,9 @@ impl FormState {
         false
     }
 
-    /// Try to build a Command from the current form values.
+    /// Try to build a TUI request from the current form values.
     /// Returns None if validation fails (sets self.error).
-    pub fn try_build_command(&mut self) -> Option<Command> {
+    pub fn try_build_command(&mut self) -> Option<TuiCommand> {
         self.error = None;
         match self.id {
             FormId::Transfer => self.build_transfer(),
@@ -474,7 +474,7 @@ impl FormState {
         }
     }
 
-    fn build_transfer(&mut self) -> Option<Command> {
+    fn build_transfer(&mut self) -> Option<TuiCommand> {
         let rcvr = match self.parse_address("recipient") {
             Some(a) => a,
             None => {
@@ -494,9 +494,9 @@ impl FormState {
             .map(|s| s.to_string())
             .filter(|s| !s.trim().is_empty());
 
-        Some(Command::Transfer {
-            sender: Some(sender),
-            rcvr,
+        Some(TuiCommand::Transfer {
+            sender: Box::new(sender),
+            rcvr: Box::new(rcvr),
             amt,
             gas_limit,
             gas_price,
@@ -504,81 +504,81 @@ impl FormState {
         })
     }
 
-    fn build_stake(&mut self) -> Option<Command> {
-        let address = Some(self.model_address());
+    fn build_stake(&mut self) -> Option<TuiCommand> {
+        let address = self.model_address();
 
         let amt = self.require_dusk("amount", "Invalid amount")?;
 
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
-        let owner = Some(self.stake_owner_address());
+        let owner = self.stake_owner_address();
 
-        Some(Command::Stake {
-            address,
-            owner,
+        Some(TuiCommand::Stake {
+            address: Box::new(address),
+            owner: Box::new(owner),
             amt,
             gas_limit,
             gas_price,
         })
     }
 
-    fn build_unstake(&mut self) -> Option<Command> {
-        let address = Some(self.model_address());
+    fn build_unstake(&mut self) -> Option<TuiCommand> {
+        let address = self.model_address();
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
-        Some(Command::Unstake {
-            address,
+        Some(TuiCommand::Unstake {
+            address: Box::new(address),
             gas_limit,
             gas_price,
         })
     }
 
-    fn build_claim_rewards(&mut self) -> Option<Command> {
-        let address = Some(self.model_address());
+    fn build_claim_rewards(&mut self) -> Option<TuiCommand> {
+        let address = self.model_address();
         let reward =
             self.parse_optional_dusk("amount", "Invalid claim amount")?;
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
-        Some(Command::ClaimRewards {
-            address,
+        Some(TuiCommand::ClaimRewards {
+            address: Box::new(address),
             reward,
             gas_limit,
             gas_price,
         })
     }
 
-    fn build_shield(&mut self) -> Option<Command> {
+    fn build_shield(&mut self) -> Option<TuiCommand> {
         let amt = self.require_dusk("amount", "Invalid amount")?;
 
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
-        Some(Command::Shield {
-            profile_idx: Some(self.profile_idx),
+        Some(TuiCommand::Shield {
+            profile_idx: self.profile_idx,
             amt,
             gas_limit,
             gas_price,
         })
     }
 
-    fn build_unshield(&mut self) -> Option<Command> {
+    fn build_unshield(&mut self) -> Option<TuiCommand> {
         let amt = self.require_dusk("amount", "Invalid amount")?;
 
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_WALLET_ACTION, DEFAULT_PRICE);
 
-        Some(Command::Unshield {
-            profile_idx: Some(self.profile_idx),
+        Some(TuiCommand::Unshield {
+            profile_idx: self.profile_idx,
             amt,
             gas_limit,
             gas_price,
         })
     }
 
-    fn build_contract_deploy(&mut self) -> Option<Command> {
-        let address = Some(self.model_address());
+    fn build_contract_deploy(&mut self) -> Option<TuiCommand> {
+        let address = self.model_address();
 
         let code_path = self
             .field_value("code")
@@ -602,8 +602,8 @@ impl FormState {
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_DEPLOYMENT, MIN_PRICE_DEPLOYMENT);
 
-        Some(Command::ContractDeploy {
-            address,
+        Some(TuiCommand::ContractDeploy {
+            address: Box::new(address),
             code: code_path,
             init_args,
             deploy_nonce,
@@ -612,8 +612,8 @@ impl FormState {
         })
     }
 
-    fn build_contract_call(&mut self) -> Option<Command> {
-        let address = Some(self.model_address());
+    fn build_contract_call(&mut self) -> Option<TuiCommand> {
+        let address = self.model_address();
 
         let contract_id = match self.parse_hex("contract_id") {
             Some(id) if id.len() == 32 => id,
@@ -639,8 +639,8 @@ impl FormState {
         let (gas_limit, gas_price) =
             self.parse_gas(DEFAULT_LIMIT_CALL, DEFAULT_PRICE);
 
-        Some(Command::ContractCall {
-            address,
+        Some(TuiCommand::ContractCall {
+            address: Box::new(address),
             contract_id,
             fn_name,
             fn_args,
@@ -650,7 +650,7 @@ impl FormState {
         })
     }
 
-    fn build_export(&mut self) -> Option<Command> {
+    fn build_export(&mut self) -> Option<TuiCommand> {
         let dir = self
             .field_value("directory")
             .map(PathBuf::from)
@@ -660,11 +660,9 @@ impl FormState {
             return None;
         }
 
-        Some(Command::Export {
-            profile_idx: Some(self.profile_idx),
+        Some(TuiCommand::Export {
+            profile_idx: self.profile_idx,
             dir,
-            name: None,
-            export_pwd: None,
         })
     }
 
@@ -1025,6 +1023,24 @@ mod tests {
     }
 
     #[test]
+    fn transfer_build_preserves_sender_and_recipient_slots() {
+        let sender_profile = test_profile_at(0);
+        let recipient_profile = test_profile_at(1);
+        let recipient = Address::Public(recipient_profile.public_addr);
+        let mut form = transfer_form();
+        set_recipient(&mut form, &recipient);
+        set_amount(&mut form, "7");
+
+        let command = form.try_build_command().expect("valid transfer command");
+        let TuiCommand::Transfer { sender, rcvr, .. } = command else {
+            panic!("expected transfer command");
+        };
+
+        assert_eq!(*sender, Address::Public(sender_profile.public_addr));
+        assert_eq!(*rcvr, recipient);
+    }
+
+    #[test]
     fn stake_amount_max_tracks_selected_transaction_model() {
         let mut form = stake_form();
 
@@ -1048,12 +1064,12 @@ mod tests {
         set_amount(&mut form, "1");
 
         let command = form.try_build_command().expect("valid stake command");
-        let Command::Stake { address, owner, .. } = command else {
+        let TuiCommand::Stake { address, owner, .. } = command else {
             panic!("expected stake command");
         };
 
-        assert_eq!(address, Some(Address::Shielded(profiles[0].shielded_addr)));
-        assert_eq!(owner, Some(Address::Public(profiles[1].public_addr)));
+        assert_eq!(*address, Address::Shielded(profiles[0].shielded_addr));
+        assert_eq!(*owner, Address::Public(profiles[1].public_addr));
     }
 
     #[test]
@@ -1082,10 +1098,10 @@ mod tests {
         set_amount(&mut form, "1");
 
         let command = form.try_build_command().expect("valid stake command");
-        let Command::Stake { owner, .. } = command else {
+        let TuiCommand::Stake { owner, .. } = command else {
             panic!("expected stake command");
         };
 
-        assert_eq!(owner, Some(locked_owner));
+        assert_eq!(*owner, locked_owner);
     }
 }
