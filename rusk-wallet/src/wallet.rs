@@ -35,7 +35,6 @@ use wallet_core::prelude::keys::{
 use wallet_core::{BalanceInfo, phoenix_balance};
 use zeroize::Zeroize;
 
-use crate::Error;
 use crate::clients::State;
 use crate::crypto::encrypt;
 use crate::currency::Dusk;
@@ -46,6 +45,7 @@ use crate::dat::{
 use crate::gas::MempoolGasPrices;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
+use crate::{Error, WalletStatus};
 
 /// The interface to the Dusk Network
 ///
@@ -277,7 +277,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         rusk_addr: S,
         prov_addr: S,
         archiver_addr: S,
-        status: fn(&str),
+        status: fn(WalletStatus),
     ) -> Result<(), Error> {
         // attempt connection
         let http_state = RuesHttpClient::new(rusk_addr)?;
@@ -297,24 +297,27 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         );
 
         match (state_status, prover_status, archiver_status) {
-            (Ok(Err(e)), _, _) => status(&format!(
+            (Ok(Err(e)), _, _) => status(WalletStatus::Warning(format!(
                 "Connection to Rusk failed, some operations won't be available: {e}"
+            ))),
+            (Err(_), _, _) => status(WalletStatus::Warning(
+                "Connection to Rusk timed out, some operations won't be available"
+                    .into(),
             )),
-            (Err(_), _, _) => status(
-                "Connection to Rusk timed out, some operations won't be available",
-            ),
-            (_, Ok(Err(e)), _) => status(&format!(
+            (_, Ok(Err(e)), _) => status(WalletStatus::Warning(format!(
                 "Connection to Prover failed, some operations won't be available: {e}"
+            ))),
+            (_, Err(_), _) => status(WalletStatus::Warning(
+                "Connection to Prover timed out, some operations won't be available"
+                    .into(),
             )),
-            (_, Err(_), _) => status(
-                "Connection to Prover timed out, some operations won't be available",
-            ),
-            (_, _, Ok(Err(e))) => status(&format!(
+            (_, _, Ok(Err(e))) => status(WalletStatus::Warning(format!(
                 "Connection to Archiver failed, some operations won't be available: {e}"
+            ))),
+            (_, _, Err(_)) => status(WalletStatus::Warning(
+                "Connection to Archiver timed out, some operations won't be available"
+                    .into(),
             )),
-            (_, _, Err(_)) => status(
-                "Connection to Archiver timed out, some operations won't be available",
-            ),
             _ => {}
         }
 

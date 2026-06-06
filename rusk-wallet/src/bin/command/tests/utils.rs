@@ -122,7 +122,9 @@ async fn faucet_wallet()
         let wallet =
             Command::run_restore_from_seed(&wallet_path, &prompter).unwrap();
         let settings = wallet_settings(&wallet_dir);
-        let wallet = connect(wallet, &settings, status::headless).await.unwrap();
+        let wallet = connect(wallet, &settings, status::wallet_headless)
+            .await
+            .unwrap();
         Ok(Mutex::new((wallet, settings)))
     }).await
 }
@@ -140,7 +142,9 @@ pub async fn create_wallet() -> anyhow::Result<(Wallet<WalletFile>, Settings)> {
     .unwrap();
     let settings = wallet_settings(&wallet_dir);
     Ok((
-        connect(wallet, &settings, status::headless).await.unwrap(),
+        connect(wallet, &settings, status::wallet_headless)
+            .await
+            .unwrap(),
         settings,
     ))
 }
@@ -163,7 +167,7 @@ pub async fn rcv_moonlight_from_faucet(
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     gql.wait_for(&id).await.unwrap();
@@ -236,7 +240,7 @@ pub async fn rcv_phoenix_from_faucet(
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     gql.wait_for(&id).await.unwrap();

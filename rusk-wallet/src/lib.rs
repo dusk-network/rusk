@@ -21,6 +21,7 @@ mod crypto;
 mod error;
 mod gql;
 mod rues;
+mod status;
 mod store;
 mod wallet;
 
@@ -35,6 +36,7 @@ pub use error::{
 };
 pub use gql::{BlockData, BlockTransaction, GraphQL};
 pub use rues::HttpClient as RuesHttpClient;
+pub use status::{WalletStatus, WalletSyncStatus};
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
