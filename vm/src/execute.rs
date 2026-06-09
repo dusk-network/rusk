@@ -8,7 +8,7 @@ mod config;
 pub mod feature;
 
 pub use config::Config;
-use dusk_core::abi::{ContractError, Metadata};
+use dusk_core::abi::{ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::{ContractBytecode, gen_contract_id};
 use dusk_core::transfer::withdraw::{
@@ -217,7 +217,7 @@ pub fn execute(
 }
 
 fn check_phoenix_disabled_call(
-    callee: &dusk_core::abi::ContractId,
+    callee: &ContractId,
     fn_name: &str,
     fn_args: &[u8],
 ) -> Result<(), String> {
@@ -227,6 +227,10 @@ fn check_phoenix_disabled_call(
         return Ok(());
     }
     if fn_name == "convert" {
+        // `convert` is the transfer contract's Phoenix/Moonlight bridge
+        // entrypoint. Phoenix-paid transactions are discarded before execution,
+        // so any `convert` that reaches this hook is Moonlight-paid and must
+        // still be rejected when Phoenix is disabled.
         return Err(PHOENIX_DISABLED_ERROR.into());
     }
     let withdraw = deserialize_withdraw(fn_args)?;
@@ -276,7 +280,7 @@ fn clear_session(session: &mut Session, config: &Config) {
 /// cannot be deserialized (fail-closed). Returns `Ok(())` for non-withdrawal
 /// calls, Moonlight tokens, or matching counts.
 fn check_withdrawal_nullifiers(
-    callee: &dusk_core::abi::ContractId,
+    callee: &ContractId,
     fn_name: &str,
     fn_args: &[u8],
     tx_nullifier_count: usize,
