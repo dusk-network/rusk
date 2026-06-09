@@ -142,6 +142,13 @@ pub fn execute(
 
     // Register one combined call hook for VM execution invariants. Piecrust
     // supports one active hook, so all hook-based checks must be chained here.
+    //
+    // The withdrawal-nullifier check enforces that Phoenix withdrawal replay
+    // tokens carry exactly the same number of nullifiers as the encapsulating
+    // transaction. This is a defense-in-depth measure against audit finding
+    // P1.6-3 (subset-vs-equality in mint_withdrawal).
+    //
+    // Gated behind the Boreas hard fork activation height.
     if (config.disable_phoenix || config.withdrawal_nullifier_check)
         && tx.call().is_some()
     {
