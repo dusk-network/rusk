@@ -150,6 +150,14 @@ impl VMExecution for Rusk {
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {
+                let next_block_height = tip_height.saturating_add(1);
+                if self.vm_config.feature_active_at(
+                    FEATURE_DISABLE_PHOENIX,
+                    next_block_height,
+                ) {
+                    anyhow::bail!("phoenix is not enabled in the VM");
+                }
+
                 let tx_nullifiers = tx.nullifiers().to_vec();
                 let existing_nullifiers =
                     self.existing_nullifiers(&tx_nullifiers).map_err(|e| {
@@ -167,7 +175,6 @@ impl VMExecution for Rusk {
                     return Err(anyhow::anyhow!("{err}"));
                 }
 
-                let next_block_height = tip_height.saturating_add(1);
                 let policy = policy_at(&self.vm_config, next_block_height);
 
                 match crate::verifier::verify_proof_with_version(

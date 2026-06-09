@@ -19,6 +19,8 @@ use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_rusk_test::TestContext;
 use dusk_rusk_test::common::state::{ExecuteResult, generator_procedure};
 use ff::Field;
+use node::vm::VMExecution;
+use node_data::ledger::CanonicalTransaction;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rusk::node::{FEATURE_DISABLE_PHOENIX, RuskVmConfig};
@@ -157,6 +159,40 @@ pub async fn disabled_phoenix_discards_phoenix_transactions() -> Result<()> {
     assert_eq!(
         phoenix_after, phoenix_before,
         "discarded Phoenix tx must not create a Phoenix refund"
+    );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn disabled_phoenix_preverify_rejects_phoenix_transactions(
+) -> Result<()> {
+    logger();
+
+    let tc = convert_state().await?;
+    let wallet = tc.wallet();
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    let tx = wallet
+        .phoenix_to_moonlight(
+            &mut rng,
+            0,
+            0,
+            CONVERT_VALUE,
+            GAS_LIMIT,
+            GAS_PRICE,
+        )
+        .expect("creating phoenix transaction should succeed");
+    let tx = CanonicalTransaction::new(tx);
+
+    let err = tc
+        .rusk()
+        .preverify(&tx, BLOCK_HEIGHT - 1)
+        .expect_err("disabled Phoenix should reject preverify");
+
+    assert!(
+        err.to_string().contains("phoenix is not enabled in the VM"),
+        "error should mention disabled Phoenix, got: {err}",
     );
 
     Ok(())
