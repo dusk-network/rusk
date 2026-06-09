@@ -165,8 +165,8 @@ pub async fn disabled_phoenix_discards_phoenix_transactions() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn disabled_phoenix_preverify_rejects_phoenix_transactions(
-) -> Result<()> {
+pub async fn disabled_phoenix_preverify_rejects_phoenix_transactions()
+-> Result<()> {
     logger();
 
     let tc = convert_state().await?;
@@ -249,8 +249,8 @@ pub async fn disabled_phoenix_errors_transfer_mint_to_phoenix() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn disabled_phoenix_allows_moonlight_unstake_to_moonlight(
-) -> Result<()> {
+pub async fn disabled_phoenix_allows_moonlight_unstake_to_moonlight()
+-> Result<()> {
     logger();
 
     let tc = stake_state().await?;
@@ -275,8 +275,8 @@ pub async fn disabled_phoenix_allows_moonlight_unstake_to_moonlight(
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn disabled_phoenix_allows_moonlight_reward_withdraw_to_moonlight(
-) -> Result<()> {
+pub async fn disabled_phoenix_allows_moonlight_reward_withdraw_to_moonlight()
+-> Result<()> {
     logger();
 
     let tc = stake_state().await?;
@@ -292,7 +292,10 @@ pub async fn disabled_phoenix_allows_moonlight_reward_withdraw_to_moonlight(
     let stake = wallet
         .get_stake(1)
         .expect("stake should be readable after reward withdraw");
-    assert_eq!(stake.reward, 0, "moonlight reward withdraw should be allowed");
+    assert_eq!(
+        stake.reward, 0,
+        "moonlight reward withdraw should be allowed"
+    );
 
     Ok(())
 }
