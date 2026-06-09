@@ -183,11 +183,14 @@ pub async fn disabled_phoenix_preverify_rejects_phoenix_transactions()
             GAS_PRICE,
         )
         .expect("creating phoenix transaction should succeed");
-    let tx = CanonicalTransaction::new(tx);
+    let tx = CanonicalTransaction::canonicalize_for_ingress(tx, BLOCK_HEIGHT);
 
+    // `preverify` receives the current tip height and evaluates feature
+    // activation for the next block.
+    let tip_height = BLOCK_HEIGHT.saturating_sub(1);
     let err = tc
         .rusk()
-        .preverify(&tx, BLOCK_HEIGHT - 1)
+        .preverify(&tx, tip_height)
         .expect_err("disabled Phoenix should reject preverify");
 
     assert!(
