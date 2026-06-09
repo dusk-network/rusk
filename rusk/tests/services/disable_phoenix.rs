@@ -29,10 +29,20 @@ const BLOCK_HEIGHT: u64 = 2;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const CONVERT_VALUE: u64 = 5_000_000_000;
 const GAS_LIMIT: u64 = 1_000_000_000;
+const STAKE_GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 async fn convert_state() -> Result<TestContext> {
     let state = include_str!("../config/convert.toml");
+    let mut vm_config =
+        RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
+    vm_config.with_feature(FEATURE_DISABLE_PHOENIX, 1);
+
+    TestContext::instantiate(state, vm_config).await
+}
+
+async fn stake_state() -> Result<TestContext> {
+    let state = include_str!("../config/stake.toml");
     let mut vm_config =
         RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
     vm_config.with_feature(FEATURE_DISABLE_PHOENIX, 1);
@@ -198,6 +208,55 @@ pub async fn disabled_phoenix_errors_transfer_mint_to_phoenix() -> Result<()> {
     let tx = moonlight_call(&tc, call);
 
     assert_executed_with_phoenix_error(&tc, tx, BLOCK_HEIGHT);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn disabled_phoenix_allows_moonlight_unstake_to_moonlight(
+) -> Result<()> {
+    logger();
+
+    let tc = stake_state().await?;
+    let wallet = tc.wallet();
+    let mut rng = StdRng::seed_from_u64(0xdecaf);
+
+    let tx = wallet
+        .moonlight_unstake(&mut rng, 0, 0, STAKE_GAS_LIMIT, GAS_PRICE)
+        .expect("creating moonlight unstake should succeed");
+
+    tc.execute_transaction(tx, BLOCK_HEIGHT, None);
+
+    let stake = wallet
+        .get_stake(0)
+        .expect("stake should be readable after unstake");
+    assert!(
+        stake.amount.is_none(),
+        "moonlight unstake should remain allowed"
+    );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn disabled_phoenix_allows_moonlight_reward_withdraw_to_moonlight(
+) -> Result<()> {
+    logger();
+
+    let tc = stake_state().await?;
+    let wallet = tc.wallet();
+    let mut rng = StdRng::seed_from_u64(0x5eed);
+
+    let tx = wallet
+        .moonlight_stake_withdraw(&mut rng, 0, 1, STAKE_GAS_LIMIT, GAS_PRICE)
+        .expect("creating moonlight reward withdraw should succeed");
+
+    tc.execute_transaction(tx, BLOCK_HEIGHT, None);
+
+    let stake = wallet
+        .get_stake(1)
+        .expect("stake should be readable after reward withdraw");
+    assert_eq!(stake.reward, 0, "moonlight reward withdraw should be allowed");
 
     Ok(())
 }
