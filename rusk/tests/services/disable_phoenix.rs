@@ -17,7 +17,9 @@ use dusk_core::transfer::withdraw::{
 };
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_rusk_test::TestContext;
-use dusk_rusk_test::common::state::{ExecuteResult, generator_procedure};
+use dusk_rusk_test::common::state::{
+    ExecuteResult, generator_procedure, generator_procedure_with_preverify,
+};
 use ff::Field;
 use node::vm::VMExecution;
 use node_data::ledger::CanonicalTransaction;
@@ -53,7 +55,11 @@ async fn stake_state() -> Result<TestContext> {
 }
 
 fn assert_discarded(tc: &TestContext, tx: Transaction) {
-    let spent = generator_procedure(
+    // This assertion targets the execution discard path. With Phoenix
+    // disabled, preverify rejects direct Phoenix transactions before
+    // execution, so bypass it here to ensure execution still discards them
+    // without producing Phoenix refunds.
+    let (spent, _) = generator_procedure_with_preverify(
         tc.rusk(),
         &[tx],
         BLOCK_HEIGHT,
@@ -63,6 +69,8 @@ fn assert_discarded(tc: &TestContext, tx: Transaction) {
             executed: 0,
             discarded: 1,
         }),
+        None,
+        false,
     )
     .expect("generator procedure should succeed");
 
