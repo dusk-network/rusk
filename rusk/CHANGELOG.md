@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
 ### Added
 
 - Add `WASM_REFERENCE_TYPES` VM feature activation wiring.
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Set historical mainnet/testnet `WASM_REFERENCE_TYPES` activation heights.
 - Link Boreas DuskEVM host-query activations on mainnet/testnet and enable Boreas from genesis on devnet/localnet
+- Activate Boreas and Phoenix disablement on mainnet at block `4_414_095`, and
+  schedule Phoenix disablement on testnet at block `4_000_000`.
 - Consolidate node config resolution and chain-upgrade policy into a single internal path.
 - Gate Boreas deployment gas rules (`deploy_remaining_gas_check` and
   `charge_init_gas`) behind feature activation so pre-fork replay semantics
@@ -565,7 +569,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.6.0...dusk-rusk-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk-private/compare/0c61088614bcb515ed3abd955b738f4d375ce19c...dusk-rusk-1.6.0
 [1.5.0]: https://github.com/dusk-network/rusk-private/compare/dusk-rusk-1.4.4...0c61088614bcb515ed3abd955b738f4d375ce19c
 [1.4.4]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.3...dusk-rusk-1.4.4

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
 ### Added
 
 - Add a bounded pre-admission retry queue for non-consecutive Moonlight transactions
@@ -146,7 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-node-1.6.0...dusk-node-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.2...dusk-node-1.6.0
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.1...dusk-node-1.4.2
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-node-1.4.0...dusk-node-1.4.1

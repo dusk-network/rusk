@@ -89,7 +89,12 @@ const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
 
 const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_590_904);
-const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation = NEVER;
+const MAINNET_BOREAS_RESTART_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(4_414_095);
+const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
+    MAINNET_BOREAS_RESTART_ACTIVATION;
+const MAINNET_DISABLE_PHOENIX_ACTIVATION: FeatureActivation =
+    MAINNET_BOREAS_RESTART_ACTIVATION;
 /// Historical activation matching the mainnet 1.5/PLONK_V2 activation point.
 const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
     MAINNET_PLONK_V2_ACTIVATION;
@@ -119,7 +124,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
-            (FEATURE_DISABLE_PHOENIX, NEVER),
+            (FEATURE_DISABLE_PHOENIX, MAINNET_DISABLE_PHOENIX_ACTIVATION),
             (
                 "shade_6fdfdc713a18fc6ca2ad20eb2b4a3305a935ef47d6a872d9a4df8bc9fd9d169e",
                 FeatureActivation::Ranges(vec![(
@@ -130,6 +135,51 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
         ],
     }
 });
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mainnet_feature(feature: &str) -> &FeatureActivation {
+        MAINNET_CONFIG
+            .features
+            .iter()
+            .find(|(name, _)| *name == feature)
+            .map(|(_, activation)| activation)
+            .expect("mainnet feature should exist")
+    }
+
+    fn testnet_feature(feature: &str) -> &FeatureActivation {
+        TESTNET_CONFIG
+            .features
+            .iter()
+            .find(|(name, _)| *name == feature)
+            .map(|(_, activation)| activation)
+            .expect("testnet feature should exist")
+    }
+
+    #[test]
+    fn mainnet_boreas_and_phoenix_disable_activate_after_restart() {
+        const SNAPSHOT_HEIGHT: u64 = 4_414_094;
+        const FIRST_RESTART_BLOCK: u64 = 4_414_095;
+
+        for feature in [FEATURE_HARDFORK_BOREAS, FEATURE_DISABLE_PHOENIX] {
+            let activation = mainnet_feature(feature);
+            assert!(!activation.is_active_at(SNAPSHOT_HEIGHT));
+            assert!(activation.is_active_at(FIRST_RESTART_BLOCK));
+        }
+    }
+
+    #[test]
+    fn testnet_phoenix_disable_activates_in_the_future() {
+        const BEFORE_DISABLE: u64 = 3_999_999;
+        const DISABLE_HEIGHT: u64 = 4_000_000;
+
+        let activation = testnet_feature(FEATURE_DISABLE_PHOENIX);
+        assert!(!activation.is_active_at(BEFORE_DISABLE));
+        assert!(activation.is_active_at(DISABLE_HEIGHT));
+    }
+}
 
 /// Estimated testnet block height for 12th November 2025, 09:00 UTC.
 const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
@@ -149,6 +199,8 @@ const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
 /// Estimated testnet block height for 12th May 2026 around 10:00 UTC.
 const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_378_000);
+const TESTNET_DISABLE_PHOENIX_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(4_000_000);
 
 /// Historical activation matching the testnet 1.5/PLONK_V2 activation point.
 const TESTNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
@@ -179,7 +231,7 @@ static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
             (FEATURE_DISABLE_WASM32, NEVER),
             (FEATURE_DISABLE_3RD_PARTY, NEVER),
-            (FEATURE_DISABLE_PHOENIX, NEVER),
+            (FEATURE_DISABLE_PHOENIX, TESTNET_DISABLE_PHOENIX_ACTIVATION),
         ],
     });
 

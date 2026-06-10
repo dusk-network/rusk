@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
 ### Changed
 
 - Update to edition 2024
@@ -46,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#3827]: https://github.com/dusk-network/rusk/issues/3827
 [#3979]: https://github.com/dusk-network/rusk/issues/3979
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.3.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.3.1...dusk-data-driver-1.7.0
 [0.3.1]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.3.0...dusk-data-driver-0.3.1
 [0.3.0]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.2.0...dusk-data-driver-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.1.0...dusk-data-driver-0.2.0
