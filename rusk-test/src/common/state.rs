@@ -158,6 +158,33 @@ pub fn generator_procedure2(
     expected: Option<ExecuteResult>,
     generator: Option<BlsPublicKey>,
 ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+    generator_procedure_with_preverify(
+        rusk,
+        txs,
+        block_height,
+        block_gas_limit,
+        missed_generators,
+        expected,
+        generator,
+        true,
+    )
+}
+
+/// Executes the procedure a block generator will go through to generate a block
+/// including all specified transactions, optionally running the same preverify
+/// checks as transaction admission before creating the transition.
+#[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
+pub fn generator_procedure_with_preverify(
+    rusk: &Rusk,
+    txs: &[Transaction],
+    block_height: u64,
+    block_gas_limit: u64,
+    missed_generators: Vec<BlsPublicKey>,
+    expected: Option<ExecuteResult>,
+    generator: Option<BlsPublicKey>,
+    preverify_checks: bool,
+) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
     let prev_state = rusk.state_root();
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
@@ -169,17 +196,20 @@ pub fn generator_procedure2(
         .cloned()
         .map(|tx| LedgerTransaction::from_protocol_for_ledger(tx, block_height))
         .collect();
-    // `preverify()` is meant to be called at the current tip height; it will
-    // validate the tx against rules that apply to the *next* block height.
-    let tip_height = block_height.saturating_sub(1);
-    for tx in &txs {
-        let canonical = CanonicalTransaction::canonicalize(
-            tx.protocol().clone(),
-            node_data::hard_fork::ingress_tx_format_at(
-                tip_height.saturating_add(1),
-            ),
-        );
-        rusk.preverify(&canonical, tip_height)?;
+    if preverify_checks {
+        // `preverify()` is meant to be called at the current tip height; it
+        // will validate the tx against rules that apply to the *next* block
+        // height.
+        let tip_height = block_height.saturating_sub(1);
+        for tx in &txs {
+            let canonical = CanonicalTransaction::canonicalize(
+                tx.protocol().clone(),
+                node_data::hard_fork::ingress_tx_format_at(
+                    tip_height.saturating_add(1),
+                ),
+            );
+            rusk.preverify(&canonical, tip_height)?;
+        }
     }
 
     let generator = generator.unwrap_or(*DUSK_CONSENSUS_KEY);

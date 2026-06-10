@@ -33,6 +33,9 @@ pub struct Config {
     /// Disable calls to 3rd party contracts
     pub disable_3rd_party: bool,
 
+    /// Disable Phoenix transactions and Phoenix-related transfer functions.
+    pub disable_phoenix: bool,
+
     /// Enable WebAssembly reference-types in deployed contract bytecode.
     pub with_reference_types: bool,
 
@@ -70,6 +73,7 @@ impl Config {
         disable_wasm64: false,
         disable_wasm32: false,
         disable_3rd_party: false,
+        disable_phoenix: false,
         with_reference_types: false,
         phoenix_refund_check: false,
         deploy_remaining_gas_check: false,

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Build ledger transactions in test helpers through the explicit canonical
   transaction constructors.
+- Allow generator procedure tests to opt out of preverify checks.
 
 ## [1.6.0] - 2026-02-27
 

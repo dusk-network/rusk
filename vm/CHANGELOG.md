@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add call hook to enforce Phoenix withdrawal replay token nullifier count
+- Add execution gating to disable Phoenix payments and settlement calls
 
 ### Fixed
 

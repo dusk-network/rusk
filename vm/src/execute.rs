@@ -8,10 +8,12 @@ mod config;
 pub mod feature;
 
 pub use config::Config;
-use dusk_core::abi::{ContractError, Metadata};
+use dusk_core::abi::{ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::{ContractBytecode, gen_contract_id};
-use dusk_core::transfer::withdraw::{Withdraw, WithdrawReplayToken};
+use dusk_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use piecrust::{CallReceipt, Session};
 use rkyv::Deserialize;
@@ -21,6 +23,8 @@ use crate::ExecutionError;
 
 const DEPLOY_FEATURE_VALIDATION_ERROR: &str =
     "failed deployment: bytecode validation rejected";
+const PHOENIX_DISABLED_ERROR: &str = "phoenix is not enabled in the VM";
+const TRANSFER_WITHDRAWAL_FUNCTIONS: &[&str] = &["mint", "withdraw", "convert"];
 
 /// Executes a transaction in the provided session.
 ///
@@ -77,6 +81,10 @@ pub fn execute(
     tx: &Transaction,
     config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, ExecutionError> {
+    if config.disable_phoenix && matches!(tx, Transaction::Phoenix(_)) {
+        return Err(ExecutionError::precondition(PHOENIX_DISABLED_ERROR));
+    }
+
     tx.phoenix_fee_check()?;
 
     if config.phoenix_refund_check {
@@ -132,21 +140,34 @@ pub fn execute(
 
     let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
 
-    // Register a call hook to enforce that Phoenix withdrawal replay tokens
-    // carry exactly the same number of nullifiers as the encapsulating
+    // Register one combined call hook for VM execution invariants. Piecrust
+    // supports one active hook, so all hook-based checks must be chained here.
+    //
+    // The withdrawal-nullifier check enforces that Phoenix withdrawal replay
+    // tokens carry exactly the same number of nullifiers as the encapsulating
     // transaction. This is a defense-in-depth measure against audit finding
     // P1.6-3 (subset-vs-equality in mint_withdrawal).
     //
     // Gated behind the Boreas hard fork activation height.
-    if config.withdrawal_nullifier_check && tx.call().is_some() {
+    if (config.disable_phoenix || config.withdrawal_nullifier_check)
+        && tx.call().is_some()
+    {
+        let disable_phoenix = config.disable_phoenix;
+        let withdrawal_nullifier_check = config.withdrawal_nullifier_check;
         let tx_nullifier_count = tx.nullifiers().len();
         session.set_call_hook(Box::new(move |callee, fn_name, fn_args| {
-            check_withdrawal_nullifiers(
-                callee,
-                fn_name,
-                fn_args,
-                tx_nullifier_count,
-            )
+            if disable_phoenix {
+                check_phoenix_disabled_call(callee, fn_name, fn_args)?;
+            }
+            if withdrawal_nullifier_check {
+                check_withdrawal_nullifiers(
+                    callee,
+                    fn_name,
+                    fn_args,
+                    tx_nullifier_count,
+                )?;
+            }
+            Ok(())
         }));
     }
 
@@ -202,6 +223,45 @@ pub fn execute(
     Ok(receipt)
 }
 
+fn check_phoenix_disabled_call(
+    callee: &ContractId,
+    fn_name: &str,
+    fn_args: &[u8],
+) -> Result<(), String> {
+    if *callee != TRANSFER_CONTRACT
+        || !TRANSFER_WITHDRAWAL_FUNCTIONS.contains(&fn_name)
+    {
+        return Ok(());
+    }
+    if fn_name == "convert" {
+        // `convert` is the transfer contract's Phoenix/Moonlight bridge
+        // entrypoint. Phoenix-paid transactions are discarded before execution,
+        // so any `convert` that reaches this hook is Moonlight-paid and must
+        // still be rejected when Phoenix is disabled.
+        return Err(PHOENIX_DISABLED_ERROR.into());
+    }
+    let withdraw = deserialize_withdraw(fn_args)?;
+    if withdraw_uses_phoenix(&withdraw) {
+        return Err(PHOENIX_DISABLED_ERROR.into());
+    }
+    Ok(())
+}
+
+fn withdraw_uses_phoenix(withdraw: &Withdraw) -> bool {
+    matches!(withdraw.receiver(), WithdrawReceiver::Phoenix(_))
+        || matches!(withdraw.token(), WithdrawReplayToken::Phoenix(_))
+}
+
+fn deserialize_withdraw(fn_args: &[u8]) -> Result<Withdraw, String> {
+    let Ok(root) = rkyv::check_archived_root::<Withdraw>(fn_args) else {
+        return Err("failed to deserialize withdrawal arguments".into());
+    };
+    match root.deserialize(&mut rkyv::Infallible) {
+        Ok(w) => Ok(w),
+        Err(infallible) => match infallible {},
+    }
+}
+
 fn is_wasm64(bytecode: &[u8]) -> bool {
     for payload in Parser::new(0).parse_all(bytecode).flatten() {
         if let Payload::MemorySection(section) = payload {
@@ -227,7 +287,7 @@ fn clear_session(session: &mut Session, config: &Config) {
 /// cannot be deserialized (fail-closed). Returns `Ok(())` for non-withdrawal
 /// calls, Moonlight tokens, or matching counts.
 fn check_withdrawal_nullifiers(
-    callee: &dusk_core::abi::ContractId,
+    callee: &ContractId,
     fn_name: &str,
     fn_args: &[u8],
     tx_nullifier_count: usize,
@@ -235,13 +295,7 @@ fn check_withdrawal_nullifiers(
     if *callee != TRANSFER_CONTRACT || fn_name != "withdraw" {
         return Ok(());
     }
-    let Ok(root) = rkyv::check_archived_root::<Withdraw>(fn_args) else {
-        return Err("failed to deserialize withdrawal arguments".into());
-    };
-    let withdraw: Withdraw = match root.deserialize(&mut rkyv::Infallible) {
-        Ok(w) => w,
-        Err(infallible) => match infallible {},
-    };
+    let withdraw = deserialize_withdraw(fn_args)?;
     if let WithdrawReplayToken::Phoenix(nullifiers) = withdraw.token()
         && nullifiers.len() != tx_nullifier_count
     {
