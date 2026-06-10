@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
 ### Changed
 
 - Document intentional partial coverage of transfer contract data-driver
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add implementation for `ConvertibleContract`
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-transfer-contract-dd-0.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-transfer-contract-dd-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-transfer-contract-dd-0.3.0...dusk-transfer-contract-dd-1.7.0
 [0.3.0]: https://github.com/dusk-network/rusk/compare/dusk-transfer-contract-dd-0.1.0...dusk-transfer-contract-dd-0.3.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/dusk-transfer-contract-dd-0.1.0
