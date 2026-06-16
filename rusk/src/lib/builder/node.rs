@@ -5,15 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::io;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
 #[cfg(feature = "archive")]
 use node::archive::conf::Params as ArchiveParam;
 use node::chain::ChainSrv;
-use node::database::rocksdb;
-use node::database::{DB, DatabaseOptions};
+use node::database::{DB, DatabaseOptions, rocksdb};
 use node::databroker::DataBrokerSrv;
 use node::databroker::conf::Params as BrokerParam;
 use node::mempool::MempoolSrv;
@@ -21,13 +20,12 @@ use node::mempool::conf::Params as MempoolParam;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
-
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
-use crate::http::{DataSources, HttpServer, HttpServerConfig};
+use crate::http::{HttpHandlers, HttpServer, HttpServerConfig};
 use crate::node::{
     ChainEventStreamer, DriverStore, RuskNode, RuskOptVmConfig, RuskVmConfig,
     Services, WellKnownVmConfig,
@@ -133,62 +131,8 @@ impl RuskNodeBuilder {
         self
     }
 
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_generation_timeout<O: Into<Option<Duration>>>(
-        mut self,
-        generation_timeout: O,
-    ) -> Self {
-        self.vm_config.generation_timeout = generation_timeout.into();
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_gas_per_deploy_byte<O: Into<Option<u64>>>(
-        mut self,
-        gas_per_deploy_byte: O,
-    ) -> Self {
-        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
-            self.vm_config.gas_per_deploy_byte = Some(gas_per_deploy_byte);
-        }
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_min_deployment_gas_price<O: Into<Option<u64>>>(
-        mut self,
-        min_deployment_gas_price: O,
-    ) -> Self {
-        if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
-            self.vm_config.min_deployment_gas_price =
-                Some(min_deploy_gas_price);
-        }
-        self
-    }
-
     pub fn with_min_gas_limit(mut self, min_gas_limit: Option<u64>) -> Self {
         self.min_gas_limit = min_gas_limit;
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_min_deploy_points<O: Into<Option<u64>>>(
-        mut self,
-        min_deploy_points: O,
-    ) -> Self {
-        if let Some(min_deploy_points) = min_deploy_points.into() {
-            self.vm_config.min_deploy_points = Some(min_deploy_points);
-        }
-        self
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
-    pub fn with_block_gas_limit<O: Into<Option<u64>>>(
-        mut self,
-        block_gas_limit: O,
-    ) -> Self {
-        if let Some(block_gas_limit) = block_gas_limit.into() {
-            self.vm_config.block_gas_limit = Some(block_gas_limit);
-        }
         self
     }
 
@@ -240,7 +184,9 @@ impl RuskNodeBuilder {
             .as_ref()
             .map(|h| h.ws_event_channel_cap)
             .unwrap_or(1);
-        let (rues_sender, rues_receiver) = broadcast::channel(channel_cap);
+        // HTTP and chain event streaming create fresh receivers from this
+        // sender.
+        let (rues_sender, _) = broadcast::channel(channel_cap);
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
@@ -274,8 +220,29 @@ impl RuskNodeBuilder {
         let blob_expire_after =
             self.blob_expire_after.unwrap_or(DEFAULT_BLOB_EXPIRE_AFTER);
 
+        let db = rocksdb::Backend::create_or_open(
+            self.db_path.clone(),
+            self.db_options.clone(),
+        );
+
         let rusk = Rusk::new(
             self.state_dir,
+            |state_root| {
+                let header = node::chain::find_block_header_by_state_root(
+                    &db, state_root,
+                )
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(
+                        state_root,
+                        self.genesis_timestamp,
+                    )
+                    .header()
+                    .clone()
+                });
+
+                Ok(header)
+            },
             self.kadcast.kadcast_id.unwrap_or_default(),
             vm_config,
             min_gas_limit,
@@ -289,13 +256,15 @@ impl RuskNodeBuilder {
         info!("Rusk VM loaded");
 
         let node = {
-            let db = rocksdb::Backend::create_or_open(
-                self.db_path.clone(),
-                self.db_options.clone(),
-            );
             let net = Kadcast::new(self.kadcast)?;
+            let future_nonce_retry_queue =
+                node::mempool::FutureNonceRetryHandle::new(
+                    self.mempool.max_queue_size,
+                    self.mempool.max_moonlight_future_nonce_per_account,
+                );
             RuskNode::new(
                 Node::new(net, db, rusk.clone()),
+                future_nonce_retry_queue.clone(),
                 #[cfg(feature = "archive")]
                 archive.clone(),
             )
@@ -325,7 +294,11 @@ impl RuskNodeBuilder {
         }
 
         let mut service_list: Vec<Box<Services>> = vec![
-            Box::new(MempoolSrv::new(self.mempool, node_sender.clone())),
+            Box::new(MempoolSrv::with_future_nonce_retry_queue(
+                self.mempool,
+                node_sender.clone(),
+                node.future_nonce_retry_queue(),
+            )),
             Box::new(chain_srv),
             Box::new(DataBrokerSrv::new(self.databroker)),
             Box::new(TelemetrySrv::new(self.telemetry_address)),
@@ -337,33 +310,19 @@ impl RuskNodeBuilder {
 
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
-                rues_sender,
+                rues_sender: rues_sender.clone(),
             }));
 
-            let mut handler = DataSources::default();
-            handler.sources.push(Box::new(rusk.clone()));
-            handler.sources.push(Box::new(node.clone()));
-            handler.set_graphql_handler(node.clone());
+            let mut services = HttpHandlers::default();
+            services.set_rusk_handler(rusk.clone());
+            services.set_chain_handler(node.clone());
+            services.set_graphql_handler(node.clone());
 
             #[cfg(feature = "prover")]
-            handler.sources.push(Box::new(rusk_prover::LocalProver));
+            services.set_prover_handler(rusk_prover::LocalProver);
 
-            let cert_and_key = match (http.cert, http.key) {
-                (Some(cert), Some(key)) => Some((cert, key)),
-                _ => None,
-            };
-
-            _ws_server = Some(
-                HttpServer::bind(
-                    handler,
-                    rues_receiver,
-                    http.ws_event_channel_cap,
-                    http.address,
-                    http.headers,
-                    cert_and_key,
-                )
-                .await?,
-            );
+            _ws_server =
+                Some(HttpServer::bind(services, rues_sender, http).await?);
         }
 
         node.inner().initialize(&mut service_list).await?;
@@ -371,8 +330,8 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         {
             if archive.fetch_active_accounts().await? == 0 {
-                let base_commit = None;
-                let accounts = rusk.moonlight_accounts(base_commit);
+                let base_header = None;
+                let accounts = rusk.moonlight_accounts(base_header);
 
                 let accounts = accounts
                     .map_err(|e| {
@@ -388,6 +347,42 @@ impl RuskNodeBuilder {
         }
 
         node.inner().spawn_all(service_list).await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use node::database::DB as _;
+    use tempfile::tempdir;
+
+    use super::*;
+
+    // Covers first-start initialization where no chain metadata exists yet and
+    // the builder decides to use the genesis header fallback.
+    #[test]
+    fn empty_db_allows_genesis_header_fallback() -> crate::Result<()> {
+        let dir = tempdir()?;
+        let db = rocksdb::Backend::create_or_open(
+            dir.path(),
+            DatabaseOptions::default(),
+        );
+
+        let state_root = [42; 32];
+        let timestamp = 1234;
+        let recovered =
+            node::chain::find_block_header_by_state_root(&db, state_root)
+                .map_err(|err| io::Error::other(format!("{err}")))?
+                .unwrap_or_else(|| {
+                    node::chain::genesis_block(state_root, timestamp)
+                        .header()
+                        .clone()
+                });
+
+        assert_eq!(recovered.height, 0);
+        assert_eq!(recovered.timestamp, timestamp);
+        assert_eq!(recovered.state_hash, state_root);
 
         Ok(())
     }

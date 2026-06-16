@@ -6,7 +6,7 @@
 
 import { lux } from "@dusk/w3sper";
 
-import { test, assert } from "./harness.js";
+import { assert, test } from "./harness.js";
 
 test("format Lux to Dusk", () => {
   assert.equal(lux.formatToDusk(BigInt(1e9)), "1");

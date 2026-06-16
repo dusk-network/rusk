@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Changed
+
+- Adapt genesis contract deployment calls to piecrust's updated `Session::deploy` return type.
+
+### Fixed
+
+- Reject unsafe ZIP entry paths during state recovery extraction to prevent path traversal writes
+- Reject insecure `http://` base state downloads during recovery
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
@@ -65,7 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.6.0...rusk-recovery-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.4.1...rusk-recovery-1.6.0
 [1.4.1]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.4.0...rusk-recovery-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.3.0...rusk-recovery-1.4.0

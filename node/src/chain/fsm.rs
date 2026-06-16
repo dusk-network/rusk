@@ -13,11 +13,14 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::{Result, anyhow};
 use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
 use node_data::ledger::{Attestation, Block, to_str};
 use node_data::message::Metadata;
-use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
+use node_data::message::payload::{
+    Candidate, Inv, Quorum, RatificationResult, Vote,
+};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
@@ -28,8 +31,6 @@ use self::stalled::StalledChainFSM;
 use super::acceptor::{Acceptor, RevertTarget};
 use crate::database::{ConsensusStorage, Ledger};
 use crate::{Network, database, vm};
-
-use anyhow::{Result, anyhow};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
@@ -157,8 +158,34 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         metadata: Option<&Metadata>,
     ) {
         match &mut self.curr {
-            State::OutOfSync(oos) => oos.on_quorum(quorum).await,
+            State::OutOfSync(oos) => oos.on_quorum(quorum, metadata).await,
             State::InSync(is) => is.on_quorum(quorum, metadata).await,
+        }
+    }
+
+    pub(crate) async fn on_candidate(
+        &mut self,
+        candidate: &Candidate,
+    ) -> anyhow::Result<()> {
+        match &mut self.curr {
+            State::InSync(_) => Ok(()),
+            State::OutOfSync(curr) => {
+                if curr.on_candidate(candidate).await? {
+                    curr.on_exiting().await;
+
+                    // A valid next-round Candidate means we are already caught
+                    // up with the live chain, so we can leave OutOfSync
+                    // immediately and resume normal consensus handling.
+                    let next = InSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                        self.blacklisted_blocks.clone(),
+                    );
+                    self.curr = State::InSync(next);
+                }
+
+                Ok(())
+            }
         }
     }
 
@@ -195,11 +222,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         // unless it's an Emergency Blocks, which have no Attestation
         if !Self::is_block_attested(&blk)
             && !is_emergency_block(blk.header().iteration)
+            && let Err(err) = self.attach_blk_att(&mut blk)
         {
-            if let Err(err) = self.attach_blk_att(&mut blk) {
-                warn!(event = "block discarded", ?err);
-                return Ok(None);
-            }
+            warn!(event = "block discarded", ?err);
+            return Ok(None);
         }
 
         let fsm_res = match &mut self.curr {
@@ -258,7 +284,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 );
                 let mut acc = self.acc.write().await;
 
-                let prev_local_state_root = acc.db.read().await.view(|t| {
+                let prev_local_header = acc.db.read().await.view(|t| {
                     let local_blk = t
                         .block_header(&local_hash_at_fork)?
                         .expect("local hash should exist");
@@ -267,11 +293,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         .block_header(&local_blk.prev_block_hash)?
                         .expect("prev block hash should exist");
 
-                    anyhow::Ok(prev_blk.state_hash)
+                    anyhow::Ok(prev_blk)
                 })?;
 
                 match acc
-                    .try_revert(RevertTarget::Commit(prev_local_state_root))
+                    .try_revert(RevertTarget::Commit(&prev_local_header))
                     .await
                 {
                     Ok(_) => {
@@ -364,11 +390,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // Check if we already accepted this block
             if let Ok(blk_exists) =
                 db.read().await.view(|t| t.block_exists(&candidate))
+                && blk_exists
             {
-                if blk_exists {
-                    warn!("skipping Quorum for known block");
-                    return;
-                }
+                warn!("skipping Quorum for known block");
+                return;
             };
 
             let quorum_blk = if quorum_height > tip_height + 1 {

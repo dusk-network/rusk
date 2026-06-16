@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Added
+
+- Add canonical contract deployment helpers for bytecode hashing and contract-id derivation
+- Add a stable client-facing transaction network serializer that stays fork-agnostic across supported envelopes
+
+### Fixed
+
+- Reject deploy transactions whose required gas charge overflows during
+  precondition checking
+- Reject blob transactions whose required gas charge overflows during
+  precondition checking
+- Restore historical pre-Aegis transaction decode compatibility for ledger
+  replay while keeping ingress decoding format-gated
+- Reject transaction decodes with trailing bytes instead of accepting and
+  canonicalizing them away
+
 ## [1.6.0] - 2026-02-27
 
 ### Added
@@ -15,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `secp256k1_recover` ABI host query (EVM `ecrecover` primitive) [#4012]
 - Add `transfer::phoenix_fee_check`
 - Add `phoenix_refund_check` for fee stealth address binding
+- Add hardfork-governed protocol transaction format versioning for legacy and
+  future explicit transaction encodings.
 
 ### Changed
 
@@ -90,7 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.6.0...dusk-core-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.1...dusk-core-1.6.0
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.0...dusk-core-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.3.0...dusk-core-1.4.0

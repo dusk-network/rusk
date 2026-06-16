@@ -13,7 +13,9 @@ use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure2, new_state_with_chainid};
+use crate::common::state::{
+    generator_procedure2, header_from_root, new_state_with_chainid,
+};
 
 // Creates the Rusk initial state for the tests below
 #[allow(dead_code)]
@@ -76,7 +78,8 @@ pub async fn deploy_fail() -> Result<()> {
         .unwrap();
         if block_height == finalize_at {
             info!("finalizing state up to {finalize_up_to} ");
-            rusk.finalize_state(new_base, state_to_delete.clone())?;
+            let header = header_from_root(new_base);
+            rusk.finalize_state(&header, state_to_delete.clone())?;
         } else if block_height < finalize_up_to {
             state_to_delete.push(state);
         } else if block_height == finalize_up_to {

@@ -63,10 +63,12 @@ export function formatToDusk(lux) {
   }
 
   const unit = lux / SCALE_FACTOR;
-  let decimals = lux % SCALE_FACTOR;
+  const decimals = lux % SCALE_FACTOR;
 
   if (decimals > 0) {
-    return `${unit}.${decimals.toString().padStart(DECIMALS, "0").replace(/0+$/, "")}`;
+    return `${unit}.${
+      decimals.toString().padStart(DECIMALS, "0").replace(/0+$/, "")
+    }`;
   }
 
   return unit.toString();

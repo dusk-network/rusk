@@ -1,0 +1,1022 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+#![cfg_attr(
+    not(any(feature = "chain", feature = "prover", test)),
+    allow(dead_code)
+)]
+
+use std::fmt::{Display, Formatter};
+use std::pin::Pin;
+use std::str::FromStr;
+use std::sync::mpsc;
+use std::task::{Context, Poll};
+
+use axum::body::{Body as AxumBody, Bytes};
+use axum::http::header::{HeaderValue, InvalidHeaderName, InvalidHeaderValue};
+use axum::http::{HeaderMap, Response, StatusCode};
+use axum::response::IntoResponse;
+use futures_util::stream::Iter as StreamIter;
+use futures_util::{Stream, stream};
+use pin_project::pin_project;
+use rand::Rng;
+use rand::distributions::{Distribution, Standard};
+use semver::{Prerelease, Version, VersionReq};
+use serde::{Deserialize, Serialize};
+use serde_with::As;
+use serde_with::hex::Hex;
+
+use crate::http::error::ApiError;
+use crate::http::{
+    HttpAppState, HttpError, RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER,
+};
+
+const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageResponse {
+    pub headers: serde_json::Map<String, serde_json::Value>,
+
+    /// The data returned by the contract call.
+    pub data: DataType,
+
+    /// A possible error happening during the contract call.
+    pub error: Option<(String, u16)>,
+
+    pub force_binary: bool,
+}
+
+impl IntoResponse for MessageResponse {
+    fn into_response(self) -> Response<AxumBody> {
+        if let Some((error, code)) = self.error {
+            let code = StatusCode::from_u16(code)
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+            let error_body = serde_json::json!({ "error": error }).to_string();
+            return (
+                code,
+                [(CONTENT_TYPE, CONTENT_TYPE_JSON)],
+                AxumBody::from(error_body),
+            )
+                .into_response();
+        }
+
+        match self.data {
+            DataType::Binary(wrapper) => {
+                let data = if self.force_binary {
+                    wrapper.inner
+                } else {
+                    hex::encode(wrapper.inner).as_bytes().to_vec()
+                };
+                Response::new(AxumBody::from(data))
+            }
+            DataType::Text(text) => Response::new(AxumBody::from(text)),
+            DataType::Json(value) => {
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], value.to_string())
+                    .into_response()
+            }
+            DataType::Channel(receiver) => {
+                Response::new(AxumBody::from_stream(BinaryOrTextStream {
+                    hex: !self.force_binary,
+                    stream: stream::iter(receiver),
+                }))
+            }
+            DataType::JsonChannel(receiver) => {
+                let body = AxumBody::from_stream(BinaryOrTextStream {
+                    hex: false,
+                    stream: stream::iter(receiver),
+                });
+                ([(CONTENT_TYPE, CONTENT_TYPE_JSON)], body).into_response()
+            }
+            DataType::None => Response::default(),
+        }
+    }
+}
+
+impl MessageResponse {
+    pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
+        // search for the key in a case-insensitive way
+        let v = self
+            .headers
+            .iter_mut()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(key).then_some(v));
+
+        if let Some(v) = v {
+            *v = value;
+        } else {
+            self.headers.insert(key.into(), value);
+        }
+    }
+}
+
+#[pin_project]
+pub struct BinaryOrTextStream {
+    hex: bool,
+    #[pin]
+    stream: StreamIter<<mpsc::Receiver<Vec<u8>> as IntoIterator>::IntoIter>,
+}
+
+impl Stream for BinaryOrTextStream {
+    type Item = Result<Bytes, std::convert::Infallible>;
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        let this = self.project();
+        this.stream.poll_next(cx).map(|next| {
+            next.map(|x| match this.hex {
+                true => Ok(Bytes::from(hex::encode(x).as_bytes().to_vec())),
+                false => Ok(Bytes::from(x)),
+            })
+        })
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RequestData {
+    Binary(BinaryWrapper),
+    Text(String),
+}
+
+impl RequestData {
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            Self::Binary(w) => &w.inner,
+            Self::Text(s) => s.as_bytes(),
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            Self::Binary(w) => {
+                String::from_utf8(w.inner.clone()).unwrap_or_default()
+            }
+            Self::Text(s) => s.clone(),
+        }
+    }
+}
+
+impl From<String> for RequestData {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+impl From<Vec<u8>> for RequestData {
+    fn from(value: Vec<u8>) -> Self {
+        Self::Binary(BinaryWrapper { inner: value })
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ResponseData {
+    data: DataType,
+    header: serde_json::Map<String, serde_json::Value>,
+    force_binary: bool,
+}
+
+impl ResponseData {
+    pub fn new<D: Into<DataType>>(data: D) -> Self {
+        Self {
+            data: data.into(),
+            header: serde_json::Map::new(),
+            force_binary: false,
+        }
+    }
+
+    pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
+        &mut self,
+        key: K,
+        value: V,
+    ) {
+        self.header.insert(key.into(), value.into());
+    }
+
+    pub fn with_header<K: Into<String>, V: Into<serde_json::Value>>(
+        mut self,
+        key: K,
+        value: V,
+    ) -> Self {
+        self.add_header(key, value);
+        self
+    }
+
+    pub fn into_inner(
+        self,
+    ) -> (DataType, serde_json::Map<String, serde_json::Value>, bool) {
+        (self.data, self.header, self.force_binary)
+    }
+
+    pub fn data(&self) -> &DataType {
+        &self.data
+    }
+
+    pub fn with_force_binary(mut self, force: bool) -> Self {
+        self.force_binary = force;
+        self
+    }
+}
+
+/// Data in a response.
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(untagged)]
+pub enum DataType {
+    Binary(BinaryWrapper),
+    Text(String),
+    Json(serde_json::Value),
+    #[serde(skip)]
+    Channel(mpsc::Receiver<Vec<u8>>),
+    #[serde(skip)]
+    JsonChannel(mpsc::Receiver<Vec<u8>>),
+    #[default]
+    None,
+}
+
+impl Eq for DataType {}
+
+impl PartialEq for DataType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Channel(_), Self::Channel(_)) => true,
+            (Self::Text(a), Self::Text(b)) => a == b,
+            (Self::Json(a), Self::Json(b)) => a == b,
+            (Self::Binary(a), Self::Binary(b)) => a == b,
+            (Self::None, Self::None) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Clone for DataType {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Binary(b) => b.inner.clone().into(),
+            Self::Text(s) => s.clone().into(),
+            Self::Json(v) => v.clone().into(),
+            _ => Self::None,
+        }
+    }
+}
+
+impl DataType {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Binary(b) => b.inner.clone(),
+            Self::Text(s) => s.as_bytes().to_vec(),
+            Self::Json(s) => s.to_string().as_bytes().to_vec(),
+            _ => vec![],
+        }
+    }
+}
+
+impl From<serde_json::Value> for DataType {
+    fn from(value: serde_json::Value) -> Self {
+        Self::Json(value)
+    }
+}
+
+impl From<String> for DataType {
+    fn from(text: String) -> Self {
+        Self::Text(text)
+    }
+}
+
+impl From<Vec<u8>> for DataType {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self::Binary(BinaryWrapper { inner: bytes })
+    }
+}
+
+impl From<mpsc::Receiver<Vec<u8>>> for DataType {
+    fn from(receiver: mpsc::Receiver<Vec<u8>>) -> Self {
+        Self::Channel(receiver)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(transparent)]
+pub struct BinaryWrapper {
+    #[serde(with = "As::<Hex>")]
+    pub inner: Vec<u8>,
+}
+
+const CONTENT_TYPE: &str = "content-type";
+const ACCEPT: &str = "accept";
+const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
+const CONTENT_TYPE_JSON: &str = "application/json";
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExecutionError {
+    #[error("{0}")]
+    Http(#[from] axum::http::Error),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error("{0}")]
+    Protocol(#[from] tungstenite::error::ProtocolError),
+    #[error("{0}")]
+    Tungstenite(#[from] tungstenite::Error),
+    #[error("Invalid header: {0}")]
+    InvalidHeader(String),
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<InvalidHeaderName> for ExecutionError {
+    fn from(value: InvalidHeaderName) -> Self {
+        Self::InvalidHeader(value.to_string())
+    }
+}
+
+impl From<InvalidHeaderValue> for ExecutionError {
+    fn from(value: InvalidHeaderValue) -> Self {
+        Self::InvalidHeader(value.to_string())
+    }
+}
+
+impl From<HttpError> for ExecutionError {
+    fn from(e: HttpError) -> Self {
+        Self::Other(e.to_string())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SessionId(u128);
+
+impl Display for SessionId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let bytes = self.0.to_le_bytes();
+        let hex = hex::encode(bytes);
+        write!(f, "{hex}")
+    }
+}
+
+impl Distribution<SessionId> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SessionId {
+        SessionId(rng.r#gen())
+    }
+}
+
+impl SessionId {
+    pub fn parse(text: &str) -> Option<Self> {
+        let bytes = hex::decode(text).ok()?;
+
+        let mut session_id_bytes = [0u8; 16];
+        if bytes.len() != 16 {
+            return None;
+        }
+
+        session_id_bytes.copy_from_slice(&bytes);
+        Some(SessionId(u128::from_le_bytes(session_id_bytes)))
+    }
+}
+
+impl axum::extract::FromRequestParts<crate::http::HttpAppState> for SessionId {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &HttpAppState,
+    ) -> Result<Self, Self::Rejection> {
+        let header_value = parts
+            .headers
+            .get("Rusk-Session-Id")
+            .and_then(|v| v.to_str().ok());
+        match header_value.and_then(Self::parse) {
+            Some(sid) => Ok(sid),
+            // TODO: Keep 424 for current RUES compatibility; revisit whether
+            // malformed or missing session identifiers should be normalized to
+            // 400.
+            None => Err(ApiError::new(
+                StatusCode::FAILED_DEPENDENCY,
+                "Session ID not provided or invalid",
+                "invalid_session",
+            )),
+        }
+    }
+}
+
+/// A subscription to an event.
+///
+/// Subscriptions are represented as RUES `target/topic` paths.
+///
+/// Externally, `target` is the first path segment after `/on` (for example
+/// `contracts:<id>` or `transactions`). Internally we split `target` into a
+/// `component` plus optional `entity`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct RuesEventUri {
+    pub component: String,
+    pub entity: Option<String>,
+    pub topic: String,
+}
+
+pub const RUES_LOCATION_PREFIX: &str = "/on";
+
+impl Display for RuesEventUri {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let component = &self.component;
+        let entity = self
+            .entity
+            .as_ref()
+            .map(|e| format!(":{e}"))
+            .unwrap_or_default();
+        let topic = &self.topic;
+
+        write!(f, "{RUES_LOCATION_PREFIX}/{component}{entity}/{topic}")
+    }
+}
+
+impl RuesEventUri {
+    pub fn inner(&self) -> (&str, Option<&String>, &str) {
+        (
+            self.component.as_ref(),
+            self.entity.as_ref(),
+            self.topic.as_ref(),
+        )
+    }
+
+    pub fn from_parts(
+        component: &str,
+        entity: Option<String>,
+        topic: &str,
+    ) -> Option<Self> {
+        if component.is_empty() || topic.is_empty() {
+            return None;
+        }
+        if entity.as_deref().is_some_and(str::is_empty) {
+            return None;
+        }
+
+        let component = component.to_lowercase();
+        let topic = topic.to_lowercase();
+
+        if component == "contracts" && entity.is_none() {
+            return None;
+        }
+
+        Some(Self {
+            component,
+            entity,
+            topic,
+        })
+    }
+
+    pub fn from_target_and_topic(target: &str, topic: &str) -> Option<Self> {
+        let (component, entity) = match target.split_once(':') {
+            Some((component, entity)) => (component, Some(entity.to_string())),
+            None => (target, None),
+        };
+
+        Self::from_parts(component, entity, topic)
+    }
+
+    /// Returns `true` if this subscription URI matches the given event.
+    ///
+    /// Matching rules:
+    /// - Component must match exactly
+    /// - Entity: `None` acts as wildcard (matches any), `Some` must match
+    ///   exactly
+    /// - Topic must match exactly
+    pub fn matches(&self, event: &RuesEvent) -> bool {
+        let event = &event.uri;
+
+        // Component must match exactly
+        let component_matches = self.component == event.component;
+
+        // None entity acts as wildcard, Some must match exactly
+        let entity_matches =
+            self.entity.is_none() || self.entity == event.entity;
+
+        // Topic must match exactly
+        let topic_matches = self.topic == event.topic;
+
+        component_matches && entity_matches && topic_matches
+    }
+}
+
+/// A RUES event
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RuesEvent {
+    pub uri: RuesEventUri,
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: DataType,
+}
+
+/// A RUES Dispatch request event
+#[derive(Debug)]
+pub struct RuesDispatchEvent {
+    pub uri: RuesEventUri,
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub data: RequestData,
+}
+
+impl RuesDispatchEvent {
+    pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
+        let mut h = self.headers.clone();
+        h.retain(|k, _| k.to_lowercase().starts_with("x-"));
+        h
+    }
+
+    pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
+        self.headers
+            .iter()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
+    }
+
+    pub fn check_rusk_version(&self) -> Result<(), HttpError> {
+        check_rusk_version(
+            self.header(RUSK_VERSION_HEADER),
+            self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
+        )
+    }
+
+    pub fn is_binary(&self) -> bool {
+        self.headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.as_str())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default()
+    }
+    pub fn is_json(&self) -> bool {
+        self.headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.as_str())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_JSON))
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn from_uri_headers_and_body(
+        uri: RuesEventUri,
+        request_headers: &HeaderMap,
+        body_bytes: Vec<u8>,
+    ) -> Result<(Self, bool), HttpError> {
+        let (headers, binary_request, binary_response) =
+            parse_rues_request_meta(request_headers)?;
+        Self::from_parsed_parts(
+            uri,
+            headers,
+            body_bytes,
+            binary_request,
+            binary_response,
+        )
+    }
+
+    fn from_parsed_parts(
+        uri: RuesEventUri,
+        headers: serde_json::Map<String, serde_json::Value>,
+        body_bytes: Vec<u8>,
+        binary_request: bool,
+        binary_response: bool,
+    ) -> Result<(Self, bool), HttpError> {
+        let data = parse_request_data(body_bytes, binary_request)?;
+        let ret = RuesDispatchEvent { headers, data, uri };
+        Ok((ret, binary_response))
+    }
+}
+
+fn parse_rues_request_meta(
+    request_headers: &HeaderMap,
+) -> Result<(serde_json::Map<String, serde_json::Value>, bool, bool), HttpError>
+{
+    let headers =
+        request_headers
+            .iter()
+            .map(|(k, v)| {
+                let value = parse_request_header_value(k.as_str(), v)?;
+                Ok((k.to_string().to_lowercase(), value))
+            })
+            .collect::<Result<
+                serde_json::Map<String, serde_json::Value>,
+                HttpError,
+            >>()?;
+
+    let content_type = request_headers
+        .get(CONTENT_TYPE)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or_default();
+
+    let binary_request = content_type == CONTENT_TYPE_BINARY;
+
+    let binary_response = binary_request
+        || request_headers
+            .get(ACCEPT)
+            .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default();
+
+    Ok((headers, binary_request, binary_response))
+}
+
+fn parse_request_data(
+    bytes: Vec<u8>,
+    binary_request: bool,
+) -> Result<RequestData, HttpError> {
+    if binary_request {
+        return Ok(bytes.into());
+    }
+
+    let text = String::from_utf8(bytes)
+        .map_err(|_| HttpError::invalid_payload("Invalid utf8"))?;
+    if let Some(hex) = text.strip_prefix("0x") {
+        if let Ok(bytes) = hex::decode(hex) {
+            Ok(bytes.into())
+        } else {
+            Ok(text.into())
+        }
+    } else {
+        Ok(text.into())
+    }
+}
+
+fn parse_request_header_value(
+    key: &str,
+    value: &HeaderValue,
+) -> Result<serde_json::Value, HttpError> {
+    if value.is_empty() {
+        return Ok(serde_json::Value::Null);
+    }
+
+    let as_str = value.to_str().map_err(|_| {
+        HttpError::invalid_payload(
+            format!("Invalid header encoding for {key}",),
+        )
+    })?;
+
+    if key.to_lowercase().starts_with(GQL_VAR_PREFIX)
+        && let Ok(parsed) = serde_json::from_str::<serde_json::Value>(as_str)
+    {
+        return Ok(parsed);
+    }
+
+    Ok(serde_json::Value::String(as_str.to_string()))
+}
+
+impl RuesEvent {
+    pub fn add_header<K: Into<String>, V: Into<serde_json::Value>>(
+        &mut self,
+        key: K,
+        value: V,
+    ) {
+        self.headers.insert(key.into(), value.into());
+    }
+
+    /// Serialize the event into a vector of bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let headers_bytes = serde_json::to_vec(&self.headers)
+            .expect("Serializing JSON should succeed");
+
+        let headers_len = headers_bytes.len() as u32;
+        let headers_len_bytes = headers_len.to_le_bytes();
+
+        let data_bytes = self.data.to_bytes();
+
+        let len =
+            headers_len_bytes.len() + headers_bytes.len() + data_bytes.len();
+        let mut bytes = Vec::with_capacity(len);
+
+        bytes.extend(headers_len_bytes);
+        bytes.extend(headers_bytes);
+        bytes.extend(data_bytes);
+
+        bytes
+    }
+}
+
+#[cfg(feature = "chain")]
+impl From<node_data::events::contract::ContractTxEvent> for RuesEvent {
+    fn from(tx_event: node_data::events::contract::ContractTxEvent) -> Self {
+        let mut headers = serde_json::Map::new();
+
+        headers
+            .insert("Rusk-Origin".into(), hex::encode(tx_event.origin).into());
+
+        let event = tx_event.event;
+        Self {
+            uri: RuesEventUri {
+                component: "contracts".into(),
+                entity: Some(hex::encode(event.target.to_bytes())),
+                topic: event.topic,
+            },
+            data: event.data.into(),
+            headers,
+        }
+    }
+}
+
+#[cfg(feature = "chain")]
+impl From<node_data::events::Event> for RuesEvent {
+    fn from(value: node_data::events::Event) -> Self {
+        let data = value.data.map_or(DataType::None, DataType::Json);
+
+        Self {
+            uri: RuesEventUri {
+                component: value.component.into(),
+                entity: Some(value.entity),
+                topic: value.topic.into(),
+            },
+            data,
+            headers: Default::default(),
+        }
+    }
+}
+
+/// Checks the Rusk version of the incoming request against the current version
+/// of the binary.
+///
+/// If `strict` is `true`, the version check is strict and requires the presence
+/// of the version header, otherwise the check for the version header can be
+/// optional.
+pub fn check_rusk_version(
+    version: Option<&serde_json::Value>,
+    strict: bool,
+) -> Result<(), HttpError> {
+    if strict && version.is_none() {
+        return Err(HttpError::VersionMismatch(
+            "Missing Rusk-Version header while Rusk-Version-Strict is set"
+                .to_string(),
+        ));
+    }
+
+    if let Some(v) = version {
+        let req = match v.as_str() {
+            Some(v) => VersionReq::from_str(v),
+            None => VersionReq::from_str(&v.to_string()),
+        }?;
+
+        let mut current = Version::from_str(&crate::VERSION)?;
+
+        // if client is not requesting a strict check we should ignore the
+        // prerelease version of the current binary
+        //
+        // If instead the client request a strict version we should respect
+        // that and check the version as is
+        //
+        // This solves the issue when connecting to a node that is in`-dev`
+        // mode
+        if !strict {
+            current.pre = Prerelease::EMPTY;
+        }
+
+        if !req.matches(&current) {
+            return Err(HttpError::VersionMismatch(format!(
+                "Mismatched rusk version: requested {req} - current {current}",
+            )));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::HeaderValue;
+
+    use super::{
+        DataType, RuesEvent, RuesEventUri, parse_request_header_value,
+    };
+
+    const DUMMY_ENTITY: &str = "abc123";
+
+    #[test]
+    fn build_uri_from_parts_cases() {
+        let valid_cases = [
+            (
+                format!("contracts:{DUMMY_ENTITY}"),
+                ("contracts", Some(DUMMY_ENTITY), "withdraw"),
+                "contracts with entity and topic",
+            ),
+            (
+                "blocks".to_string(),
+                ("blocks", None, "accepted"),
+                "blocks without entity",
+            ),
+            (
+                "transactions".to_string(),
+                ("transactions", None, "included"),
+                "transactions without entity",
+            ),
+            (
+                "BLOCKS".to_string(),
+                ("blocks", None, "accepted"),
+                "normalizes component/topic to lowercase",
+            ),
+            (
+                "contracts:entity:with:colons".to_string(),
+                ("contracts", Some("entity:with:colons"), "topic"),
+                "entity can include colons",
+            ),
+        ];
+
+        for (target, (component, entity, topic), message) in valid_cases {
+            let uri = RuesEventUri::from_target_and_topic(&target, topic)
+                .expect("valid URI should parse");
+            assert_eq!(uri.component, component, "{message}: component");
+            assert_eq!(uri.entity.as_deref(), entity, "{message}: entity");
+            assert_eq!(uri.topic, topic, "{message}: topic");
+        }
+
+        let invalid_cases = [
+            (
+                "contracts".to_string(),
+                "contracts without entity should fail parsing",
+            ),
+            ("".to_string(), "empty component should fail parsing"),
+            ("contracts:".to_string(), "empty entity should fail parsing"),
+        ];
+
+        for (target, message) in invalid_cases {
+            let uri = RuesEventUri::from_target_and_topic(&target, "topic");
+            assert!(uri.is_none(), "{message}");
+        }
+
+        assert!(
+            RuesEventUri::from_target_and_topic("blocks", "").is_none(),
+            "empty topic should fail parsing"
+        );
+    }
+
+    #[test]
+    fn build_uri_from_target_and_topic_cases() {
+        let uri = RuesEventUri::from_target_and_topic(
+            &format!("contracts:{DUMMY_ENTITY}"),
+            "withdraw",
+        )
+        .expect("contracts target should build");
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity.as_deref(), Some(DUMMY_ENTITY));
+        assert_eq!(uri.topic, "withdraw");
+
+        let uri = RuesEventUri::from_parts("BLOCKS", None, "ACCEPTED")
+            .expect("static component should build");
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "accepted");
+
+        assert!(
+            RuesEventUri::from_target_and_topic("contracts", "withdraw")
+                .is_none(),
+            "contracts without entity should be rejected"
+        );
+        assert!(
+            RuesEventUri::from_parts("blocks", None, "").is_none(),
+            "empty topic should be rejected"
+        );
+    }
+
+    #[test]
+    fn parse_request_header_value_cases() {
+        enum HeaderParseExpectation {
+            Value(serde_json::Value),
+            InvalidPayload,
+        }
+
+        let cases = vec![
+            (
+                "sign",
+                HeaderValue::from_static("1234"),
+                HeaderParseExpectation::Value(serde_json::Value::String(
+                    "1234".to_string(),
+                )),
+            ),
+            (
+                "rusk-gqlvar-limit",
+                HeaderValue::from_static("1234"),
+                HeaderParseExpectation::Value(serde_json::json!(1234)),
+            ),
+            (
+                "sign",
+                HeaderValue::from_bytes(&[0xff])
+                    .expect("header value construction should succeed"),
+                HeaderParseExpectation::InvalidPayload,
+            ),
+        ];
+
+        for (key, value, expected) in cases {
+            match expected {
+                HeaderParseExpectation::Value(expected) => {
+                    let parsed = parse_request_header_value(key, &value)
+                        .expect("header parse should succeed");
+                    assert_eq!(parsed, expected);
+                }
+                HeaderParseExpectation::InvalidPayload => {
+                    let err = parse_request_header_value(key, &value)
+                        .expect_err("invalid header should fail");
+                    assert!(matches!(
+                        err,
+                        crate::http::HttpError::InvalidPayload(_)
+                    ));
+                }
+            }
+        }
+    }
+
+    // matches test
+
+    #[test]
+    fn matches_exact_uri() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_component_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_entity_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some("def456".to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_topic_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "stake".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_none_entity_acts_as_wildcard() {
+        // Entity wildcard: subscription with None entity matches any event
+        // entity
+        let subscription = RuesEventUri {
+            component: "blocks".to_string(),
+            entity: None,
+            topic: "accepted".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some("12345".to_string()),
+                topic: "accepted".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
+}

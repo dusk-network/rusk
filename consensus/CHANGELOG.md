@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Changed
+
+- Switch transaction validation call sites to use the explicit
+  `LedgerTransaction` ledger wrapper.
+
+### Fixed
+
+- Reject candidate transactions whose ledger encoding does not match the
+  canonical ledger format for the block height.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
@@ -56,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3543]: https://github.com/dusk-network/rusk/issues/3543
 [#3828]: https://github.com/dusk-network/rusk/issues/3828
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.6.0...dusk-consensus-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.4.0...dusk-consensus-1.6.0
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.3.0...dusk-consensus-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.2.0...dusk-consensus-1.3.0

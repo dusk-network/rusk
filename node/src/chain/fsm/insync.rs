@@ -7,11 +7,32 @@
 use std::cmp::Ordering;
 use std::ops::Deref;
 
+use dusk_consensus::config::MINIMUM_BLOCK_TIME;
+use node_data::get_current_timestamp;
 use node_data::message::Message;
 use node_data::message::payload::{GetResource, Inv, Quorum};
 
 use super::*;
 use crate::chain::fallback;
+use crate::chain::header_validation::MARGIN_TIMESTAMP;
+
+// Returns whether the advertised remote height could already exist according
+// to our tip timestamp, the minimum block time, and local wall clock.
+fn is_plausible_sync_target(
+    tip_timestamp: u64,
+    tip_height: u64,
+    remote_height: u64,
+    local_time: u64,
+) -> bool {
+    let delta = remote_height.saturating_sub(tip_height);
+    let min_remote_timestamp =
+        tip_timestamp.saturating_add(delta.saturating_mul(*MINIMUM_BLOCK_TIME));
+
+    // Apply the same small future-drift allowance used by header validation.
+    // Otherwise presync could reject a target that an eventual block header
+    // would still be allowed to carry.
+    min_remote_timestamp <= local_time.saturating_add(MARGIN_TIMESTAMP)
+}
 
 pub(super) struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network>
 {
@@ -66,13 +87,30 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         if let Some(peer_addr) = metadata.map(|m| m.src_addr) {
             // If there's no active presync process, we proceed with validation
             if self.presync.is_none() {
-                let tip_height = self.acc.read().await.get_curr_height().await;
+                let tip_header = self.acc.read().await.tip_header().await;
+                let tip_height = tip_header.height;
                 // We use the quorum's previous block, to be sure that network
                 // already have the full block available
-                let remote_height = remote_quorum.header.round - 1;
+                let remote_height =
+                    remote_quorum.header.round.saturating_sub(1);
                 // Don't compare with `= tip + 1` because that's supposed to be
                 // handled by the InSync
                 if remote_height > tip_height + 1 {
+                    // Ignore Quorum messages that are implausibly far ahead
+                    if !is_plausible_sync_target(
+                        tip_header.timestamp,
+                        tip_height,
+                        remote_height,
+                        get_current_timestamp(),
+                    ) {
+                        debug!(
+                            event = "quorum discarded",
+                            reason = "implausible sync target",
+                            remote_height,
+                            tip_height,
+                        );
+                        return;
+                    }
                     // Initialize the presync process, storing metadata about
                     // the peer, the remote height, and our current tip height.
                     // This serves as a safeguard to avoid switching into
@@ -180,27 +218,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         new_iter = remote_header.iteration,
                     );
 
-                    // Retrieve prev_block state
-                    let prev_state = acc
+                    // Retrieve prev_block header
+                    let prev_header = acc
                         .db
                         .read()
                         .await
                         .view(|t| {
-                            let res = t
-                                .block_header(&remote_header.prev_block_hash)?
-                                .map(|prev| prev.state_hash);
-
-                            anyhow::Ok(res)
+                            t.block_header(&remote_header.prev_block_hash)
                         })?
                         .ok_or_else(|| {
-                            anyhow::anyhow!("could not retrieve state_hash")
+                            anyhow::anyhow!("could not retrieve prev header")
                         })?;
 
                     match fallback::WithContext::new(acc.deref())
                         .try_revert(
                             local_header,
                             remote_header,
-                            RevertTarget::Commit(prev_state),
+                            RevertTarget::Commit(&prev_header),
                         )
                         .await
                     {
@@ -340,13 +374,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     pub async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
-        if let Some(pre_sync) = &mut self.presync {
-            if pre_sync.expiry <= Instant::now() {
-                // Reset presync if it timed out
-                self.presync = None;
-            }
+        if let Some(pre_sync) = &mut self.presync
+            && pre_sync.expiry <= Instant::now()
+        {
+            // Reset presync if it timed out
+            self.presync = None;
         }
 
         Ok(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_implausible_future_sync_target() {
+        let tip_timestamp = 100;
+        let tip_height = 10;
+        let remote_height = 15;
+        let min_remote_timestamp =
+            tip_timestamp + (remote_height - tip_height) * *MINIMUM_BLOCK_TIME;
+        let local_time = min_remote_timestamp - MARGIN_TIMESTAMP - 1;
+
+        assert!(!is_plausible_sync_target(
+            tip_timestamp,
+            tip_height,
+            remote_height,
+            local_time,
+        ));
     }
 }

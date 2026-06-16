@@ -12,33 +12,14 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+    paths:
+      - 'wallet-core/**'
+      - 'w3sper.js/**'
+      - '.github/workflows/w3sperjs_ci.yml'
 
 jobs:
-  # JOB to run change detection
-  changes:
-    runs-on: core
-    # Required permissions
-    permissions:
-      pull-requests: read
-    # Set job outputs to values from filter step
-    outputs:
-      run-ci: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.run-ci }}
-    steps:
-      # For pull requests it's not necessary to checkout the code
-      - uses: dorny/paths-filter@v3
-        id: filter
-        if: github.event_name != 'workflow_dispatch'
-        with:
-          filters: |
-            run-ci:
-              - 'execution-core/**'
-              - 'wallet-core/**'
-              - 'w3sper.js/**'
-              - '.github/workflows/w3sperjs_ci.yml'
-
   w3sper_test:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     name: "Run w3sper tests"
     runs-on: core
 
@@ -66,6 +47,24 @@ jobs:
             git checkout "${GITHUB_SHA}"
           fi
 
+      - name: Install Deno
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DENO_INSTALL="${WORKDIR}/.deno"
+          echo "DENO_INSTALL=${DENO_INSTALL}" >> "$GITHUB_ENV"
+          echo "${DENO_INSTALL}/bin" >> "$GITHUB_PATH"
+          curl -fsSL https://deno.land/install.sh | sh
+          "${DENO_INSTALL}/bin/deno" --version
+
+      - name: Run deno lint and format checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${WORKDIR}/repo/w3sper.js"
+          deno lint --rules-exclude=no-slow-types src tests
+          deno fmt --check deno.json src tests
+
       - name: Add Rust tools to PATH
         shell: bash
         run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
@@ -76,7 +75,6 @@ jobs:
           set -euo pipefail
           rustup toolchain install stable --profile minimal
           rustup default stable
-          rustup component add rust-src rustfmt clippy
           rustup target add wasm32-unknown-unknown
 
       - name: Configure git auth for private dependencies
@@ -87,17 +85,13 @@ jobs:
           echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
           git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
-      - name: Setup deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Build and start local Rusk node
         shell: bash
         env:
           DUSK_CONSENSUS_KEYS_PASS: password
           RUSK_MINIMUM_BLOCK_TIME: 1
           RUSK_ALLOW_CFG_OVERRIDE: true
+          RUSK_PROFILE_PATH: /home/docker/.dusk/rusk
         run: |
           set -euo pipefail
           rm -rf /tmp/w3sper.state
@@ -146,7 +140,7 @@ jobs:
           cd "${WORKDIR}/repo/w3sper.js"
           deno task wasm
           curl -sfL \
-            http://localhost:8080/static/drivers/wallet-core-1.6.0.wasm \
+            http://localhost:8080/static/drivers/wallet-core-1.6.1.wasm \
             -o ../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm
           deno task test
 
@@ -163,6 +157,10 @@ jobs:
             done
             kill -9 "${RUSK_PID}" 2>/dev/null || true
           fi
+
+      - name: sccache stats
+        if: always()
+        run: sccache -s || true
 
       - name: Cleanup
         if: always()

@@ -10,17 +10,17 @@ use std::sync::LazyLock;
 
 use dusk_vm::FeatureActivation;
 
-use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
-
 use super::feature::{
-    FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
-    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, HQ_KECCAK256,
+    FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_PHOENIX,
+    FEATURE_DISABLE_WASM64, FEATURE_HARDFORK_AEGIS, FEATURE_HARDFORK_BOREAS,
+    FEATURE_PLONK_V2, FEATURE_WASM_REFERENCE_TYPES, HQ_KECCAK256,
     HQ_SECP256K1_RECOVER, HQ_SHA256, HQ_VERIFY_KZG_PROOF,
 };
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
     DEFAULT_MIN_DEPLOY_POINTS, DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
 };
+use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
 
 pub const MAINNET_ID: u8 = 1;
 pub const TESTNET_ID: u8 = 2;
@@ -37,7 +37,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 12],
+    pub features: Vec<(&'static str, FeatureActivation)>,
 }
 
 impl WellKnownConfig {
@@ -47,15 +47,12 @@ impl WellKnownConfig {
     pub fn from_chain_id(chain_id: u8) -> Self {
         match chain_id {
             MAINNET_ID => MAINNET_CONFIG.clone(),
-            TESTNET_ID => TESTNET_CONFIG,
-            DEVNET_ID => DEVNET_CONFIG,
-            _ => LOCALNET_CONFIG,
+            TESTNET_ID => TESTNET_CONFIG.clone(),
+            DEVNET_ID => DEVNET_CONFIG.clone(),
+            _ => LOCALNET_CONFIG.clone(),
         }
     }
 }
-
-pub const FILLER: &str = "FILLER_FEATURE";
-const FILLER_FEATURE: (&str, FeatureActivation) = (FILLER, NEVER);
 
 /// Estimated mainnet block height for 10th December 2025, 09:00 UTC.
 const MAINNET_AT_10_12_2025_AT_09_00_UTC: u64 = 2_873_420;
@@ -92,6 +89,15 @@ const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
 
 const MAINNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(3_590_904);
+const MAINNET_BOREAS_RESTART_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(4_414_095);
+const MAINNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
+    MAINNET_BOREAS_RESTART_ACTIVATION;
+const MAINNET_DISABLE_PHOENIX_ACTIVATION: FeatureActivation =
+    MAINNET_BOREAS_RESTART_ACTIVATION;
+/// Historical activation matching the mainnet 1.5/PLONK_V2 activation point.
+const MAINNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
+    MAINNET_PLONK_V2_ACTIVATION;
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
@@ -101,18 +107,24 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
         min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-        features: [
+        features: vec![
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
-            (HQ_KECCAK256, NEVER),
-            (HQ_SHA256, NEVER),
-            (HQ_VERIFY_KZG_PROOF, NEVER),
-            (HQ_SECP256K1_RECOVER, NEVER),
+            (HQ_KECCAK256, MAINNET_HARDFORK_BOREAS_ACTIVATION),
+            (HQ_SHA256, MAINNET_HARDFORK_BOREAS_ACTIVATION),
+            (HQ_VERIFY_KZG_PROOF, MAINNET_HARDFORK_BOREAS_ACTIVATION),
+            (HQ_SECP256K1_RECOVER, MAINNET_HARDFORK_BOREAS_ACTIVATION),
             (FEATURE_BLOB, MAINNET_BLOB_ACTIVATION),
             (FEATURE_PLONK_V2, MAINNET_PLONK_V2_ACTIVATION),
             (FEATURE_HARDFORK_AEGIS, MAINNET_HARDFORK_AEGIS_ACTIVATION),
+            (FEATURE_HARDFORK_BOREAS, MAINNET_HARDFORK_BOREAS_ACTIVATION),
+            (
+                FEATURE_WASM_REFERENCE_TYPES,
+                MAINNET_WASM_REFERENCE_TYPES_ACTIVATION,
+            ),
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
+            (FEATURE_DISABLE_PHOENIX, MAINNET_DISABLE_PHOENIX_ACTIVATION),
             (
                 "shade_6fdfdc713a18fc6ca2ad20eb2b4a3305a935ef47d6a872d9a4df8bc9fd9d169e",
                 FeatureActivation::Ranges(vec![(
@@ -123,6 +135,51 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
         ],
     }
 });
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mainnet_feature(feature: &str) -> &FeatureActivation {
+        MAINNET_CONFIG
+            .features
+            .iter()
+            .find(|(name, _)| *name == feature)
+            .map(|(_, activation)| activation)
+            .expect("mainnet feature should exist")
+    }
+
+    fn testnet_feature(feature: &str) -> &FeatureActivation {
+        TESTNET_CONFIG
+            .features
+            .iter()
+            .find(|(name, _)| *name == feature)
+            .map(|(_, activation)| activation)
+            .expect("testnet feature should exist")
+    }
+
+    #[test]
+    fn mainnet_boreas_and_phoenix_disable_activate_after_restart() {
+        const SNAPSHOT_HEIGHT: u64 = 4_414_094;
+        const FIRST_RESTART_BLOCK: u64 = 4_414_095;
+
+        for feature in [FEATURE_HARDFORK_BOREAS, FEATURE_DISABLE_PHOENIX] {
+            let activation = mainnet_feature(feature);
+            assert!(!activation.is_active_at(SNAPSHOT_HEIGHT));
+            assert!(activation.is_active_at(FIRST_RESTART_BLOCK));
+        }
+    }
+
+    #[test]
+    fn testnet_phoenix_disable_activates_in_the_future() {
+        const BEFORE_DISABLE: u64 = 3_999_999;
+        const DISABLE_HEIGHT: u64 = 4_000_000;
+
+        let activation = testnet_feature(FEATURE_DISABLE_PHOENIX);
+        assert!(!activation.is_active_at(BEFORE_DISABLE));
+        assert!(activation.is_active_at(DISABLE_HEIGHT));
+    }
+}
 
 /// Estimated testnet block height for 12th November 2025, 09:00 UTC.
 const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
@@ -139,71 +196,89 @@ const TESTNET_PLONK_V2_ACTIVATION: FeatureActivation =
 const TESTNET_HARDFORK_AEGIS_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(2_773_727);
 
+/// Estimated testnet block height for 12th May 2026 around 10:00 UTC.
+const TESTNET_HARDFORK_BOREAS_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(3_378_000);
+const TESTNET_DISABLE_PHOENIX_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(4_000_000);
+
+/// Historical activation matching the testnet 1.5/PLONK_V2 activation point.
+const TESTNET_WASM_REFERENCE_TYPES_ACTIVATION: FeatureActivation =
+    TESTNET_PLONK_V2_ACTIVATION;
+
 /// Testnet VM configuration.
-const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
-        (HQ_SHA256, NEVER),
-        (HQ_VERIFY_KZG_PROOF, NEVER),
-        (HQ_SECP256K1_RECOVER, NEVER),
-        (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
-        (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
-        (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_DISABLE_WASM32, NEVER),
-        (FEATURE_DISABLE_3RD_PARTY, NEVER),
-        FILLER_FEATURE,
-    ],
-};
+static TESTNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
+            (HQ_SHA256, TESTNET_HARDFORK_BOREAS_ACTIVATION),
+            (HQ_VERIFY_KZG_PROOF, TESTNET_HARDFORK_BOREAS_ACTIVATION),
+            (HQ_SECP256K1_RECOVER, TESTNET_HARDFORK_BOREAS_ACTIVATION),
+            (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+            (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
+            (FEATURE_HARDFORK_AEGIS, TESTNET_HARDFORK_AEGIS_ACTIVATION),
+            (FEATURE_HARDFORK_BOREAS, TESTNET_HARDFORK_BOREAS_ACTIVATION),
+            (
+                FEATURE_WASM_REFERENCE_TYPES,
+                TESTNET_WASM_REFERENCE_TYPES_ACTIVATION,
+            ),
+            (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+            (FEATURE_DISABLE_WASM32, NEVER),
+            (FEATURE_DISABLE_3RD_PARTY, NEVER),
+            (FEATURE_DISABLE_PHOENIX, TESTNET_DISABLE_PHOENIX_ACTIVATION),
+        ],
+    });
 
 /// Devnet VM configuration.
-const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, GENESIS),
-        (HQ_SHA256, GENESIS),
-        (HQ_VERIFY_KZG_PROOF, GENESIS),
-        (HQ_SECP256K1_RECOVER, GENESIS),
-        (FEATURE_BLOB, GENESIS),
-        (FEATURE_PLONK_V2, NEVER),
-        (FEATURE_HARDFORK_AEGIS, GENESIS),
-        (FEATURE_DISABLE_WASM64, GENESIS),
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-    ],
-};
+static DEVNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, GENESIS),
+            (HQ_SHA256, GENESIS),
+            (HQ_VERIFY_KZG_PROOF, GENESIS),
+            (HQ_SECP256K1_RECOVER, GENESIS),
+            (FEATURE_BLOB, GENESIS),
+            (FEATURE_PLONK_V2, GENESIS),
+            (FEATURE_HARDFORK_AEGIS, GENESIS),
+            (FEATURE_HARDFORK_BOREAS, GENESIS),
+            (FEATURE_WASM_REFERENCE_TYPES, GENESIS),
+            (FEATURE_DISABLE_WASM64, GENESIS),
+            (FEATURE_DISABLE_PHOENIX, NEVER),
+        ],
+    });
 
 /// Localnet VM configuration.
-const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: DEFAULT_GAS_PER_BLOB,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, GENESIS),
-        (HQ_SHA256, GENESIS),
-        (HQ_VERIFY_KZG_PROOF, GENESIS),
-        (HQ_SECP256K1_RECOVER, GENESIS),
-        (FEATURE_BLOB, GENESIS),
-        (FEATURE_PLONK_V2, GENESIS),
-        (FEATURE_HARDFORK_AEGIS, GENESIS),
-        (FEATURE_DISABLE_WASM64, GENESIS),
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-        FILLER_FEATURE,
-    ],
-};
+static LOCALNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: vec![
+            (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+            (HQ_KECCAK256, GENESIS),
+            (HQ_SHA256, GENESIS),
+            (HQ_VERIFY_KZG_PROOF, GENESIS),
+            (HQ_SECP256K1_RECOVER, GENESIS),
+            (FEATURE_BLOB, GENESIS),
+            (FEATURE_PLONK_V2, GENESIS),
+            (FEATURE_HARDFORK_AEGIS, GENESIS),
+            (FEATURE_HARDFORK_BOREAS, GENESIS),
+            (FEATURE_WASM_REFERENCE_TYPES, GENESIS),
+            (FEATURE_DISABLE_WASM64, GENESIS),
+            (FEATURE_DISABLE_PHOENIX, NEVER),
+        ],
+    });

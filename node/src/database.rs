@@ -11,7 +11,8 @@ pub mod rocksdb;
 
 use anyhow::Result;
 use node_data::ledger::{
-    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
+    Block, Fault, Header, Label, LedgerTransaction, SpendingId,
+    SpentTransaction,
 };
 use node_data::message::{ConsensusHeader, payload};
 use serde::{Deserialize, Serialize};
@@ -114,6 +115,7 @@ pub trait Ledger {
     fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
     fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
 
+    fn latest_block_opt(&self) -> Result<Option<LightBlock>>;
     fn latest_block(&self) -> Result<LightBlock>;
 }
 
@@ -161,12 +163,12 @@ pub trait Mempool {
     /// Adds a transaction to the mempool with a timestamp.
     fn store_mempool_tx(
         &mut self,
-        tx: &Transaction,
+        tx: &LedgerTransaction,
         timestamp: u64,
     ) -> Result<()>;
 
     /// Gets a transaction from the mempool.
-    fn mempool_tx(&self, tx_id: [u8; 32]) -> Result<Option<Transaction>>;
+    fn mempool_tx(&self, tx_id: [u8; 32]) -> Result<Option<LedgerTransaction>>;
 
     /// Checks if a transaction exists in the mempool.
     fn mempool_tx_exists(&self, tx_id: [u8; 32]) -> Result<bool>;
@@ -191,7 +193,7 @@ pub trait Mempool {
     /// Get an iterator over the mempool transactions sorted by gas price
     fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Box<dyn Iterator<Item = Transaction> + '_>;
+    ) -> Box<dyn Iterator<Item = LedgerTransaction> + '_>;
 
     /// Get an iterator over the mempool transactions hash by gas price
     fn mempool_txs_ids_sorted_by_fee(

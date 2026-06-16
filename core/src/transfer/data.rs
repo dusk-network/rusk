@@ -14,6 +14,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
 
+use blake2b_simd::Params;
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use piecrust_uplink::StandardBufSerializer;
@@ -30,7 +31,7 @@ use serde_with::hex::Hex;
 use sha2::{Digest, Sha256};
 
 use crate::Error;
-use crate::abi::ContractId;
+use crate::abi::{CONTRACT_ID_BYTES, ContractId};
 
 /// The maximum size of a memo.
 pub const MAX_MEMO_SIZE: usize = 512;
@@ -157,13 +158,20 @@ impl TransactionData {
         let mut buf = buf;
 
         // deserialize optional transaction data
-        let data = match u8::from_reader(&mut buf)? {
-            Self::NONE_ID => None,
+        match u8::from_reader(&mut buf)? {
+            Self::NONE_ID => {
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+                Ok(None)
+            }
             Self::CALL_ID => {
-                Some(TransactionData::Call(ContractCall::from_slice(buf)?))
+                let call = ContractCall::from_slice(buf)?;
+                Ok(Some(TransactionData::Call(call)))
             }
             Self::DEPLOY_ID => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+                let deploy = ContractDeploy::from_slice(buf)?;
+                Ok(Some(TransactionData::Deploy(deploy)))
             }
             Self::MEMO_ID => {
                 // we only build for 64-bit so this truncation is impossible
@@ -175,7 +183,7 @@ impl TransactionData {
                 }
 
                 let memo = buf[..size].to_vec();
-                Some(TransactionData::Memo(memo))
+                Ok(Some(TransactionData::Memo(memo)))
             }
             Self::BLOB_ID => {
                 let blobs_len = u8::from_reader(&mut buf)?;
@@ -184,14 +192,15 @@ impl TransactionData {
                     let blob = BlobData::from_buf(&mut buf)?;
                     blobs.push(blob);
                 }
-                Some(TransactionData::Blob(blobs))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
 
-        Ok(data)
+                if !buf.is_empty() {
+                    return Err(BytesError::InvalidData);
+                }
+
+                Ok(Some(TransactionData::Blob(blobs)))
+            }
+            _ => Err(BytesError::InvalidData),
+        }
     }
 }
 
@@ -294,6 +303,28 @@ pub struct ContractCall {
 }
 
 impl ContractDeploy {
+    /// Creates a new contract deployment with canonical bytecode hashing.
+    #[must_use]
+    pub fn new(
+        bytecode: impl Into<Vec<u8>>,
+        owner: impl Into<Vec<u8>>,
+        init_args: Option<Vec<u8>>,
+        nonce: u64,
+    ) -> Self {
+        Self {
+            bytecode: ContractBytecode::new(bytecode),
+            owner: owner.into(),
+            init_args,
+            nonce,
+        }
+    }
+
+    /// Derives the unique identifier of the deployed contract.
+    #[must_use]
+    pub fn contract_id(&self) -> ContractId {
+        gen_contract_id(&self.bytecode.bytes, self.nonce, &self.owner)
+    }
+
     /// Serialize a `ContractDeploy` into a variable length byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -336,6 +367,10 @@ impl ContractDeploy {
         };
 
         let nonce = u64::from_reader(&mut buf)?;
+
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
 
         Ok(Self {
             bytecode,
@@ -452,6 +487,10 @@ impl ContractCall {
 
         let fn_args = crate::read_vec(&mut buf)?;
 
+        if !buf.is_empty() {
+            return Err(BytesError::InvalidData);
+        }
+
         Ok(Self {
             contract: contract.into(),
             fn_name,
@@ -471,6 +510,17 @@ pub struct ContractBytecode {
 }
 
 impl ContractBytecode {
+    /// Creates bytecode and its canonical Blake3 hash.
+    #[must_use]
+    pub fn new(bytes: impl Into<Vec<u8>>) -> Self {
+        let bytes = bytes.into();
+
+        Self {
+            hash: blake3::hash(&bytes).into(),
+            bytes,
+        }
+    }
+
     /// Provides contribution bytes for an external hash.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
@@ -497,6 +547,34 @@ impl ContractBytecode {
         let bytes = crate::read_vec(buf)?;
         Ok(Self { hash, bytes })
     }
+}
+
+/// Generates the canonical identifier of a contract deployment.
+///
+/// The identifier is derived from the contract bytecode bytes, deployment
+/// nonce, and owner bytes using Blake2b-256.
+///
+/// # Panics
+/// Panics if the Blake2b digest length no longer matches
+/// [`CONTRACT_ID_BYTES`].
+#[must_use]
+pub fn gen_contract_id(
+    bytes: impl AsRef<[u8]>,
+    nonce: u64,
+    owner: impl AsRef<[u8]>,
+) -> ContractId {
+    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
+    hasher.update(bytes.as_ref());
+    hasher.update(&nonce.to_le_bytes());
+    hasher.update(owner.as_ref());
+
+    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
+        .finalize()
+        .as_bytes()
+        .try_into()
+        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
+
+    ContractId::from_bytes(hash_bytes)
 }
 
 impl BlobData {

@@ -20,76 +20,48 @@ use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_core::abi::{ContractId, Event};
-use dusk_core::plonk::PlonkVersion;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
     Reward, RewardReason, STAKE_CONTRACT, StakeData, StakeKeys,
 };
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::{
-    PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
-    Transaction as ProtocolTransaction,
+    TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
+use dusk_vm::{
+    CallReceipt, Error as VMError, ExecutionError, Session, VM, execute,
+};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::hard_fork::HardFork;
-use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
+use node_data::ledger::{
+    Block, Header, LedgerTransaction, Slash, SpentTransaction, to_str,
+};
 use parking_lot::RwLock;
 use rkyv::Deserialize;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::{info, warn};
 
-use super::RuskVmConfig;
+use super::fork_policy::set_hard_fork_activations;
+use super::{FEATURE_HARDFORK_BOREAS, RuskVmConfig};
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
-    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip,
-    get_block_rewards, set_vm_host_context,
+    RuesEvent, Rusk, RuskTip, get_block_rewards, set_vm_host_context,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
 
-fn hard_fork_aegis_activation(vm_config: &RuskVmConfig) -> u64 {
-    match vm_config.feature(FEATURE_HARDFORK_AEGIS) {
-        Some(dusk_vm::FeatureActivation::Height(height)) => *height,
-        Some(dusk_vm::FeatureActivation::Ranges(ranges)) => ranges
-            .iter()
-            .map(|(start, _)| *start)
-            .min()
-            .unwrap_or(u64::MAX),
-        None => u64::MAX,
-    }
-}
-
-pub(super) fn plonk_version_at(
-    vm_config: &RuskVmConfig,
-    block_height: u64,
-    hard_fork: HardFork,
-) -> PlonkVersion {
-    match hard_fork {
-        HardFork::PreFork => {
-            let plonk_v2_active = vm_config
-                .feature(FEATURE_PLONK_V2)
-                .map(|activation| activation.is_active_at(block_height))
-                .unwrap_or(false);
-
-            if plonk_v2_active {
-                PlonkVersion::V2
-            } else {
-                PlonkVersion::V1
-            }
-        }
-        HardFork::Aegis => PlonkVersion::V3,
-    }
+fn boreas_active(vm_config: &RuskVmConfig, block_height: u64) -> bool {
+    vm_config.feature_active_at(FEATURE_HARDFORK_BOREAS, block_height)
 }
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
-    pub fn new<P: AsRef<Path>>(
+    pub fn new<P, F>(
         dir: P,
+        initial_header: F,
         chain_id: u8,
         vm_config: RuskVmConfig,
         min_gas_limit: u64,
@@ -97,14 +69,15 @@ impl Rusk {
         event_sender: broadcast::Sender<RuesEvent>,
         #[cfg(feature = "archive")] archive: Archive,
         driver_store: DriverStore,
-    ) -> Result<Self> {
+    ) -> Result<Self>
+    where
+        P: AsRef<Path>,
+        F: FnOnce([u8; 32]) -> Result<Header>,
+    {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
 
-        let hard_fork_aegis_activation = hard_fork_aegis_activation(&vm_config);
-        node_data::hard_fork::set_aegis_activation_height(
-            hard_fork_aegis_activation,
-        );
+        set_hard_fork_activations(&vm_config);
 
         let commit_id_path = to_rusk_state_id_path(dir);
 
@@ -118,6 +91,7 @@ impl Rusk {
         }
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
+        let initial_tip = initial_header(base_commit)?;
 
         let mut vm = VM::new(dir)?;
         for (feat, activation) in vm_config.features() {
@@ -130,8 +104,8 @@ impl Rusk {
         let vm = Arc::new(vm);
 
         let tip = Arc::new(RwLock::new(RuskTip {
-            current: base_commit,
-            base: base_commit,
+            current: initial_tip.clone(),
+            base: initial_tip,
         }));
 
         Ok(Self {
@@ -150,14 +124,14 @@ impl Rusk {
         })
     }
 
-    pub fn create_state_transition<I: Iterator<Item = Transaction>>(
+    pub fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mut mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -172,7 +146,7 @@ impl Rusk {
 
         let cert_voters = &transition_data.cert_voters[..];
 
-        let (_plonk_version_guard, _hard_fork_guard) =
+        let _host_query_policy_guard =
             set_vm_host_context(&self.vm_config, block_height);
 
         info!(
@@ -195,6 +169,46 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let execution_config = self.vm_config.to_execution_config(block_height);
+        let boreas_active = boreas_active(&self.vm_config, block_height);
+        let replay_spent_txs =
+            |spent_txs: &[SpentTransaction]| -> Result<Session, StateTransitionError> {
+                let mut session =
+                    self.new_block_session(block_height, prev_state)?;
+
+                if boreas_active {
+                    slash(&mut session, slashes.clone()).map_err(|err| {
+                        StateTransitionError::ExecutionError(format!(
+                            "{err}"
+                        ))
+                    })?;
+                }
+
+                for spent_tx in spent_txs {
+                    execute(
+                        &mut session,
+                        spent_tx.inner.protocol(),
+                        &execution_config,
+                    )
+                    .map_err(|err| {
+                        StateTransitionError::ExecutionError(format!(
+                            "Failed replaying tx {}: {err}",
+                            hex::encode(spent_tx.inner.id())
+                        ))
+                    })?;
+                }
+
+                Ok(session)
+            };
+
+        if boreas_active {
+            // Apply slashes before transaction execution so in-block stake
+            // operations cannot bypass slash accounting.
+            let slash_events =
+                slash(&mut session, slashes.clone()).map_err(|err| {
+                    StateTransitionError::ExecutionError(format!("{err}"))
+                })?;
+            event_bloom.add_events(&slash_events);
+        }
 
         // We always write the faults len in a u32
         let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
@@ -206,23 +220,25 @@ impl Rusk {
         // it is added to the unblocked list to be processed immediately.
         // Unblocked transactions have priority over other transactions in the
         // mempool.
-        let mut pending_txs: BTreeMap<[u8; 193], BTreeMap<u64, Transaction>> =
-            BTreeMap::new();
+        let mut pending_txs: BTreeMap<
+            [u8; 193],
+            BTreeMap<u64, LedgerTransaction>,
+        > = BTreeMap::new();
 
         let mut unblocked_txs = VecDeque::new();
 
         while let Some(unspent_tx) =
             unblocked_txs.pop_front().or_else(|| mempool_txs.next())
         {
-            if let Some(timeout) = self.vm_config.generation_timeout {
-                if started.elapsed() > timeout {
-                    info!(
-                        event = "Stop creating state transition",
-                        reason = "timeout expired",
-                        ?timeout
-                    );
-                    break;
-                }
+            if let Some(timeout) = self.vm_config.generation_timeout
+                && started.elapsed() > timeout
+            {
+                info!(
+                    event = "Stop creating state transition",
+                    reason = "timeout expired",
+                    ?timeout
+                );
+                break;
             }
 
             // Limit execution to the block transactions limit
@@ -235,7 +251,8 @@ impl Rusk {
             }
 
             let tx_id = hex::encode(unspent_tx.id());
-            let tx_size = unspent_tx.size();
+            let ledger_tx = unspent_tx.reformat_for_ledger(block_height);
+            let tx_size = ledger_tx.size();
 
             if tx_size > space_left {
                 info!(
@@ -248,8 +265,9 @@ impl Rusk {
                 continue;
             }
 
-            match execute(&mut session, &unspent_tx.inner, &execution_config) {
-                Ok(receipt) => {
+            match execute(&mut session, ledger_tx.protocol(), &execution_config)
+            {
+                Ok(mut receipt) => {
                     let gas_spent = receipt.gas_spent;
 
                     // If the transaction went over the block gas limit we
@@ -264,19 +282,7 @@ impl Rusk {
                             gas_left
                         );
 
-                        session =
-                            self.new_block_session(block_height, prev_state)?;
-
-                        for spent_tx in &spent_txs {
-                            // We know these transactions were correctly
-                            // executed before, so we don't bother checking.
-                            let _ = execute(
-                                &mut session,
-                                &spent_tx.inner.inner,
-                                &execution_config,
-                            );
-                        }
-
+                        session = replay_spent_txs(&spent_txs)?;
                         continue;
                     }
 
@@ -286,14 +292,17 @@ impl Rusk {
                     let error = receipt.data.err().map(|e| format!("{e}"));
                     info!(event = "Tx executed", tx_id, gas_spent, error);
 
+                    if boreas_active {
+                        receipt.events.retain(|event| !event.reverted);
+                    }
                     event_bloom.add_events(&receipt.events);
 
                     gas_left -= gas_spent;
-                    let gas_price = unspent_tx.inner.gas_price();
+                    let gas_price = ledger_tx.gas_price();
                     dusk_spent += gas_spent * gas_price;
 
                     if let ProtocolTransaction::Moonlight(tx) =
-                        &unspent_tx.inner
+                        ledger_tx.protocol()
                     {
                         // Check if the current transaction unblocks any
                         // transaction from the same in the pending list.
@@ -326,13 +335,13 @@ impl Rusk {
                     }
 
                     spent_txs.push(SpentTransaction {
-                        inner: unspent_tx,
+                        inner: ledger_tx,
                         gas_spent,
                         block_height,
                         err: error,
                     });
                 }
-                Err(VMError::Panic(val)) if val == PANIC_NONCE_NOT_READY => {
+                Err(ExecutionError::NotReady) => {
                     // If the transaction panics due to a not yet valid nonce,
                     // we do not discard it.
                     // Instead, we add it to a list of pending transactions so
@@ -340,7 +349,7 @@ impl Rusk {
                     // valid (i.e., all transactions with
                     // the missing nonces are executed in this loop).
                     if let ProtocolTransaction::Moonlight(tx) =
-                        &unspent_tx.inner
+                        unspent_tx.protocol()
                     {
                         let nonce = tx.nonce();
                         pending_txs
@@ -358,27 +367,48 @@ impl Rusk {
                     continue;
                 }
                 Err(error) => {
+                    // If the transaction panics due to a failed refund, we need
+                    // to revert the state to before the
+                    // transaction execution and re-execute
+                    // all spent transactions
+                    if let ExecutionError::FailedRefund(_) = &error {
+                        session = replay_spent_txs(&spent_txs)?;
+                    }
+
                     info!(event = "Tx discarded", tx_id, ?error);
-                    // An unspendable transaction should be discarded
+                    // A transaction that fails as unspendable or precondition
+                    // failure is discarded and does not affect the state.
                     discarded_txs.push(unspent_tx);
                     continue;
                 }
             }
         }
 
-        let coinbase_events = reward_and_slash(
+        let reward_events = reward(
             &mut session,
             block_height,
             generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
+
+        if !boreas_active {
+            let slash_events = slash(&mut session, slashes).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+            event_bloom.add_events(&slash_events);
+        }
+
+        let root_update_events =
+            update_transfer_root(&mut session).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+        event_bloom.add_events(&root_update_events);
 
         let state_root = session.root();
 
@@ -394,40 +424,42 @@ impl Rusk {
 
     pub fn finalize_state(
         &self,
-        commit: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.set_base_and_merge(commit, to_merge)?;
+        self.set_base_and_merge(header, to_merge)?;
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
-        fs::write(commit_id_path, commit)?;
+        fs::write(commit_id_path, header.state_hash)?;
         Ok(())
     }
 
-    pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
+    pub fn revert(&self, header: &Header) -> Result<[u8; 32]> {
         let mut tip = self.tip.write();
+        let state_hash = header.state_hash;
 
         let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
             return Err(RuskError::CommitNotFound(state_hash));
         }
 
-        tip.current = state_hash;
-        Ok(tip.current)
+        tip.current = header.clone();
+        Ok(tip.current.state_hash)
     }
 
     pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
-        self.revert(self.base_root())
+        let header = self.tip.read().base.clone();
+        self.revert(&header)
     }
 
     /// Get the base root.
     pub fn base_root(&self) -> [u8; 32] {
-        self.tip.read().base
+        self.tip.read().base.state_hash
     }
 
     /// Get the current state root.
     pub fn state_root(&self) -> [u8; 32] {
-        self.tip.read().current
+        self.tip.read().current.state_hash
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -442,10 +474,10 @@ impl Rusk {
     /// Returns the stakes.
     pub fn provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<impl Iterator<Item = (StakeKeys, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
-        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
+        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_header)?;
         Ok(receiver.into_iter().map(|bytes| {
             let root = rkyv::check_archived_root::<(StakeKeys, StakeData)>(
                 &bytes,
@@ -460,7 +492,7 @@ impl Rusk {
     /// Return the active moonlight accounts
     pub fn moonlight_accounts(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<impl Iterator<Item = (AccountData, BlsPublicKey)>> {
         let (sender, receiver) = mpsc::channel();
         let sync_range = (0u64, u64::MAX);
@@ -469,7 +501,7 @@ impl Rusk {
             "sync_accounts",
             &sync_range,
             sender,
-            base_commit,
+            base_header,
         )?;
 
         Ok(receiver.into_iter().map(|bytes| {
@@ -510,13 +542,13 @@ impl Rusk {
     /// Fetches the previous state data for stake changes in the contract.
     ///
     /// Communicates with the stake contract to obtain information about the
-    /// state data before the last changes. Optionally takes a base commit
-    /// hash to query changes since a specific point in time.
+    /// state data before the last changes. Optionally takes a base header to
+    /// query changes since a specific point in time.
     ///
     /// # Arguments
     ///
-    /// - `base_commit`: An optional base commit hash indicating the starting
-    ///   point for querying changes.
+    /// - `base_header`: An optional base header indicating the starting point
+    ///   for querying changes.
     ///
     /// # Returns
     ///
@@ -525,7 +557,7 @@ impl Rusk {
     /// state data before the last changes in the stake contract.
     pub fn last_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
@@ -533,7 +565,7 @@ impl Rusk {
             "prev_state_changes",
             &(),
             sender,
-            base_commit,
+            base_header,
         )?;
         Ok(receiver.into_iter().map(|bytes| {
             let root =
@@ -571,16 +603,25 @@ impl Rusk {
         Ok(session)
     }
 
-    /// Opens a session for query, setting a block height of zero since this
-    /// doesn't affect the result.
+    /// Opens a session for query at the provided header height.
+    ///
+    /// If no header is provided, the current tip header is used.
     pub(crate) fn query_session(
         &self,
-        commit: Option<[u8; 32]>,
+        header: Option<&Header>,
     ) -> Result<Session> {
-        self._session(0, commit)
+        let (block_height, state_hash) = match header {
+            Some(header) => (header.height, header.state_hash),
+            None => {
+                let tip = self.tip.read();
+                (tip.current.height, tip.current.state_hash)
+            }
+        };
+
+        self._session(block_height, Some(state_hash))
     }
 
-    /// Opens a new session with the specified block height and commit hash.
+    /// Opens a new session with the specified block height and state root.
     ///
     /// # Warning
     /// This is a low-level function intended for internal use only.
@@ -594,8 +635,8 @@ impl Rusk {
     /// # Parameters
     /// - `block_height`: The height of the block for which the session is
     ///   created.
-    /// - `commit`: The optional commit hash. If not provided, the current tip
-    ///   is used.
+    /// - `commit`: The optional state root. If not provided, the current tip
+    ///   header state root is used.
     ///
     /// # Returns
     /// - A `Result` containing a `Session` if successful, or an error if the
@@ -611,7 +652,7 @@ impl Rusk {
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
-            tip.current
+            tip.current.state_hash
         });
 
         let session = self.vm.session(commit, self.chain_id, block_height)?;
@@ -619,24 +660,36 @@ impl Rusk {
         Ok(session)
     }
 
-    pub fn set_current_commit(&self, commit: [u8; 32]) {
+    pub fn set_current_header(&self, header: &Header) {
         let mut tip = self.tip.write();
-        tip.current = commit;
+        tip.current = header.clone();
     }
 
-    pub fn commit_session(&self, session: Session) -> Result<()> {
+    pub fn commit_session(
+        &self,
+        session: Session,
+        header: &Header,
+    ) -> Result<()> {
         let commit = session.commit()?;
-        self.set_current_commit(commit);
-
+        if commit != header.state_hash {
+            return Err(io::Error::other(format!(
+                "Committed state root {} does not match header state root {}",
+                to_str(&commit),
+                to_str(&header.state_hash)
+            ))
+            .into());
+        }
+        self.set_current_header(header);
         Ok(())
     }
 
     pub(crate) fn set_base_and_merge(
         &self,
-        base: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.tip.write().base = base;
+        self.tip.write().base = header.clone();
+        let base = header.state_hash;
         for d in to_merge {
             if d == base {
                 // Don't finalize the new tip, otherwise it will not be
@@ -670,7 +723,7 @@ impl Rusk {
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
 
-        let (_plonk_version_guard, _hard_fork_guard) =
+        let _host_query_policy_guard =
             set_vm_host_context(&self.vm_config, block_height);
 
         let generator_bytes = blk.header().generator_bls_pubkey;
@@ -689,7 +742,7 @@ impl Rusk {
             ?slashes
         );
 
-        // Start a VM session on top of prev_state
+        // Start a VM session on top of prev_state.
         let mut session =
             self.new_block_session(blk.header().height, prev_state)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
@@ -701,12 +754,32 @@ impl Rusk {
 
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
+        let boreas_active = boreas_active(&self.vm_config, block_height);
+
+        if boreas_active {
+            // Apply slashes before transaction execution so in-block stake
+            // operations cannot bypass slash accounting.
+            let slash_events =
+                slash(&mut session, slashes.clone()).map_err(|err| {
+                    StateTransitionError::ExecutionError(format!("{err}"))
+                })?;
+            event_bloom.add_events(&slash_events);
+
+            let slash_events: Vec<_> = slash_events
+                .into_iter()
+                .map(|event| ContractTxEvent {
+                    event: event.into(),
+                    origin: block_hash,
+                })
+                .collect();
+            events.extend(slash_events);
+        }
 
         // Execute transactions
         for unspent_tx in txs {
-            let tx = &unspent_tx.inner;
+            let tx = unspent_tx.protocol();
             let tx_id = unspent_tx.id();
-            let receipt = execute(&mut session, tx, &execution_config)
+            let mut receipt = execute(&mut session, tx, &execution_config)
                 .map_err(|err| {
                     StateTransitionError::ExecutionError(format!(
                         "Tx {} is discarded {err}",
@@ -714,6 +787,9 @@ impl Rusk {
                     ))
                 })?;
 
+            if boreas_active {
+                receipt.events.retain(|event| !event.reverted);
+            }
             event_bloom.add_events(&receipt.events);
 
             let tx_events: Vec<_> = receipt
@@ -749,29 +825,60 @@ impl Rusk {
             spent_txs.push(spent);
         }
 
-        // Apply rewards and slashes
-        let coinbase_events = reward_and_slash(
+        // Apply rewards.
+        let reward_events = reward(
             &mut session,
             block_height,
             &generator,
             cert_voters,
             dusk_spent,
-            slashes,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
         })?;
 
-        event_bloom.add_events(&coinbase_events);
+        event_bloom.add_events(&reward_events);
 
-        let coinbase_events: Vec<_> = coinbase_events
+        let reward_events: Vec<_> = reward_events
             .into_iter()
             .map(|event| ContractTxEvent {
                 event: event.into(),
                 origin: block_hash,
             })
             .collect();
-        events.extend(coinbase_events);
+        events.extend(reward_events);
+
+        if !boreas_active {
+            // Pre-Boreas compatibility path.
+            let slash_events = slash(&mut session, slashes).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+            event_bloom.add_events(&slash_events);
+
+            let slash_events: Vec<_> = slash_events
+                .into_iter()
+                .map(|event| ContractTxEvent {
+                    event: event.into(),
+                    origin: block_hash,
+                })
+                .collect();
+            events.extend(slash_events);
+        }
+
+        let root_update_events =
+            update_transfer_root(&mut session).map_err(|err| {
+                StateTransitionError::ExecutionError(format!("{err}"))
+            })?;
+        event_bloom.add_events(&root_update_events);
+
+        let root_update_events: Vec<_> = root_update_events
+            .into_iter()
+            .map(|event| ContractTxEvent {
+                event: event.into(),
+                origin: block_hash,
+            })
+            .collect();
+        events.extend(root_update_events);
 
         // Get new state root
         let state_root = session.root();
@@ -788,44 +895,39 @@ impl Rusk {
     }
 }
 
-/// Execute rewards and slashes in a VM session.
-///
-/// The Trasnfer contract's note tree root is updated accordingly.
-fn reward_and_slash(
-    session: &mut Session,
-    block_height: u64,
-    generator: &BlsPublicKey,
-    voters: &[Voter],
-    spent_amount: Dusk,
-    slashes: Vec<Slash>,
-) -> Result<Vec<Event>> {
-    let mut events = vec![];
-
-    // Apply rewards
-    events.extend(reward(
-        session,
-        block_height,
-        generator,
-        voters,
-        spent_amount,
-    )?);
-
-    // Apply slashes
-    events.extend(slash(session, slashes)?);
-
-    // Update the note tree root in the Transfer contract
+/// Updates the Transfer contract's note tree root.
+fn update_transfer_root(session: &mut Session) -> Result<Vec<Event>> {
     let r = session.call::<_, ()>(
         TRANSFER_CONTRACT,
         "update_root",
         &(),
         u64::MAX,
     )?;
-    events.extend(r.events);
-
-    Ok(events)
+    Ok(r.events)
 }
 
 /// Apply rewards by calling the `reward` method in the Stake Contract
+///
+/// # Note on reward distribution and dust
+///
+/// The total block reward is split into a fixed generator reward, a Dusk
+/// reward, a generator extra reward, and a voters reward. Due to integer
+/// division when computing per-credit reward quotas, a small amount of dust
+/// may be left undistributed and is effectively lost:
+///
+/// - **Voters reward**: divided by [`TOTAL_COMMITTEES_CREDITS`] to obtain a
+///   per-credit quota. Any remainder from this division is lost, up to
+///   [`TOTAL_COMMITTEES_CREDITS`] - 1 LUX (currently 127 LUX).
+/// - **Generator extra reward**: divided by the maximum number of extra credits
+///   to obtain a per-credit quota (see [`calc_generator_extra_reward`]). The
+///   raw division remainder can be as high as `max_extra_credits - 1` LUX
+///   (currently 41 LUX), but when all votes are included the generator gets the
+///   full extra reward. On the proportional branch, at most 40 LUX can remain
+///   undistributed.
+///
+/// While this dust amount is minimal, a more precise distribution mechanism
+/// (e.g., assigning the remainder to the generator) could be considered in
+/// the future.
 fn reward(
     session: &mut Session,
     block_height: u64,
@@ -852,6 +954,9 @@ fn reward(
 
     // Split voters reward in credit quotas.
     // Each voter will get as many quotas as its credits in the committee.
+    //
+    // Note: Due to integer division, up to TOTAL_COMMITTEES_CREDITS - 1 LUX
+    // (currently 127 LUX) can be lost as dust.
     let credit_reward = voters_reward / TOTAL_COMMITTEES_CREDITS as u64;
 
     // Compute the number of rewards
@@ -922,8 +1027,13 @@ fn calc_generator_extra_reward(
         return full_extra_reward;
     }
 
-    // The calculate the extra reward, we divide the whole amount in quotas,
+    // To calculate the extra reward, we divide the whole amount in quotas,
     // with each quota corresponding to reward value for a single extra credit.
+    //
+    // Note: The raw division remainder can be as high as max_extra_credits - 1
+    // LUX (currently 41 LUX). However, that bound only occurs when all extra
+    // credits are included, and that case returns `full_extra_reward` above.
+    // On this branch, at most 40 LUX remain undistributed.
     let max_extra_credits = validation_extra() + ratification_extra();
     let reward_quota = full_extra_reward / max_extra_credits as u64;
 
@@ -986,26 +1096,184 @@ fn is_missing_stake_slash_panic(msg: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+
+    use dusk_bytes::Serializable;
+    use dusk_core::signatures::bls;
+    use dusk_core::transfer::data::ContractCall;
+    use dusk_core::transfer::{
+        TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
+        TransactionFormat,
+    };
+    use dusk_rusk_test::common::state::{
+        DEFAULT_MIN_GAS_LIMIT, header_from_root,
+    };
+    use rand::SeedableRng;
+    use rusk_recovery_tools::state::restore_state;
+    use tempfile::tempdir;
+    use tokio::sync::broadcast;
+    use wallet_core::transaction::moonlight;
+
     use super::*;
-    use dusk_vm::FeatureActivation;
+    use crate::node::{FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS};
 
-    #[test]
-    fn plonk_version_tracks_prefork_and_aegis() {
-        let mut vm_config = RuskVmConfig::new();
-        vm_config
-            .with_feature(FEATURE_PLONK_V2, FeatureActivation::Height(100));
+    const HISTORICAL_CHAIN_ID: u8 = 0x01;
+    const HISTORICAL_BLOCK_HEIGHT: u64 = 2_710_377;
+    const HISTORICAL_GAS_LIMIT: u64 = 0x10000000;
 
+    fn resign_moonlight_insecure(
+        tx: ProtocolTransaction,
+        signer: &bls::SecretKey,
+    ) -> ProtocolTransaction {
+        let ProtocolTransaction::Moonlight(tx) = tx else {
+            panic!("expected moonlight transaction");
+        };
+        let mut bytes = tx.to_var_bytes();
+        let sig = signer.sign_insecure(&tx.signature_message()).to_bytes();
+        let sig_start = bytes
+            .len()
+            .checked_sub(sig.len())
+            .expect("moonlight tx must include signature bytes");
+        bytes[sig_start..].copy_from_slice(&sig);
+
+        ProtocolTransaction::Moonlight(
+            dusk_core::transfer::moonlight::Transaction::from_slice(&bytes)
+                .expect("re-signed moonlight transaction must deserialize"),
+        )
+    }
+
+    async fn initial_state<P: AsRef<Path>>(dir: P) -> Rusk {
+        let dir = dir.as_ref();
+        let (_vm, _commit_id) =
+            restore_state(dir).expect("historical state should restore");
+
+        let (sender, _) = broadcast::channel(10);
+
+        #[cfg(feature = "archive")]
+        let archive_dir = tempdir().expect("archive tempdir should be created");
+        #[cfg(feature = "archive")]
+        let archive =
+            node::archive::Archive::create_or_open(archive_dir.path()).await;
+
+        let mut vm_config =
+            RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
+        vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
+        vm_config.with_feature(FEATURE_HARDFORK_AEGIS, u64::MAX);
+        Rusk::new(
+            dir,
+            |state_root| Ok(header_from_root(state_root)),
+            HISTORICAL_CHAIN_ID,
+            vm_config,
+            DEFAULT_MIN_GAS_LIMIT,
+            u64::MAX,
+            sender,
+            #[cfg(feature = "archive")]
+            archive,
+            DriverStore::new(None::<PathBuf>),
+        )
+        .expect("historical rusk should initialize")
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn create_state_transition_rewraps_ingress_tx_to_ledger_format() {
+        let tmpdir = tempdir().expect("tempdir should be created");
+        let state_dir = tmpdir.path().join("state");
+        let data = include_bytes!("../../../tests/assets/2710377_state.tar.gz");
+        rusk_recovery_tools::state::tar::unarchive(
+            &data[..],
+            state_dir.as_path(),
+        )
+        .expect("historical state should unpack");
+
+        let rusk = initial_state(&state_dir).await;
+        let base = hex::decode(
+            "53de818894cf665f1131edda3c5579ccb8736fd05c993ecb5cd16677974b088b",
+        )
+        .expect("historical base root should decode");
+        let mut base_a = [0u8; 32];
+        base_a.copy_from_slice(&base);
+        rusk.set_current_header(&header_from_root(base_a));
+
+        let mut rng = rand::rngs::StdRng::seed_from_u64(77);
+        let sender_sk = bls::SecretKey::random(&mut rng);
+        let sender_pk = bls::PublicKey::from(&sender_sk);
+        let receiver_sk = bls::SecretKey::random(&mut rng);
+        let receiver_pk = bls::PublicKey::from(&receiver_sk);
+
+        let mut session = rusk
+            .new_block_session(1, base_a)
+            .expect("historical session should open");
+        session
+            .call::<(_, u64), ()>(
+                TRANSFER_CONTRACT,
+                "add_account_balance",
+                &(sender_pk, 100_000_000_000_000),
+                HISTORICAL_GAS_LIMIT,
+            )
+            .expect("sender balance should be injected");
+        let header = header_from_root(session.root());
+        rusk.commit_session(session, &header)
+            .expect("historical funding session should commit");
+
+        let protocol_tx = moonlight(
+            &sender_sk,
+            Some(receiver_pk),
+            1,
+            0,
+            HISTORICAL_GAS_LIMIT,
+            1,
+            1,
+            HISTORICAL_CHAIN_ID,
+            None::<ContractCall>,
+        )
+        .expect("historical moonlight tx should build");
+        let protocol_tx = resign_moonlight_insecure(protocol_tx, &sender_sk);
+        let ingress_tx = LedgerTransaction::from_protocol_with_format(
+            protocol_tx,
+            TransactionFormat::Aegis,
+        );
+
+        let mut voters = vec![];
+        for i in 0..10 {
+            let sk = bls::SecretKey::random(&mut rng);
+            let pk = bls::PublicKey::from(&sk);
+            voters.push((node_data::bls::PublicKey::new(pk), i));
+        }
+        let transition_data = StateTransitionData {
+            round: HISTORICAL_BLOCK_HEIGHT,
+            generator: node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY),
+            slashes: vec![],
+            cert_voters: voters,
+            max_txs_bytes: 5_000,
+            prev_state_root: rusk.state_root(),
+        };
+
+        let (spent, discarded, _) = rusk
+            .create_state_transition(
+                &transition_data,
+                vec![ingress_tx.clone()].into_iter(),
+            )
+            .expect("state transition should execute");
+
+        assert!(
+            discarded.is_empty(),
+            "ingress tx should execute successfully: spent={spent:?}, discarded={discarded:?}",
+        );
+        assert_eq!(spent.len(), 1, "exactly one tx should be sealed");
         assert_eq!(
-            plonk_version_at(&vm_config, 99, HardFork::PreFork),
-            PlonkVersion::V1
+            spent[0].inner.id(),
+            ingress_tx.id(),
+            "rewrapping must preserve transaction identity",
         );
         assert_eq!(
-            plonk_version_at(&vm_config, 100, HardFork::PreFork),
-            PlonkVersion::V2
+            spent[0].inner.format(),
+            TransactionFormat::PreAegis,
+            "pre-fork sealing must persist ledger-format bytes",
         );
-        assert_eq!(
-            plonk_version_at(&vm_config, 200, HardFork::Aegis),
-            PlonkVersion::V3
+        assert_ne!(
+            spent[0].inner.format(),
+            ingress_tx.format(),
+            "pre-fork sealing must not reuse the ingress encoding as-is",
         );
     }
 }

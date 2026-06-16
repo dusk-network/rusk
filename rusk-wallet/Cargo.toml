@@ -1,6 +1,6 @@
 [package]
 name = "rusk-wallet"
-version = "0.3.0"
+version = "0.4.0"
 autobins = false
 description = "A library providing functionalities to create wallets compatible with Dusk"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
@@ -30,6 +30,7 @@ hex = { workspace = true }
 tiny-bip39 = { workspace = true }
 crossterm = { workspace = true }
 futures = { workspace = true }
+ratatui = { workspace = true }
 blake3 = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
@@ -41,10 +42,11 @@ rand = { workspace = true, features = ["std", "std_rng", "getrandom"] }
 aes = { workspace = true }
 rocksdb = { workspace = true }
 flume = { workspace = true }
+base64 = { workspace = true }
 reqwest = { workspace = true, features = ["stream"] }
 dusk-bytes = { workspace = true }
-blake2b_simd = { workspace = true }
 node-data = { workspace = true }
+rayon = { workspace = true }
 
 zeroize = { workspace = true, features = ["derive"] }
 wallet-core = { workspace = true }
@@ -58,13 +60,13 @@ tracing-subscriber = { workspace = true, features = [
 ] }
 
 rkyv = { workspace = true, features = ["validation"] }
-inquire = { workspace = true }
 konst = { workspace = true }
 pbkdf2 = { workspace = true }
 aes-gcm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+ff = { workspace = true }
 
 [features]
 e2e-test = []

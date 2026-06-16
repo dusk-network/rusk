@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM unfinalized_events WHERE block_height = ?\n            UNION ALL\n            SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM finalized_events WHERE block_height = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_height = ?)\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "origin",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "topic",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "source",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "data",
+        "ordinal": 3,
+        "type_info": "Blob"
+      },
+      {
+        "name": "reverted: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a91a1bd71254840949faf4d5e108c9ed7dc139da977d9945f8c56cf6a1a2b8cb"
+}

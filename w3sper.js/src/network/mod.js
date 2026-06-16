@@ -12,6 +12,11 @@ import { Node } from "./components/node.js";
 import { Blocks } from "./components/blocks.js";
 import { Transactions } from "./components/transactions.js";
 import { Contracts } from "./components/contracts.js";
+import {
+  graphqlInit,
+  normalizeGraphQLRequest,
+  parseGraphQLResponse,
+} from "./graphql.js";
 import { Gas } from "../gas.js";
 
 export { Gas };
@@ -28,6 +33,9 @@ function makeErrorEventFrom(value) {
   });
 }
 
+/**
+ * High-level client for interacting with a Rusk node over RUES/HTTP.
+ */
 export class Network extends EventTarget {
   #rues;
   dataDrivers;
@@ -55,7 +63,7 @@ export class Network extends EventTarget {
       this.dispatchEvent(
         ruesEvent instanceof ErrorEvent
           ? makeErrorEventFrom(ruesEvent.error)
-          : new CustomEvent(ruesEvent.type)
+          : new CustomEvent(ruesEvent.type),
       );
     };
 
@@ -75,7 +83,9 @@ export class Network extends EventTarget {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
-    ProtocolDriver.load(new URL("/static/drivers/wallet-core-1.6.0.wasm", this.url));
+    ProtocolDriver.load(
+      new URL("/static/drivers/wallet-core-1.6.1.wasm", this.url),
+    );
 
     return this;
   }
@@ -116,7 +126,7 @@ export class Network extends EventTarget {
     return tx;
   }
 
-  async prove(circuits) {
+  prove(circuits) {
     return this.#rues
       .scope("prover")
       .call.prove(circuits, {
@@ -126,20 +136,18 @@ export class Network extends EventTarget {
   }
 
   async query(gql, options = {}) {
-    gql = gql ? `query { ${gql} }` : "";
+    const headers = new Headers(options.headers);
+    headers.set("rusk-version", this.#rues.version);
 
-    const response = await this.#rues.scope("graphql").call.query(gql, options);
+    const response = await fetch(
+      new URL("/graphql", this.url),
+      graphqlInit(normalizeGraphQLRequest(gql), {
+        ...options,
+        headers,
+      }),
+    );
 
-    switch (response.status) {
-      case 200:
-        return await response.json();
-      case 500:
-        throw new Error((await response.json())[0]);
-      default:
-        throw new Error(
-          `Unexpected [${response.status}] : ${response.statusText}}`
-        );
-    }
+    return await parseGraphQLResponse(response);
   }
 
   static connect(url, options = {}) {

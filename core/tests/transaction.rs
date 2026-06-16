@@ -4,16 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
 use dusk_core::transfer::Transaction;
-use dusk_core::transfer::data::{ContractCall, MAX_MEMO_SIZE, TransactionData};
+use dusk_core::transfer::data::{
+    BlobData, ContractBytecode, ContractCall, ContractDeploy, MAX_MEMO_SIZE,
+    TransactionData, gen_contract_id,
+};
 use dusk_core::transfer::phoenix::{
     Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, TxCircuitVec,
 };
-use dusk_core::{Error, JubJubScalar};
+use dusk_core::{Error, JubJubScalar, TxPreconditionError};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -331,5 +335,68 @@ fn moonlight_memo_too_large() {
     assert_eq!(
         new_moonlight_tx(data).unwrap_err(),
         Error::MemoTooLarge(MEMO_SIZE)
+    );
+}
+
+#[test]
+fn deploy_check_rejects_overflowing_deploy_charge() {
+    let deploy = ContractDeploy {
+        bytecode: ContractBytecode {
+            hash: [7u8; 32],
+            bytes: vec![1u8; 2],
+        },
+        owner: vec![2u8; 32],
+        init_args: None,
+        nonce: 42,
+    };
+
+    let tx = new_moonlight_tx(Some(deploy)).expect("deploy tx should build");
+
+    assert_eq!(
+        tx.deploy_check(u64::MAX, 0, 0),
+        Err(TxPreconditionError::DeployChargeOverflow)
+    );
+}
+
+#[test]
+fn blob_check_rejects_overflowing_blob_charge() {
+    let blobs = vec![
+        BlobData {
+            hash: [9u8; 32],
+            data: None,
+        },
+        BlobData {
+            hash: [10u8; 32],
+            data: None,
+        },
+    ];
+
+    let tx = new_moonlight_tx(Some(blobs)).expect("blob tx should build");
+
+    assert_eq!(
+        tx.blob_check(u64::MAX),
+        Err(TxPreconditionError::BlobChargeOverflow)
+    );
+}
+
+#[test]
+fn contract_deploy_helpers_hash_bytecode_and_derive_contract_id() {
+    let bytes = vec![1u8, 2, 3, 4];
+    let owner = vec![9u8; 32];
+    let init_args = Some(vec![7u8, 8, 9]);
+    let nonce = 42;
+
+    let deploy =
+        ContractDeploy::new(bytes.clone(), owner.clone(), init_args, nonce);
+
+    assert_eq!(deploy.bytecode, ContractBytecode::new(bytes.clone()));
+    assert_eq!(deploy.contract_id(), gen_contract_id(&bytes, nonce, &owner));
+    assert_eq!(
+        deploy.contract_id(),
+        ContractId::from_bytes([
+            27, 203, 22, 10, 138, 57, 98, 26, 119, 49, 68, 41, 17, 95, 59, 213,
+            46, 165, 171, 17, 51, 48, 3, 203, 136, 131, 168, 110, 5, 168, 54,
+            123,
+        ]),
     );
 }

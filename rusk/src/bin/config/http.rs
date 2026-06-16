@@ -6,9 +6,9 @@
 
 use std::path::PathBuf;
 
-use hyper::HeaderMap;
-use serde::de::{self, Unexpected};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use axum::http::HeaderMap;
+use rusk::http::HttpPolicyConfig;
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::args::Args;
 
@@ -18,10 +18,11 @@ pub struct HttpConfig {
     pub key: Option<PathBuf>,
     #[serde(default = "default_listen")]
     pub listen: bool,
+    #[serde(default = "default_enable_docs")]
+    pub enable_docs: bool,
     #[serde(
         default = "default_feeder_call_gas",
-        deserialize_with = "deserialize_feeder_call_gas",
-        serialize_with = "serialize_feeder_call_gas"
+        deserialize_with = "deserialize_feeder_call_gas"
     )]
     pub feeder_call_gas: u64,
     listen_address: Option<String>,
@@ -31,38 +32,50 @@ pub struct HttpConfig {
     pub ws_event_channel_cap: usize,
     #[serde(with = "vec_header_map", default = "default_http_headers")]
     pub headers: HeaderMap,
+    #[serde(default)]
+    pub policy: HttpPolicyConfig,
 }
 
 // Custom deserialization function for `feeder_call_gas`.
-// TOML values are limited to `i64::MAX` in `toml-rs`, so we parse `u64` as a
-// string.
+// This allows us to support both numeric and string representations of `u64`
+// in the TOML configuration.
+// This is necessary because previous versions of the configuration might have
+// used a string to represent large `u64` values, and we want to maintain
+// backward compatibility while encouraging users to switch to numeric values.
 fn deserialize_feeder_call_gas<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
     D: Deserializer<'de>,
 {
-    String::deserialize(deserializer)?
-        .parse::<u64>()
-        .map_err(|_| {
-            de::Error::invalid_value(
-                Unexpected::Str("a valid u64 as a string"),
-                &"a u64 integer",
-            )
-        })
-}
+    use std::fmt;
 
-// Custom serialization function for `feeder_call_gas`.
-// Serializes `u64` as a string to bypass `i64::MAX` limitations in TOML
-// parsing.
-fn serialize_feeder_call_gas<S>(
-    value: &u64,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(&value.to_string())
-}
+    use serde::de::{Error, Visitor};
 
+    struct U64OrString;
+
+    impl<'de> Visitor<'de> for U64OrString {
+        type Value = u64;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("u64 or string")
+        }
+
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> {
+            Ok(v)
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            tracing::warn!(
+                "[Deprecation warning]: `feeder_call_gas` should be provided as a number, not a string. Please update your configuration."
+            );
+            v.parse().map_err(Error::custom)
+        }
+    }
+
+    deserializer.deserialize_any(U64OrString)
+}
 impl Default for HttpConfig {
     fn default() -> Self {
         Self {
@@ -70,10 +83,12 @@ impl Default for HttpConfig {
             key: None,
             headers: default_http_headers(),
             listen: default_listen(),
+            enable_docs: default_enable_docs(),
             feeder_call_gas: default_feeder_call_gas(),
             listen_address: None,
             ws_sub_channel_cap: default_ws_sub_channel_cap(),
             ws_event_channel_cap: default_ws_event_channel_cap(),
+            policy: HttpPolicyConfig::default(),
         }
     }
 }
@@ -84,6 +99,10 @@ const fn default_feeder_call_gas() -> u64 {
 
 const fn default_listen() -> bool {
     true
+}
+
+const fn default_enable_docs() -> bool {
+    false
 }
 
 const fn default_ws_sub_channel_cap() -> usize {
@@ -114,14 +133,13 @@ impl HttpConfig {
 }
 
 mod vec_header_map {
-    use super::*;
-
     use std::fmt;
 
+    use axum::http::header::{HeaderName, HeaderValue};
     use serde::de::{Deserializer, Error as _, SeqAccess, Visitor};
     use serde::ser::{Error as _, SerializeSeq, Serializer};
 
-    use hyper::header::{HeaderName, HeaderValue};
+    use super::*;
 
     pub fn serialize<S>(
         headers: &HeaderMap,
@@ -191,8 +209,9 @@ mod vec_header_map {
 
 #[cfg(test)]
 mod tests {
+    use axum::http::HeaderValue;
+
     use super::*;
-    use hyper::http::HeaderValue;
 
     #[test]
     fn serialize_config() {

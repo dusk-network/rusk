@@ -62,21 +62,24 @@ impl Config {
                 let contents = match contents {
                     Some(contents) => contents,
                     None => {
-                        // If no config exists anywhere, create one in the
-                        // global location
                         let default_config =
                             include_str!("../../default.config.toml");
 
-                        // Create the global config directory if it doesn't
-                        // exist
-                        if let Some(parent) = path.parent() {
-                            let _ = fs::create_dir_all(parent);
+                        if let Some(parent) = path.parent()
+                            && let Err(err) = fs::create_dir_all(parent)
+                        {
+                            tracing::warn!(
+                                "failed to create config directory {}: {err}",
+                                parent.display()
+                            );
                         }
 
-                        // Write the default config to the global location
-                        // Ignore errors - if writing fails, we'll just use the
-                        // embedded default
-                        let _ = fs::write(path, default_config);
+                        if let Err(err) = fs::write(&path, default_config) {
+                            tracing::warn!(
+                                "failed to write default config to {}: {err}. Using embedded defaults.",
+                                path.display()
+                            );
+                        }
 
                         default_config.to_string()
                     }

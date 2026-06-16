@@ -78,6 +78,18 @@ jobs:
             echo "SKIP_WASM=false" >> $GITHUB_ENV
           fi
 
+      - name: Guard unsafe deterministic RNG feature in production build graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          if cargo tree --manifest-path ./rusk/Cargo.toml \
+            ${{ env.NO_DEFAULT_FEATURES }} \
+            --features "${{ matrix.feature }}" \
+            -e features,no-dev | grep -q 'rusk-prover feature "unsafe_deterministic_rng"'; then
+            echo "unsafe_deterministic_rng detected in dusk-rusk dependency graph; refusing to build production artifacts."
+            exit 1
+          fi
+
       - name: Build Rusk binary
         shell: bash
         working-directory: ./rusk

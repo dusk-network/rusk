@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Added
+
+- Add `WASM_REFERENCE_TYPES` VM feature activation wiring.
+- Add `DISABLE_PHOENIX` VM feature activation wiring.
+- Add `HARDFORK_BOREAS` VM feature wiring and version-aware transaction ingress
+  decoding.
+- Add configurable `http.policy` settings for ACL rules and class-based `rps`/`burst`/`concurrency` limits.
+- Add static wallet-core driver endpoint `/static/drivers/wallet-core-1.6.1.wasm`.
+- Add `contract_owner` to `/on/contract:{entity}/metadata`.
+
+### Changed
+
+- Set historical mainnet/testnet `WASM_REFERENCE_TYPES` activation heights.
+- Link Boreas DuskEVM host-query activations on mainnet/testnet and enable Boreas from genesis on devnet/localnet
+- Activate Boreas and Phoenix disablement on mainnet at block `4_414_095`, and
+  schedule Phoenix disablement on testnet at block `4_000_000`.
+- Consolidate node config resolution and chain-upgrade policy into a single internal path.
+- Gate Boreas deployment gas rules (`deploy_remaining_gas_check` and
+  `charge_init_gas`) behind feature activation so pre-fork replay semantics
+  remain unchanged.
+- Pass the Boreas hardfork context through to `dusk-vm` so Boreas-specific VM host-query pricing can activate independently of backend changes.
+- Pass a unified host-query execution policy into `dusk-vm` so memoized VM cache keys stay aligned with the active verifier and hard-fork semantics.
+- Store full ledger headers in `RuskTip` and use headers for session commit,
+  finalization, revert, and provisioner query state control.
+- Recover the initial `RuskTip` header from chain DB on startup, falling back
+  to genesis only when the chain DB has no metadata.
+- Remove deprecated `[chain]` VM override fallback; `[vm]` is the canonical path for VM execution settings.
+- Remove deprecated `RuskNodeBuilder` VM setter shims in favor of `with_vm_config`.
+- Enforce HTTP ingress policy with ACL and endpoint-class global limits (`http.policy`), returning `403` on ACL deny and `429` with `Retry-After` on limit rejections.
+- Split HTTP server routing into dedicated `graphql_http` and `rues_http` modules while keeping API behavior unchanged.
+- Route transaction ingress and node execution through explicit canonical
+  ledger transaction boundaries.
+
+### Fixed
+
+- Fix read-only queries to use current tip height
+- Fix panic during invalid tx refund processing (P1.2-7)
+- Queue future-nonce Moonlight transactions during HTTP propagation instead of rejecting them on local admission gaps
+- Emit deferred transaction lifecycle events when HTTP propagation queues
+  future-nonce Moonlight transactions
+- Accept Aegis transaction bytes during Boreas HTTP ingress by normalizing live transaction envelopes
+- Map invalid transaction ingress format rejections to HTTP invalid-input errors instead of failing exhaustiveness checks in preverify handling
+- Canonicalize locally sealed transactions to the active ledger format before
+  committing them into blocks
+- Discard reverted stake events from provisioner's selective update
+- Expose reverted VM event metadata in archive GraphQL responses.
+
+### Removed
+
+- Remove reverted events from header's bloom filter after Boreas
+- Deprecate the legacy `/on/account:{entity}/{topic}` status route.
+- Deprecate the legacy `/on/contract:{entity}/status` route.
+- Deprecate the legacy `/on/contract_owner:{entity}/{topic}` route.
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
@@ -27,6 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Skip slashes for missing stake entries to avoid block failure and log a warning
+- Apply slashes before transaction execution in state transitions after Boreas
+  hard fork activation so same-block unstake flows cannot bypass slash
+  accounting
 
 ### Added
 
@@ -510,9 +569,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.6.0...HEAD
-[1.6.0]: https://github.com/dusk-network/rusk-private/compare/0c61088614bcb515ed3abd955b738f4d375ce19c...dusk-rusk-1.6.0
-[1.5.0]: https://github.com/dusk-network/rusk-private/compare/dusk-rusk-1.4.4...0c61088614bcb515ed3abd955b738f4d375ce19c
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.6.0...dusk-rusk-1.7.0
+[1.6.0]: https://github.com/dusk-network/rusk/compare/0c61088614bcb515ed3abd955b738f4d375ce19c...dusk-rusk-1.6.0
+[1.5.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.4...0c61088614bcb515ed3abd955b738f4d375ce19c
 [1.4.4]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.3...dusk-rusk-1.4.4
 [1.4.3]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.2...dusk-rusk-1.4.3
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.1...dusk-rusk-1.4.2

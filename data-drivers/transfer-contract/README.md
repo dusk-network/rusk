@@ -8,6 +8,19 @@ as dependency.
 
 Please refer to data-drivers/data-driver/README.md for more information.
 
+## Scope
+
+This driver intentionally targets the externally consumed transfer surface
+(transaction calls, public queries, and selected feeder queries/events).
+
+The transfer contract also exposes internal management entrypoints used by
+consensus/state-transition flows. Those internal entrypoints are intentionally
+not modeled in this driver.
+
+Some feeder outputs are also intentionally left unsupported where a stable,
+consumer-facing schema has not been committed yet (`opening`,
+`leaves_from_height`, `leaves_from_pos`, and `sync` outputs).
+
 ## How to build the Transfer Contract Data Driver
 
 The following command builds the data driver:

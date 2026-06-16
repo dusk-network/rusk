@@ -76,9 +76,7 @@ impl From<Vec<(u64, u64)>> for Activation {
 impl Display for Activation {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Activation::Height(height) => {
-                write!(f, "Height({})", height)
-            }
+            Activation::Height(height) => write!(f, "Height({height})"),
             Activation::Ranges(ranges) => {
                 let ranges_str = ranges
                     .iter()

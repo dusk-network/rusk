@@ -6,33 +6,33 @@
 
 mod command;
 mod config;
-mod interactive;
+mod frontend;
 mod io;
 mod settings;
-
-pub(crate) use command::{Command, RunResult};
-use command::{gen_iv, gen_salt};
-use io::prompt::{Prompter, ask_pwd, derive_key};
-use zeroize::Zeroize;
+mod transaction_history;
+mod tui;
 
 use std::fs;
 use std::path::PathBuf;
 
 use clap::Parser;
-use inquire::InquireError;
+pub(crate) use command::{Command, RunResult};
+use command::{gen_iv, gen_salt};
+use config::Config;
+use frontend::{BalanceView, OperationResult};
+use io::prompt::{Prompter, ask_pwd, derive_key};
+use io::{WalletArgs, prompt, status};
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
     EPOCH, Error, GraphQL, IV_SIZE, Profile, SALT_SIZE, SecureWalletFile,
-    Wallet, WalletPath,
+    Wallet, WalletPath, WalletStatus,
 };
 use tracing::{Level, error, info, warn};
+use zeroize::Zeroize;
 
 use crate::settings::{LogFormat, Settings};
-
-use config::Config;
-use io::{WalletArgs, prompt, status};
 
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {
@@ -67,24 +67,56 @@ impl SecureWalletFile for WalletFile {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
-        // display the error message (if any)
-        match err.downcast_ref::<InquireError>() {
-            Some(
-                InquireError::OperationInterrupted
-                | InquireError::OperationCanceled,
-            ) => (),
-            _ => eprintln!("{err}"),
-        };
+        // Suppress Ctrl+C / Esc from password prompts
+        if err.downcast_ref::<prompt::PromptAbort>().is_none() {
+            eprintln!("{}", render_cli_error(&err));
+        }
         // give cursor back to the user
         io::prompt::show_cursor()?;
     }
     Ok(())
 }
 
+fn render_cli_error(err: &anyhow::Error) -> String {
+    match err.downcast_ref::<Error>() {
+        Some(err @ Error::InsecureTransport(_)) => format!(
+            "{err}. Use --allow-insecure only for trusted development setups"
+        ),
+        _ => err.to_string(),
+    }
+}
+
+fn init_logging(
+    level: &settings::LogLevel,
+    format: &LogFormat,
+) -> anyhow::Result<()> {
+    let level: Level = level.into();
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_max_level(level)
+        .with_writer(std::io::stderr);
+
+    match format {
+        LogFormat::Json => {
+            let subscriber = subscriber.json().flatten_event(true).finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+        LogFormat::Plain => {
+            let subscriber = subscriber.with_ansi(false).finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+        LogFormat::Coloured => {
+            let subscriber = subscriber.finish();
+            tracing::subscriber::set_global_default(subscriber)?;
+        }
+    };
+
+    Ok(())
+}
+
 async fn connect<F>(
     mut wallet: Wallet<F>,
     settings: &Settings,
-    status: fn(&str),
+    status: fn(WalletStatus),
 ) -> anyhow::Result<Wallet<F>>
 where
     F: SecureWalletFile + std::fmt::Debug,
@@ -149,69 +181,35 @@ where
 }
 
 async fn exec() -> anyhow::Result<()> {
-    // parse user args
     let args = WalletArgs::parse();
-    // get the subcommand, if it is `None` we run the wallet in interactive mode
+    let log_level = args.log_level.clone();
+    let log_format = args.log_type.clone();
     let cmd = args.command.clone();
 
-    // Get the initial settings from the args
-    let mut settings_builder = Settings::args(args)?;
+    init_logging(&log_level, &log_format)?;
 
-    // Obtain the wallet dir from the settings
+    let mut settings_builder = Settings::args(args)?;
     let wallet_dir = settings_builder.wallet_dir().clone();
 
     fs::create_dir_all(wallet_dir.as_path())
         .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
-    // prepare wallet path
     let mut wallet_path =
         WalletPath::from(wallet_dir.as_path().join("wallet.dat"));
 
-    // load configuration (or use default)
     let cfg = Config::load(&wallet_dir)
         .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
     wallet_path.set_network_name(settings_builder.args.network.clone());
 
-    // Finally complete the settings by setting the network
-    let mut settings = settings_builder
-        .network(cfg.network)
-        .map_err(|_| rusk_wallet::Error::NetworkNotFound)?;
+    let mut settings = settings_builder.network(cfg.network)?;
 
-    // generate a subscriber with the desired log level
-    //
-    // TODO: we should have the logger instantiate sooner, otherwise we cannot
-    // catch errors that are happened before its instantiation.
-    //
-    // Therefore, the logger details such as `type` and `level` cannot be part
-    // of the configuration, since it won't catch any configuration error
-    // otherwise.
-    //
-    // See: <https://github.com/dusk-network/wallet-cli/issues/73>
-    //
-    let level = &settings.logging.level;
-    let level: Level = level.into();
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(level)
-        .with_writer(std::io::stderr);
-
-    // set the subscriber as global
-    match settings.logging.format {
-        LogFormat::Json => {
-            let subscriber = subscriber.json().flatten_event(true).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        LogFormat::Plain => {
-            let subscriber = subscriber.with_ansi(false).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        LogFormat::Coloured => {
-            let subscriber = subscriber.finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-    };
-
-    let is_headless = cmd.is_some();
+    for (name, url) in settings.nonlocal_insecure_endpoints() {
+        warn!(
+            "{name} endpoint uses insecure HTTP transport: {url}. \
+             Use this only for trusted local or development setups."
+        );
+    }
 
     if let Some(Command::Settings) = cmd {
         println!("{}", &settings);
@@ -219,7 +217,15 @@ async fn exec() -> anyhow::Result<()> {
         return Ok(());
     };
 
-    // get our wallet ready
+    // TUI mode: the TUI handles password entry, wallet loading, and connection.
+    // If no wallet file exists, the TUI offers restore-from-mnemonic.
+    if cmd.is_none() {
+        let res = tui::run(&wallet_path, &settings).await;
+        settings.password.zeroize();
+        return res;
+    }
+
+    // Headless mode: load wallet, connect, and run command
     let mut wallet: Wallet<WalletFile> =
         get_wallet(&cmd, &settings, &wallet_path)
             .await
@@ -231,20 +237,18 @@ async fn exec() -> anyhow::Result<()> {
     })?;
 
     if file_version.is_old() {
-        update_wallet_file(&mut wallet, &settings.password, file_version)
-            .inspect_err(|_| {
-                wallet.close();
-                settings.password.zeroize();
-            })?;
+        update_wallet_file(
+            &mut wallet,
+            settings.password.as_deref(),
+            file_version,
+        )
+        .inspect_err(|_| {
+            wallet.close();
+            settings.password.zeroize();
+        })?;
     }
 
-    // set our status callback
-    let status_cb = match is_headless {
-        true => status::headless,
-        false => status::interactive,
-    };
-
-    wallet = connect(wallet, &settings, status_cb)
+    wallet = connect(wallet, &settings, status::wallet_headless)
         .await
         .inspect_err(|_| {
             settings.password.zeroize();
@@ -265,128 +269,139 @@ async fn run_command_or_enter_loop(
     settings: &Settings,
     cmd: Option<Command>,
 ) -> anyhow::Result<()> {
-    // run command
     match cmd {
-        // if there is no command we are in interactive mode and need to run the
-        // interactive loop
         None => {
-            wallet.register_sync()?;
-            interactive::run_loop(wallet, settings).await?;
+            // TUI mode is handled earlier in exec() — this is unreachable
+            unreachable!("TUI mode should be handled before this point");
         }
-        // else we run the given command and print the result
-        Some(cmd) => {
-            match cmd.run(wallet, settings).await? {
-                RunResult::PhoenixBalance(balance, spendable) => {
-                    if spendable {
-                        println!("{}", Dusk::from(balance.spendable));
-                    } else {
-                        println!("{}", Dusk::from(balance.value));
-                    }
-                }
-                RunResult::MoonlightBalance(balance) => {
-                    println!("Total: {}", balance);
-                }
-                RunResult::Profile((profile_idx, profile)) => {
+        Some(cmd) => match cmd.run(wallet, settings).await? {
+            RunResult::Balance { balance, spendable } => {
+                print_balance_result(&balance, spendable);
+            }
+            RunResult::Profile((profile_idx, profile)) => {
+                println!(
+                    "> {}\n>   {}\n>   {}\n",
+                    Profile::index_string(profile_idx),
+                    profile.shielded_account_string(),
+                    profile.public_account_string(),
+                );
+            }
+            RunResult::Profiles(addrs) => {
+                for (profile_idx, profile) in addrs.iter().enumerate() {
                     println!(
-                        "> {}\n>   {}\n>   {}\n",
-                        Profile::index_string(profile_idx),
+                        "> {}\n>   {}\n>   {}\n\n",
+                        Profile::index_string(profile_idx as u8),
                         profile.shielded_account_string(),
                         profile.public_account_string(),
                     );
                 }
-                RunResult::Profiles(addrs) => {
-                    for (profile_idx, profile) in addrs.iter().enumerate() {
-                        println!(
-                            "> {}\n>   {}\n>   {}\n\n",
-                            Profile::index_string(profile_idx as u8),
-                            profile.shielded_account_string(),
-                            profile.public_account_string(),
-                        );
-                    }
-                }
-                RunResult::Tx(hash) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-
-                    // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(
-                        settings.state.clone(),
-                        settings.archiver.clone(),
-                        status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
-
-                    println!("{tx_id}");
-                }
-                RunResult::DeployTx(hash, contract_id) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-                    let contract_id = hex::encode(contract_id.as_bytes());
-                    println!("Deploying {contract_id}",);
-
-                    // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(
-                        settings.state.clone(),
-                        settings.archiver.clone(),
-                        status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
-
-                    println!("{tx_id}");
-                }
-                RunResult::StakeInfo(info, reward) => {
-                    let rewards = Dusk::from(info.reward);
-                    if reward {
-                        println!("{rewards}");
-                    } else {
-                        if let Some(amt) = info.amount {
-                            let amount = Dusk::from(amt.value);
-                            let locked = Dusk::from(amt.locked);
-                            let eligibility = amt.eligibility;
-                            let epoch = amt.eligibility / EPOCH;
-
-                            println!("Eligible stake: {amount} DUSK");
-                            println!(
-                                "Reclaimable slashed stake: {locked} DUSK"
-                            );
-                            println!(
-                                "Stake active from block #{eligibility} (Epoch {epoch})"
-                            );
-                        } else {
-                            println!("No active stake found for this key");
-                        }
-                        let faults = info.faults;
-                        let hard_faults = info.hard_faults;
-                        let rewards = Dusk::from(info.reward);
-
-                        println!("Slashes: {faults}");
-                        println!("Hard Slashes: {hard_faults}");
-                        println!("Accumulated rewards is: {rewards} DUSK");
-                    }
-                }
-                RunResult::ExportedKeys(pub_key, key_pair) => {
-                    println!("{},{}", pub_key.display(), key_pair.display())
-                }
-                RunResult::History(txns) => {
-                    if let Err(err) = crate::prompt::tx_history_list(&txns) {
-                        match err.downcast_ref::<InquireError>() {
-                            Some(
-                                InquireError::OperationInterrupted
-                                | InquireError::OperationCanceled,
-                            ) => (),
-                            _ => println!(
-                                "Failed to output transaction history with error {err}"
-                            ),
-                        }
-                    }
-                }
-                RunResult::ContractId(id) => {
-                    println!("Contract ID: {:?}", id);
-                }
-                RunResult::Settings() => {}
-                RunResult::Create() | RunResult::Restore() => {}
-                RunResult::DriverDeployResult(_) => {}
             }
-        }
+            RunResult::Operation(result) => {
+                print_operation_result(settings, result).await?;
+            }
+            RunResult::StakeInfo(info, reward) => {
+                let rewards = Dusk::from(info.reward);
+                if reward {
+                    println!("{rewards}");
+                } else {
+                    if let Some(amt) = info.amount {
+                        let amount = Dusk::from(amt.value);
+                        let locked = Dusk::from(amt.locked);
+                        let eligibility = amt.eligibility;
+                        let epoch = amt.eligibility / EPOCH;
+
+                        println!("Eligible stake: {amount} DUSK");
+                        println!("Reclaimable slashed stake: {locked} DUSK");
+                        println!(
+                            "Stake active from block #{eligibility} (Epoch {epoch})"
+                        );
+                    } else {
+                        println!("No active stake found for this key");
+                    }
+                    let faults = info.faults;
+                    let hard_faults = info.hard_faults;
+                    let rewards = Dusk::from(info.reward);
+
+                    println!("Slashes: {faults}");
+                    println!("Hard Slashes: {hard_faults}");
+                    println!("Accumulated rewards is: {rewards} DUSK");
+                }
+            }
+            RunResult::History(txns) => {
+                if let Err(err) = crate::prompt::tx_history_list(&txns) {
+                    eprintln!("Failed to output transaction history: {err}");
+                }
+            }
+            RunResult::ContractId(id) => println!("Contract ID: {id:?}"),
+            RunResult::Settings() => {}
+            RunResult::Create() | RunResult::Restore() => {}
+            RunResult::DriverDeployResult(contract_id) => {
+                println!(
+                    "Driver deployed for contract: {}",
+                    hex::encode(contract_id.to_bytes())
+                );
+            }
+        },
     };
+    Ok(())
+}
+
+fn print_balance_result(balance: &BalanceView, spendable: bool) {
+    if let Some(balance) = balance.moonlight {
+        println!("Total: {balance}");
+        return;
+    }
+
+    let amount = if spendable {
+        balance.shielded_spendable()
+    } else {
+        balance.shielded_total()
+    };
+
+    if let Some(amount) = amount {
+        println!("{amount}");
+    }
+}
+
+async fn print_operation_result(
+    settings: &Settings,
+    result: OperationResult,
+) -> anyhow::Result<()> {
+    match result {
+        OperationResult::Tx(hash) => {
+            let tx_id = hex::encode(hash.to_bytes());
+
+            let gql = GraphQL::new(
+                settings.state.clone(),
+                settings.archiver.clone(),
+                status::wallet_headless,
+            )?;
+            gql.wait_for(&tx_id).await?;
+
+            println!("{tx_id}");
+        }
+        OperationResult::DeployTx { hash, contract_id } => {
+            let tx_id = hex::encode(hash.to_bytes());
+            let contract_id = hex::encode(contract_id.as_bytes());
+            println!("Deploying {contract_id}");
+
+            let gql = GraphQL::new(
+                settings.state.clone(),
+                settings.archiver.clone(),
+                status::wallet_headless,
+            )?;
+            gql.wait_for(&tx_id).await?;
+
+            println!("{tx_id}");
+        }
+        OperationResult::ExportedKeys { pub_key, key_pair } => {
+            println!("{},{}", pub_key.display(), key_pair.display());
+        }
+        OperationResult::Error { message } => {
+            return Err(anyhow::anyhow!(message));
+        }
+    }
+
     Ok(())
 }
 
@@ -397,9 +412,33 @@ async fn get_wallet(
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let password = &settings.password;
     let wallet = match cmd {
-        // if `cmd` is `None` we are in interactive mode and need to load the
-        // wallet from file
-        None => interactive::load_wallet(wallet_path, settings).await?,
+        // In interactive (TUI) mode, load the wallet from file.
+        // Wallet creation/recovery is handled via headless subcommands.
+        None => {
+            if !wallet_path.inner().exists() {
+                return Err(anyhow::anyhow!(
+                    "No wallet found at {}. Use `rusk-wallet create` \
+                     or `rusk-wallet restore` first.",
+                    wallet_path.inner().display()
+                ));
+            }
+
+            let (file_version, salt_and_iv) =
+                dat::read_file_version_and_salt_iv(wallet_path)?;
+            let key = prompt::derive_key_from_password(
+                "Please enter your wallet password",
+                password,
+                salt_and_iv.map(|si| si.0).as_ref(),
+                file_version,
+            )?;
+
+            Wallet::from_file(WalletFile {
+                path: wallet_path.clone(),
+                aes_key: key,
+                salt: salt_and_iv.map(|si| si.0),
+                iv: salt_and_iv.map(|si| si.1),
+            })?
+        }
         // else we check if we need to replace the wallet and then load it
         Some(cmd) => match cmd {
             Command::Create {
@@ -415,9 +454,8 @@ async fn get_wallet(
             Command::Restore { file } => {
                 match file {
                     Some(file) => {
-                        // if we restore and old version file make sure we
-                        // know the corrrect version before asking for the
-                        // password
+                        // Determine the legacy file version before prompting
+                        // for a password.
                         let (file_version, salt_and_iv) =
                             dat::read_file_version_and_salt_iv(file)?;
 
@@ -478,51 +516,54 @@ async fn get_wallet(
     Ok(wallet)
 }
 
-fn update_wallet_file(
+pub(crate) fn update_wallet_file(
     wallet: &mut Wallet<WalletFile>,
-    password: &Option<String>,
+    password: Option<&str>,
     file_version: DatFileVersion,
 ) -> Result<(), anyhow::Error> {
     let salt = gen_salt();
     let iv = gen_iv();
-    let pwd = match password.as_ref() {
+    let mut pwd = match password {
         Some(p) => p.to_string(),
         None => ask_pwd(
             "Updating your wallet data file, please enter your wallet password ",
         )?,
     };
+    let result = (|| {
+        let old_wallet_file = wallet
+            .file()
+            .clone()
+            .expect("wallet file should never be none");
 
-    let old_wallet_file = wallet
-        .file()
-        .clone()
-        .expect("wallet file should never be none");
+        let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
+        // Is the password correct?
+        Wallet::from_file(WalletFile {
+            aes_key: old_key,
+            ..old_wallet_file.clone()
+        })?;
 
-    let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
-    // Is the password correct?
-    Wallet::from_file(WalletFile {
-        aes_key: old_key,
-        ..old_wallet_file.clone()
-    })?;
+        let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
 
-    let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
+        let key = derive_key(
+            DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            &pwd,
+            Some(&salt),
+        )?;
+        wallet.save_to(WalletFile {
+            path: old_wallet_file.path,
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+        println!(
+            "Update successful. Old wallet data file is saved at {}",
+            old_wallet_path.display()
+        );
 
-    let key = derive_key(
-        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-        &pwd,
-        Some(&salt),
-    )?;
-    wallet.save_to(WalletFile {
-        path: old_wallet_file.path,
-        aes_key: key,
-        salt: Some(salt),
-        iv: Some(iv),
-    })?;
-    println!(
-        "Update successful. Old wallet data file is saved at {}",
-        old_wallet_path.display()
-    );
-
-    Ok(())
+        Ok(())
+    })();
+    pwd.zeroize();
+    result
 }
 
 fn save_old_wallet(wallet_path: &WalletPath) -> Result<PathBuf, Error> {

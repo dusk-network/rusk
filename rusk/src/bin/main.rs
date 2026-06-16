@@ -10,17 +10,12 @@ mod config;
 mod ephemeral;
 mod log;
 
-#[cfg(feature = "chain")]
-use tracing::{info, warn};
-
 use clap::Parser;
-
 use log::Log;
-
-use rusk::Builder;
-
-use rusk::Result;
 use rusk::http::HttpServerConfig;
+use rusk::{Builder, Result};
+#[cfg(feature = "chain")]
+use tracing::info;
 
 use crate::config::Config;
 
@@ -90,41 +85,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             node_builder = node_builder.with_archive(config.archive.into());
         }
-
-        #[allow(deprecated)]
-        {
-            if let Some(gas_byte) = config.chain.gas_per_deploy_byte() {
-                warn!(
-                    "[chain].gas_per_deploy_byte is deprecated, use [vm].gas_per_deploy_byte"
-                );
-                node_builder = node_builder.with_gas_per_deploy_byte(gas_byte);
-            }
-            if let Some(price) = config.chain.min_deployment_gas_price() {
-                warn!(
-                    "[chain].min_deployment_gas_price is deprecated, use [vm].min_deployment_gas_price"
-                );
-                node_builder =
-                    node_builder.with_min_deployment_gas_price(price);
-            }
-            if let Some(timeout) = config.chain.generation_timeout() {
-                warn!(
-                    "[chain].generation_timeout is deprecated, use [vm].generation_timeout"
-                );
-                node_builder = node_builder.with_generation_timeout(timeout);
-            }
-            if let Some(min) = config.chain.min_deploy_points() {
-                warn!(
-                    "[chain].min_deploy_points is deprecated, use [vm].min_deploy_points"
-                );
-                node_builder = node_builder.with_min_deploy_points(min);
-            }
-            if let Some(limit) = config.chain.block_gas_limit() {
-                warn!(
-                    "[chain].block_gas_limit is deprecated, use [vm].block_gas_limit"
-                );
-                node_builder = node_builder.with_block_gas_limit(limit);
-            }
-        }
     };
 
     if config.http.listen {
@@ -132,8 +92,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             address: config.http.listen_addr(),
             cert: config.http.cert,
             key: config.http.key,
+            enable_docs: config.http.enable_docs,
             headers: config.http.headers,
             ws_event_channel_cap: config.http.ws_event_channel_cap,
+            policy: config.http.policy,
         };
         node_builder = node_builder.with_http(http_builder)
     }

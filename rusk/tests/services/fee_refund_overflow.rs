@@ -12,9 +12,8 @@
 //! overflows u64, one of two things happens depending on build configuration:
 //!
 //! 1. **With `overflow-checks = true` for all deps**: the WASM contract traps
-//!    inside `Fee::gen_remainder_note()`, and the host code in
-//!    `vm/src/execute.rs` calls `.expect("Refunding must succeed")`, which
-//!    panics — **crashing the node** (remote DoS).
+//!    inside `Fee::gen_remainder_note()`, the refund path errors, and the
+//!    transaction must be discarded as unspendable.
 //!
 //! 2. **With wrapping arithmetic** (current build — `overflow-checks` only
 //!    applies to the `transfer-contract` package, not its dependency
@@ -33,7 +32,7 @@
 //!   -> gen_remainder_note(gas_consumed ≈ 10^6)
 //!     -> (10^19 - 10^6) * 2 ≈ 2×10^19 > u64::MAX (1.84×10^19)
 //!       -> wrapping: value ≈ 1.55×10^18 (corrupted)
-//!       -> OR with overflow-checks: WASM trap -> .expect() -> NODE CRASH
+//!       -> OR with overflow-checks: WASM trap -> refund error -> tx discarded
 //! ```
 
 use dusk_core::transfer::Transaction;
@@ -61,9 +60,9 @@ const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 ///   preverify or execution, and no corruption occurs.
 ///
 /// Note: If `overflow-checks = true` were applied to all dependencies
-/// (including `dusk-core`), this would instead crash the node via a WASM
-/// trap in `gen_remainder_note()` followed by `.expect("Refunding must
-/// succeed")` in `vm/src/execute.rs`.
+/// (including `dusk-core`), this would instead fail during refund handling
+/// after the WASM trap in `gen_remainder_note()`, and the transaction should
+/// be discarded without mutating state.
 #[tokio::test(flavor = "multi_thread")]
 pub async fn fee_refund_overflow_poc() -> Result<()> {
     logger();
@@ -197,8 +196,8 @@ pub async fn fee_refund_overflow_poc() -> Result<()> {
     // changes in an unpredictable way — either inflating or deflating
     // depending on the exact wrapped value vs honest refund.
     //
-    // With overflow-checks enabled for all deps, this would instead crash
-    // the node (WASM trap → .expect() panic in execute.rs).
+    // With overflow-checks enabled for all deps, this would instead fail
+    // during refund handling and consume the full gas limit.
     //
     // Either way: once fixed, the tx is rejected and no balance change
     // occurs, so this assertion PASSES.

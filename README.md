@@ -164,6 +164,13 @@ Run a single full-node cluster with example state.
 make prepare-dev
 ```
 
+`make prepare-dev` only prepares the example consensus keys and example state.
+It does not create any rusk toml config.
+
+If you change `examples/genesis.toml`, delete `/tmp/example.state` before
+running `make prepare-dev` again. The target keeps an existing example state
+instead of overwriting it.
+
 #### Run a Node
 
 ```bash
@@ -171,11 +178,74 @@ make prepare-dev
 make run-dev
 ```
 
+If no HTTP address override is provided, `rusk` falls back to `127.0.0.1:8080`.
+
+Override the local HTTP bind address for one run:
+
+```bash
+make run-dev RUSK_HTTP_ADDR=127.0.0.1:9080
+```
+
+Use a gitignored per-developer config file:
+
+```bash
+mkdir -p .rusk
+cat > .rusk/local.toml <<'EOF'
+[http]
+listen_address = "127.0.0.1:9080"
+EOF
+
+make run-dev RUSK_CONFIG=.rusk/local.toml
+```
+
+Pass additional `dusk-rusk` CLI arguments through:
+
+```bash
+make run-dev RUSK_ARGS='--log-level debug'
+```
+
+If both `RUSK_CONFIG` and `RUSK_HTTP_ADDR` are set, `RUSK_HTTP_ADDR` wins because
+the CLI flag overrides the TOML value.
+
 #### Run an Archive node
 
 ```bash
 make run-dev-archive
 ```
+
+The same overrides work for archive mode:
+
+```bash
+make run-dev-archive RUSK_HTTP_ADDR=127.0.0.1:9080
+make run-dev-archive RUSK_CONFIG=.rusk/local.toml
+```
+
+> `rusk/default.config.toml` and `rusk/mainnet.config.toml` are templates for
+user-supplied config. They are not auto-discovered at runtime.
+
+If you move rusk off `127.0.0.1:8080`, point `rusk-wallet` at the same
+address:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080
+```
+
+If archive endpoints matter for your workflow:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080 --archiver http://127.0.0.1:9080
+```
+
+For a persistent wallet-side override, update `[network.local]` in
+`~/.config/rusk-wallet/config.toml` or `{wallet_dir}/config.toml`.
+
+#### Use the unstaked example wallet
+
+The default example recovery phrase in `examples/recovery-phrase.txt` is funded
+and staked. For localnet testing with a funded wallet that has no active stake,
+use `make run-dev-second` from `rusk-wallet/`. The target copies
+`examples/wallet-unstaked.dat` into an explicit wallet directory on first use.
+The matching recovery phrase is stored in `examples/recovery-phrase-unstaked.txt`.
 
 #### Run a Prover Node
 

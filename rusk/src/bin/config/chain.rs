@@ -4,10 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{
-    path::PathBuf,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
@@ -20,24 +18,10 @@ pub(crate) struct ChainConfig {
     db_options: Option<DatabaseOptions>,
 
     consensus_keys_path: Option<PathBuf>,
-    #[serde(with = "humantime_serde")]
-    #[serde(default)]
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    generation_timeout: Option<Duration>,
 
     max_queue_size: Option<usize>,
 
-    // NB: changing the gas_per_deploy_byte/block_gas_limit is equivalent to
-    // forking the chain.
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    gas_per_deploy_byte: Option<u64>,
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    min_deployment_gas_price: Option<u64>,
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    min_deploy_points: Option<u64>,
     min_gas_limit: Option<u64>,
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    block_gas_limit: Option<u64>,
 
     #[serde(with = "humantime_serde")]
     #[serde(default)]
@@ -85,42 +69,12 @@ impl ChainConfig {
         self.db_options.clone().unwrap_or_default()
     }
 
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    pub(crate) fn generation_timeout(&self) -> Option<Duration> {
-        #[allow(deprecated)]
-        self.generation_timeout
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    pub(crate) fn gas_per_deploy_byte(&self) -> Option<u64> {
-        #[allow(deprecated)]
-        self.gas_per_deploy_byte
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    pub(crate) fn min_deployment_gas_price(&self) -> Option<u64> {
-        #[allow(deprecated)]
-        self.min_deployment_gas_price
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    pub(crate) fn min_deploy_points(&self) -> Option<u64> {
-        #[allow(deprecated)]
-        self.min_deploy_points
-    }
-
     pub(crate) fn min_gas_limit(&self) -> Option<u64> {
         self.min_gas_limit
     }
 
     pub(crate) fn max_queue_size(&self) -> usize {
         self.max_queue_size.unwrap_or(10_000)
-    }
-
-    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
-    pub(crate) fn block_gas_limit(&self) -> Option<u64> {
-        #[allow(deprecated)]
-        self.block_gas_limit
     }
 
     pub(crate) fn genesis_timestamp(&self) -> u64 {

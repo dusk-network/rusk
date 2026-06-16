@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add public `BlobError`, `ConversionError`, `RuskError`, `TransactionError`, and `ProverError` error types, re-exported from `rusk_wallet`
+- Add `Error::InvalidEndpointUrl` and `Error::UnsupportedEndpointScheme` variants for endpoint validation failures
+- Show the stake owner in the TUI stake info view
+
+### Changed
+
+- Replace string wallet status callbacks with typed wallet status models.
+- Decouple TUI form submission state from the CLI command enum with a dedicated TUI request model.
+- Share CLI/TUI balance and operation result models.
+- Treat `0.0.0.0` and `::` HTTP endpoints as insecure unless `--allow-insecure` is set
+- Reject endpoint URLs with unsupported schemes instead of accepting non-HTTP(S) values during settings validation
+- Change `Error::{Rusk, Transaction, Blob, Conversion, ProverError}` to carry structured sub-enums instead of `String` payloads
+- Replace `Error::ArchiveJsonError(String)` with `Error::ArchiveQuery(Box<Error>)` and `Error::ArchiveJson(serde_json::Error)`
+- Initialize logging from CLI flags before loading config so config parse/setup errors are captured by the selected logger
+- Warn when creating or writing the default config fails before falling back to embedded defaults
+
+### Fixed
+
+- Reject malformed `--state`, `--prover`, and `--archiver` URL overrides instead of silently falling back to config values
+- Update the TUI stake amount max when switching between shielded and public staking
+- Restore TUI stake owner profile selection
+- Show an error when changing the TUI stake owner without another profile
+- Lock the TUI stake owner selection when topping up an existing stake
+
+## [0.4.0] - 2026-05-07
+
+### Added
+
+- Select the active protocol transaction format when encoding propagated
+  transactions and decoding archived transaction bytes.
+- Add full-screen TUI mode as the default interactive wallet experience
+- Add startup sync gate screen in TUI with cycle stage, progress bar, status stream, and block-height feedback
+- Add chain tip height polling and display in TUI overview status
+- Add explicit network indicator in TUI overview, using configured network name (including custom `--network` names)
+- Add `View Addresses` dashboard action to show full shielded/public addresses in TUI
+
+### Changed
+
+- Stop selecting propagated transaction envelopes from local hardfork height and use the stable client network encoding instead
+- Improve TUI startup responsiveness by avoiding long blocking phases on initial sync
+- Stabilize sync status transitions to reduce rapid `Synced`/`Syncing` toggling around normal block cadence
+- Rename dashboard action to `Import Different Wallet` and clarify that import replaces the current wallet (backup kept as `wallet.dat.old`)
+- Parallelize Phoenix note ownership scanning during sync across available logical cores
+- Increase default transfer gas limit to `50_000_000` and split built-in wallet actions into a `150_000_000` gas bucket for Boreas-era transaction costs
+- Delegate contract-id derivation to the canonical `dusk-core` deployment helper
+
+### Fixed
+
+- Decode archived GraphQL transaction history by the stored envelope instead of the local hardfork schedule
+- Derive Rues contract entity paths from `ContractId` bytes instead of hard-coding transfer/stake IDs
+- Route wallet GraphQL queries for propagation format detection through the
+  canonical `/graphql` endpoint, removing the remaining dependency on the
+  legacy `/on/graphql/query` route
+- Restore the wallet setup option in interactive to create a new wallet when no wallet exists or when importing a different wallet
+- Refuse remote `http://` wallet service endpoints unless `--allow-insecure` is set, while keeping loopback HTTP available for local development
+- Batch `existing_nullifiers` sync queries to avoid large restore failures
+- Detect stale note cache (e.g., from a wiped local node) and reset it automatically before syncing
+- Zeroize the validated mnemonic phrase immediately after CLI restore derives the wallet
+- Create CLI mnemonic seed files with owner-only permissions on Unix
+- Fix TUI stdout artifacting and stale frame residue after startup sync
+- Ignore placeholder `block 0` sync values so invalid heights are not shown in overview
+- Restore pre-submit balance checks in TUI command flow for clearer insufficient-balance feedback
+- Fix new-wallet password screen cursor to follow the active input field
+- Harden wallet prompt/TUI secret handling and terminal cleanup paths
+- Fix TUI import/restore lock contention by closing the active wallet before importing a different one
+- Clear stale cache when importing a different wallet and auto-retry connect on cache schema mismatch errors
+- Avoid printing raw startup/offline connection warnings into the terminal buffer while TUI is active
+- Fix Claim Reward info about the max amount & show `max: Unknown` when stake reward lookup fails
+- Refresh TUI stake reward display after confirmed stake, unstake, and claim-rewards transactions
+
 ## [0.3.0] - 2026-02-27
 
 ### Changed
@@ -161,7 +233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
 <!-- Releases -->
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.4.0...HEAD
+[0.4.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.3.0...rusk-wallet-0.4.0
 [0.3.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.2.0...rusk-wallet-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...rusk-wallet-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0

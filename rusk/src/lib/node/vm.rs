@@ -7,42 +7,41 @@
 mod config;
 mod query;
 
+pub use config::Config as RuskVmConfig;
+pub use config::feature::*;
+pub use config::known::WellKnownConfig as WellKnownVmConfig;
+pub use config::opt::OptionalConfig as RuskOptVmConfig;
 use dusk_consensus::errors::StateTransitionError;
-use dusk_core::abi::ContractId;
-use node_data::events::contract::ContractTxEvent;
-use tracing::{debug, info};
-
 use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::hard_fork::{bls_version_at, hard_fork_at};
-use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
+use node_data::events::contract::ContractTxEvent;
+use node_data::ledger::{
+    Block, CanonicalTransaction, Header, LedgerTransaction, SpentTransaction,
+};
+use tracing::{debug, info};
 
-use super::rusk::plonk_version_at;
+use super::fork_policy::policy_at;
 use super::{RuesEvent, Rusk};
-pub use config::Config as RuskVmConfig;
-pub use config::feature::*;
-pub use config::known::WellKnownConfig as WellKnownVmConfig;
-pub use config::opt::OptionalConfig as RuskOptVmConfig;
-
 use crate::Error as RuskError;
 
 impl VMExecution for Rusk {
-    fn create_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -109,7 +108,7 @@ impl VMExecution for Rusk {
         check_transition_result(&transition_result, blk.header())?;
 
         // Commit state transition
-        self.commit_session(session).map_err(|err| {
+        self.commit_session(session, blk.header()).map_err(|err| {
             StateTransitionError::PersistenceError(format!("{err}"))
         })?;
 
@@ -124,33 +123,41 @@ impl VMExecution for Rusk {
         Ok((executed_txs, contract_events))
     }
 
-    fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
-        self.query_session(Some(commit))
+    fn move_to_header(&self, header: &Header) -> anyhow::Result<()> {
+        self.query_session(Some(header))
             .map_err(|e| anyhow::anyhow!("Cannot open session {e}"))?;
-        self.set_current_commit(commit);
+        self.set_current_header(header);
         Ok(())
     }
 
     fn finalize_state(
         &self,
-        commit: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()> {
         debug!("Received finalize request");
-        self.finalize_state(commit, to_merge)
+        self.finalize_state(header, to_merge)
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
     fn preverify(
         &self,
-        tx: &Transaction,
+        tx: &CanonicalTransaction,
         tip_height: u64,
     ) -> anyhow::Result<PreverificationResult> {
         info!("Received preverify request");
-        let tx = &tx.inner;
+        let tx = tx.protocol();
 
         match tx {
             ProtocolTransaction::Phoenix(tx) => {
+                let next_block_height = tip_height.saturating_add(1);
+                if self.vm_config.feature_active_at(
+                    FEATURE_DISABLE_PHOENIX,
+                    next_block_height,
+                ) {
+                    anyhow::bail!("phoenix is not enabled in the VM");
+                }
+
                 let tx_nullifiers = tx.nullifiers().to_vec();
                 let existing_nullifiers =
                     self.existing_nullifiers(&tx_nullifiers).map_err(|e| {
@@ -168,14 +175,12 @@ impl VMExecution for Rusk {
                     return Err(anyhow::anyhow!("{err}"));
                 }
 
-                let next_block_height = tip_height.saturating_add(1);
-                let version = plonk_version_at(
-                    &self.vm_config,
-                    next_block_height,
-                    hard_fork_at(next_block_height),
-                );
+                let policy = policy_at(&self.vm_config, next_block_height);
 
-                match crate::verifier::verify_proof_with_version(tx, version) {
+                match crate::verifier::verify_proof_with_version(
+                    tx,
+                    policy.plonk_version,
+                ) {
                     Ok(true) => Ok(PreverificationResult::Valid),
                     Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
                     Err(e) => {
@@ -185,6 +190,7 @@ impl VMExecution for Rusk {
             }
             ProtocolTransaction::Moonlight(tx) => {
                 let next_block_height = tip_height.saturating_add(1);
+                let policy = policy_at(&self.vm_config, next_block_height);
                 let account_data = self.account(tx.sender()).map_err(|e| {
                     anyhow::anyhow!("Cannot check account: {e}")
                 })?;
@@ -226,7 +232,7 @@ impl VMExecution for Rusk {
                     verify_tx.sender(),
                     verify_tx.signature(),
                     &verify_tx.signature_message(),
-                    bls_version_at(next_block_height),
+                    policy.bls_version,
                 );
 
                 match verify_result {
@@ -239,16 +245,16 @@ impl VMExecution for Rusk {
 
     fn get_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Provisioners> {
-        self.query_provisioners(Some(base_commit))
+        self.query_provisioners(Some(base_header))
     }
 
     fn get_changed_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
-        self.query_provisioners_change(Some(base_commit))
+        self.query_provisioners_change(Some(base_header))
     }
 
     fn get_provisioner(
@@ -270,9 +276,9 @@ impl VMExecution for Rusk {
         Ok(self.base_root())
     }
 
-    fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]> {
+    fn revert(&self, header: &Header) -> anyhow::Result<[u8; 32]> {
         let state_hash = self
-            .revert(state_hash)
+            .revert(header)
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
 
         Ok(state_hash)
@@ -311,38 +317,27 @@ impl VMExecution for Rusk {
     }
 
     fn blob_active(&self, block_height: u64) -> bool {
-        self.vm_config
-            .feature(FEATURE_BLOB)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+        self.vm_config.feature_active_at(FEATURE_BLOB, block_height)
     }
 
     fn wasm64_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_WASM64)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_WASM64, block_height)
     }
 
     fn wasm32_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_WASM32)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_WASM32, block_height)
     }
 
     fn third_party_disabled(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_DISABLE_3RD_PARTY)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_DISABLE_3RD_PARTY, block_height)
     }
 
     fn phoenix_refund_check_active(&self, block_height: u64) -> bool {
         self.vm_config
-            .feature(FEATURE_HARDFORK_AEGIS)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or(false)
+            .feature_active_at(FEATURE_HARDFORK_AEGIS, block_height)
     }
 
     fn shade_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()> {
@@ -370,11 +365,11 @@ where
 impl Rusk {
     fn query_provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> anyhow::Result<Provisioners> {
         info!("Received get_provisioners request");
         let provisioners = self
-            .provisioners(base_commit)
+            .provisioners(base_header)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .map(|(pk, stake)| {
                 (PublicKey::new(pk.account), Self::to_stake(stake))
@@ -392,11 +387,11 @@ impl Rusk {
 
     fn query_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_header: Option<&Header>,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         info!("Received get_provisioners_change request");
         Ok(self
-            .last_provisioners_change(base_commit)
+            .last_provisioners_change(base_header)
             .map_err(|e| {
                 anyhow::anyhow!("Cannot get provisioners change: {e}")
             })?

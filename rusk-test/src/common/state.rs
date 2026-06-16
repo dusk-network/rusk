@@ -6,37 +6,41 @@
 
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
+use dusk_bytes::Serializable;
+use dusk_consensus::config::{
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
+};
+use dusk_consensus::operations::StateTransitionData;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::Transaction;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
-#[cfg(feature = "archive")]
-use tempfile::tempdir;
-
-use dusk_bytes::Serializable;
-use dusk_consensus::{
-    config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
-    operations::StateTransitionData,
-};
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
-};
 use node::vm::VMExecution;
-use node_data::{
-    bls::PublicKeyBytes,
-    ledger::{
-        Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
-    },
-    message::payload::Vote,
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::{
+    Attestation, Block, CanonicalTransaction, Header, IterationsInfo,
+    LedgerTransaction, Slash, SpentTransaction,
 };
-use rusk::node::{RuskVmConfig, driverstore::DriverStore};
+use node_data::message::payload::Vote;
+use rusk::node::RuskVmConfig;
+use rusk::node::driverstore::DriverStore;
 use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use rusk_recovery_tools::state::{self, Session, Snapshot};
-
-use anyhow::Result;
+#[cfg(feature = "archive")]
+use tempfile::tempdir;
 use tokio::sync::broadcast;
 use tracing::info;
 
 pub const LOCAL_TEST_CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
+
+pub fn header_from_root(state_hash: [u8; 32]) -> Header {
+    Header {
+        state_hash,
+        ..Default::default()
+    }
+}
 
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(
@@ -83,6 +87,7 @@ where
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         chain_id,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,
@@ -153,18 +158,58 @@ pub fn generator_procedure2(
     expected: Option<ExecuteResult>,
     generator: Option<BlsPublicKey>,
 ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+    generator_procedure_with_preverify(
+        rusk,
+        txs,
+        block_height,
+        block_gas_limit,
+        missed_generators,
+        expected,
+        generator,
+        true,
+    )
+}
+
+/// Executes the procedure a block generator will go through to generate a block
+/// including all specified transactions, optionally running the same preverify
+/// checks as transaction admission before creating the transition.
+#[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
+pub fn generator_procedure_with_preverify(
+    rusk: &Rusk,
+    txs: &[Transaction],
+    block_height: u64,
+    block_gas_limit: u64,
+    missed_generators: Vec<BlsPublicKey>,
+    expected: Option<ExecuteResult>,
+    generator: Option<BlsPublicKey>,
+    preverify_checks: bool,
+) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
     let prev_state = rusk.state_root();
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
         discarded: 0,
     });
 
-    let txs: Vec<_> = txs.iter().map(|t| t.clone().into()).collect();
-    // `preverify()` is meant to be called at the current tip height; it will
-    // validate the tx against rules that apply to the *next* block height.
-    let tip_height = block_height.saturating_sub(1);
-    for tx in &txs {
-        rusk.preverify(tx, tip_height)?;
+    let txs: Vec<_> = txs
+        .iter()
+        .cloned()
+        .map(|tx| LedgerTransaction::from_protocol_for_ledger(tx, block_height))
+        .collect();
+    if preverify_checks {
+        // `preverify()` is meant to be called at the current tip height; it
+        // will validate the tx against rules that apply to the *next* block
+        // height.
+        let tip_height = block_height.saturating_sub(1);
+        for tx in &txs {
+            let canonical = CanonicalTransaction::canonicalize(
+                tx.protocol().clone(),
+                node_data::hard_fork::ingress_tx_format_at(
+                    tip_height.saturating_add(1),
+                ),
+            );
+            rusk.preverify(&canonical, tip_height)?;
+        }
     }
 
     let generator = generator.unwrap_or(*DUSK_CONSENSUS_KEY);

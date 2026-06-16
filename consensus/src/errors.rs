@@ -7,6 +7,7 @@
 use std::io;
 
 use dusk_core::signatures::bls::Error as BlsSigError;
+use dusk_core::transfer::TransactionFormat;
 use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Hash, InvalidFault};
@@ -85,6 +86,15 @@ pub enum OperationError {
     BlockCreation(String),
     #[error("Invalid blob: {0}")]
     InvalidBlob(String),
+    #[error(
+        "Invalid ledger tx format for tx {tx_id}: got {actual:?}, expected {expected:?} at height {block_height}"
+    )]
+    InvalidTxFormat {
+        tx_id: String,
+        actual: TransactionFormat,
+        expected: TransactionFormat,
+        block_height: u64,
+    },
 }
 
 #[derive(Debug, Error)]

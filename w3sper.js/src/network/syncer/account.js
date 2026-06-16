@@ -262,32 +262,30 @@ export class AccountSyncer extends EventTarget {
 
   #createHistoryStream(profile, entries, options) {
     const { signal } = options;
-    const syncer = this;
+    const network = this.#network;
     const key = profile.account.toString();
     const nextRange = {
       from: 0,
       to: Math.min(MAX_ENRICHMENTS_PER_PULL, entries.length),
     };
 
-    return entries.length === 0
-      ? emptyStream
-      : new ReadableStream({
-          cancel(reason) {
-            console.log(`Account history stream canceled (${key}):`, reason);
-          },
+    return entries.length === 0 ? emptyStream : new ReadableStream({
+      cancel(reason) {
+        console.log(`Account history stream canceled (${key}):`, reason);
+      },
 
-          async pull(controller) {
-            if (signal?.aborted) {
-              this.cancel(signal.reason ?? "Abort signal received");
-              controller.close();
-              return;
-            }
+      async pull(controller) {
+        if (signal?.aborted) {
+          this.cancel(signal.reason ?? "Abort signal received");
+          controller.close();
+          return;
+        }
 
-            const subqueries = [];
+        const subqueries = [];
 
-            for (let i = nextRange.from; i < nextRange.to; i++) {
-              subqueries.push(
-                `tx${i}: tx(hash: "${entries[i].origin}") {
+        for (let i = nextRange.from; i < nextRange.to; i++) {
+          subqueries.push(
+            `tx${i}: tx(hash: "${entries[i].origin}") {
               blockHash,
               blockTimestamp,
               err,
@@ -299,45 +297,45 @@ export class AccountSyncer extends EventTarget {
                 isDeploy,
                 memo
               }
-            }`
-              );
-            }
+            }`,
+          );
+        }
 
-            const enriched = await syncer.#network
-              .query(subqueries.join(","), { signal })
-              .then((results) =>
-                Object.values(results).map((result, idx) =>
-                  toW3sperHistoryEntry(
-                    key,
-                    entries[nextRange.from + idx],
-                    result
-                  )
-                )
+        const enriched = await network
+          .query(subqueries.join(","), { signal })
+          .then((results) =>
+            Object.values(results).map((result, idx) =>
+              toW3sperHistoryEntry(
+                key,
+                entries[nextRange.from + idx],
+                result,
               )
-              .catch((error) => {
-                console.error(`Error fetching account history (${key})`, error);
-                controller.error(error);
-              });
+            )
+          )
+          .catch((error) => {
+            console.error(`Error fetching account history (${key})`, error);
+            controller.error(error);
+          });
 
-            if (!enriched) {
-              return;
-            }
+        if (!enriched) {
+          return;
+        }
 
-            for (const enrichedTx of enriched) {
-              controller.enqueue(enrichedTx);
-            }
+        for (const enrichedTx of enriched) {
+          controller.enqueue(enrichedTx);
+        }
 
-            if (nextRange.to < entries.length) {
-              nextRange.from = nextRange.to;
-              nextRange.to = Math.min(
-                nextRange.from + MAX_ENRICHMENTS_PER_PULL,
-                entries.length
-              );
-            } else {
-              controller.close();
-            }
-          },
-        });
+        if (nextRange.to < entries.length) {
+          nextRange.from = nextRange.to;
+          nextRange.to = Math.min(
+            nextRange.from + MAX_ENRICHMENTS_PER_PULL,
+            entries.length,
+          );
+        } else {
+          controller.close();
+        }
+      },
+    });
   }
 
   /**
@@ -387,7 +385,7 @@ export class AccountSyncer extends EventTarget {
             ord: "${options.order ?? "asc"}",
             toBlock: ${toBlock}
           ) { json }`,
-            queryOptions
+            queryOptions,
           )
           .then((result) => result.fullMoonlightHistory?.json ?? [])
           .then((historyEntries) =>
@@ -396,10 +394,10 @@ export class AccountSyncer extends EventTarget {
               historyEntries.length <= limit
                 ? historyEntries
                 : historyEntries.slice(0, limit),
-              queryOptions
+              queryOptions,
             )
           )
-      )
+      ),
     );
   }
 

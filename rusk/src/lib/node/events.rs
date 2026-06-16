@@ -12,9 +12,19 @@ use node::{LongLivedService, Network};
 use node_data::events::Event as ChainEvent;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc::Receiver;
-use tracing::error;
 
 use crate::http::RuesEvent;
+
+pub(crate) fn forward_event_to_rues(
+    rues_sender: &broadcast::Sender<RuesEvent>,
+    msg: ChainEvent,
+) {
+    // RUES receivers are created only while WebSocket clients are connected,
+    // so having no receivers is an expected idle-state and not an error.
+    if rues_sender.receiver_count() > 0 {
+        let _ = rues_sender.send(msg.into());
+    }
+}
 
 pub(crate) struct ChainEventStreamer {
     pub node_receiver: Receiver<ChainEvent>,
@@ -33,9 +43,7 @@ impl<N: Network, DB: database::DB, VM: node::vm::VMExecution>
     ) -> anyhow::Result<usize> {
         loop {
             if let Some(msg) = self.node_receiver.recv().await {
-                if let Err(e) = self.rues_sender.send(msg.clone().into()) {
-                    error!("Cannot send to rues {e:?}");
-                }
+                forward_event_to_rues(&self.rues_sender, msg);
             }
         }
     }

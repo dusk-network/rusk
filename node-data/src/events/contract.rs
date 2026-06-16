@@ -32,6 +32,8 @@ pub struct ContractEvent {
     pub topic: String,
     #[serde(with = "As::<Hex>")]
     pub data: Vec<u8>,
+    #[serde(default)]
+    pub reverted: bool,
 }
 
 impl From<Event> for ContractEvent {
@@ -40,6 +42,7 @@ impl From<Event> for ContractEvent {
             target: event.source,
             topic: event.topic,
             data: event.data,
+            reverted: event.reverted,
         }
     }
 }
@@ -50,6 +53,7 @@ impl From<ContractEvent> for Event {
             source: contract_event.target,
             topic: contract_event.topic,
             data: contract_event.data,
+            reverted: contract_event.reverted,
         }
     }
 }
@@ -65,6 +69,7 @@ mod tests {
             source: ContractId::from_bytes([0; CONTRACT_ID_BYTES]),
             topic: "contract".to_string(),
             data: vec![1, 2, 3],
+            reverted: false,
         }
     }
 

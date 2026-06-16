@@ -1,3 +1,8 @@
+RUSK_HTTP_ADDR ?=
+RUSK_CONFIG ?=
+RUSK_ARGS ?=
+RUSK_DEV_ARGS = $(strip $(if $(RUSK_CONFIG),--config $(RUSK_CONFIG)) $(if $(RUSK_HTTP_ADDR),--http-listen-addr $(RUSK_HTTP_ADDR)) $(RUSK_ARGS))
+
 all: keys wasm abi state rusk rusk-wallet ## Build everything
 
 help: ## Display this help screen
@@ -79,12 +84,12 @@ prepare-dev: keys ## Preparation steps for launching a local node for developmen
 
 run-dev: ## Launch a local ephemeral node for development
 	@echo "Starting a local ephemeral node for development (without archive)" && \
-	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p dusk-rusk -- -s /tmp/example.state || \
+	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p dusk-rusk -- -s /tmp/example.state $(RUSK_DEV_ARGS) || \
 	echo "Failed to start the node. Make sure you have run 'make prepare-dev' before running this command"
 
 run-dev-archive: ## Launch a local ephemeral archive node for development
 	@echo "Starting a local ephemeral archive node for development" && \
-	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release --features archive -p dusk-rusk  -- -s /tmp/example.state || \
+	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release --features archive -p dusk-rusk  -- -s /tmp/example.state $(RUSK_DEV_ARGS) || \
 	echo "Failed to start the node. Make sure you have run 'make prepare-dev' before running this command"
 
 rusk: keys state ## Build rusk binary
@@ -93,4 +98,18 @@ rusk: keys state ## Build rusk binary
 rusk-wallet: ## build the rusk wallet binary
 	$(MAKE) -C ./rusk-wallet build 
 
-.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet data-drivers
+fmt: ## Format code
+	@bash ./install-nightly-rusk.sh
+	@cargo +nightly-rusk fmt --all
+
+fmt-check: ## Check code formatting
+	@bash ./install-nightly-rusk.sh
+	@cargo +nightly-rusk fmt --all -- --check
+
+check: ## Type-check all crates
+	@cargo check --workspace
+
+clean: ## Clean build artifacts
+	@cargo clean
+
+.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet data-drivers fmt check clean

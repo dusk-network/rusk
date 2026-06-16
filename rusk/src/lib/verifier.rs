@@ -6,13 +6,13 @@
 
 //! Prover service implementation for the Rusk server.
 
-use crate::Result;
-use crate::error::Error;
-
 use dusk_core::plonk::PlonkVersion;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
 use dusk_vm::host_queries;
+
+use crate::Result;
+use crate::error::Error;
 
 #[cfg(not(feature = "dynamic-verifier"))]
 mod embed {
@@ -37,8 +37,9 @@ use embed::*;
 
 #[cfg(feature = "dynamic-verifier")]
 mod runtime {
-    use rusk_profile::Circuit as CircuitProfile;
     use std::sync::LazyLock;
+
+    use rusk_profile::Circuit as CircuitProfile;
     pub static VD_EXEC_1_2: LazyLock<Vec<u8>> =
         LazyLock::new(|| fetch_verifier("TxCircuitOneTwo"));
 
@@ -55,12 +56,11 @@ mod runtime {
         let circuit_profile = CircuitProfile::from_name(circuit_name)
             .unwrap_or_else(|_| {
                 panic!(
-                    "There should be circuit data stored for {}",
-                    circuit_name
+                    "There should be circuit data stored for {circuit_name}",
                 )
             });
         circuit_profile.get_verifier().unwrap_or_else(|_| {
-            panic!("there should be a verifier key stored for {}", circuit_name)
+            panic!("there should be a verifier key stored for {circuit_name}")
         })
     }
 }

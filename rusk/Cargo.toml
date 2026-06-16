@@ -1,6 +1,6 @@
 [package]
 name = "dusk-rusk"
-version = "1.6.0"
+version = "1.7.0"
 autobins = false
 exclude = ["tests/assets/*"]
 
@@ -60,15 +60,18 @@ dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
 pin-project = { workspace = true }
 tungstenite = { workspace = true }
-hyper-tungstenite = { workspace = true }
-hyper = { workspace = true, features = ["server", "http1", "http2"] }
-hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
-http-body-util = { workspace = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
 tokio-rustls = { workspace = true }
 rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
+axum = { workspace = true, features = ["ws"] }
+tower = { workspace = true, features = ["limit"] }
+tower-http = { workspace = true, features = ["limit", "normalize-path", "trace"] }
+regex = { workspace = true }
+utoipa = { workspace = true }
+utoipa-axum = { workspace = true }
+utoipa-swagger-ui = { workspace = true, features = ["axum"] }
 
 dusk-core = { workspace = true, features = ["zk"] }
 dusk-vm = { workspace = true }
@@ -83,6 +86,7 @@ node-data = { workspace = true, optional = true }
 
 ## GraphQL deps
 async-graphql = { workspace = true }
+async-graphql-axum = { workspace = true }
 
 ## RUES deps
 reqwest = { workspace = true }
@@ -91,12 +95,16 @@ reqwest = { workspace = true }
 tempfile = { workspace = true, optional = true }
 rusk-recovery = { workspace = true, optional = true }
 
+## Override transitive dependencies do to compiling constraints
+raptorq = { version = "=2.0.0" } # 2.0.1 requires rustc 1.94 
+
 
 [dev-dependencies]
 wallet-core = { workspace = true }
 ff = { workspace = true }
 criterion = { workspace = true }
 dusk-rusk-test = { path = "../rusk-test/" }
+rusk-recovery = { workspace = true, features = ["state"] }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
@@ -108,7 +116,7 @@ recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover", "recovery-keys"]
 chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
-archive = ["chain", "node/archive", "dusk-core/serde"]
+archive = ["chain", "node/archive", "dusk-core/serde", "dusk-rusk-test/archive"]
 network-trace = ["node/network-trace"]
 http-wasm = []
 dynamic-verifier = []

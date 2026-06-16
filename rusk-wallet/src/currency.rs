@@ -162,7 +162,7 @@ impl TryFrom<f64> for Dusk {
     fn try_from(val: f64) -> Result<Self, Error> {
         if val < 0.0 {
             return Err(Error::Conversion(
-                "Dusk type does not support negative values".to_string(),
+                crate::ConversionError::NegativeDuskValue,
             ));
         }
         Ok(Self(dusk(val)))
@@ -193,9 +193,10 @@ impl FromStr for Dusk {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parse_result = f64::from_str(s).map_err(|e: ParseFloatError| {
-            Error::Conversion(format!("Failed to parse Dusk from string: {e}",))
-        })?;
+        let parse_result =
+            f64::from_str(s).map_err(|source: ParseFloatError| {
+                Error::Conversion(crate::ConversionError::ParseDusk { source })
+            })?;
 
         Dusk::try_from(parse_result)
     }
@@ -265,7 +266,7 @@ mod tests {
     #[test]
     fn ops_dusk_lux() {
         let one = Dusk::try_from(1.0).unwrap();
-        let one_dusk = 1000000000;
+        let one_dusk = 1_000_000_000;
         assert_eq!(one + one_dusk, 2.0);
         assert_eq!(one - one_dusk, 0.0);
         assert_eq!(one * one_dusk, 1.0);
@@ -278,24 +279,24 @@ mod tests {
         let dusk: Dusk = my_float.try_into().unwrap();
         assert_eq!(dusk, my_float);
         let one_dusk = 1_000_000_000u64;
-        let dusk: Dusk = one_dusk.try_into().unwrap();
+        let dusk: Dusk = one_dusk.into();
         assert_eq!(dusk, 1.0);
         assert_eq!(*dusk, one_dusk);
         let dusk = Dusk::from_str("69.420").unwrap();
         assert_eq!(dusk, 69.420);
-        let float: f64 = dusk.try_into().unwrap();
-        assert_eq!(float, 69.420);
+        let float: f64 = dusk.into();
+        assert!((float - 69.420).abs() < f64::EPSILON);
         let borrowed = &Dusk(one_dusk);
-        let float: f64 = borrowed.try_into().unwrap();
-        assert_eq!(float, 1.0);
+        let float: f64 = borrowed.into();
+        assert!((float - 1.0).abs() < f64::EPSILON);
         let zero = 0;
-        assert_eq!(Dusk::try_from(zero).unwrap(), 0);
+        assert_eq!(Dusk::from(zero), 0);
         let zero = 0.0;
         assert_eq!(Dusk::try_from(zero).unwrap(), 0.0);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "attempt to add with overflow")]
     fn overflow() {
         let ten = Dusk::try_from(10.0).unwrap();
         let _ = Dusk::MAX + ten;
@@ -307,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "attempt to subtract with overflow")]
     fn negative_result() {
         let one = Dusk::try_from(1.0).unwrap();
         let two = Dusk::try_from(2.0).unwrap();

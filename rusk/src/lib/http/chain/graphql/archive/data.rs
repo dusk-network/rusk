@@ -108,6 +108,7 @@ pub mod translator {
         pub target: ContractId,
         pub topic: String,
         pub data: serde_json::Value,
+        pub reverted: bool,
     }
 
     /// TODO: core should be able to provide this translation from bytes to
@@ -143,6 +144,7 @@ pub mod translator {
                 target,
                 topic,
                 data: deserialized_data,
+                reverted: event.reverted,
             }
         }
     }

@@ -4,13 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
-use dusk_core::{
-    dusk,
-    stake::{STAKE_CONTRACT, StakeAmount},
-};
-
 use anyhow::Result;
+use dusk_core::dusk;
+use dusk_core::stake::{DEFAULT_MINIMUM_STAKE, STAKE_CONTRACT, StakeAmount};
 use dusk_rusk_test::TestContext;
 use rand::prelude::*;
 use rand::rngs::StdRng;

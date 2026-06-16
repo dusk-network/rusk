@@ -1,6 +1,6 @@
 [package]
 name = "dusk-wallet-core"
-version = "1.6.0"
+version = "1.7.0"
 description = "The core functionality of the Dusk wallet"
 repository = "https://github.com/dusk-network/rusk"
 
@@ -16,7 +16,6 @@ dusk-bytes = { workspace = true }
 bytecheck = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 rand_chacha = { workspace = true }
-blake3 = { workspace = true }
 sha2 = { workspace = true }
 hkdf = { workspace = true }
 rand = { workspace = true }

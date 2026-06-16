@@ -78,7 +78,9 @@ export async function loadWasmDataDriver(bytes) {
   const missing = REQUIRED_EXPORTS.filter((name) => !(name in exports));
   if (missing.length > 0) {
     throw new Error(
-      `Invalid data-driver WASM: missing required exports: ${missing.join(", ")}`,
+      `Invalid data-driver WASM: missing required exports: ${
+        missing.join(", ")
+      }`,
     );
   }
 

@@ -8,8 +8,8 @@ use dusk_core::dusk;
 use rusk_wallet::GraphQL;
 
 use super::*;
-use crate::command::history::TransactionDirection;
 use crate::status;
+use crate::transaction_history::TransactionDirection;
 
 mod utils;
 use utils::*;
@@ -38,7 +38,7 @@ async fn test_history_transfer_convert() {
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     let moonlight_addr = wallet.default_address();
@@ -209,7 +209,7 @@ async fn test_history_stake_unstake() {
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     let moonlight_addr = wallet.default_address();

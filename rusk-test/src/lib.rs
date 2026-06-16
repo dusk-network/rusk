@@ -6,12 +6,17 @@
 
 pub mod common;
 
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 pub use anyhow::Result;
+use common::state::{
+    ExecuteResult, LOCAL_TEST_CHAIN_ID, generator_procedure,
+    generator_procedure2, new_state_with,
+};
+use common::wallet::{
+    self, DummyCacheItem, TestStateClient, TestStore, Wallet,
+};
 pub use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
@@ -21,14 +26,6 @@ pub use rusk::node::RuskVmConfig;
 pub use rusk::{Result as RuskResult, Rusk};
 pub use rusk_recovery_tools::state::Session;
 use tempfile::tempdir;
-
-use common::{
-    state::{
-        ExecuteResult, LOCAL_TEST_CHAIN_ID, generator_procedure,
-        generator_procedure2, new_state_with,
-    },
-    wallet::{self, DummyCacheItem, TestStateClient, TestStore, Wallet},
-};
 
 /// This struct contains the common setup for the tests, including the Rusk
 /// instance and a test wallet. It also contains the temporary directory used

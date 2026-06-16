@@ -39,6 +39,9 @@ class Key {
   }
 }
 
+/**
+ * Pair of Dusk account and Phoenix address keys derived from the same seed.
+ */
 export class Profile {
   #buffer;
   #address;
@@ -75,6 +78,9 @@ export class Profile {
   }
 }
 
+/**
+ * Deterministic profile factory backed by a seed provider function.
+ */
 export class ProfileGenerator {
   [_seeder];
   #profiles = [];

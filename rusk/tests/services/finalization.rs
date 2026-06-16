@@ -6,6 +6,8 @@
 
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 
+use crate::common::state::header_from_root;
+
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const BLOCKS_NUM: u64 = 10;
 
@@ -40,8 +42,9 @@ fn empty_blocks(
         let root = tc.empty_block(height).expect("block to be created");
         if finalize {
             let to_merge = roots.last().expect("to exists");
+            let header = header_from_root(root);
             tc.rusk()
-                .finalize_state(root, vec![*to_merge])
+                .finalize_state(&header, vec![*to_merge])
                 .expect("finalization to work");
         }
         roots.push(root);

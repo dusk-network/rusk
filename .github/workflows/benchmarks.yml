@@ -5,13 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'rusk/**'
-      - 'node/**'
-      - '.github/workflows/benchmarks.yml'
+  workflow_dispatch:
 
 jobs:
   benchmark:

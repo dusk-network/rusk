@@ -5,14 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
+  AccountSyncer,
+  AddressSyncer,
+  Bookkeeper,
   Network,
   ProfileGenerator,
-  Bookkeeper,
-  AddressSyncer,
-  AccountSyncer,
 } from "@dusk/w3sper";
 
-import { NETWORK, test, assert, seeder, Treasury } from "./harness.js";
+import { assert, NETWORK, seeder, test, Treasury } from "./harness.js";
 
 test("Account Balance", async () => {
   const network = await Network.connect(NETWORK);
@@ -82,7 +82,7 @@ test("Balances synchronization", async () => {
   assert.equal(iterationOwnedCountTotal, 1857);
 
   const addressBalances = await Promise.all(
-    owners.map((owner) => bookkeeper.balance(owner.address))
+    owners.map((owner) => bookkeeper.balance(owner.address)),
   );
 
   assert.equal(addressBalances[0].value, 1_026_179_647_718_621n);
@@ -90,7 +90,7 @@ test("Balances synchronization", async () => {
   assert.equal(addressBalances[2].value, 512_720_219_906_168n);
 
   const accountBalances = await Promise.all(
-    owners.map((owner) => bookkeeper.balance(owner.account))
+    owners.map((owner) => bookkeeper.balance(owner.account)),
   );
 
   assert.equal(accountBalances[0].value, 100_1_000_000_000_000n);
@@ -100,11 +100,11 @@ test("Balances synchronization", async () => {
   const bookentry = bookkeeper.as(await profiles.default);
   assert.equal(
     (await bookentry.info.balance("address")).value,
-    1026179647718621n
+    1026179647718621n,
   );
   assert.equal(
     (await bookentry.info.balance("account")).value,
-    1_001_000_000_000_000n
+    1_001_000_000_000_000n,
   );
 
   await network.disconnect();

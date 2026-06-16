@@ -18,14 +18,15 @@ use crate::common::state::{ExecuteResult, generator_procedure};
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
 // perfectly good transaction.
-const BLOCK_GAS_LIMIT: u64 = 24_000_000;
+const BLOCK_GAS_LIMIT: u64 = 95_000_000;
 
-const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
+const GAS_LIMIT: u64 = 12_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
+const TOTAL_TX: u64 = 50;
 
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding the block gas limit
-fn wallet_transfer(tc: &TestContext, amount: u64) {
+fn wallet_transfer(tc: &TestContext, amount: u64, block_gas_limit: u64) {
     let rusk = tc.rusk();
     let wallet = tc.wallet();
     for i in 0..3 {
@@ -79,7 +80,6 @@ fn wallet_transfer(tc: &TestContext, amount: u64) {
         "Wrong initial balance for the receiver"
     );
 
-    const TOTAL_TX: u64 = 50;
     let mut idxs: Vec<u64> = (1..=TOTAL_TX).collect();
     let mut rng = thread_rng(); // Get a random number generator
     idxs.shuffle(&mut rng);
@@ -111,7 +111,7 @@ fn wallet_transfer(tc: &TestContext, amount: u64) {
         rusk,
         &txs[..],
         BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
+        block_gas_limit,
         vec![],
         Some(expected),
     )
@@ -165,7 +165,7 @@ pub async fn multi_transfer() -> Result<()> {
 
     info!("Original Root: {}", hex::encode(original_root));
 
-    wallet_transfer(&tc, 1_000);
+    wallet_transfer(&tc, 1_000, BLOCK_GAS_LIMIT);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

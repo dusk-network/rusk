@@ -6,11 +6,10 @@
 
 //! Module for GraphQL that is used for moonlight related data in the archive.
 
+use async_graphql::{Context, FieldError};
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::Order;
-
-use async_graphql::{Context, FieldError};
 
 use super::data::{MoonlightTransfers, NewAccountPublicKey};
 use crate::http::chain::graphql::{DBContext, OptResult};

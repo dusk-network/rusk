@@ -1,6 +1,6 @@
 [package]
 name = "rusk-recovery"
-version = "1.6.0"
+version = "1.7.0"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
 repository = "https://github.com/dusk-network/rusk"
@@ -27,7 +27,6 @@ tracing = { workspace = true, features = ["log"], optional = true }
 serde_derive = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 toml = { workspace = true, optional = true }
-indexmap = { workspace = true, optional = true }     # 2.12 requires rustc edition 2024
 bs58 = { workspace = true, optional = true }
 dusk-bytes = { workspace = true, optional = true }
 ff = { workspace = true, optional = true }
@@ -58,7 +57,6 @@ state = [
     "serde_derive",
     "serde",
     "toml",
-    "indexmap",
     "bs58",
     "dusk-bytes",
     "ff",
