@@ -9,9 +9,22 @@ use std::collections::HashMap;
 use dusk_core::transfer::RefundAddress;
 
 use super::*;
-use crate::ledger::{Hash, SpentTransaction, Transaction};
+use crate::ledger::{Hash, LedgerTransaction, SpentTransaction};
 
 /// Represents events related to transactions.
+///
+/// - `Deferred(Hash, &'static str)`
+///
+///   Indicates that a transaction has been staged outside the real mempool and
+///   is waiting on an admission precondition such as a missing intermediate
+///   nonce. The `Hash` identifies the staged transaction and the string
+///   carries a compact reason.
+///
+/// - `Dropped(Hash, &'static str)`
+///
+///   Indicates that a transaction has been discarded before entering the real
+///   mempool. The `Hash` identifies the dropped transaction and the string
+///   carries a compact reason.
 ///
 /// - `Removed(Hash)`
 ///
@@ -21,7 +34,7 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 ///   This event is triggered when a transaction is removed from the mempool
 ///   or discarded from the mempool.
 ///
-/// - `Included(&'t Transaction)`
+/// - `Included(&'t LedgerTransaction)`
 ///
 ///     A transaction has been included in the mempool.
 ///
@@ -36,8 +49,10 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 ///     - A "failed" transaction: executed and the `err` field is `Some`.
 #[derive(Clone, Debug)]
 pub enum TransactionEvent<'t> {
+    Deferred(Hash, &'static str),
+    Dropped(Hash, &'static str),
     Removed(Hash),
-    Included(&'t Transaction),
+    Included(&'t LedgerTransaction),
     Executed(&'t SpentTransaction),
 }
 
@@ -46,6 +61,8 @@ impl EventSource for TransactionEvent<'_> {
 
     fn topic(&self) -> &'static str {
         match self {
+            Self::Deferred(_, _) => "deferred",
+            Self::Dropped(_, _) => "dropped",
             Self::Removed(_) => "removed",
             Self::Executed(_) => "executed",
             Self::Included(_) => "included",
@@ -53,6 +70,9 @@ impl EventSource for TransactionEvent<'_> {
     }
     fn data(&self) -> Option<serde_json::Value> {
         match self {
+            Self::Deferred(_, reason) | Self::Dropped(_, reason) => {
+                Some(serde_json::json!({ "reason": reason }))
+            }
             Self::Removed(_) => None,
             Self::Executed(t) => serde_json::to_value(t).ok(),
             Self::Included(t) => serde_json::to_value(t).ok(),
@@ -60,7 +80,9 @@ impl EventSource for TransactionEvent<'_> {
     }
     fn entity(&self) -> String {
         let hash = match self {
-            Self::Removed(hash) => *hash,
+            Self::Deferred(hash, _)
+            | Self::Dropped(hash, _)
+            | Self::Removed(hash) => *hash,
             Self::Executed(tx) => tx.inner.id(),
             Self::Included(tx) => tx.id(),
         };
@@ -73,13 +95,13 @@ use dusk_bytes::Serializable;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-impl Serialize for Transaction {
+impl Serialize for LedgerTransaction {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut state = serializer.serialize_struct("Transaction", 1)?;
-        match &self.inner {
+        match self.protocol() {
             ProtocolTransaction::Phoenix(p) => {
                 state.serialize_field("type", "phoenix")?;
 
@@ -111,11 +133,12 @@ impl Serialize for Transaction {
             }
         }
 
-        let tx = &self.inner;
+        let tx = self.protocol();
 
         state.serialize_field("deposit", &tx.deposit())?;
 
-        let notes: Vec<Note> = tx.outputs().iter().map(|n| n.into()).collect();
+        let notes: Vec<Note<'_>> =
+            tx.outputs().iter().map(Note::from).collect();
 
         if !notes.is_empty() {
             state.serialize_field("outputs", &notes)?;

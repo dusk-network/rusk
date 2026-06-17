@@ -21,6 +21,7 @@ mod crypto;
 mod error;
 mod gql;
 mod rues;
+mod status;
 mod store;
 mod wallet;
 
@@ -28,15 +29,17 @@ pub mod currency;
 pub mod dat;
 pub mod gas;
 
+use currency::Dusk;
 pub use dusk_core::stake::EPOCH;
-pub use error::Error;
+pub use error::{
+    BlobError, ConversionError, Error, ProverError, RuskError, TransactionError,
+};
 pub use gql::{BlockData, BlockTransaction, GraphQL};
 pub use rues::HttpClient as RuesHttpClient;
+pub use status::{WalletStatus, WalletSyncStatus};
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
-
-use currency::Dusk;
 
 /// The maximum allowed size for function names, set to 64 bytes
 pub const MAX_FUNCTION_NAME_SIZE: usize = 64;

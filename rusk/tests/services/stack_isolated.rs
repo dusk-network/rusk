@@ -16,11 +16,12 @@ use dusk_core::stake::{
     DEFAULT_MINIMUM_STAKE, STAKE_CONTRACT, Stake, StakeAmount, StakeData,
     StakeKeys,
 };
-use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::data::ContractCall;
+use dusk_core::transfer::{
+    TRANSFER_CONTRACT, Transaction as ProtocolTransaction,
+};
 use dusk_vm::ContractData;
-use node_data::ledger::Transaction as NodeTransaction;
+use node_data::ledger::LedgerTransaction;
 use rusk::node::{
     DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
     RuskVmConfig,
@@ -33,9 +34,10 @@ use tracing::info;
 use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
+use crate::common::state::{DEFAULT_MIN_GAS_LIMIT, header_from_root};
+use crate::common::wallet::test_wallet::Wallet;
 use crate::common::wallet::{
-    TestStateClient, TestStore, test_wallet as wallet, test_wallet::Wallet,
+    TestStateClient, TestStore, test_wallet as wallet,
 };
 
 const GAS_LIMIT: u64 = 0x10000000;
@@ -90,6 +92,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         CHAIN_ID,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,
@@ -163,9 +166,8 @@ pub async fn test_isolated() -> Result<(), Error> {
     .unwrap();
     let mut base_a: [u8; 32] = [0u8; 32];
     base_a.copy_from_slice(&base);
-    let mut lock = f.rusk.tip.write();
-    lock.current = base_a;
-    drop(lock);
+    let base_a = header_from_root(base_a);
+    f.rusk.set_current_header(&base_a);
 
     use rand::SeedableRng;
     let mut rng = rand::rngs::StdRng::seed_from_u64(64);
@@ -181,16 +183,16 @@ pub async fn test_isolated() -> Result<(), Error> {
     // inject rusk session with the isolated contracts and test accounts
     //
 
-    f.rusk.tip.write().current = base_a;
+    f.rusk.set_current_header(&base_a);
     let mut session = f
         .rusk
-        .new_block_session(1, f.rusk.tip.read().current)
+        .new_block_session(1, base_a.state_hash)
         .expect("creating a session should be possible");
 
     // deploy alice
     let alice_bytecode = include_bytes!("../../../contracts/bin/alice.wasm");
     session
-        .deploy(
+        .deploy::<_, (), _>(
             alice_bytecode,
             ContractData::builder()
                 .owner(NON_BLS_OWNER.as_ref())
@@ -204,7 +206,7 @@ pub async fn test_isolated() -> Result<(), Error> {
     let charlie_bytecode =
         include_bytes!("../../../contracts/bin/charlie.wasm");
     session
-        .deploy(
+        .deploy::<_, (), _>(
             charlie_bytecode,
             ContractData::builder()
                 .owner(NON_BLS_OWNER.as_ref())
@@ -269,7 +271,8 @@ pub async fn test_isolated() -> Result<(), Error> {
         .expect("Adding balance should succeed");
 
     // commit the session
-    f.rusk.commit_session(session)?;
+    let header = header_from_root(session.root());
+    f.rusk.commit_session(session, &header)?;
 
     //
     // generate the transaction
@@ -335,12 +338,12 @@ pub async fn test_isolated() -> Result<(), Error> {
         slashes: vec![],
         cert_voters: voters,
         max_txs_bytes: 5000,
-        prev_state_root: f.rusk.tip.read().current,
+        prev_state_root: f.rusk.state_root(),
     };
 
     let txs = vec![
-        NodeTransaction::from(stake_activate_tx),
-        NodeTransaction::from(withdraw_tx),
+        LedgerTransaction::from_protocol_for_ledger(stake_activate_tx, 2710377),
+        LedgerTransaction::from_protocol_for_ledger(withdraw_tx, 2710377),
     ];
 
     let (spent, _discarded, _) = f

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Added
+
+- Add hardfork-governed transaction format selection for ledger replay and
+  ingress decoding.
+- Add a regression test covering historical pre-Aegis transaction decoding in
+  block serialization.
+- Add explicit `CanonicalTransaction` and `LedgerTransaction`
+  boundaries to separate canonical transaction data from persisted ledger
+  envelopes.
+- Add `reverted` field to `ContractEvent` struct
+
+### Fixed
+
+- Re-encode canonical transaction bytes from semantic transaction data during
+  hashing and serialization instead of preserving stale decoded input bytes
+
+### Changed
+
+- Make canonical transaction construction infallible, remove the test-only ingress helper, and move ledger reformatting onto `LedgerTransaction`
+- Accept Aegis and Boreas transaction envelopes for live ingress decoding and normalize them to the active ingress format
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
@@ -75,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.6.0...dusk-node-data-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.4.0...dusk-node-data-1.6.0
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.3.0...dusk-node-data-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.2.0...dusk-node-data-1.3.0

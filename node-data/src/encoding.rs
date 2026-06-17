@@ -6,13 +6,10 @@
 
 use std::io::{self, Read, Write};
 
-use dusk_core::transfer::Transaction as ProtocolTransaction;
-
-use crate::Serializable;
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
-    Attestation, Block, Fault, Header, IterationsInfo, Label, Signature,
-    SpentTransaction, StepVotes, Transaction,
+    Attestation, Block, Fault, Header, IterationsInfo, Label,
+    LedgerTransaction, Signature, SpentTransaction, StepVotes,
 };
 use crate::message::payload::{
     QuorumType, Ratification, RatificationResult, ValidationQuorum,
@@ -23,9 +20,80 @@ use crate::message::{
 };
 use crate::{
     MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS, MAX_SPENT_TX_ERROR_BYTES,
+    Serializable,
 };
 
 const MAX_TX_LENGTH_BYTES: usize = 2 * 1024 * 1024;
+
+/// Decoded outer transaction envelope used while reconstructing a
+/// [`LedgerTransaction`].
+struct RawTransaction {
+    version: u32,
+    tx_type: u32,
+    protocol_tx: Vec<u8>,
+}
+
+fn read_raw_transaction<R: Read>(r: &mut R) -> io::Result<RawTransaction> {
+    Ok(RawTransaction {
+        version: LedgerTransaction::read_u32_le(r)?,
+        tx_type: LedgerTransaction::read_u32_le(r)?,
+        protocol_tx: LedgerTransaction::read_var_le_bytes32(
+            r,
+            MAX_TX_LENGTH_BYTES,
+        )?,
+    })
+}
+
+fn decode_transaction(
+    raw: RawTransaction,
+    decode_inner: impl FnOnce(&[u8]) -> Result<LedgerTransaction, dusk_bytes::Error>,
+) -> io::Result<LedgerTransaction> {
+    let mut tx = decode_inner(&raw.protocol_tx[..])
+        .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+    tx.version = raw.version;
+    tx.r#type = raw.tx_type;
+    Ok(tx)
+}
+
+fn read_protocol_transaction<R: Read>(
+    r: &mut R,
+    decode_inner: impl FnOnce(&[u8]) -> Result<LedgerTransaction, dusk_bytes::Error>,
+) -> io::Result<LedgerTransaction> {
+    decode_transaction(read_raw_transaction(r)?, decode_inner)
+}
+
+fn read_spent_transaction_fields<R: Read>(
+    r: &mut R,
+) -> io::Result<(RawTransaction, u64, u64, Option<String>)> {
+    let raw = read_raw_transaction(r)?;
+    let block_height = SpentTransaction::read_u64_le(r)?;
+    let gas_spent = SpentTransaction::read_u64_le(r)?;
+    let error_len = SpentTransaction::read_u32_le(r)?;
+    if error_len as usize > MAX_SPENT_TX_ERROR_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!(
+                "SpentTransaction error string too large: {error_len} > {MAX_SPENT_TX_ERROR_BYTES}"
+            ),
+        ));
+    }
+
+    let err = if error_len > 0 {
+        let mut buf = vec![0u8; error_len as usize];
+        r.read_exact(&mut buf[..])?;
+
+        Some(String::from_utf8(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "invalid utf-8 in SpentTransaction error string",
+            )
+        })?)
+    } else {
+        None
+    };
+
+    Ok((raw, block_height, gas_spent, err))
+}
 
 impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
@@ -65,7 +133,7 @@ impl Serializable for Block {
         }
 
         let txs = (0..tx_len)
-            .map(|_| Transaction::read(r))
+            .map(|_| LedgerTransaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Read faults count
@@ -87,7 +155,7 @@ impl Serializable for Block {
     }
 }
 
-impl Serializable for Transaction {
+impl Serializable for LedgerTransaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // Write version
         w.write_all(&self.version.to_le_bytes())?;
@@ -95,7 +163,7 @@ impl Serializable for Transaction {
         // Write TxType
         w.write_all(&self.r#type.to_le_bytes())?;
 
-        let data = self.inner.to_var_bytes();
+        let data = self.protocol_bytes();
 
         // Write inner transaction
         Self::write_var_le_bytes32(w, &data)?;
@@ -107,20 +175,7 @@ impl Serializable for Transaction {
     where
         Self: Sized,
     {
-        let version = Self::read_u32_le(r)?;
-        let tx_type = Self::read_u32_le(r)?;
-
-        let protocol_tx = Self::read_var_le_bytes32(r, MAX_TX_LENGTH_BYTES)?;
-        let tx_size = protocol_tx.len();
-        let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        Ok(Self {
-            inner,
-            version,
-            r#type: tx_type,
-            size: Some(tx_size),
-        })
+        read_protocol_transaction(r, LedgerTransaction::decode_any)
     }
 }
 
@@ -148,33 +203,11 @@ impl Serializable for SpentTransaction {
     where
         Self: Sized,
     {
-        let inner = Transaction::read(r)?;
-
-        let block_height = Self::read_u64_le(r)?;
-        let gas_spent = Self::read_u64_le(r)?;
-        let error_len = Self::read_u32_le(r)?;
-        if error_len as usize > MAX_SPENT_TX_ERROR_BYTES {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!(
-                    "SpentTransaction error string too large: {error_len} > {MAX_SPENT_TX_ERROR_BYTES}"
-                ),
-            ));
-        }
-
-        let err = if error_len > 0 {
-            let mut buf = vec![0u8; error_len as usize];
-            r.read_exact(&mut buf[..])?;
-
-            Some(String::from_utf8(buf).map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "invalid utf-8 in SpentTransaction error string",
-                )
-            })?)
-        } else {
-            None
-        };
+        let (raw, block_height, gas_spent, err) =
+            read_spent_transaction_fields(r)?;
+        let inner = decode_transaction(raw, |bytes| {
+            LedgerTransaction::decode_for_ledger(bytes, block_height)
+        })?;
 
         Ok(Self {
             inner,
@@ -486,10 +519,19 @@ impl Serializable for QuorumType {
 mod tests {
     use std::io;
 
+    use dusk_core::transfer::TransactionFormat;
     use fake::{Dummy, Fake, Faker};
 
     use super::*;
+    use crate::hard_fork::{
+        set_aegis_activation_height, set_boreas_activation_height,
+    };
     use crate::message::payload::{Candidate, Validation};
+
+    const HISTORICAL_PRE_AEGIS_TX_HEX: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../test-fixtures/pre_aegis_3422299.tx.hex"
+    ));
 
     /// Asserts if encoding/decoding of a serializable type runs properly.
     fn assert_serializable<S: Dummy<Faker> + Eq + Serializable>() {
@@ -527,7 +569,53 @@ mod tests {
 
     #[test]
     fn test_encoding_transaction() {
-        assert_serializable::<Transaction>();
+        assert_serializable::<LedgerTransaction>();
+    }
+
+    fn assert_transaction_roundtrip(
+        tx: LedgerTransaction,
+    ) -> LedgerTransaction {
+        let mut buf = vec![];
+        tx.write(&mut buf).expect("should be writable");
+
+        let decoded =
+            LedgerTransaction::read(&mut &buf[..]).expect("should decode");
+        assert_eq!(decoded, tx);
+        decoded
+    }
+
+    #[test]
+    fn test_encoding_transaction_boreas() {
+        let tx: LedgerTransaction =
+            LedgerTransaction::from_protocol_with_format(
+                Faker.fake::<LedgerTransaction>().protocol().clone(),
+                TransactionFormat::Boreas,
+            );
+        let decoded = assert_transaction_roundtrip(tx);
+        assert_eq!(decoded.format(), TransactionFormat::Boreas);
+    }
+
+    #[test]
+    fn test_encoding_block_with_pre_aegis_transaction() {
+        let header: Header = Faker.fake();
+        let tx = LedgerTransaction::decode_any(
+            &hex::decode(HISTORICAL_PRE_AEGIS_TX_HEX.trim())
+                .expect("fixture hex should decode"),
+        )
+        .expect("historical tx should decode");
+        let block = Block::new(header, vec![tx], vec![])
+            .expect("block construction should succeed");
+
+        let mut buf = vec![];
+        block
+            .write(&mut buf)
+            .expect("block encoding should succeed");
+
+        let decoded = Block::read(&mut &buf[..])
+            .expect("block decoding should preserve legacy transactions");
+        assert_eq!(decoded.txs().len(), 1);
+        assert_eq!(decoded.txs()[0].format(), TransactionFormat::PreAegis);
+        assert_eq!(decoded.txs()[0].id(), block.txs()[0].id());
     }
 
     #[test]
@@ -536,9 +624,34 @@ mod tests {
     }
 
     #[test]
+    fn test_encoding_spent_transaction_boreas() {
+        set_aegis_activation_height(10);
+        set_boreas_activation_height(200);
+
+        let tx: LedgerTransaction =
+            LedgerTransaction::from_protocol_with_format(
+                Faker.fake::<LedgerTransaction>().protocol().clone(),
+                TransactionFormat::Boreas,
+            );
+        let spent_tx = SpentTransaction {
+            inner: tx,
+            block_height: 200,
+            gas_spent: 3,
+            err: None,
+        };
+
+        let mut buf = vec![];
+        spent_tx.write(&mut buf).expect("should be writable");
+        let decoded =
+            SpentTransaction::read(&mut &buf[..]).expect("should decode");
+        assert_eq!(decoded, spent_tx);
+        assert_eq!(decoded.inner.format(), TransactionFormat::Boreas);
+    }
+
+    #[test]
     fn test_spent_transaction_rejects_malformed_error_string() {
         fn decode_err(
-            tx: &Transaction,
+            tx: &LedgerTransaction,
             error_len: u32,
             error_bytes: &[u8],
         ) -> io::Result<SpentTransaction> {
@@ -552,7 +665,7 @@ mod tests {
             SpentTransaction::read(&mut &bytes[..])
         }
 
-        let tx: Transaction = Faker.fake();
+        let tx: LedgerTransaction = Faker.fake();
 
         let err = decode_err(&tx, 2, &[0xFF, 0xFF])
             .expect_err("invalid utf-8 error bytes must be rejected");
@@ -618,7 +731,7 @@ mod tests {
             &((MAX_TX_LENGTH_BYTES as u32) + 1).to_le_bytes(),
         );
         assert_invalid_data(
-            Transaction::read(&mut &tx_bytes[..]),
+            LedgerTransaction::read(&mut &tx_bytes[..]),
             "oversized length-prefixed tx payload must be rejected",
         );
 

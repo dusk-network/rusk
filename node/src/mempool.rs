@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod admission;
 pub mod conf;
+mod prequeue;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -14,15 +16,18 @@ use async_trait::async_trait;
 use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
-use dusk_consensus::config::MAX_BLOCK_SIZE;
 use dusk_consensus::errors::BlobError;
 use dusk_core::TxPreconditionError;
-use dusk_core::stake::STAKE_CONTRACT;
-use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::TransactionFormat;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
-use node_data::ledger::{Header, SpendingId, Transaction};
+use node_data::ledger::{CanonicalTransaction, LedgerTransaction};
 use node_data::message::{AsyncQueue, Payload, Topics, payload};
+pub use prequeue::FutureNonceRetryHandle;
+use prequeue::{
+    RETRY_POLL_INTERVAL, drain_unblocked_chain, handle_enqueue_outcome,
+    process_due_retries,
+};
 use rkyv::Infallible;
 use rkyv::ser::Serializer;
 use rkyv::ser::serializers::{
@@ -32,14 +37,22 @@ use rkyv::ser::serializers::{
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::Sender;
+use tokio::time::Instant;
 use tracing::{error, info, warn};
 
+use self::admission::{TxAdmission, apply_mempool_admission};
 use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
-use crate::vm::PreverificationResult;
 use crate::{LongLivedService, Message, Network, database, vm};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
+
+pub(super) fn should_replace_conflicting_tx(
+    existing: &LedgerTransaction,
+    incoming: &LedgerTransaction,
+) -> bool {
+    incoming.gas_price() > existing.gas_price()
+}
 
 #[derive(Debug, Error)]
 pub enum TxAcceptanceError {
@@ -63,8 +76,23 @@ pub enum TxAcceptanceError {
     GasPriceTooLow(u64),
     #[error("gas limit lower than minimum {0}")]
     GasLimitTooLow(u64),
+    #[error(
+        "transaction format {actual:?} is not supported for live ingress; minimum supported format is {minimum:?}"
+    )]
+    UnsupportedIngressFormat {
+        actual: TransactionFormat,
+        minimum: TransactionFormat,
+    },
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
+    #[error("Missing intermediate nonce {0}")]
+    MissingIntermediateNonce(u64),
+    #[error("Maximum future nonce retry queue size exceeded {0}")]
+    MaxFutureNonceQueueExceeded(usize),
+    #[error(
+        "Maximum queued future Moonlight transactions per account exceeded {0}"
+    )]
+    MaxMoonlightFutureNoncePerAccountExceeded(usize),
     #[error("this transaction is too large to be serialized")]
     TooLarge,
     #[error("Maximum transaction size exceeded {0}")]
@@ -98,6 +126,16 @@ impl From<TxPreconditionError> for TxAcceptanceError {
             TxPreconditionError::BlobLowLimit(min) => {
                 TxAcceptanceError::GasLimitTooLow(min)
             }
+            TxPreconditionError::DeployChargeOverflow => {
+                TxAcceptanceError::VerificationFailed(
+                    "deploy charge overflow".into(),
+                )
+            }
+            TxPreconditionError::BlobChargeOverflow => {
+                TxAcceptanceError::VerificationFailed(
+                    "blob charge overflow".into(),
+                )
+            }
             TxPreconditionError::DeployLowLimit(min) => {
                 TxAcceptanceError::GasLimitTooLow(min)
             }
@@ -127,15 +165,51 @@ impl From<TxPreconditionError> for TxAcceptanceError {
     }
 }
 
+fn check_supported_ingress_tx_format(
+    tx: &CanonicalTransaction,
+) -> Result<(), TxAcceptanceError> {
+    // Live network admission accepts both Aegis and Boreas envelopes. Only the
+    // historical PreAegis encoding remains replay-only.
+    if tx.format() == TransactionFormat::PreAegis {
+        return Err(TxAcceptanceError::UnsupportedIngressFormat {
+            actual: tx.format(),
+            minimum: TransactionFormat::Aegis,
+        });
+    }
+
+    Ok(())
+}
+
+fn normalize_ingress_tx(
+    tx: &LedgerTransaction,
+    block_height: u64,
+) -> Result<LedgerTransaction, TxAcceptanceError> {
+    check_supported_ingress_tx_format(tx.canonical())?;
+    Ok(tx.reformat_for_ingress(block_height))
+}
+
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
     conf: Params,
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
+    future_nonce_retry_queue: FutureNonceRetryHandle,
 }
 
 impl MempoolSrv {
     pub fn new(conf: Params, event_sender: Sender<Event>) -> Self {
+        let queue = FutureNonceRetryHandle::new(
+            conf.max_queue_size,
+            conf.max_moonlight_future_nonce_per_account,
+        );
+        Self::with_future_nonce_retry_queue(conf, event_sender, queue)
+    }
+
+    pub fn with_future_nonce_retry_queue(
+        conf: Params,
+        event_sender: Sender<Event>,
+        future_nonce_retry_queue: FutureNonceRetryHandle,
+    ) -> Self {
         info!("MempoolSrv::new with conf {}", conf);
         Self {
             inbound: AsyncQueue::bounded(
@@ -144,6 +218,7 @@ impl MempoolSrv {
             ),
             conf,
             event_sender,
+            future_nonce_retry_queue,
         }
     }
 }
@@ -177,6 +252,24 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             .mempool_expiry
             .unwrap_or(DEFAULT_EXPIRY_TIME)
             .as_secs();
+
+        let retry_queue = self.future_nonce_retry_queue.clone();
+        let retry_event_sender = self.event_sender.clone();
+        let retry_max_mempool_txn_count = self.conf.max_mempool_txn_count;
+        let retry_network = network.clone();
+        let retry_db = db.clone();
+        let retry_vm = vm.clone();
+        tokio::spawn(async move {
+            MempoolSrv::run_retry_worker(
+                retry_queue,
+                retry_event_sender,
+                retry_max_mempool_txn_count,
+                retry_network,
+                retry_db,
+                retry_vm,
+            )
+            .await;
+        });
 
         // Mempool service loop
         let mut on_idle_event = tokio::time::interval(idle_interval);
@@ -218,15 +311,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Ok(msg) = msg {
                         match &msg.payload {
                             Payload::Transaction(tx) => {
-                                let accept = self.accept_tx(&db, &vm, tx);
-                                if let Err(e) = accept.await {
+                                if let Err(e) = self
+                                    .handle_tx_message(
+                                        &network,
+                                        &db,
+                                        &vm,
+                                        &msg,
+                                    )
+                                    .await
+                                {
                                     error!("Tx {} not accepted: {e}", hex::encode(tx.id()));
-                                    continue;
-                                }
-
-                                let network = network.read().await;
-                                if let Err(e) = network.broadcast(&msg).await {
-                                    warn!("Unable to broadcast accepted tx: {e}")
                                 };
                             }
                             _ => error!("invalid inbound message payload"),
@@ -244,14 +338,140 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 }
 
 impl MempoolSrv {
-    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
+    async fn run_retry_worker<
+        N: Network,
+        DB: database::DB,
+        VM: vm::VMExecution,
+    >(
+        future_nonce_retry_queue: FutureNonceRetryHandle,
+        event_sender: Sender<Event>,
+        max_mempool_txn_count: usize,
+        network: Arc<RwLock<N>>,
+        db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
+    ) {
+        let mut on_retry_event = tokio::time::interval(RETRY_POLL_INTERVAL);
+
+        loop {
+            on_retry_event.tick().await;
+            process_due_retries(
+                &future_nonce_retry_queue,
+                &event_sender,
+                max_mempool_txn_count,
+                &network,
+                &db,
+                &vm,
+                Instant::now(),
+            )
+            .await;
+        }
+    }
+
+    async fn broadcast_tx<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
+        let network = network.read().await;
+        if let Err(e) = network.broadcast(msg).await {
+            warn!("Unable to broadcast accepted tx: {e}");
+        };
+    }
+
+    async fn broadcast_accepted_tx<N: Network>(
+        network: &Arc<RwLock<N>>,
+        msg: &Message,
+        tx: &LedgerTransaction,
+        source: Option<&str>,
+        queue_age_ms: Option<u64>,
+    ) {
+        if let Some(source) = source {
+            info!(
+                event = "future_nonce_retry_accepted",
+                hash = hex::encode(tx.id()),
+                source,
+                queue_age_ms
+            );
+        }
+        Self::broadcast_tx(network, msg).await;
+    }
+
+    async fn handle_tx_message<
+        N: Network,
+        DB: database::DB,
+        VM: vm::VMExecution,
+    >(
         &mut self,
+        network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
-        tx: &Transaction,
+        msg: &Message,
     ) -> Result<(), TxAcceptanceError> {
-        let max_mempool_txn_count = self.conf.max_mempool_txn_count;
+        let Payload::Transaction(tx) = &msg.payload else {
+            return Err(TxAcceptanceError::Generic(anyhow!(
+                "invalid inbound message payload"
+            )));
+        };
 
+        let next_block_height = db
+            .read()
+            .await
+            .view(|db| db.latest_block())
+            .map_err(|e| {
+                TxAcceptanceError::Generic(anyhow!(
+                    "Cannot get tip block height from the database: {e}"
+                ))
+            })?
+            .header
+            .height
+            .saturating_add(1);
+        let tx = normalize_ingress_tx(tx, next_block_height)?;
+        let msg = {
+            let mut normalized = msg.clone();
+            normalized.payload = tx.clone().into();
+            normalized
+        };
+
+        match Self::accept_tx(
+            &self.event_sender,
+            self.conf.max_mempool_txn_count,
+            db,
+            vm,
+            &tx,
+        )
+        .await
+        {
+            Ok(()) => {
+                Self::broadcast_accepted_tx(network, &msg, &tx, None, None)
+                    .await;
+                drain_unblocked_chain(
+                    &self.future_nonce_retry_queue,
+                    &self.event_sender,
+                    self.conf.max_mempool_txn_count,
+                    network,
+                    db,
+                    vm,
+                    &tx,
+                )
+                .await;
+                Ok(())
+            }
+            Err(TxAcceptanceError::MissingIntermediateNonce(_)) => {
+                handle_enqueue_outcome(
+                    &self.event_sender,
+                    &tx,
+                    self.future_nonce_retry_queue
+                        .enqueue_message_with_outcome(&msg)
+                        .await,
+                )
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
+        event_sender: &Sender<Event>,
+        max_mempool_txn_count: usize,
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        tx: &LedgerTransaction,
+    ) -> Result<(), TxAcceptanceError> {
         let events =
             MempoolSrv::check_tx(db, vm, tx, false, max_mempool_txn_count)
                 .await?;
@@ -263,7 +483,7 @@ impl MempoolSrv {
 
         for tx_event in events {
             let node_event = tx_event.into();
-            if let Err(e) = self.event_sender.try_send(node_event) {
+            if let Err(e) = event_sender.try_send(node_event) {
                 warn!("cannot notify mempool accepted transaction {e}")
             };
         }
@@ -274,220 +494,43 @@ impl MempoolSrv {
     pub async fn check_tx<'t, DB: database::DB, VM: vm::VMExecution>(
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
-        tx: &'t Transaction,
+        tx: &'t LedgerTransaction,
         dry_run: bool,
         max_mempool_txn_count: usize,
     ) -> Result<Vec<TransactionEvent<'t>>, TxAcceptanceError> {
-        let tx_id = tx.id();
-        let tx_size = tx.size();
-
-        // We consider the maximum transaction size as the total avilable block
-        // space minus the minimum size of the block header (i.e., the size of
-        // the header in a first-iteration block with no faults)
-        let min_header_size = Header::default().size();
-        let max_tx_size = MAX_BLOCK_SIZE - min_header_size;
-        if tx_size > max_tx_size {
-            return Err(TxAcceptanceError::MaxSizeExceeded(tx_size));
-        }
-
-        check_tx_serialization(&tx.inner)?;
-
-        if tx.gas_price() < 1 {
-            return Err(TxAcceptanceError::GasPriceTooLow(1));
-        }
-
-        let tip_height = db
-            .read()
-            .await
-            .view(|db| db.latest_block())
-            .map_err(|e| {
-                anyhow!("Cannot get tip block height from the database: {e}")
-            })?
-            .header
-            .height;
-
-        {
-            // Mimic the VM's additional checks for transactions
-            let vm = vm.read().await;
-
-            let disable_wasm_32 = vm.wasm32_disabled(tip_height);
-            let disable_wasm_64 = vm.wasm64_disabled(tip_height);
-            let disable_3rd_party = vm.third_party_disabled(tip_height);
-
-            if let Some(_contract_deploy) = tx.inner.deploy() {
-                match (disable_wasm_32, disable_wasm_64) {
-                    (true, true) => {
-                        Err(TxAcceptanceError::Generic(anyhow::anyhow!(
-                            "contract deployment is not enabled in the VM"
-                        )))
-                    }
-                    // TODO: We should selectively check both config in the
-                    // future
-                    _ => Ok(()),
-                }?
-            }
-
-            if disable_3rd_party {
-                if let Some(call) = tx.inner.call() {
-                    if call.contract != TRANSFER_CONTRACT
-                        && call.contract != STAKE_CONTRACT
-                    {
-                        Err(TxAcceptanceError::Generic(anyhow::anyhow!(
-                            "3rd party contracts are not enabled in the VM"
-                        )))?;
-                    }
-                }
-            }
-
-            tx.inner.phoenix_fee_check()?;
-
-            if vm.phoenix_refund_check_active(tip_height) {
-                tx.inner.phoenix_refund_check()?;
-            }
-
-            // Check deployment tx
-            if tx.inner.deploy().is_some() {
-                let min_deployment_gas_price = vm.min_deployment_gas_price();
-                let gas_per_deploy_byte = vm.gas_per_deploy_byte();
-                let min_deploy_points = vm.min_deploy_points();
-                tx.inner.deploy_check(
-                    gas_per_deploy_byte,
-                    min_deployment_gas_price,
-                    min_deploy_points,
-                )?;
-            }
-
-            // Check blob tx
-            if tx.inner.blob().is_some() {
-                if !vm.blob_active(tip_height) {
-                    return Err(TxAcceptanceError::Generic(anyhow::anyhow!(
-                        "blobs are not enabled in the VM"
-                    )));
-                }
-
-                let gas_per_blob = vm.gas_per_blob();
-                tx.inner.blob_check(gas_per_blob)?;
-                dusk_consensus::validate_blob_sidecars(tx)?;
-            }
-
-            // Check global minimum gas limit
-            let min_gas_limit = vm.min_gas_limit();
-            if tx.inner.gas_limit() < min_gas_limit {
-                return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
-            }
-        }
-
-        // Perform basic checks on the transaction
-        let tx_to_delete = db.read().await.view(|view| {
-            // ensure transaction does not exist in the mempool
-            if view.mempool_tx_exists(tx_id)? {
-                return Err(TxAcceptanceError::AlreadyExistsInMempool);
-            }
-
-            // ensure transaction does not exist in the blockchain
-            if view.ledger_tx_exists(&tx_id)? {
-                return Err(TxAcceptanceError::AlreadyExistsInLedger);
-            }
-
-            let txs_count = view.mempool_txs_count();
-            if txs_count >= max_mempool_txn_count {
-                // Get the lowest fee transaction to delete
-                let (lowest_price, to_delete) = view
-                    .mempool_txs_ids_sorted_by_low_fee()
-                    .next()
-                    .ok_or(anyhow::anyhow!("Cannot get lowest fee tx"))?;
-
-                if tx.gas_price() < lowest_price {
-                    // Or error if the gas price proposed is the lowest of all
-                    // the transactions in the mempool
-                    Err(TxAcceptanceError::MaxTxnCountExceeded(
-                        max_mempool_txn_count,
-                    ))
-                } else {
-                    Ok(Some(to_delete))
-                }
-            } else {
-                Ok(None)
-            }
-        })?;
-
-        // VM Preverify call
-        let preverification_data =
-            vm.read().await.preverify(tx, tip_height).map_err(|e| {
-                TxAcceptanceError::VerificationFailed(format!("{e}"))
-            })?;
-
-        if let PreverificationResult::FutureNonce {
-            account,
-            state,
-            nonce_used,
-        } = preverification_data
-        {
-            db.read().await.view(|db| {
-                for nonce in state.nonce + 1..nonce_used {
-                    let spending_id = SpendingId::AccountNonce(account, nonce);
-                    if db
-                        .mempool_txs_by_spendable_ids(&[spending_id])
-                        .is_empty()
-                    {
-                        return Err(TxAcceptanceError::VerificationFailed(
-                            format!("Missing intermediate nonce {nonce}"),
-                        ));
-                    }
-                }
-                Ok(())
-            })?;
-        }
+        let admission = TxAdmission::new(db, vm, max_mempool_txn_count)
+            .check(tx.canonical())
+            .await?;
 
         let mut events = vec![];
-
-        // Try to add the transaction to the mempool
         db.read().await.update_dry_run(dry_run, |db| {
-            let spend_ids = tx.to_spend_ids();
-
-            let mut replaced = false;
-            // ensure spend_ids do not exist in the mempool
-            for m_tx_id in db.mempool_txs_by_spendable_ids(&spend_ids) {
-                if let Some(m_tx) = db.mempool_tx(m_tx_id)? {
-                    // If the transaction spendingId is already in the mempool
-                    // (same nonce or same nullifier), we check if it can be
-                    // replaced by the new transaction based on gas price and
-                    // gas limit.
-                    // If the new transaction has a higher gas price or the same
-                    // gas price but a higher gas limit, we replace the old
-                    // transaction with the new one.
-                    if m_tx.inner.gas_price() < tx.inner.gas_price()
-                        || (m_tx.inner.gas_price() == tx.inner.gas_price()
-                            && m_tx.inner.gas_limit() < tx.inner.gas_limit())
-                    {
-                        for deleted in db.delete_mempool_tx(m_tx_id, false)? {
-                            events.push(TransactionEvent::Removed(deleted));
-                            replaced = true;
-                        }
-                    } else {
-                        return Err(
-                            TxAcceptanceError::SpendIdExistsInMempool.into()
-                        );
-                    }
-                }
-            }
-
-            events.push(TransactionEvent::Included(tx));
-
-            if !replaced {
-                if let Some(to_delete) = tx_to_delete {
-                    for deleted in db.delete_mempool_tx(to_delete, true)? {
-                        events.push(TransactionEvent::Removed(deleted));
-                    }
-                }
-            }
-            // Persist transaction in mempool storage
-
-            let now = get_current_timestamp();
-
-            db.store_mempool_tx(tx, now)
+            events = apply_mempool_admission(
+                db,
+                tx,
+                &admission.facts,
+                admission.tx_to_delete,
+                get_current_timestamp(),
+            )?;
+            Ok(())
         })?;
+
         Ok(events)
+    }
+
+    pub async fn check_canonical_tx_at_tip<
+        DB: database::DB,
+        VM: vm::VMExecution,
+    >(
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        tx: &CanonicalTransaction,
+        tip_height: u64,
+        max_mempool_txn_count: usize,
+    ) -> Result<LedgerTransaction, TxAcceptanceError> {
+        let _ = TxAdmission::new(db, vm, max_mempool_txn_count)
+            .check_with_tip(tx, tip_height)
+            .await?;
+        Ok(tx.clone().into())
     }
 
     /// Requests full mempool data from N alive peers
@@ -540,9 +583,8 @@ fn check_tx_serialization(
 #[cfg(test)]
 mod tests {
     use dusk_core::signatures::bls::{PublicKey, SecretKey};
-    use rand::Rng;
     use rand::rngs::StdRng;
-    use rand::{CryptoRng, RngCore, SeedableRng};
+    use rand::{CryptoRng, Rng, RngCore, SeedableRng};
     use wallet_core::transaction::moonlight_deployment;
 
     use super::*;
@@ -599,5 +641,67 @@ mod tests {
         );
         let result = check_tx_serialization(&tx);
         assert!(matches!(result, Err(TxAcceptanceError::TooLarge)));
+    }
+
+    #[test]
+    fn test_supported_ingress_format_check_rejects_pre_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = CanonicalTransaction::canonicalize(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            TransactionFormat::PreAegis,
+        );
+
+        let result = check_supported_ingress_tx_format(&tx);
+
+        assert!(matches!(
+            result,
+            Err(TxAcceptanceError::UnsupportedIngressFormat {
+                actual: TransactionFormat::PreAegis,
+                minimum: TransactionFormat::Aegis,
+            })
+        ));
+    }
+
+    #[test]
+    fn test_supported_ingress_format_check_accepts_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = CanonicalTransaction::canonicalize(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            node_data::hard_fork::ingress_tx_format_at(1),
+        );
+
+        let result = check_supported_ingress_tx_format(&tx);
+
+        assert!(matches!(result, Ok(())));
+    }
+
+    #[test]
+    fn test_normalize_ingress_tx_reformats_aegis_to_boreas() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = LedgerTransaction::from_protocol_with_format(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            TransactionFormat::Aegis,
+        );
+
+        let normalized = normalize_ingress_tx(&tx, u64::MAX)
+            .expect("aegis ingress should normalize to boreas");
+
+        assert_eq!(normalized.format(), TransactionFormat::Boreas);
+        assert_eq!(normalized.id(), tx.id());
+    }
+
+    #[test]
+    fn test_normalize_ingress_tx_reformats_boreas_to_aegis() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx = LedgerTransaction::from_protocol_with_format(
+            new_moonlight_deploy_tx(&mut rng, vec![0; 32], vec![0; 32]),
+            TransactionFormat::Boreas,
+        );
+
+        let normalized = normalize_ingress_tx(&tx, 1)
+            .expect("boreas ingress should normalize to aegis");
+
+        assert_eq!(normalized.format(), TransactionFormat::Aegis);
+        assert_eq!(normalized.id(), tx.id());
     }
 }

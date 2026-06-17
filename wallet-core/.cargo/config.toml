@@ -5,6 +5,7 @@
 [alias]
 wasm = "build --release --target wasm32-unknown-unknown -Z build-std=std,panic_abort"
 wasm-debug = "build --target wasm32-unknown-unknown -Z build-std=std,panic_abort"
+wasm-clippy = "clippy --target wasm32-unknown-unknown -Z build-std=std,panic_abort --release -- -D warnings"
 
 [target.wasm32-unknown-unknown]
 rustflags = ["-Zunstable-options", "-Cpanic=immediate-abort"]

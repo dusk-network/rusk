@@ -66,9 +66,9 @@ export class Contract {
   }
 
   /**
-  * Encode a function's input using the contract's data-driver (JSON -> RKYV).
-  * Returns Uint8Array of RKYV bytes.
-  */
+   * Encode a function's input using the contract's data-driver (JSON -> RKYV).
+   * Returns Uint8Array of RKYV bytes.
+   */
   async encode(fnName, jsonValue) {
     const driver = await this.#driverPromise;
     const json = (jsonValue === undefined || jsonValue === null)

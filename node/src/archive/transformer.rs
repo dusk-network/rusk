@@ -242,12 +242,12 @@ fn record_flows(
                                 handle_inflow(moonlight_event.sender);
                             }
 
-                            if let Some((key, amt)) = refund {
-                                if amt > 0 {
-                                    // We rely on the fact, that refund only
-                                    // exists if different from sender
-                                    handle_inflow(key);
-                                }
+                            if let Some((key, amt)) = refund
+                                && amt > 0
+                            {
+                                // We rely on the fact, that refund only
+                                // exists if different from sender
+                                handle_inflow(key);
                             }
                         }
                         (Some(receiver), None) => {
@@ -327,4 +327,33 @@ fn record_flows(
         .collect::<Vec<&ContractEvent>>();
 
     !filtered_group.is_empty()
+}
+
+#[cfg(test)]
+mod legacy_archive_compat_tests {
+    use dusk_core::transfer::{MOONLIGHT_TOPIC, TRANSFER_CONTRACT};
+    use node_data::events::contract::ContractEvent;
+
+    use super::MoonlightTransferEvents;
+
+    #[test]
+    fn legacy_moonlight_archive_json_without_reverted_fails_to_deserialize() {
+        let current = MoonlightTransferEvents {
+            events: vec![ContractEvent {
+                target: TRANSFER_CONTRACT,
+                topic: MOONLIGHT_TOPIC.to_string(),
+                data: vec![1, 2, 3],
+                reverted: false,
+            }],
+        };
+
+        // Simulate JSON written by the old binary, before ContractEvent had
+        // the `reverted` field.
+        let mut legacy_json = serde_json::to_value(&current).unwrap();
+        let event = legacy_json["events"][0].as_object_mut().unwrap();
+        assert_eq!(event.remove("reverted"), Some(serde_json::json!(false)));
+
+        serde_json::from_value::<MoonlightTransferEvents>(legacy_json)
+            .expect("legacy events should still be deserialized");
+    }
 }

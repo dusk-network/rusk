@@ -15,17 +15,21 @@ use crate::currency::Lux;
 pub const MIN_LIMIT: u64 = 100_000;
 
 /// The default gas limit for transfer transactions
-pub const DEFAULT_LIMIT_TRANSFER: u64 = 10_000_000;
+pub const DEFAULT_LIMIT_TRANSFER: u64 = 50_000_000;
 
 /// The default gas limit for a contract deployment
 pub const DEFAULT_LIMIT_DEPLOYMENT: u64 =
     1024 * 1024 * 100 + DEFAULT_LIMIT_TRANSFER; //1MB at 100gas per byte + transfer limit
 
-/// The default gas limit for contract calls
+/// The default gas limit for built-in wallet actions such as conversions and
+/// staking flows.
+pub const DEFAULT_LIMIT_WALLET_ACTION: u64 = 150_000_000;
+
+/// The default gas limit for arbitrary contract calls
 pub const DEFAULT_LIMIT_CALL: u64 = 2_000_000_000;
 
 /// The default gas limit for stake/unstake/claim-rewards actions
-pub const DEFAULT_LIMIT_STAKE: u64 = 50_000_000;
+pub const DEFAULT_LIMIT_STAKE: u64 = DEFAULT_LIMIT_WALLET_ACTION;
 
 /// The gas cost per deployed byte
 pub const GAS_PER_DEPLOY_BYTE: u64 = 100;

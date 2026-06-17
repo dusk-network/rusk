@@ -5,12 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 //! The graphql endpoint can be queried with this helper struct.
-//! The <node-url>/on/gaphql/query if queried with empty bytes returns the
-//! graphql schema
+//! The helper sends standard GraphQL-over-HTTP requests to
+//! `<node-url>/graphql`.
 
 use dusk_core::abi::ContractId;
 use dusk_core::stake::StakeEvent;
-use dusk_core::transfer::phoenix::StealthAddress;
 use dusk_core::transfer::{
     ConvertEvent, DepositEvent, MoonlightTransactionEvent, Transaction,
     WithdrawEvent,
@@ -22,7 +21,7 @@ use serde_with::{As, DisplayFromStr};
 use tokio::time::{Duration, sleep};
 
 use crate::rues::HttpClient as RuesHttpClient;
-use crate::{Address, Error};
+use crate::{Address, Error, TransactionError, WalletStatus};
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -32,7 +31,7 @@ use crate::{Address, Error};
 pub struct GraphQL {
     state_client: RuesHttpClient,
     archiver_client: RuesHttpClient,
-    status: fn(&str),
+    status: fn(WalletStatus),
 }
 
 /// The `tx_for_block` returns a Vec<BlockTransaction> which contains
@@ -46,32 +45,57 @@ pub struct BlockTransaction {
     pub gas_spent: u64,
 }
 
-#[derive(Deserialize)]
-struct SpentTx {
-    pub id: String,
-    #[serde(default)]
-    pub raw: String,
-    pub err: Option<String>,
-    #[serde(alias = "gasSpent", default)]
-    pub gas_spent: u64,
-}
+mod wire {
+    use dusk_core::transfer::phoenix::StealthAddress;
+    use serde::Deserialize;
 
-#[derive(Deserialize)]
-struct Block {
-    pub transactions: Vec<SpentTx>,
-}
+    #[derive(Deserialize)]
+    pub(super) struct SpentTx {
+        pub id: String,
+        #[serde(default)]
+        pub raw: String,
+        pub err: Option<String>,
+        #[serde(alias = "gasSpent", default)]
+        pub gas_spent: u64,
+    }
 
-#[derive(Deserialize)]
-struct BlockResponse {
-    pub block: Option<Block>,
-}
+    #[derive(Deserialize)]
+    pub(super) struct Block {
+        pub transactions: Vec<SpentTx>,
+    }
 
-// See `PhoenixTransactionEventSubset` for the reason for this struct
-// and allowing dead code here.
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-struct NoteAddress {
-    stealth_address: StealthAddress,
+    #[derive(Deserialize)]
+    pub(super) struct BlockResponse {
+        pub block: Option<Block>,
+    }
+
+    #[derive(Deserialize)]
+    pub(super) struct HeaderHeightResponse {
+        pub height: u64,
+    }
+
+    #[derive(Deserialize)]
+    pub(super) struct LastBlockHeightResponse {
+        pub header: HeaderHeightResponse,
+    }
+
+    #[derive(Deserialize)]
+    pub(super) struct BlocksResponse {
+        pub blocks: Vec<LastBlockHeightResponse>,
+    }
+
+    // See `PhoenixTransactionEventSubset` for the reason for this struct
+    // and allowing dead code here.
+    #[derive(Deserialize, Debug, Clone)]
+    #[allow(dead_code)]
+    pub(super) struct NoteAddress {
+        pub stealth_address: StealthAddress,
+    }
+
+    #[derive(Deserialize)]
+    pub(super) struct SpentTxResponse {
+        pub tx: Option<SpentTx>,
+    }
 }
 
 // This struct is used instead of the one in `dusk_core::transfer`
@@ -84,7 +108,7 @@ struct NoteAddress {
 pub struct PhoenixTransactionEventSubset {
     /// Notes produced during the transaction.
     #[serde(rename(deserialize = "notes"))]
-    note_addresses: Vec<NoteAddress>,
+    note_addresses: Vec<wire::NoteAddress>,
     /// The memo included in the transaction.
     #[serde(with = "As::<Hex>")]
     memo: Vec<u8>,
@@ -93,7 +117,7 @@ pub struct PhoenixTransactionEventSubset {
     gas_spent: u64,
     /// Optional gas-refund note if the refund is positive.
     #[serde(rename(deserialize = "refund_note"))]
-    refund_note_address: Option<NoteAddress>,
+    refund_note_address: Option<wire::NoteAddress>,
 }
 
 /// Deserialized block data in the full moonlight history.
@@ -141,14 +165,9 @@ pub struct FullMoonlightHistory {
     pub full_moonlight_history: Option<MoonlightHistoryJson>,
 }
 
-#[derive(Deserialize)]
-struct SpentTxResponse {
-    pub tx: Option<SpentTx>,
-}
-
 /// Transaction status
 #[derive(Debug)]
-pub enum TxStatus {
+enum TxStatus {
     Ok,
     NotFound,
     Error(String),
@@ -157,13 +176,18 @@ pub enum TxStatus {
 impl GraphQL {
     /// Create a new GraphQL wallet client
     ///
+    /// # Arguments
+    /// - `state_url` - Base URL of the state node.
+    /// - `archiver_url` - Base URL of the archiver node.
+    /// - `status` - Progress callback used while polling for confirmation.
+    ///
     /// # Errors
     /// This method errors if a TLS backend cannot be initialized, or the
     /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(
         state_url: S,
         archiver_url: S,
-        status: fn(&str),
+        status: fn(WalletStatus),
     ) -> Result<Self, Error> {
         Ok(Self {
             state_client: RuesHttpClient::new(state_url)?,
@@ -183,11 +207,15 @@ impl GraphQL {
 
             match status {
                 TxStatus::Ok => break,
-                TxStatus::Error(err) => return Err(Error::Transaction(err))?,
+                TxStatus::Error(message) => {
+                    return Err(Error::Transaction(
+                        TransactionError::Rejected { message },
+                    ))?;
+                }
                 TxStatus::NotFound => {
-                    (self.status)(
-                        "Waiting for tx to be included into a block...",
-                    );
+                    (self.status)(WalletStatus::Info(
+                        "Waiting for tx to be included into a block...".into(),
+                    ));
                     sleep(Duration::from_millis(1000)).await;
                 }
             }
@@ -205,10 +233,13 @@ impl GraphQL {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
         let response = self.query_state(&query).await?;
-        let response = serde_json::from_slice::<SpentTxResponse>(&response)?.tx;
+        let response =
+            serde_json::from_slice::<wire::SpentTxResponse>(&response)?.tx;
 
         match response {
-            Some(SpentTx { err: Some(err), .. }) => Ok(TxStatus::Error(err)),
+            Some(wire::SpentTx { err: Some(err), .. }) => {
+                Ok(TxStatus::Error(err))
+            }
             Some(_) => Ok(TxStatus::Ok),
             None => Ok(TxStatus::NotFound),
         }
@@ -228,7 +259,7 @@ impl GraphQL {
 
         let response = self.query_state(&query).await?;
         let response =
-            serde_json::from_slice::<BlockResponse>(&response)?.block;
+            serde_json::from_slice::<wire::BlockResponse>(&response)?.block;
         let block = response.ok_or(GraphQLError::BlockInfo)?;
         let mut ret = vec![];
 
@@ -247,13 +278,32 @@ impl GraphQL {
         Ok(ret)
     }
 
-    /// Sends an empty body to url to check if its available
+    /// Obtain the current chain tip height from the state node.
+    ///
+    /// # Errors
+    /// This method errors if the query cannot be sent, the response cannot be
+    /// decoded, or no block information is returned.
+    pub async fn tip_height(&self) -> Result<u64, Error> {
+        let query = "query { blocks(last: 1) { header { height } } }";
+        let response = self.query_state(query).await?;
+        let blocks =
+            serde_json::from_slice::<wire::BlocksResponse>(&response)?.blocks;
+        blocks
+            .first()
+            .map(|block| block.header.height)
+            .ok_or(GraphQLError::BlockInfo.into())
+    }
+
+    /// Checks whether both GraphQL endpoints are reachable.
     ///
     /// # Errors
     /// This method errors if there was an error while sending the query.
     pub async fn check_connection(&self) -> Result<(), Error> {
-        match (self.query_state("").await, self.query_archiver("").await) {
-            (Ok(_), Ok(_)) => Ok(()),
+        match (
+            self.state_client.check_graphql_connection().await,
+            self.archiver_client.check_graphql_connection().await,
+        ) {
+            (Ok(()), Ok(())) => Ok(()),
             (Err(e), _) | (_, Err(e)) => Err(e),
         }
     }
@@ -275,11 +325,11 @@ impl GraphQL {
         let response = self
             .query_archiver(&query)
             .await
-            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+            .map_err(|err| Error::ArchiveQuery(Box::new(err)))?;
 
         let response =
             serde_json::from_slice::<FullMoonlightHistory>(&response)
-                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+                .map_err(Error::ArchiveJson)?;
 
         Ok(response)
     }
@@ -302,11 +352,11 @@ impl GraphQL {
         let response = self
             .query_archiver(&query)
             .await
-            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+            .map_err(|err| Error::ArchiveQuery(Box::new(err)))?;
 
         let response =
             serde_json::from_slice::<FullMoonlightHistory>(&response)
-                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+                .map_err(Error::ArchiveJson)?;
 
         Ok(response)
     }
@@ -388,9 +438,7 @@ impl GraphQL {
         client: &RuesHttpClient,
         query: &str,
     ) -> Result<Vec<u8>, Error> {
-        client
-            .call("graphql", None, "query", query.as_bytes())
-            .await
+        client.graphql_query(query).await
     }
 }
 
@@ -398,14 +446,14 @@ impl GraphQL {
 #[tokio::test]
 async fn test() -> Result<(), Error> {
     let gql = GraphQL {
-        status: |s| {
-            println!("{s}");
+        status: |status| {
+            println!("{status}");
         },
         state_client: RuesHttpClient::new(
-            "http://testnet.nodes.dusk.network:9500/graphql",
+            "http://testnet.nodes.dusk.network:9500",
         )?,
         archiver_client: RuesHttpClient::new(
-            "http://testnet.nodes.dusk.network:9500/graphql",
+            "http://testnet.nodes.dusk.network:9500",
         )?,
     };
     let _ = gql
@@ -414,27 +462,27 @@ async fn test() -> Result<(), Error> {
         )
         .await?;
     let block_txs = gql.txs_for_block(90).await?;
-    block_txs.into_iter().for_each(|tx_block| {
+    for tx_block in block_txs {
         let tx = tx_block.tx;
         let chain_txid = tx_block.id;
         let hash = tx.hash();
         let tx_id = hex::encode(hash.to_bytes());
         assert_eq!(chain_txid, tx_id);
         println!("txid: {tx_id}");
-    });
+    }
     Ok(())
 }
 
 #[tokio::test]
 async fn deser() -> Result<(), Box<dyn std::error::Error>> {
     let block_not_found = r#"{"block":null}"#;
-    serde_json::from_str::<BlockResponse>(block_not_found).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_not_found).unwrap();
 
     let block_without_tx = r#"{"block":{"transactions":[]}}"#;
-    serde_json::from_str::<BlockResponse>(block_without_tx).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_without_tx).unwrap();
 
     let block_with_tx = r#"{"block":{"transactions":[{"id":"88e6804989cc2f3fd5bf94dcd39a4e7b7da9a1114d9b8bf4e0515264bc81c50f"}]}}"#;
-    serde_json::from_str::<BlockResponse>(block_with_tx).unwrap();
+    serde_json::from_str::<wire::BlockResponse>(block_with_tx).unwrap();
 
     let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
     serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)

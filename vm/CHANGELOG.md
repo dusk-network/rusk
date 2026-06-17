@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Added
+
+- Add call hook to enforce Phoenix withdrawal replay token nullifier count
+- Add execution gating to disable Phoenix payments and settlement calls
+
+### Fixed
+
+- Reject Wasm reference-types deployment bytecode before VM feature
+  activation.
+- Pin pre-activation Wasm deploy validation to an explicit feature set and use
+  a stable rejection string.
+- Preserve deploy/init events in pre-Boreas replay so historical event blooms
+  remain stable when deployment receipts are returned from Piecrust
+- Reuse a shared secp256k1 context in `secp256k1_recover` to avoid per-call allocations (P1.2-6)
+- Gate the deploy gas sufficiency check behind Boreas so historical deploy
+  semantics remain unchanged before the hard fork (P1.2-5)
+- Fail transaction refunds gracefully instead of panicking (P1.2-7)
+- Fail deploy-charge overflow checks explicitly instead of wrapping the gas
+  requirement
+
+### Changed
+
+- Extend host-query memoization to deterministic calls: `hash`, `poseidon_hash`, `verify_schnorr`, `verify_bls_multisig`, `keccak256`, `sha256`, `verify_kzg_proof`, and `secp256k1_recover`.
+- Raise the default PLONK, Groth16, and BLS memoization cache sizes from `512` to `2048`.
+- Add deterministic Boreas host-query pricing, including size-based pricing for `hash`, `keccak256`, and `sha256`, and key-count pricing for `verify_bls_multisig`.
+- Split host-query internals into `host_queries/` modules and make memoized cache keys semantics-aware through a unified execution-policy context, preventing stale cache reuse across future fork or verifier changes.
+- Delegate contract-id derivation to the canonical `dusk-core` deployment helper
+
 ## [1.6.0] - 2026-02-27
 
 ### Added
@@ -15,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `secp256k1_recover` host query (EVM `ecrecover` primitive) [#4012]
 - Add phoenix fee check
 - Add phoenix refund check to execution pipeline
+- Add init function gas charge during contract deployment
 
 ### Changed
 
@@ -98,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3437]: https://github.com/dusk-network/rusk/issues/3437
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.6.0...dusk-vm-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.3...dusk-vm-1.6.0
 [1.4.3]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.2...dusk-vm-1.4.3
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.1...dusk-vm-1.4.2

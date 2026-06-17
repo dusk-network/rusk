@@ -19,7 +19,7 @@ export default {
      * @param cstr_ptr {number}
      */
     sig(cstr_ptr) {
-      let messageBuffer = new Uint8Array(memory.buffer, cstr_ptr);
+      const messageBuffer = new Uint8Array(memory.buffer, cstr_ptr);
 
       const nullTerminatorIndex = messageBuffer.indexOf(0);
       const cstring = messageBuffer.subarray(0, nullTerminatorIndex);

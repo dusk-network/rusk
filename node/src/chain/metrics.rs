@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_average() {
-        let expected = Duration::from_secs(108 as u64);
+        let expected = Duration::from_secs(108_u64);
         let mut metric = AverageElapsedTime::default();
         for value in 100..111 {
             metric.push_back(Duration::from_secs(value as u64));

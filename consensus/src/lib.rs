@@ -26,16 +26,14 @@ mod step_votes_reg;
 mod validation;
 
 pub use ratification::step::build_ratification_payload;
-pub use validation::step::build_validation_payload;
-pub use validation::step::validate_blob_sidecars;
+pub use validation::step::{build_validation_payload, validate_blob_sidecars};
 
 mod iteration_ctx;
 pub mod merkle;
 
 #[cfg(test)]
 mod tests {
-    // Adding benchmark dependencies here to satisfy `unused_crate_dependencies`
-    // lint
-    use criterion as _;
-    use rand as _;
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
+    use {criterion as _, rand as _};
 }

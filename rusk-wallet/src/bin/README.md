@@ -9,7 +9,7 @@ USAGE:
 OPTIONS:
     -w, --wallet-dir <WALLET_DIR>  Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
     -n, --network <NETWORK>        Network to connect to
-        --password <PASSWORD>      Set the password for wallet's creation [env: RUSK_WALLET_PWD=password]
+        --password <PASSWORD>      Set the wallet password. Prefer the prompt or RUSK_WALLET_PWD; use --password only for automation when other options are not practical [env: RUSK_WALLET_PWD=password]
         --state <STATE>            The state server fully qualified URL
         --prover <PROVER>          The prover server fully qualified URL
         --archiver <ARCHIVER>      The archiver server fully qualified URL
@@ -92,6 +92,25 @@ archiver = "https://my-archiver.example.com"         # optional, defaults to sta
 
 Then use with: `rusk-wallet --network mynetwork <command>`
 
+For local `rusk` development, align the wallet with the node port. One-off:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080
+```
+
+If you also need archive endpoints:
+
+```bash
+rusk-wallet --state http://127.0.0.1:9080 --prover http://127.0.0.1:9080 --archiver http://127.0.0.1:9080
+```
+
+For a persistent local override, update `[network.local]` in either
+`{wallet_dir}/config.toml` or `$HOME/.config/rusk-wallet/config.toml`.
+
+Wallet CLI URL overrides are parsed eagerly. Malformed `--state`,
+`--prover`, or `--archiver` values fail fast instead of silently falling back
+to config/default values.
+
 **Note:** When using Windows, connection will default to TCP/IP even if UDS is explicitly specified.
 
 ## Running the CLI Wallet
@@ -120,7 +139,9 @@ To further explore any specific command you can use `--help` on the command itse
 rusk-wallet stake --help
 ```
 
-By default, you will always be prompted to enter the wallet password. To prevent this behavior, you can provide the password using the `RUSK_WALLET_PWD` environment variable. This is useful in CI or any other headless environment.
+By default, you will always be prompted to enter the wallet password. For automation or other headless environments, prefer providing the password through the `RUSK_WALLET_PWD` environment variable.
+
+The `--password` flag remains available, but it should be treated as a fallback for automation when the prompt or `RUSK_WALLET_PWD` are not practical.
 
 Please note that `RUSK_WALLET_PWD` is effectively used for:
 

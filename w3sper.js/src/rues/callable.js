@@ -50,12 +50,13 @@ export class CallableProxy {
 
         const eventURL = new URL(target[_target].toURL() + topic);
 
-        const doFetch = async () => await fetch(eventURL, {
-          method: "POST",
-          body,
-          headers,
-          signal,
-        });
+        const doFetch = async () =>
+          await fetch(eventURL, {
+            method: "POST",
+            body,
+            headers,
+            signal,
+          });
         let response = await doFetch();
 
         // TODO: In case of mismatching rusk versions, the node *should* return a

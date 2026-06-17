@@ -14,7 +14,6 @@ use node_data::message::payload::{
 use node_data::message::{
     ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
-
 use tracing::{debug, error, info, warn};
 
 use crate::aggregator::{Aggregator, StepVote};

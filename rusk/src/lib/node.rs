@@ -6,6 +6,7 @@
 
 pub mod driverstore;
 mod events;
+mod fork_policy;
 mod rusk;
 mod vm;
 
@@ -13,30 +14,28 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use dusk_core::{Dusk, dusk};
-
-use self::rusk::plonk_version_at;
+pub use driverstore::DriverStore;
 use dusk_core::abi::ContractId;
-use dusk_vm::VM;
-use dusk_vm::host_queries;
+use dusk_core::{Dusk, dusk};
+use dusk_vm::{VM, host_queries};
+pub(crate) use events::{ChainEventStreamer, forward_event_to_rues};
 use node::LongLivedService;
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use node::database::rocksdb::{self, Backend};
+use node::mempool::FutureNonceRetryHandle;
 use node::network::Kadcast;
-use node_data::hard_fork::{HardFork, hard_fork_at};
+use node_data::ledger::Header;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
 
 use crate::http::{DriverExecutor, RuesEvent};
-pub use driverstore::DriverStore;
-pub(crate) use events::ChainEventStreamer;
-#[cfg(feature = "archive")]
-use node::archive::Archive;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RuskTip {
-    pub current: [u8; 32],
-    pub base: [u8; 32],
+    pub current: Header,
+    pub base: Header,
 }
 
 #[derive(Clone)]
@@ -62,6 +61,7 @@ pub(crate) type Services =
 #[derive(Clone)]
 pub struct RuskNode {
     inner: node::Node<Kadcast<255>, Backend, Rusk>,
+    future_nonce_retry_queue: FutureNonceRetryHandle,
     #[cfg(feature = "archive")]
     archive: Archive,
 }
@@ -69,29 +69,24 @@ pub struct RuskNode {
 pub(crate) fn set_vm_host_context(
     vm_config: &RuskVmConfig,
     block_height: u64,
-) -> (host_queries::PlonkVersionGuard, host_queries::HardForkGuard) {
-    let hard_fork = hard_fork_at(block_height);
-    let plonk = host_queries::set_plonk_version(plonk_version_at(
-        vm_config,
-        block_height,
-        hard_fork,
-    ));
-    let hard_fork = match hard_fork {
-        HardFork::PreFork => host_queries::HardFork::PreFork,
-        HardFork::Aegis => host_queries::HardFork::Aegis,
-    };
-    let hard_fork = host_queries::set_hard_fork(hard_fork);
-
-    (plonk, hard_fork)
+) -> host_queries::HostQueryPolicyGuard {
+    let policy = fork_policy::policy_at(vm_config, block_height);
+    let host_policy = host_queries::HostQueryPolicy::from_versions(
+        policy.plonk_version,
+        fork_policy::host_hard_fork(policy.hard_fork),
+    );
+    host_queries::set_host_query_policy(host_policy)
 }
 
 impl RuskNode {
     pub fn new(
         inner: node::Node<Kadcast<255>, Backend, Rusk>,
+        future_nonce_retry_queue: FutureNonceRetryHandle,
         #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         Self {
             inner,
+            future_nonce_retry_queue,
             #[cfg(feature = "archive")]
             archive,
         }
@@ -116,6 +111,10 @@ impl RuskNode {
 
     pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
         self.inner.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
+    }
+
+    pub fn future_nonce_retry_queue(&self) -> FutureNonceRetryHandle {
+        self.future_nonce_retry_queue.clone()
     }
 
     pub fn inner(&self) -> &node::Node<Kadcast<255>, Backend, Rusk> {

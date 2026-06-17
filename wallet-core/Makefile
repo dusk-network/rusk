@@ -9,12 +9,15 @@ test:
 
 
 wasm: ## Build the WASM files
-	@rustup component add rust-src --toolchain nightly 2>/dev/null || true
-	@cargo +nightly wasm
+	@bash ../install-nightly-rusk.sh
+	@cargo +nightly-rusk wasm
 
 clippy: ## Run clippy
+	@bash ../install-nightly-rusk.sh
 	@cargo clippy --release -- -D warnings
 	@cargo clippy --no-default-features --release -- -D warnings
+	@cargo +nightly-rusk wasm-clippy
+
 
 doc: ## Run doc gen
 	@cargo doc --release

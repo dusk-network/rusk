@@ -6,6 +6,9 @@
 
 export const intoBookmark = Symbol("bookmark::into");
 
+/**
+ * Opaque 8-byte cursor used to page note leaves from the transfer contract.
+ */
 export class Bookmark {
   #data = new Uint8Array(8).fill(0xff);
 
@@ -21,14 +24,14 @@ export class Bookmark {
     if (typeof source?.[intoBookmark] === "function") {
       return source[intoBookmark]();
     } else if (typeof source === "bigint" || typeof source === "number") {
-      let buffer = new ArrayBuffer(8);
+      const buffer = new ArrayBuffer(8);
       new DataView(buffer).setBigUint64(0, BigInt(source), true);
       return new Bookmark(new Uint8Array(buffer));
     } else if (source instanceof Bookmark) {
       return new Bookmark(source.data);
     }
 
-    let buffer = Uint8Array.from(data);
+    const buffer = Uint8Array.from(data);
     return new Bookmark(buffer);
   }
 

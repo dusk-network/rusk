@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a `ContractDeployment` builder and `BookEntry.deploy()` API for programmatic smart contract deployment.
+
+### Changed
+
+- Add entrypoint type declarations and symbol documentation.
+- Parallelize Phoenix note ownership scanning during sync based on available logical cores.
+- Use the canonical `/graphql` endpoint for `Network.query()` requests instead
+  of the legacy RUES GraphQL route.
+
+### Fixed
+
+- Batch `existing_nullifiers` sync queries to avoid large restore failures.
+
 ## [1.6.0] - 2026-02-27
 
 ### Added

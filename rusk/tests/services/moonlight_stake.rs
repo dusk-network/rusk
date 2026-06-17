@@ -8,6 +8,7 @@ use dusk_core::stake::{DEFAULT_MINIMUM_STAKE, StakeData};
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::FEATURE_HARDFORK_BOREAS;
 use tracing::info;
 
 use crate::common::*;
@@ -20,7 +21,9 @@ const GAS_PRICE: u64 = 1;
 // Creates the Rusk initial state for the tests below
 async fn stake_state() -> Result<TestContext> {
     let state = include_str!("../config/stake.toml");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
+    let mut vm_config =
+        RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
+    vm_config.with_feature(FEATURE_HARDFORK_BOREAS, BLOCK_HEIGHT);
     TestContext::instantiate(state, vm_config).await
 }
 
@@ -220,6 +223,63 @@ pub async fn slash_after_unstake_and_withdraw() -> Result<()> {
     let tc = stake_state().await?;
 
     wallet_unstake_withdraw_then_slash(&tc);
+
+    Ok(())
+}
+
+/// Reproduces a same-block race where a validator is slashed and fully
+/// unstakes in the same block.
+fn slash_before_same_block_unstake_impl(tc: &TestContext, expected_faults: u8) {
+    let wallet = tc.wallet();
+    let rusk = tc.rusk();
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    let staker_pk = wallet
+        .account_public_key(1)
+        .expect("staker pubkey to be available");
+    let stake_before = wallet.get_stake(1).expect("stake to exist");
+    assert_eq!(stake_before.faults, 0, "precondition: no faults");
+    assert!(
+        stake_before.amount.is_some(),
+        "precondition: stake amount must exist"
+    );
+
+    let unstake_tx = wallet
+        .moonlight_unstake(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
+        .expect("Failed to create unstake tx");
+
+    crate::common::state::generator_procedure(
+        rusk,
+        &[unstake_tx],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        vec![staker_pk],
+        Some(crate::common::state::ExecuteResult {
+            executed: 1,
+            discarded: 0,
+        }),
+    )
+    .expect("same-block slash + unstake transition must succeed");
+
+    let stake_after = wallet.get_stake(1).expect("stake to be readable");
+    assert_eq!(
+        stake_after.faults, expected_faults,
+        "unexpected slash accounting outcome for same-block slash + unstake"
+    );
+    assert!(
+        stake_after.amount.is_none(),
+        "unstake should still execute in the same block"
+    );
+}
+
+/// Slashes must be accounted before tx execution (Boreas active) so the slash
+/// is not skipped due to the in-block unstake.
+#[tokio::test(flavor = "multi_thread")]
+pub async fn slash_before_same_block_unstake() -> Result<()> {
+    logger();
+
+    let tc = stake_state().await?;
+    slash_before_same_block_unstake_impl(&tc, 1);
 
     Ok(())
 }

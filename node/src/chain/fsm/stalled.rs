@@ -209,17 +209,16 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     }
 
     async fn on_heartbeat_in_stalled(&mut self) {
-        if let State::Stalled(timestamp) = self.state {
-            if timestamp + STALLED_TIMEOUT < node_data::get_current_timestamp()
-            {
-                let _ = self.request_missing_blocks().await.map_err(|e| {
-                    error!("Error in request_missing_blocks: {:?}", e);
-                });
+        if let State::Stalled(timestamp) = self.state
+            && timestamp + STALLED_TIMEOUT < node_data::get_current_timestamp()
+        {
+            let _ = self.request_missing_blocks().await.map_err(|e| {
+                error!("Error in request_missing_blocks: {:?}", e);
+            });
 
-                self.state_transition(State::Stalled(
-                    node_data::get_current_timestamp(),
-                ));
-            }
+            self.state_transition(State::Stalled(
+                node_data::get_current_timestamp(),
+            ));
         }
     }
 
@@ -253,9 +252,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
         let state_str: String = match &self.state {
             State::Running => "running".to_string(),
-            State::Stalled(timestamp) => {
-                format!("stalled at {}", timestamp)
-            }
+            State::Stalled(timestamp) => format!("stalled at {timestamp}"),
             State::StalledOnFork(hash, _) => {
                 format!("stalled_on_fork at {}", to_str(hash))
             }
@@ -263,7 +260,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
 
         let hdr = &self.tip.0;
         info!(
-            event = format!("chain.{}", state_str),
+            event = format!("chain.{state_str}"),
             tip_hash = to_str(&hdr.hash),
             tip_height = hdr.height,
             tip_iter = hdr.iteration,

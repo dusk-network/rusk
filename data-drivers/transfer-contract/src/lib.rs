@@ -24,13 +24,14 @@ use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::withdraw::Withdraw;
 use dusk_core::transfer::{
     CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
     ContractToAccount, ContractToAccountEvent, ContractToContract,
     ContractToContractEvent, ConvertEvent, DEPOSIT_TOPIC, DepositEvent,
     MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
     MoonlightTransactionEvent, PHOENIX_TOPIC, PhoenixTransactionEvent,
-    WITHDRAW_TOPIC, WithdrawEvent, withdraw::Withdraw,
+    WITHDRAW_TOPIC, WithdrawEvent,
 };
 use dusk_data_driver::{
     ConvertibleContract, Error, JsonValue, from_rkyv, json_to_rkyv,
@@ -41,6 +42,8 @@ use dusk_data_driver::{
 /// The contract driver for encoding and decoding transactions.
 #[derive(Default)]
 pub struct ContractDriver;
+
+const TRANSFER_SCHEMA_FUNCTIONS: &str = r#"[{"name":"convert","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"deposit","doc":"","input":"u64","output":"()","custom":false},{"name":"mint","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"withdraw","doc":"","input":"Withdraw","output":"()","custom":false},{"name":"mint_to_contract","doc":"","input":"ContractToContract","output":"()","custom":false},{"name":"contract_to_contract","doc":"","input":"ContractToContract","output":"()","custom":false},{"name":"contract_to_account","doc":"","input":"ContractToAccount","output":"()","custom":false},{"name":"root","doc":"","input":"()","output":"BlsScalar","custom":false},{"name":"num_notes","doc":"","input":"()","output":"u64","custom":false},{"name":"chain_id","doc":"","input":"()","output":"u8","custom":false},{"name":"account","doc":"","input":"AccountPublicKey","output":"AccountData","custom":false},{"name":"contract_balance","doc":"","input":"ContractId","output":"u64","custom":false},{"name":"opening","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"existing_nullifiers","doc":"","input":"Vec<BlsScalar>","output":"Vec<BlsScalar>","custom":false},{"name":"leaves_from_height","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"leaves_from_pos","doc":"","input":"u64","output":"unsupported","custom":false},{"name":"sync","doc":"","input":"(u64,u64)","output":"unsupported","custom":false},{"name":"sync_nullifiers","doc":"","input":"(u64,u64)","output":"BlsScalar","custom":false},{"name":"sync_contract_balances","doc":"","input":"(u64,u64)","output":"(ContractId,u64)","custom":false},{"name":"sync_accounts","doc":"","input":"(u64,u64)","output":"(AccountData,AccountPublicKey)","custom":false}]"#;
 
 #[allow(clippy::match_same_arms)]
 impl ConvertibleContract for ContractDriver {
@@ -135,12 +138,19 @@ impl ConvertibleContract for ContractDriver {
             "existing_nullifiers" => rkyv_to_json::<Vec<BlsScalar>>(rkyv),
             // Feeder Queries
             "sync_accounts" => from_rkyv::<(AccountData, [u8; 193])>(rkyv)
-                .and_then(|(data, key)| unsafe {
-                    to_json((
-                        data,
-                        AccountPublicKey::from_slice_unchecked(&key),
-                    ))
-                    .map_err(Error::from)
+                .and_then(|(data, key)| {
+                    // Keys are stored in raw 193-byte format; the BLS API does
+                    // not currently expose a checked constructor for this
+                    // representation, so validate immediately after decoding.
+                    let key =
+                        unsafe { AccountPublicKey::from_slice_unchecked(&key) };
+                    if !key.is_valid() {
+                        return Err(Error::Other(
+                            "invalid account public key".into(),
+                        ));
+                    }
+
+                    to_json((data, key)).map_err(Error::from)
                 }),
             "sync_nullifiers" => rkyv_to_json::<BlsScalar>(rkyv),
             "sync_contract_balances" => from_rkyv::<(ContractId, u64)>(rkyv)
@@ -181,7 +191,24 @@ impl ConvertibleContract for ContractDriver {
     }
 
     fn get_schema(&self) -> String {
-        todo!()
+        let moonlight = MOONLIGHT_TOPIC;
+        let phoenix = PHOENIX_TOPIC;
+        let contract_to_contract = CONTRACT_TO_CONTRACT_TOPIC;
+        let mint_contract = MINT_CONTRACT_TOPIC;
+        let contract_to_account = CONTRACT_TO_ACCOUNT_TOPIC;
+        let withdraw = WITHDRAW_TOPIC;
+        let mint = MINT_TOPIC;
+        let deposit = DEPOSIT_TOPIC;
+        let convert = CONVERT_TOPIC;
+
+        let events = format!(
+            r#"[{{"topic":"{moonlight}","data":"MoonlightTransactionEvent"}},{{"topic":"{phoenix}","data":"PhoenixTransactionEvent"}},{{"topic":"{contract_to_contract}","data":"ContractToContractEvent"}},{{"topic":"{mint_contract}","data":"ContractToContractEvent"}},{{"topic":"{contract_to_account}","data":"ContractToAccountEvent"}},{{"topic":"{withdraw}","data":"WithdrawEvent"}},{{"topic":"{mint}","data":"WithdrawEvent"}},{{"topic":"{deposit}","data":"DepositEvent"}},{{"topic":"{convert}","data":"ConvertEvent"}}]"#
+        );
+        let functions = TRANSFER_SCHEMA_FUNCTIONS;
+
+        format!(
+            r#"{{"name":"TransferContract","imports":[],"functions":{functions},"events":{events}}}"#
+        )
     }
 }
 

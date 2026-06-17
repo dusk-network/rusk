@@ -11,8 +11,8 @@ function createBYOBReadableStream(stream) {
   return new ReadableStream({
     type: "bytes", // Ensures the stream supports BYOB readers
 
-    async pull(controller) {
-      let view = controller.byobRequest?.view;
+    pull(controller) {
+      const view = controller.byobRequest?.view;
 
       if (!view) {
         return;

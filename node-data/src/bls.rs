@@ -18,9 +18,8 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use rand::RngCore;
-use rand::SeedableRng;
 use rand::rngs::{OsRng, StdRng};
+use rand::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use serde_with::As;
 use serde_with::base64::Base64;
@@ -229,7 +228,7 @@ fn migrate_file_to_new_format(
     let keys_file_dir = path
         .parent()
         .expect("keys file should have a parent directory");
-    let temp_keys_name = format!("{}_new", keys_filename);
+    let temp_keys_name = format!("{keys_filename}_new");
     save_consensus_keys(keys_file_dir, &temp_keys_name, pk, sk, pwd)?;
     fs::rename(
         keys_file_dir.join(&temp_keys_name).with_extension("keys"),

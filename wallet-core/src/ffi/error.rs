@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 //! Expose the `ErrorCode` enum to be used in FFI exported functions.
-//! ErrorCode enum represents different error codes for FFI, mapped to u8
+//! `ErrorCode` enum represents different error codes for FFI, mapped to u8
 //! values.
 //! The Ok variant signifies successful execution.
 

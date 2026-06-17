@@ -1,0 +1,43 @@
+# Cross-fork replay fixture seed data.
+# `index` values below are wallet derivation slots from `FIXTURE_SEED`
+# in `tests/services/compat_replay_fixture.rs`.
+
+suite = "compat_replay_v1"
+
+[features]
+abi_public_sender = 1
+plonk_v2 = 1
+blob = 50
+hardfork_aegis = 50
+hardfork_boreas = 100
+
+[[moonlight_accounts]]
+index = 0
+balance = 1_000_000_000_000
+
+[[moonlight_accounts]]
+index = 1
+balance = 1_000_000_000_000
+
+[[moonlight_accounts]]
+index = 2
+balance = 1_000_000_000_000
+
+[[moonlight_accounts]]
+index = 3
+balance = 1_000_000_000_000
+
+[[phoenix_balances]]
+index = 0
+seed = 57_005
+notes = [1_000_000_000_000]
+
+[[stakes]]
+index = 1
+amount = 1_000_000_000_000
+reward = 200_000_000_000
+
+[[stakes]]
+index = 2
+amount = 1_000_000_000_000
+reward = 300_000_000_000

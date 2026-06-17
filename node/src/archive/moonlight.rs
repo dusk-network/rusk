@@ -819,6 +819,7 @@ mod tests {
                 target: ContractId::from_bytes([0; CONTRACT_ID_BYTES]),
                 topic: topic.to_owned(),
                 data: vec![1, 6, 1, 8],
+                reverted: false,
             },
             origin: [0; 32],
         }
@@ -835,6 +836,7 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&fake_phoenix_tx_event_data)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
             origin: [0; 32],
         }
@@ -855,6 +857,7 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&convert_event)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
             origin: [1; 32],
         }
@@ -884,8 +887,9 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&moonlight_tx_event)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
-            origin: origin,
+            origin,
         }
     }
 
@@ -903,6 +907,7 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&withdraw_event)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
             origin: [3; 32],
         }
@@ -923,8 +928,9 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
-            origin: origin,
+            origin,
         }
     }
 
@@ -942,6 +948,7 @@ mod tests {
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
                     .unwrap()
                     .to_vec(),
+                reverted: false,
             },
             origin: [5; 32],
         }

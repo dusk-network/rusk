@@ -4,9 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{Metadata, into_array};
+use tracing::error;
+
+use super::*;
 
 pub async fn block_by_height(
     ctx: &Context<'_>,
@@ -110,7 +112,15 @@ pub async fn blocks_range(
                 hash_to_search = t.block_hash_by_height(height)?;
             }
             if let Some(hash) = hash_to_search {
-                let h = t.light_block(&hash)?.expect("Block to be found");
+                let h = t.light_block(&hash)?.ok_or_else(|| {
+                    let msg = format!(
+                        "Cannot find block with hash {} at height {}",
+                        hex::encode(hash),
+                        height
+                    );
+                    error!("{}", msg);
+                    anyhow::anyhow!(msg)
+                })?;
                 hash_to_search = h.header.prev_block_hash.into();
                 blocks.push(Block::from(h))
             }

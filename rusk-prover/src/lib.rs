@@ -63,12 +63,12 @@ impl Prove for LocalProver {
         #[cfg(not(feature = "std"))]
         let plonk_version = plonk_prove_version_from_mode(None);
 
-        #[cfg(not(feature = "no_random"))]
+        #[cfg(not(feature = "unsafe_deterministic_rng"))]
         let rng = &mut rand::rngs::OsRng;
 
-        #[cfg(feature = "no_random")]
+        #[cfg(feature = "unsafe_deterministic_rng")]
         use rand::{SeedableRng, rngs::StdRng};
-        #[cfg(feature = "no_random")]
+        #[cfg(feature = "unsafe_deterministic_rng")]
         let rng = &mut StdRng::seed_from_u64(0xbeef);
 
         #[cfg(feature = "debug")]
@@ -112,13 +112,10 @@ impl Prove for LocalProver {
 fn fetch_prover(circuit_name: &str) -> PlonkProver {
     let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
         .unwrap_or_else(|_| {
-            panic!(
-                "There should be tx-circuit data stored for {}",
-                circuit_name
-            )
+            panic!("There should be tx-circuit data stored for {circuit_name}",)
         });
     let pk = circuit_profile.get_prover().unwrap_or_else(|_| {
-        panic!("there should be a prover key stored for {}", circuit_name)
+        panic!("there should be a prover key stored for {circuit_name}")
     });
 
     PlonkProver::try_from_bytes(pk).expect("Prover key is expected to by valid")

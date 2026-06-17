@@ -33,8 +33,26 @@ pub struct Config {
     /// Disable calls to 3rd party contracts
     pub disable_3rd_party: bool,
 
+    /// Disable Phoenix transactions and Phoenix-related transfer functions.
+    pub disable_phoenix: bool,
+
+    /// Enable WebAssembly reference-types in deployed contract bytecode.
+    pub with_reference_types: bool,
+
     /// Enforce phoenix fee refund stealth address matches change note
     pub phoenix_refund_check: bool,
+
+    /// Enforce the Boreas deploy gas rule that compares deploy charge against
+    /// remaining gas only.
+    pub deploy_remaining_gas_check: bool,
+
+    /// Charge gas consumed by the contract's `init` function during
+    /// deployment.
+    pub charge_init_gas: bool,
+
+    /// Enforce that Phoenix withdrawal replay tokens carry exactly the same
+    /// number of nullifiers as the encapsulating transaction.
+    pub withdrawal_nullifier_check: bool,
 }
 
 impl Default for Config {
@@ -55,6 +73,11 @@ impl Config {
         disable_wasm64: false,
         disable_wasm32: false,
         disable_3rd_party: false,
+        disable_phoenix: false,
+        with_reference_types: false,
         phoenix_refund_check: false,
+        deploy_remaining_gas_check: false,
+        charge_init_gas: false,
+        withdrawal_nullifier_check: false,
     };
 }

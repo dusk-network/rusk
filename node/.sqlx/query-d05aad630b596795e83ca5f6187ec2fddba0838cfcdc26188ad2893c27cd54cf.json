@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT origin, topic, source, data, reverted as \"reverted: bool\" FROM unfinalized_events WHERE block_hash = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "origin",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "topic",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "source",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "data",
+        "ordinal": 3,
+        "type_info": "Blob"
+      },
+      {
+        "name": "reverted: bool",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d05aad630b596795e83ca5f6187ec2fddba0838cfcdc26188ad2893c27cd54cf"
+}

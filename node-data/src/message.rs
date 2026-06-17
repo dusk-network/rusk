@@ -229,7 +229,7 @@ impl Serializable for Message {
             }
 
             Topics::Block => ledger::Block::read(r)?.into(),
-            Topics::Tx => ledger::Transaction::read(r)?.into(),
+            Topics::Tx => ledger::LedgerTransaction::read(r)?.into(),
             Topics::GetResource => payload::GetResource::read(r)?.into(),
             Topics::GetBlocks => payload::GetBlocks::read(r)?.into(),
             Topics::GetMempool => payload::GetMempool::read(r)?.into(),
@@ -313,7 +313,7 @@ impl WireMessage for ledger::Block {
     const TOPIC: Topics = Topics::Block;
 }
 
-impl WireMessage for ledger::Transaction {
+impl WireMessage for ledger::LedgerTransaction {
     const TOPIC: Topics = Topics::Tx;
 }
 
@@ -409,7 +409,7 @@ pub enum Payload {
     ValidationQuorum(Box<payload::ValidationQuorum>),
 
     Block(Box<ledger::Block>),
-    Transaction(Box<ledger::Transaction>),
+    Transaction(Box<ledger::LedgerTransaction>),
     GetMempool(payload::GetMempool),
     Inv(payload::Inv),
     GetBlocks(payload::GetBlocks),
@@ -466,8 +466,8 @@ impl From<ledger::Block> for Payload {
         Self::Block(Box::new(value))
     }
 }
-impl From<ledger::Transaction> for Payload {
-    fn from(value: ledger::Transaction) -> Self {
+impl From<ledger::LedgerTransaction> for Payload {
+    fn from(value: ledger::LedgerTransaction) -> Self {
         Self::Transaction(Box::new(value))
     }
 }
@@ -988,7 +988,7 @@ pub mod payload {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
-                InvParam::Height(height) => write!(f, "Height: {}", height),
+                InvParam::Height(height) => write!(f, "Height: {height}"),
                 InvParam::Iteration(ch) => {
                     write!(
                         f,
@@ -1677,7 +1677,7 @@ mod tests {
             prev_block_hash: [2; 32],
             round: 4,
         };
-        assert_serialize(consensus_header.clone());
+        assert_serialize(consensus_header);
 
         let header = ledger::Header {
             version: 3,
@@ -1722,7 +1722,7 @@ mod tests {
         assert_serialize(ledger::StepVotes::new([4; 48], 12345));
 
         assert_serialize(payload::Validation {
-            header: consensus_header.clone(),
+            header: consensus_header,
             vote: payload::Vote::Valid([4; 32]),
             sign_info: sign_info.clone(),
         });
@@ -1734,7 +1734,7 @@ mod tests {
         );
 
         assert_serialize(payload::Ratification {
-            header: consensus_header.clone(),
+            header: consensus_header,
             vote: payload::Vote::Valid([4; 32]),
             sign_info: sign_info.clone(),
             validation_result,
@@ -1742,7 +1742,7 @@ mod tests {
         });
 
         assert_serialize(payload::Quorum {
-            header: consensus_header.clone(),
+            header: consensus_header,
             att: Attestation {
                 result: payload::Vote::Valid([4; 32]).into(),
                 validation: ledger::StepVotes::new([1; 48], 12345),
@@ -1756,11 +1756,11 @@ mod tests {
         let aegis_activation_height = 10;
         set_aegis_activation_height(aegis_activation_height);
         assert_eq!(
-            hard_fork_at_with_activation(9, aegis_activation_height),
+            hard_fork_at_with_activation(9, aegis_activation_height, u64::MAX),
             HardFork::PreFork
         );
         assert_eq!(
-            hard_fork_at_with_activation(10, aegis_activation_height),
+            hard_fork_at_with_activation(10, aegis_activation_height, u64::MAX),
             HardFork::Aegis
         );
 

@@ -22,7 +22,7 @@ const ALIGNMENT: usize = 1;
 
 /// Allocates a buffer of `len` bytes on the WASM memory.
 #[unsafe(no_mangle)]
-pub fn malloc(len: u32) -> u32 {
+pub extern "C" fn malloc(len: u32) -> u32 {
     unsafe {
         let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
         let ptr = alloc(layout);
@@ -32,7 +32,7 @@ pub fn malloc(len: u32) -> u32 {
 
 /// Frees a previously allocated buffer on the WASM memory.
 #[unsafe(no_mangle)]
-pub fn free(ptr: u32, len: u32) {
+pub extern "C" fn free(ptr: u32, len: u32) {
     unsafe {
         let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
         dealloc(ptr as _, layout);
@@ -56,12 +56,10 @@ where
     let aligned = bytes.to_vec();
     let aligned_slice: &[u8] = &aligned;
 
-    let result = check_archived_root::<T>(aligned_slice)
+    check_archived_root::<T>(aligned_slice)
         .or(Err(ErrorCode::UnarchivingError))?
         .deserialize(&mut SharedDeserializeMap::default())
-        .or(Err(ErrorCode::UnarchivingError));
-
-    result
+        .or(Err(ErrorCode::UnarchivingError))
 }
 
 /// Checks and deserializes a value from the given po

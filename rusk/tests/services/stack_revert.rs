@@ -4,17 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::operations::StateTransitionData;
-use dusk_core::signatures::bls;
-use node_data::ledger::Transaction;
-use rusk::node::{
-    DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
-    RuskVmConfig,
-};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use dusk_consensus::operations::StateTransitionData;
+use dusk_core::signatures::bls;
+use node_data::ledger::LedgerTransaction;
+use rusk::node::{
+    DriverStore, FEATURE_ABI_PUBLIC_SENDER, FEATURE_HARDFORK_AEGIS,
+    RuskVmConfig,
+};
 use rusk::{DUSK_CONSENSUS_KEY, Error, Result, Rusk};
 use rusk_recovery_tools::state::restore_state;
 use tempfile::TempDir;
@@ -22,9 +22,10 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
+use crate::common::state::{DEFAULT_MIN_GAS_LIMIT, header_from_root};
+use crate::common::wallet::test_wallet::Wallet;
 use crate::common::wallet::{
-    TestStateClient, TestStore, test_wallet as wallet, test_wallet::Wallet,
+    TestStateClient, TestStore, test_wallet as wallet,
 };
 
 const CHAIN_ID: u8 = 0x01;
@@ -77,6 +78,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         CHAIN_ID,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,
@@ -152,9 +154,8 @@ pub async fn test_mainnet_2710377() -> Result<(), Error> {
     .unwrap();
     let mut base_a: [u8; 32] = [0u8; 32];
     base_a.copy_from_slice(&base);
-    let mut lock = f.rusk.tip.write();
-    lock.current = base_a;
-    drop(lock);
+    let base_a = header_from_root(base_a);
+    f.rusk.set_current_header(&base_a);
     // let root = f.rusk.state_root();
 
     let activate_tx=hex::decode("01420300000000000001a363952604c1d55b0ba644c38abf4f2980875f4f19cd0476622d2621df3b5059d7329df20715b81f4836218d7bcf5d000bda33f028a419e09d7e427c6d123728510080d2361ea5d745de670b423e652a49acc30b3f3548c401b069f809b44b87000000000000000000000000000000000000943577000000000100000000000000001500000000000000016fdfdc713a18fc6ca2ad20eb2b4a3305a935ef47d6a872d9a4df8bc9fd9d169e0e000000000000007374616b655f61637469766174657802000000000000011cc415d05b1cfbf2583bf2e8a0e39b2c768d263ef92d6a21a4787f76c6afa9240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000083993b79ec93685aae5f6f261565e464e8cc776af7e1fe67decb525bb9302859ee0831cc07f9dc0948b15045ada06b0cff57b1bf999f4bdc1883d2cec11ae1016f64d542364b0f9358efef0d7794bcec4b1310fadaedfcf3ab59e534c98a3e0f5bda8aa2e60537abcb1c92d8494cc1e0b42fb64748cf622ca175633260df994209f8ba3d59dcd3fe22611f04ba98560751c4384588aeb9ed93e5cafe9f0e6a949fb7e3c2dcb47c0cd36716e711b015d21da1a2b24361cdfedc81144d104644050000000000000000d83f0c3b05000000f78258909c3e094b0b0fa1a241942f5968599d23778328331fc478ced1f70ee1a42815977a2b0f7a309ca9b4cad98403b738ac9db702d39adaa94b3d71faaaac084e348c9b9e315e73b41c77494de8c69ecd98f4ac319981bb1632d8a8ee8e060000000000000000f78258909c3e094b0b0fa1a241942f5968599d23778328331fc478ced1f70ee1a42815977a2b0f7a309ca9b4cad98403b738ac9db702d39adaa94b3d71faaaac084e348c9b9e315e73b41c77494de8c69ecd98f4ac319981bb1632d8a8ee8e060000000000000000010000000000000087e8057bf2f732000379595a17979162773c6683226f92f869c9220e074759d3718e929e2b0af413fa3d0fbe355ef91a").unwrap();
@@ -173,7 +174,7 @@ pub async fn test_mainnet_2710377() -> Result<(), Error> {
         slashes: vec![],
         cert_voters: voters,
         max_txs_bytes: 5000,
-        prev_state_root: base_a,
+        prev_state_root: base_a.state_hash,
     };
 
     let activate_tx =
@@ -183,7 +184,10 @@ pub async fn test_mainnet_2710377() -> Result<(), Error> {
     let stake_tx = dusk_core::transfer::Transaction::from_slice(&stake_tx)
         .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))
         .unwrap();
-    let txs = vec![Transaction::from(activate_tx), Transaction::from(stake_tx)];
+    let txs = vec![
+        LedgerTransaction::from_protocol_for_ledger(activate_tx, 2710377),
+        LedgerTransaction::from_protocol_for_ledger(stake_tx, 2710377),
+    ];
     let (spent, _discarded, _) = f
         .rusk
         .create_state_transition(&data, txs.into_iter())

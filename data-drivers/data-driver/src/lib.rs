@@ -30,18 +30,15 @@ mod mem;
 #[cfg(feature = "reader")]
 pub mod reader;
 
-use alloc::string::ToString;
-use alloc::vec;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use alloc::{format, string::String};
+use alloc::{format, vec};
 
 use bytecheck::CheckBytes;
+pub use error::Error;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, check_archived_root};
-
-pub use error::Error;
-pub use serde_json::Value as JsonValue;
-pub use serde_json::to_value as to_json;
+pub use serde_json::{Value as JsonValue, to_value as to_json};
 
 /// A trait for converting between JSON and native RKYV formats in a contract.
 ///

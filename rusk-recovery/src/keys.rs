@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::sync::{LazyLock, Mutex, mpsc};
-use std::{cmp, time::Duration};
-use std::{io, thread};
+use std::time::Duration;
+use std::{cmp, io, thread};
 
 use dusk_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use dusk_plonk::prelude::{Compiler, PublicParameters};

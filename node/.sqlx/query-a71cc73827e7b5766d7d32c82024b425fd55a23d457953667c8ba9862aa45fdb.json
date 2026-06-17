@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO finalized_events (block_height, block_hash, origin, topic, source, data, reverted) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "a71cc73827e7b5766d7d32c82024b425fd55a23d457953667c8ba9862aa45fdb"
+}

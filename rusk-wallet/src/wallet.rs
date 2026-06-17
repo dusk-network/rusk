@@ -8,14 +8,11 @@ mod address;
 mod file;
 mod transaction;
 
-pub use address::{Address, Profile};
-#[allow(clippy::module_name_repetitions)]
-pub use file::{Secure as SecureWalletFile, WalletPath};
-
 use std::fmt::Debug;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub use address::{Address, Profile};
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
 use dusk_core::BlsScalar;
@@ -24,10 +21,13 @@ use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
 };
 use dusk_core::stake::StakeData;
+use dusk_core::transfer::data::gen_contract_id;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
+#[allow(clippy::module_name_repetitions)]
+pub use file::{Secure as SecureWalletFile, WalletPath};
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
@@ -35,7 +35,6 @@ use wallet_core::prelude::keys::{
 use wallet_core::{BalanceInfo, phoenix_balance};
 use zeroize::Zeroize;
 
-use crate::Error;
 use crate::clients::State;
 use crate::crypto::encrypt;
 use crate::currency::Dusk;
@@ -46,6 +45,7 @@ use crate::dat::{
 use crate::gas::MempoolGasPrices;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
+use crate::{Error, WalletStatus};
 
 /// The interface to the Dusk Network
 ///
@@ -86,7 +86,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         P: Into<String>,
     {
         // generate mnemonic
-        let phrase: String = phrase.into();
+        let mut phrase: String = phrase.into();
         let try_mnem = Mnemonic::from_phrase(&phrase, Language::English);
 
         if let Ok(mnemonic) = try_mnem {
@@ -105,6 +105,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 shielded_addr: derive_phoenix_pk(&seed_bytes, 0),
                 public_addr: derive_bls_pk(&seed_bytes, 0),
             }];
+            phrase.zeroize();
 
             // return new wallet instance
             Ok(Wallet {
@@ -115,6 +116,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 file_version: None,
             })
         } else {
+            phrase.zeroize();
             Err(Error::InvalidMnemonicPhrase)
         }
     }
@@ -275,31 +277,54 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         rusk_addr: S,
         prov_addr: S,
         archiver_addr: S,
-        status: fn(&str),
+        status: fn(WalletStatus),
     ) -> Result<(), Error> {
         // attempt connection
         let http_state = RuesHttpClient::new(rusk_addr)?;
         let http_prover = RuesHttpClient::new(prov_addr)?;
         let http_archiver = RuesHttpClient::new(archiver_addr)?;
 
-        let state_status = http_state.check_connection().await;
-        let prover_status = http_prover.check_connection().await;
-        let archiver_status = http_archiver.check_connection().await;
+        // Probe endpoints in parallel with a short timeout so startup remains
+        // responsive even on slow links.
+        let probe_timeout = std::time::Duration::from_secs(5);
+        let (state_status, prover_status, archiver_status) = tokio::join!(
+            tokio::time::timeout(probe_timeout, http_state.check_connection()),
+            tokio::time::timeout(probe_timeout, http_prover.check_connection()),
+            tokio::time::timeout(
+                probe_timeout,
+                http_archiver.check_connection()
+            ),
+        );
 
-        match (&state_status, prover_status, archiver_status) {
-            (Err(e), _, _) => println!(
-                "Connection to Rusk Failed, some operations won't be available: {e}"
-            ),
-            (_, Err(e), _) => println!(
-                "Connection to Prover Failed, some operations won't be available: {e}"
-            ),
-            (_, _, Err(e)) => println!(
-                "Connection to Archiver Failed, some operations won't be available: {e}"
-            ),
+        match (state_status, prover_status, archiver_status) {
+            (Ok(Err(e)), _, _) => status(WalletStatus::Warning(format!(
+                "Connection to Rusk failed, some operations won't be available: {e}"
+            ))),
+            (Err(_), _, _) => status(WalletStatus::Warning(
+                "Connection to Rusk timed out, some operations won't be available"
+                    .into(),
+            )),
+            (_, Ok(Err(e)), _) => status(WalletStatus::Warning(format!(
+                "Connection to Prover failed, some operations won't be available: {e}"
+            ))),
+            (_, Err(_), _) => status(WalletStatus::Warning(
+                "Connection to Prover timed out, some operations won't be available"
+                    .into(),
+            )),
+            (_, _, Ok(Err(e))) => status(WalletStatus::Warning(format!(
+                "Connection to Archiver failed, some operations won't be available: {e}"
+            ))),
+            (_, _, Err(_)) => status(WalletStatus::Warning(
+                "Connection to Archiver timed out, some operations won't be available"
+                    .into(),
+            )),
             _ => {}
         }
 
         let cache_dir = self.cache_path()?;
+        let is_local =
+            self.file.as_ref().and_then(|f| f.path().network.as_deref())
+                == Some("local");
 
         // create a state client
         self.state = Some(State::new(
@@ -308,9 +333,27 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             http_state,
             http_prover,
             self.store.clone(),
+            is_local,
         )?);
 
         Ok(())
+    }
+
+    /// Get the Phoenix balance from the local cache only.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if there is no profile stored for the given `profile_idx`.
+    pub fn get_phoenix_balance_cached(
+        &self,
+        profile_idx: u8,
+    ) -> Result<BalanceInfo, Error> {
+        let notes =
+            self.state()?.fetch_notes(self.shielded_key(profile_idx)?)?;
+        Ok(phoenix_balance(
+            &self.derive_phoenix_vk(profile_idx),
+            notes.iter(),
+        ))
     }
 
     /// Sync wallet state
@@ -664,8 +707,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Generate a contract id given bytes and nonce
     ///
     /// # Errors
-    /// This method will error if the hash maps to an invalid contract-id, this
-    /// would mean there is a bug in the `blake2b_simd` hasher.
+    /// This method will error if the wallet cannot derive the owner public key
+    /// for the requested profile.
     pub fn get_contract_id(
         &self,
         profile_idx: u8,
@@ -673,15 +716,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         nonce: u64,
     ) -> Result<[u8; CONTRACT_ID_BYTES], Error> {
         let owner = self.public_key(profile_idx)?.to_bytes();
-
-        let mut hasher = blake2b_simd::Params::new()
-            .hash_length(CONTRACT_ID_BYTES)
-            .to_state();
-        hasher.update(bytes);
-        hasher.update(&nonce.to_le_bytes()[..]);
-        hasher.update(owner.as_ref());
-        hasher
-            .finalize()
+        gen_contract_id(bytes, nonce, owner)
             .as_bytes()
             .try_into()
             .map_err(|_| Error::InvalidContractId)
@@ -799,9 +834,8 @@ mod tests {
     use rand::rngs::OsRng;
     use tempfile::tempdir;
 
-    use crate::{IV_SIZE, SALT_SIZE};
-
     use super::*;
+    use crate::{IV_SIZE, SALT_SIZE};
 
     const TEST_ADDR: &str = "2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
 
@@ -859,7 +893,7 @@ mod tests {
 
         // check addresses are different
         let addr = wallet.default_shielded_account();
-        assert!(format!("{}", addr).ne(TEST_ADDR));
+        assert!(format!("{addr}").ne(TEST_ADDR));
 
         // attempt to create a wallet from an invalid mnemonic
         let bad_wallet: Result<Wallet<WalletFile>, Error> =

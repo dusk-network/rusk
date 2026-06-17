@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::stake::{
-    self, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT, Stake,
-};
-
 use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
+use dusk_core::stake::{
+    self, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT, Stake,
+};
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::{self, ReceiveFromContract, Transaction};
 use dusk_rusk_test::TestContext;
@@ -154,7 +153,7 @@ pub async fn stake_from_contract() -> Result<()> {
         .expect("stake to be successful");
     let tx = execute_transaction(
         stake_from_contract,
-        &rusk,
+        rusk,
         EPOCH * 2,
         None,
         Some(pk),

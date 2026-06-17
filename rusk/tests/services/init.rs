@@ -8,28 +8,27 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-#[cfg(feature = "archive")]
-use node::archive::Archive;
-
+use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
 use dusk_vm::gen_contract_id;
+#[cfg(feature = "archive")]
+use node::archive::Archive;
+use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::{DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state;
-use tokio::sync::broadcast;
-
-use dusk_core::abi::ContractId;
-use node_data::ledger::SpentTransaction;
 use tempfile::tempdir;
+use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
-use crate::common::state::{ExecuteResult, generator_procedure};
+use crate::common::state::{
+    DEFAULT_MIN_GAS_LIMIT, ExecuteResult, generator_procedure, header_from_root,
+};
 use crate::common::wallet::{
     TestStateClient, TestStore, test_wallet as wallet,
 };
@@ -80,6 +79,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     let rusk = Rusk::new(
         dir,
+        |state_root| Ok(header_from_root(state_root)),
         CHAIN_ID,
         vm_config,
         DEFAULT_MIN_GAS_LIMIT,

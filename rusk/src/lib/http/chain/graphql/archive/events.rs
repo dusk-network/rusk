@@ -6,11 +6,13 @@
 
 //! Module for GraphQL that relates to stored events in the archive.
 
+use async_graphql::{Context, FieldError};
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as B64;
+use dusk_core::abi::CONTRACT_ID_BYTES;
+
 use super::data::ContractEvents;
 use crate::http::chain::graphql::{DBContext, OptResult};
-use async_graphql::{Context, FieldError};
-use base64::{Engine, engine::general_purpose::STANDARD as B64};
-use dusk_core::abi::CONTRACT_ID_BYTES;
 
 const DEFAULT_LIMIT: i64 = 50;
 const MAX_LIMIT: i64 = 200;
@@ -39,7 +41,7 @@ pub async fn events_by_hash(
     let events = archive
         .fetch_json_events_by_hash(&hash)
         .await
-        .map_err(|e| FieldError::new(format!("Cannot fetch events: {}", e)))?;
+        .map_err(|e| FieldError::new(format!("Cannot fetch events: {e}")))?;
 
     Ok(Some(ContractEvents(serde_json::from_str(&events)?)))
 }
@@ -103,7 +105,7 @@ pub async fn finalized_events_by_contract(
 
 /// Encode a numeric ID into an opaque cursor.
 fn encode_cursor_id(id: i64) -> String {
-    B64.encode(format!("v1:{}", id))
+    B64.encode(format!("v1:{id}"))
 }
 
 /// Decode an opaque cursor back to the numeric ID.

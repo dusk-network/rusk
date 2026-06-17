@@ -4,84 +4,73 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod app_state;
+mod axum_app;
 #[cfg(feature = "chain")]
 mod chain;
 #[cfg(feature = "chain")]
 mod driver;
 mod error;
-mod event;
+#[cfg(feature = "chain")]
+mod graphql;
+mod handlers;
+mod middleware;
+mod openapi;
+mod policy;
 #[cfg(feature = "prover")]
 mod prover;
+mod routes;
+mod rues;
 #[cfg(feature = "chain")]
 mod rusk;
 mod stream;
 
-#[cfg(feature = "chain")]
-pub(crate) use driver::DriverExecutor;
-pub(crate) use event::{
-    DataType, ExecutionError, MessageResponse as EventResponse,
-};
-
-use tokio::task::JoinError;
-use tracing::{debug, info, warn};
-
-use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::convert::Infallible;
-use std::future::Future;
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::pin::Pin;
-use std::str::FromStr;
+use std::path::PathBuf;
 use std::sync::Arc;
 
-#[cfg(feature = "chain")]
-use async_graphql::http::{
-    MultipartOptions, parse_query_string, receive_batch_body,
-};
-#[cfg(feature = "chain")]
-use async_graphql::{
-    BatchRequest, BatchResponse, ParseRequestError,
-    Response as GraphqlResponse, ServerError,
-};
+#[cfg(test)]
 use async_trait::async_trait;
-
-use tokio::net::ToSocketAddrs;
-use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
-use tokio::{io, task};
-use tokio_stream::StreamExt;
-use tokio_stream::wrappers::BroadcastStream;
-
+use axum::http::HeaderMap;
+#[cfg(test)]
+use axum::http::HeaderValue;
+#[cfg(test)]
+use axum::http::header::{ALLOW, CONTENT_TYPE};
 #[cfg(feature = "chain")]
-use futures_util::io::Cursor;
-use http_body_util::Full;
-#[cfg(feature = "chain")]
-use http_body_util::{BodyExt, LengthLimitError, Limited};
-#[cfg(feature = "chain")]
-use hyper::header::{ALLOW, CONTENT_TYPE};
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::service::Service;
-use hyper::{
-    HeaderMap, Method, Request, Response, StatusCode,
-    body::{Bytes, Incoming},
-};
-use hyper_tungstenite::{HyperWebsocket, tungstenite};
-use hyper_util::server::conn::auto::Builder as HttpBuilder;
-
-use tungstenite::protocol::frame::coding::CloseCode;
-use tungstenite::protocol::{CloseFrame, Message};
-
-use futures_util::SinkExt;
-
-use hyper_util::rt::TokioIo;
-
-use crate::VERSION;
-use crate::http::event::FullOrStreamBody;
-
-pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
+pub(crate) use driver::DriverExecutor;
 pub use error::Error as HttpError;
+pub use policy::HttpPolicyConfig;
+#[cfg(any(feature = "chain", test))]
+pub(crate) use rues::event::{DataType, ExecutionError};
+use tokio::sync::{RwLock, broadcast};
+use tokio::task::JoinError;
+use tokio::{io, task};
+use tower::Layer;
+use tower_http::normalize_path::NormalizePathLayer;
+use tracing::info;
 
-use self::event::{ResponseData, RuesEventUri, SessionId, check_rusk_version};
+pub(crate) use self::app_state::HttpAppState;
+use self::axum_app::build_app;
+pub use self::handlers::HttpHandlers;
+#[cfg(feature = "prover")]
+pub use self::handlers::ProverRequestHandler;
+#[cfg(test)]
+pub use self::handlers::TestRequestHandler;
+#[cfg(feature = "chain")]
+pub use self::handlers::{
+    ChainRequestHandler, GraphqlHandler, RuskRequestHandler,
+};
+pub(crate) use self::policy::HttpRequestPolicy;
+#[cfg(any(feature = "chain", feature = "prover", test))]
+use self::rues::event::ResponseData;
+#[cfg(test)]
+use self::rues::event::RuesEventUri;
+use self::rues::event::SessionId;
+pub use self::rues::event::{
+    RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent,
+};
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -89,23 +78,22 @@ pub type HttpResult<T> = std::result::Result<T, HttpError>;
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
 /// Default cap for most RUES POST request bodies.
+#[cfg_attr(
+    not(any(feature = "chain", feature = "prover", test)),
+    allow(dead_code)
+)]
 pub(crate) const MAX_RUES_REQUEST_BODY_BYTES: usize = 3 * 1024 * 1024;
 /// Cap for `POST /on/contract:<id>/upload_driver` request bodies.
+#[cfg(feature = "chain")]
 pub(crate) const MAX_DRIVER_UPLOAD_BODY_BYTES: usize = 2 * 1024 * 1024;
 /// Cap for `POST /graphql` request bodies.
 #[cfg(feature = "chain")]
 pub(crate) const MAX_GRAPHQL_REQUEST_BODY_BYTES: usize = 256 * 1024;
 /// Cap for a single inbound WebSocket message on the RUES subscription socket.
 pub(crate) const MAX_WS_INBOUND_MESSAGE_BYTES: usize = 256 * 1024;
-/// Cap for a single inbound WebSocket frame payload on the RUES subscription socket.
+/// Cap for a single inbound WebSocket frame payload on the RUES subscription
+/// socket.
 pub(crate) const MAX_WS_INBOUND_FRAME_BYTES: usize = 64 * 1024;
-
-pub(crate) fn max_rues_request_body_bytes(uri: &RuesEventUri) -> usize {
-    match uri.inner() {
-        ("contract", Some(_), "upload_driver") => MAX_DRIVER_UPLOAD_BODY_BYTES,
-        _ => MAX_RUES_REQUEST_BODY_BYTES,
-    }
-}
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -116,8 +104,10 @@ pub struct HttpServerConfig {
     pub address: String,
     pub cert: Option<PathBuf>,
     pub key: Option<PathBuf>,
+    pub enable_docs: bool,
     pub headers: HeaderMap,
     pub ws_event_channel_cap: usize,
+    pub policy: HttpPolicyConfig,
 }
 
 impl HttpServer {
@@ -125,39 +115,59 @@ impl HttpServer {
         self.handle.await
     }
 
-    pub async fn bind<A, H, P1, P2>(
-        handler: H,
-        event_receiver: broadcast::Receiver<RuesEvent>,
-        ws_event_channel_cap: usize,
-        addr: A,
-        headers: HeaderMap,
-        cert_and_key: Option<(P1, P2)>,
-    ) -> io::Result<(Self, SocketAddr)>
-    where
-        A: ToSocketAddrs,
-        H: HandleRequest,
-        P1: AsRef<Path>,
-        P2: AsRef<Path>,
-    {
+    pub async fn bind(
+        services: HttpHandlers,
+        event_sender: broadcast::Sender<RuesEvent>,
+        config: HttpServerConfig,
+    ) -> io::Result<(Self, SocketAddr)> {
+        let cert_and_key = match (config.cert, config.key) {
+            (Some(cert), Some(key)) => Some((cert, key)),
+            _ => None,
+        };
         let listener = match cert_and_key {
-            Some(cert_and_key) => Listener::bind_tls(addr, cert_and_key).await,
-            None => Listener::bind(addr).await,
+            Some(ck) => Listener::bind_tls(&config.address, ck).await,
+            None => Listener::bind(&config.address).await,
         }?;
 
-        let (shutdown_sender, shutdown_receiver) = broadcast::channel(1);
-
+        let (shutdown_sender, mut shutdown_receiver) = broadcast::channel(1);
         let local_addr = listener.local_addr()?;
 
         info!("Starting HTTP Listener to {local_addr}");
 
-        let handle = task::spawn(listening_loop(
-            handler,
-            listener,
-            event_receiver,
-            shutdown_receiver,
-            headers,
-            ws_event_channel_cap,
-        ));
+        let mut headers = config.headers;
+        headers.insert(
+            RUSK_VERSION_HEADER,
+            axum::http::HeaderValue::from_str(crate::VERSION.as_str())
+                .expect("version should be a valid header value"),
+        );
+
+        let app = build_app(HttpAppState {
+            services,
+            sockets_map: Arc::new(RwLock::new(HashMap::new())),
+            events: event_sender,
+            shutdown: shutdown_sender.clone(),
+            ws_event_channel_cap: config.ws_event_channel_cap,
+            enable_docs: config.enable_docs,
+            policy: Arc::new(HttpRequestPolicy::new(config.policy)),
+            headers: Arc::new(headers),
+        });
+
+        // NormalizePathLayer strips trailing slashes so `/graphql/`
+        // is served by the `/graphql` route without duplication.
+        // It wraps the entire router so normalisation happens before
+        // any routing or middleware runs.
+        let app = NormalizePathLayer::trim_trailing_slash().layer(app);
+        let make_svc =
+            axum::ServiceExt::<axum::http::Request<axum::body::Body>>::into_make_service(app);
+
+        let handle = task::spawn(async move {
+            let shutdown_signal = async move {
+                let _ = shutdown_receiver.recv().await;
+            };
+            let _ = axum::serve(listener, make_svc)
+                .with_graceful_shutdown(shutdown_signal)
+                .await;
+        });
 
         let server = Self {
             handle,
@@ -166,837 +176,38 @@ impl HttpServer {
         Ok((server, local_addr))
     }
 }
-
-#[derive(Default)]
-pub struct DataSources {
-    pub sources: Vec<Box<dyn HandleRequest>>,
-    #[cfg(feature = "chain")]
-    graphql: Option<Arc<dyn GraphqlHandler>>,
-}
-
-#[cfg(feature = "chain")]
-#[async_trait]
-pub(crate) trait GraphqlHandler: Send + Sync + 'static {
-    async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse;
-}
-
-impl DataSources {
-    #[cfg(feature = "chain")]
-    pub(crate) fn set_graphql_handler<T>(&mut self, handler: T)
-    where
-        T: GraphqlHandler,
-    {
-        self.graphql = Some(Arc::new(handler));
-    }
-}
-
-#[async_trait]
-impl HandleRequest for DataSources {
-    fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
-        self.sources.iter().any(|s| s.can_handle_rues(event))
-    }
-
-    async fn handle_rues(
-        &self,
-        event: &RuesDispatchEvent,
-    ) -> HttpResult<ResponseData> {
-        info!("Received event at {}", event.uri);
-        event.check_rusk_version()?;
-        for h in &self.sources {
-            if h.can_handle_rues(event) {
-                return h.handle_rues(event).await;
-            }
-        }
-        Err(HttpError::Unsupported)
-    }
-
-    async fn handle_http(
-        &self,
-        req: Request<Incoming>,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-        let path = req.uri().path();
-        #[cfg(feature = "chain")]
-        {
-            if is_graphql_path(path) {
-                let handler = match self.graphql.as_ref() {
-                    Some(handler) => handler,
-                    None => {
-                        return graphql_error_response(
-                            StatusCode::NOT_FOUND,
-                            "GraphQL endpoint not configured",
-                        );
-                    }
-                };
-
-                return handle_graphql_http(handler.as_ref(), req).await;
-            }
-        }
-        #[cfg(not(feature = "chain"))]
-        {
-            let _ = path;
-        }
-
-        Err(ExecutionError::Other("Unsupported path".to_string()))
-    }
-}
-
-#[derive(Clone)]
-struct TokioExecutor;
-
-impl<F> hyper::rt::Executor<F> for TokioExecutor
-where
-    F: Future + Send + 'static,
-    F::Output: Send + 'static,
-{
-    fn execute(&self, fut: F) {
-        task::spawn(fut);
-    }
-}
-
-async fn listening_loop<H>(
-    handler: H,
-    listener: Listener,
-    events: broadcast::Receiver<RuesEvent>,
-    mut shutdown: broadcast::Receiver<Infallible>,
-    headers: HeaderMap,
-    ws_event_channel_cap: usize,
-) where
-    H: HandleRequest,
-{
-    let sources = Arc::new(handler);
-    let sockets_map = Arc::new(RwLock::new(HashMap::new()));
-
-    let service = ExecutionService {
-        sources: sources.clone(),
-        sockets_map: sockets_map.clone(),
-        events: events.resubscribe(),
-        shutdown: shutdown.resubscribe(),
-        headers: Arc::new(headers),
-        ws_event_channel_cap,
-    };
-
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(4)
-        .thread_name("http")
-        .enable_all()
-        .build()
-        .expect("http runtime to be created");
-    loop {
-        tokio::select! {
-            _ = shutdown.recv() => {
-                runtime.shutdown_background();
-                break;
-            }
-            r = listener.accept() => {
-                let stream = match r {
-                    Ok(stream) => stream,
-                    Err(_) => break,
-                };
-
-                let http = HttpBuilder::new(TokioExecutor);
-
-                let stream = TokioIo::new(stream);
-                let service = service.clone();
-
-                runtime.spawn(async move {
-                    let conn = http.serve_connection_with_upgrades(stream, service);
-                    conn.await
-                });
-            }
-        }
-    }
-}
-
-struct ExecutionService<H> {
-    sources: Arc<H>,
-    sockets_map:
-        Arc<RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>>,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    headers: Arc<HeaderMap>,
-    ws_event_channel_cap: usize,
-}
-
-impl<H> Clone for ExecutionService<H> {
-    fn clone(&self) -> Self {
-        Self {
-            sources: self.sources.clone(),
-            sockets_map: self.sockets_map.clone(),
-            events: self.events.resubscribe(),
-            shutdown: self.shutdown.resubscribe(),
-            headers: self.headers.clone(),
-            ws_event_channel_cap: self.ws_event_channel_cap,
-        }
-    }
-}
-
-impl<H> Service<Request<Incoming>> for ExecutionService<H>
-where
-    H: HandleRequest,
-{
-    type Response = Response<FullOrStreamBody>;
-    type Error = Infallible;
-    type Future = Pin<
-        Box<
-            dyn Future<Output = Result<Self::Response, Self::Error>>
-                + Send
-                + 'static,
-        >,
-    >;
-
-    /// Handle the HTTP request.
-    ///
-    /// A request may be a "normal" request, or a WebSocket upgrade request. In
-    /// the former case, the request is handled on the spot, while in the
-    /// latter task running the stream handler loop is spawned.
-    fn call(&self, req: Request<Incoming>) -> Self::Future {
-        let sources = self.sources.clone();
-        let sockets_map = self.sockets_map.clone();
-        let events = self.events.resubscribe();
-        let shutdown = self.shutdown.resubscribe();
-        let ws_event_channel_cap = self.ws_event_channel_cap;
-        let headers = self.headers.clone();
-
-        Box::pin(async move {
-            let rsp = handle_request(
-                req,
-                sources,
-                sockets_map,
-                events,
-                shutdown,
-                ws_event_channel_cap,
-            )
-            .await;
-
-            // We insert all the custom headers set in the configuration here,
-            // skipping the ones that are invalid.
-            rsp.map(|mut rsp| {
-                rsp.headers_mut().extend(headers.as_ref().clone());
-                rsp
-            })
-            .or_else(|error| {
-                Ok(response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    error.to_string(),
-                )
-                .expect("Failed to build response"))
-            })
-        })
-    }
-}
-
-enum SubscriptionAction {
-    Subscribe {
-        uri: RuesEventUri,
-        reply: oneshot::Sender<Result<(), SubscriptionError>>,
-    },
-    Unsubscribe {
-        uri: RuesEventUri,
-        reply: oneshot::Sender<Result<(), SubscriptionError>>,
-    },
-}
-
-#[derive(Debug)]
-enum SubscriptionError {
-    NotFound,
-}
-
-async fn handle_stream_rues(
-    sid: SessionId,
-    websocket: HyperWebsocket,
-    events: broadcast::Receiver<RuesEvent>,
-    mut subscriptions: mpsc::Receiver<SubscriptionAction>,
-    mut shutdown: broadcast::Receiver<Infallible>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-) {
-    let mut stream = match websocket.await {
-        Ok(stream) => stream,
-        Err(_) => return,
-    };
-
-    if stream.send(Message::Text(sid.to_string())).await.is_err() {
-        let _ = stream
-            .close(Some(CloseFrame {
-                code: CloseCode::Error,
-                reason: Cow::from("Failed sending session ID"),
-            }))
-            .await;
-        return;
-    }
-
-    let mut subscription_set = HashSet::new();
-
-    let mut events = BroadcastStream::new(events);
-
-    loop {
-        tokio::select! {
-            recv = stream.next() => {
-                match recv {
-                    Some(Ok(Message::Close(msg))) => {
-                        debug!("Closing stream for {sid} due to {msg:?}");
-                        let _ = stream.close(msg).await;
-                        break;
-                    }
-                    Some(Err(e)) => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("Internal error"),
-                        })).await;
-                        warn!("Closing stream for {sid} due to {e}");
-                        break;
-                    }
-                    None => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("No more events"),
-                        })).await;
-                        warn!("Closing stream for {sid} due to no more events");
-                        break;
-                    }
-                    _ => {}
-                }
-            }
-            _ = shutdown.recv() => {
-                let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Away,
-                    reason: Cow::from("Shutting down"),
-                })).await;
-                break;
-            }
-
-            subscription = subscriptions.recv() => {
-                let subscription = match subscription {
-                    Some(subscription) => subscription,
-                    None => {
-                        // If the subscription channel is closed, it means the server has stopped
-                        // communicating with this loop, so we should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
-                        break;
-                    },
-                };
-
-                match subscription {
-                    SubscriptionAction::Subscribe { uri, reply } => {
-                        subscription_set.insert(uri);
-                        let _ = reply.send(Ok(()));
-                    },
-                    SubscriptionAction::Unsubscribe { uri, reply } => {
-                        if subscription_set.remove(&uri) {
-                            let _ = reply.send(Ok(()));
-                        } else {
-                            let _ = reply.send(Err(SubscriptionError::NotFound));
-                        }
-                    },
-                }
-            }
-
-            Some(event) = events.next() => {
-                let mut event = match event {
-                    Ok(event) => event,
-                    Err(_) => {
-                        // If the event channel is closed, it means the
-                        // server has stopped producing events, so we
-                        // should inform the client and stop.
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Away,
-                            reason: Cow::from("Shutting down"),
-                        })).await;
-                        break;
-
-                    }
-                };
-
-                // The event is subscribed to if it matches any of the subscriptions.
-                let mut is_subscribed = false;
-                for sub in &subscription_set {
-                    if sub.matches(&event) {
-                        is_subscribed = true;
-                        break;
-                    }
-                }
-
-                // If the event is subscribed, we send it to the client.
-                if is_subscribed {
-                    event.add_header("Content-Location", event.uri.to_string());
-                    let event = event.to_bytes();
-
-                    // If the event fails sending we close the socket on the client
-                    // and stop processing further.
-                    if stream.send(Message::Binary(event)).await.is_err() {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("Failed sending event"),
-                        })).await;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    let mut sockets = sockets_map.write().await;
-    sockets.remove(&sid);
-}
-
-// ExecutionError is intentionally large; boxing it would add complexity
-// without meaningful benefit here.
-#[allow(clippy::result_large_err)]
-fn response(
-    status: StatusCode,
-    body: impl Into<Bytes>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    Ok(Response::builder()
-        .status(status)
-        .header(RUSK_VERSION_HEADER, VERSION.as_str())
-        .body(Full::new(body.into()).into())
-        .expect("Failed to build response"))
-}
-
-async fn handle_request_rues<H: HandleRequest>(
-    mut req: Request<Incoming>,
-    handler: Arc<H>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    if hyper_tungstenite::is_upgrade_request(&req) {
-        let (subscription_sender, subscriptions) =
-            mpsc::channel(ws_event_channel_cap);
-
-        let ws_config = tungstenite::protocol::WebSocketConfig {
-            max_message_size: Some(MAX_WS_INBOUND_MESSAGE_BYTES),
-            max_frame_size: Some(MAX_WS_INBOUND_FRAME_BYTES),
-            ..Default::default()
-        };
-        let (response, websocket) =
-            hyper_tungstenite::upgrade(&mut req, Some(ws_config))?;
-
-        let mut sockets = sockets_map.write().await;
-
-        // This is a new WebSocket connection, so we generate a new random ID
-        // and create a new channel for it.
-        let mut sid = rand::random();
-        while sockets.contains_key(&sid) {
-            sid = rand::random();
-        }
-        sockets.insert(sid, subscription_sender);
-
-        task::spawn(handle_stream_rues(
-            sid,
-            websocket,
-            events,
-            subscriptions,
-            shutdown,
-            sockets_map.clone(),
-        ));
-
-        Ok(response.map(Into::into))
-    } else if req.method() == Method::POST {
-        if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return response(StatusCode::BAD_REQUEST, err.to_string());
-        }
-
-        let (event, binary_request) =
-            match RuesDispatchEvent::from_request(req).await {
-                Ok(event) => event,
-                Err(err) => {
-                    let status = StatusCode::from_u16(err.http_code())
-                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-                    return response(status, err.to_string());
-                }
-            };
-        let mut resp_headers = event.x_headers();
-        let (responder, mut receiver) = mpsc::unbounded_channel();
-        handle_execution_rues(handler, event, responder).await;
-
-        let execution_response = receiver
-            .recv()
-            .await
-            .expect("An execution should always return a response");
-        resp_headers.extend(execution_response.headers.clone());
-        let binary_response = binary_request || execution_response.force_binary;
-        let is_empty = execution_response.error.is_none()
-            && matches!(execution_response.data, DataType::None);
-        let mut resp = execution_response.into_http(binary_response)?;
-        if is_empty {
-            *resp.status_mut() = StatusCode::ACCEPTED;
-        }
-
-        for (k, v) in resp_headers {
-            let k = HeaderName::from_str(&k)?;
-            let v = match v {
-                serde_json::Value::String(s) => HeaderValue::from_str(&s),
-                serde_json::Value::Null => HeaderValue::from_str(""),
-                _ => HeaderValue::from_str(&v.to_string()),
-            }?;
-            resp.headers_mut().append(k, v);
-        }
-
-        Ok(resp)
-    } else {
-        if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return response(StatusCode::BAD_REQUEST, err.to_string());
-        }
-
-        let sid = match SessionId::parse_from_req(&req) {
-            None => {
-                return response(
-                    StatusCode::FAILED_DEPENDENCY,
-                    "{\"error\":\"Session ID not provided or invalid\"}",
-                );
-            }
-            Some(sid) => sid,
-        };
-
-        let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
-            None => {
-                return response(
-                    StatusCode::NOT_FOUND,
-                    "{{\"error\":\"Invalid URL path\n\"}}",
-                );
-            }
-            Some(s) => s,
-        };
-
-        let action_sender = match sockets_map.read().await.get(&sid) {
-            Some(sender) => sender.clone(),
-            None => {
-                return response(
-                    StatusCode::FAILED_DEPENDENCY,
-                    "{\"error\":\"Session ID not provided or invalid\"}",
-                );
-            }
-        };
-
-        let (action, reply) = match *req.method() {
-            Method::GET => {
-                let (reply, receiver) = oneshot::channel();
-                (SubscriptionAction::Subscribe { uri, reply }, receiver)
-            }
-            Method::DELETE => {
-                let (reply, receiver) = oneshot::channel();
-                (SubscriptionAction::Unsubscribe { uri, reply }, receiver)
-            }
-            _ => {
-                return response(
-                    StatusCode::METHOD_NOT_ALLOWED,
-                    "{\"error\":\"Method not allowed\"}",
-                );
-            }
-        };
-
-        if action_sender.send(action).await.is_err() {
-            return response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "{\"error\":\"Failed consuming request\"}",
-            );
-        }
-
-        match reply.await {
-            Ok(Ok(())) => response(StatusCode::OK, ""),
-            Ok(Err(SubscriptionError::NotFound)) => response(
-                StatusCode::NOT_FOUND,
-                "{\"error\":\"Subscription not found\"}",
-            ),
-            // TODO: consider returning 424 instead of 500 for reply channel
-            // closure during session teardown
-            Err(_) => response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "{\"error\":\"Failed consuming request\"}",
-            ),
-        }
-    }
-}
-
-fn validate_rusk_version_headers(headers: &HeaderMap) -> Result<(), HttpError> {
-    let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
-    let version = match headers.get(RUSK_VERSION_HEADER) {
-        Some(value) => {
-            let value_str = value.to_str().map_err(|_| {
-                HttpError::VersionMismatch(
-                    "Invalid Rusk-Version header encoding".to_string(),
-                )
-            })?;
-            Some(serde_json::Value::String(value_str.to_owned()))
-        }
-        None => None,
-    };
-    check_rusk_version(version.as_ref(), strict)
-}
-
-async fn handle_request<H>(
-    req: Request<Incoming>,
-    sources: Arc<H>,
-    sockets_map: Arc<
-        RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
-    >,
-    events: broadcast::Receiver<RuesEvent>,
-    shutdown: broadcast::Receiver<Infallible>,
-    ws_event_channel_cap: usize,
-) -> Result<Response<FullOrStreamBody>, ExecutionError>
-where
-    H: HandleRequest,
-{
-    let path = req.uri().path();
-
-    // If the request is a RUES request, we handle it differently.
-    if path.starts_with(RUES_LOCATION_PREFIX) {
-        return handle_request_rues(
-            req,
-            sources.clone(),
-            sockets_map,
-            events,
-            shutdown,
-            ws_event_channel_cap,
-        )
-        .await;
-    }
-
-    #[cfg(feature = "http-wasm")]
-    {
-        // Map request path -> wasm bytes
-        if let Some(wallet_wasm) = match path {
-            "/static/drivers/wallet-core.wasm"
-            | "/static/drivers/wallet-core-1.0.1.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.0.1.wasm").to_vec(),
-            ),
-            "/static/drivers/wallet-core-1.3.0.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.3.0.wasm").to_vec(),
-            ),
-            "/static/drivers/wallet-core-1.6.0.wasm" => Some(
-                include_bytes!("../assets/wallet_core-1.6.0.wasm").to_vec(),
-            ),
-            _ => None,
-        } {
-            let mut response = Response::new(Full::from(wallet_wasm).into());
-            let headers = response.headers_mut();
-            headers.append(
-                "Content-Type",
-                HeaderValue::from_static("application/wasm"),
-            );
-            headers.append(
-                "Cache-Control",
-                HeaderValue::from_static("public, max-age=31536000, immutable"),
-            );
-            return Ok(response);
-        }
-    }
-
-    sources.handle_http(req).await
-}
-
-#[cfg(feature = "chain")]
-fn is_graphql_path(path: &str) -> bool {
-    matches!(path, "/graphql" | "/graphql/")
-}
-
-// ExecutionError is intentionally large; boxing it would add complexity
-// without meaningful benefit here.
-#[allow(clippy::result_large_err)]
-#[cfg(feature = "chain")]
-fn graphql_batch_response(
-    status: StatusCode,
-    batch_response: BatchResponse,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    let body = serde_json::to_vec(&batch_response)?;
-    let mut response = response(status, body)?;
-    let headers = response.headers_mut();
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    for (name, value) in batch_response.http_headers_iter() {
-        let name = HeaderName::from_bytes(name.as_str().as_bytes())?;
-        let value = HeaderValue::from_bytes(value.as_bytes())?;
-        headers.append(name, value);
-    }
-    Ok(response)
-}
-
-// ExecutionError is intentionally large; boxing it would add complexity
-// without meaningful benefit here.
-#[allow(clippy::result_large_err)]
-#[cfg(feature = "chain")]
-fn graphql_error_response(
-    status: StatusCode,
-    message: impl Into<String>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    let error = ServerError::new(message, None);
-    let response = GraphqlResponse::from_errors(vec![error]);
-    graphql_batch_response(status, BatchResponse::from(response))
-}
-
-#[cfg(feature = "chain")]
-fn graphql_parse_error_status(error: &ParseRequestError) -> StatusCode {
-    match error {
-        ParseRequestError::PayloadTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
-        ParseRequestError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        _ => StatusCode::BAD_REQUEST,
-    }
-}
-
-#[cfg(feature = "chain")]
-async fn handle_graphql_http(
-    handler: &dyn GraphqlHandler,
-    req: Request<Incoming>,
-) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-    match *req.method() {
-        Method::GET => {
-            let query = req.uri().query().unwrap_or_default();
-            if query.is_empty() {
-                return graphql_error_response(
-                    StatusCode::BAD_REQUEST,
-                    "GraphQL GET requests require a query parameter",
-                );
-            }
-
-            let request = match parse_query_string(query) {
-                Ok(request) => request,
-                Err(err) => {
-                    return graphql_error_response(
-                        graphql_parse_error_status(&err),
-                        err.to_string(),
-                    );
-                }
-            };
-
-            let batch_response =
-                handler.execute_graphql(BatchRequest::Single(request)).await;
-            graphql_batch_response(StatusCode::OK, batch_response)
-        }
-        Method::POST => {
-            let (parts, body) = req.into_parts();
-            let content_type = parts
-                .headers
-                .get(CONTENT_TYPE)
-                .and_then(|v| v.to_str().ok());
-            let body = match Limited::new(body, MAX_GRAPHQL_REQUEST_BODY_BYTES)
-                .collect()
-                .await
-            {
-                Ok(collected) => collected.to_bytes().to_vec(),
-                Err(err) => {
-                    if err.downcast_ref::<LengthLimitError>().is_some() {
-                        return graphql_error_response(
-                            StatusCode::PAYLOAD_TOO_LARGE,
-                            format!(
-                                "Request body exceeds {MAX_GRAPHQL_REQUEST_BODY_BYTES} bytes"
-                            ),
-                        );
-                    }
-
-                    return graphql_error_response(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        err.to_string(),
-                    );
-                }
-            };
-            let reader = Cursor::new(body);
-
-            let batch_request = receive_batch_body(
-                content_type,
-                reader,
-                MultipartOptions::default(),
-            )
-            .await;
-
-            match batch_request {
-                Ok(batch_request) => {
-                    let batch_response =
-                        handler.execute_graphql(batch_request).await;
-                    graphql_batch_response(StatusCode::OK, batch_response)
-                }
-                Err(err) => graphql_error_response(
-                    graphql_parse_error_status(&err),
-                    err.to_string(),
-                ),
-            }
-        }
-        _ => {
-            let mut response = graphql_error_response(
-                StatusCode::METHOD_NOT_ALLOWED,
-                "Method not allowed",
-            )?;
-            response
-                .headers_mut()
-                .insert(ALLOW, HeaderValue::from_static("GET, POST"));
-            Ok(response)
-        }
-    }
-}
-
-async fn handle_execution_rues<H>(
-    sources: Arc<H>,
-    event: RuesDispatchEvent,
-    responder: mpsc::UnboundedSender<EventResponse>,
-) where
-    H: HandleRequest,
-{
-    let mut rsp = sources
-        .handle_rues(&event)
-        .await
-        .map(|data| {
-            let (data, mut headers, force_binary) = data.into_inner();
-            headers.append(&mut event.x_headers());
-            EventResponse {
-                data,
-                error: None,
-                headers,
-                force_binary,
-            }
-        })
-        .unwrap_or_else(|e| EventResponse {
-            headers: event.x_headers(),
-            data: DataType::None,
-            error: Some((e.to_string(), e.http_code())),
-            force_binary: false,
-        });
-
-    rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
-    let _ = responder.send(rsp);
-}
-
-#[async_trait]
-pub trait HandleRequest: Send + Sync + 'static {
-    fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
-    async fn handle_rues(
-        &self,
-        request: &RuesDispatchEvent,
-    ) -> HttpResult<ResponseData>;
-    async fn handle_http(
-        &self,
-        req: Request<Incoming>,
-    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
-        let _ = req;
-        Err(ExecutionError::Other("Unsupported path".to_string()))
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::net::SocketAddr;
+    use std::error::Error as _;
+    use std::net::{SocketAddr, TcpStream};
     use std::{fs, thread};
-
-    use super::*;
 
     #[cfg(feature = "chain")]
     use async_graphql::{
-        BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Object,
-        Schema,
+        BatchRequest, BatchResponse, Context, EmptyMutation, EmptySubscription,
+        Object, Schema,
     };
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
     use dusk_core::abi::ContractId;
-    use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
-    use std::net::TcpStream;
-    use tungstenite::client;
+    use tungstenite::{Message, client};
 
-    /// A [`HandleRequest`] implementation that returns the same data
+    use super::*;
+    use crate::http::rues::event::{BinaryWrapper, RequestData};
+
+    /// A [`TestRequestHandler`] implementation that returns the same data
     struct TestHandle;
+    impl TestHandle {
+        fn ok() -> HttpResult<ResponseData> {
+            Ok(ResponseData::new("ok".to_string()))
+        }
+    }
+
+    struct SlowRuesHandle {
+        entered: std::sync::Arc<tokio::sync::Notify>,
+        delay: std::time::Duration,
+    }
 
     const STREAMED_DATA: &[&[u8; 16]] = &[
         b"I am call data 0",
@@ -1006,16 +217,14 @@ mod tests {
     ];
 
     #[async_trait]
-    impl HandleRequest for TestHandle {
-        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
-            true
-        }
-        async fn handle_rues(
+    impl TestRequestHandler for TestHandle {
+        async fn handle_test(
             &self,
+            topic: &str,
             request: &RuesDispatchEvent,
         ) -> HttpResult<ResponseData> {
-            let response = match request.uri.inner() {
-                ("test", _, "stream") => {
+            let response = match topic {
+                "stream" => {
                     let (sender, rec) = std::sync::mpsc::channel();
                     thread::spawn(move || {
                         for f in STREAMED_DATA.iter() {
@@ -1024,16 +233,34 @@ mod tests {
                     });
                     ResponseData::new(rec)
                 }
-                ("test", _, "echo") => {
-                    ResponseData::new(request.data.as_bytes().to_vec())
+                "echo" => ResponseData::new(request.data.as_bytes().to_vec()),
+                "no-content" => ResponseData::new(DataType::None),
+                "internal-error" => {
+                    return Err(HttpError::internal("sensitive details"));
                 }
-                ("test", _, "no-content") => ResponseData::new(DataType::None),
-                ("graphql", _, "query") => {
-                    ResponseData::new(serde_json::json!({ "data": "ok" }))
-                }
+                "invalid-header" => ResponseData::new("ok".to_string())
+                    .with_header("bad\nheader", "value"),
                 _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
+        }
+    }
+
+    #[async_trait]
+    impl TestRequestHandler for SlowRuesHandle {
+        async fn handle_test(
+            &self,
+            topic: &str,
+            request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            match topic {
+                "slow" => {
+                    self.entered.notify_waiters();
+                    tokio::time::sleep(self.delay).await;
+                    Ok(ResponseData::new(request.data.as_bytes().to_vec()))
+                }
+                _ => Err(HttpError::Unsupported),
+            }
         }
     }
 
@@ -1065,33 +292,242 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "chain")]
+    struct TestGraphqlHttpHeaderHandler;
+
+    #[cfg(feature = "chain")]
+    struct GraphqlHeaderQuery;
+
+    #[cfg(feature = "chain")]
+    #[Object]
+    impl GraphqlHeaderQuery {
+        async fn ping(&self, ctx: &Context<'_>) -> &'static str {
+            let _ = ctx
+                .insert_http_header("x-graphql-test-header", "set-by-handler");
+            "pong"
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl GraphqlHandler for TestGraphqlHttpHeaderHandler {
+        async fn execute_graphql(
+            &self,
+            request: BatchRequest,
+        ) -> BatchResponse {
+            let schema = Schema::build(
+                GraphqlHeaderQuery,
+                EmptyMutation,
+                EmptySubscription,
+            )
+            .finish();
+            schema.execute_batch(request).await
+        }
+    }
+
+    // Keep these methods explicit so the tests still show which routes are
+    // owned by each service trait.
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl ChainRequestHandler for TestHandle {
+        async fn graphql_query(
+            &self,
+            request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            let gql_query = request.data.as_string();
+
+            if gql_query.trim().is_empty() {
+                return Ok(ResponseData::new("schema".to_string()));
+            }
+
+            if gql_query.contains("missing") {
+                return Ok(ResponseData::new(serde_json::json!({
+                    "data": null,
+                    "errors": [{ "message": "missing field" }],
+                })));
+            }
+
+            Ok(ResponseData::new(serde_json::json!({ "data": "ok" })))
+        }
+        async fn transactions(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn network(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn node(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn account(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn blocks(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn blobs(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn stats(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl RuskRequestHandler for TestHandle {
+        async fn node(
+            &self,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contracts(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn driver(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract_owner(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+
+        async fn contract(
+            &self,
+            _entity: &str,
+            _topic: &str,
+            _request: &RuesDispatchEvent,
+        ) -> HttpResult<ResponseData> {
+            Self::ok()
+        }
+    }
+
     const EVENT_CHANNEL_CAP: usize = 16;
     const WS_EVENT_CHANNEL_CAP: usize = 2;
 
-    async fn bind_test_server<H: HandleRequest>(
-        handler: H,
-    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        bind_test_server_with_tls(handler, None).await
+    #[derive(Default)]
+    struct TestServerOptions {
+        cert_and_key: Option<(&'static str, &'static str)>,
+        policy: HttpPolicyConfig,
+        headers: HeaderMap,
     }
 
-    async fn bind_test_server_with_tls<H: HandleRequest>(
-        handler: H,
-        cert_and_key: Option<(&'static str, &'static str)>,
+    async fn bind_test_server_with_services(
+        services: HttpHandlers,
+        options: TestServerOptions,
     ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
-        let (event_sender, event_receiver) =
+        let (event_sender, _event_receiver) =
             broadcast::channel(EVENT_CHANNEL_CAP);
         let (_server, local_addr) = HttpServer::bind(
-            handler,
-            event_receiver,
-            WS_EVENT_CHANNEL_CAP,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
+            services,
+            event_sender.clone(),
+            HttpServerConfig {
+                address: "localhost:0".to_string(),
+                cert: options.cert_and_key.map(|(c, _)| PathBuf::from(c)),
+                key: options.cert_and_key.map(|(_, k)| PathBuf::from(k)),
+                enable_docs: false,
+                headers: options.headers,
+                ws_event_channel_cap: WS_EVENT_CHANNEL_CAP,
+                policy: options.policy,
+            },
         )
         .await
         .expect("Binding the server to the address should succeed");
 
         (_server, local_addr, event_sender)
+    }
+
+    async fn bind_test_server<H: TestRequestHandler>(
+        handler: H,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        bind_test_server_with_options(handler, TestServerOptions::default())
+            .await
+    }
+
+    async fn bind_test_server_with_headers<H: TestRequestHandler>(
+        handler: H,
+        headers: HeaderMap,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        bind_test_server_with_options(
+            handler,
+            TestServerOptions {
+                headers,
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn bind_test_server_with_options<H: TestRequestHandler>(
+        handler: H,
+        options: TestServerOptions,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        let mut services = HttpHandlers::default();
+        services.set_test_handler(handler);
+        bind_test_server_with_services(services, options).await
     }
 
     fn connect_ws(
@@ -1116,19 +552,167 @@ mod tests {
         (stream, sid)
     }
 
-    async fn assert_bad_request_contains(
+    async fn assert_status_contains(
         response: reqwest::Response,
+        status: StatusCode,
         expected: &str,
     ) {
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), status);
+
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "application/json");
+
         let body = response
             .text()
             .await
             .expect("Reading response body should succeed");
+        let json: serde_json::Value = serde_json::from_str(&body)
+            .expect("Error body should be valid JSON");
+        let error_msg = json
+            .get("error")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
         assert!(
-            body.contains(expected),
+            error_msg.contains(expected),
             "Expected error containing '{expected}', got: {body}"
         );
+    }
+
+    async fn assert_bad_request_contains(
+        response: reqwest::Response,
+        expected: &str,
+    ) {
+        assert_status_contains(response, StatusCode::BAD_REQUEST, expected)
+            .await;
+    }
+
+    async fn assert_graphql_error_contains(
+        response: reqwest::Response,
+        status: StatusCode,
+        expected: &str,
+    ) {
+        assert_eq!(response.status(), status);
+
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "application/json");
+
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        let json: serde_json::Value = serde_json::from_str(&body)
+            .expect("Error body should be valid JSON");
+        let error_msg = json
+            .get("errors")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|errors| errors.first())
+            .and_then(|error| error.get("message"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        assert!(
+            error_msg.contains(expected),
+            "Expected GraphQL error containing '{expected}', got: {body}"
+        );
+    }
+
+    #[cfg(feature = "chain")]
+    async fn assert_graphql_ping_response(response: reqwest::Response) {
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[cfg(feature = "http-wasm")]
+    async fn assert_wasm_response(response: reqwest::Response, path: &str) {
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response_header(&response, "Content-Type"),
+            "application/wasm",
+        );
+        assert_eq!(
+            response_header(&response, "Cache-Control"),
+            "public, max-age=31536000, immutable",
+        );
+        let body = response
+            .bytes()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            !body.is_empty(),
+            "WASM response body should not be empty for {path}"
+        );
+    }
+
+    fn response_header(response: &reqwest::Response, header: &str) -> String {
+        response
+            .headers()
+            .get(header)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string()
+    }
+
+    fn assert_retry_after_positive_integer(response: &reqwest::Response) {
+        let retry_after = response
+            .headers()
+            .get("Retry-After")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert!(
+            !retry_after.is_empty(),
+            "429 responses should carry Retry-After",
+        );
+        let retry_after = retry_after
+            .parse::<u64>()
+            .expect("Retry-After should be a positive integer");
+        assert!(retry_after >= 1, "Retry-After should be at least 1 second");
+    }
+
+    fn is_oversized_upload_transport_error(err: &reqwest::Error) -> bool {
+        let mut current = err.source();
+        while let Some(source) = current {
+            let message = source.to_string().to_ascii_lowercase();
+            if message.contains("connection reset")
+                || message.contains("broken pipe")
+            {
+                return true;
+            }
+            current = source.source();
+        }
+
+        let message = err.to_string().to_ascii_lowercase();
+        message.contains("connection reset") || message.contains("broken pipe")
+    }
+
+    async fn assert_oversized_body_rejection(
+        result: Result<reqwest::Response, reqwest::Error>,
+    ) {
+        match result {
+            Ok(response) => {
+                assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+            }
+            Err(err) => {
+                // RequestBodyLimitLayer can reject from Content-Length before
+                // consuming the body. Depending on socket timing, reqwest may
+                // either observe the 413 response first or the peer closing the
+                // connection while the upload is still in flight.
+                assert!(
+                    is_oversized_upload_transport_error(&err),
+                    "Expected 413 or early connection close for oversized upload, got: {err:?}",
+                );
+            }
+        }
     }
 
     #[tokio::test]
@@ -1158,6 +742,26 @@ mod tests {
             request_bytes, response_bytes,
             "Data received the same as sent"
         );
+    }
+
+    #[tokio::test]
+    async fn unsupported_http_path_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Path not found",
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -1192,10 +796,413 @@ mod tests {
             .post(format!("http://{local_addr}/on/test/echo"))
             .body(oversized)
             .send()
+            .await;
+
+        assert_oversized_body_rejection(response).await;
+    }
+
+    #[tokio::test]
+    async fn policy_acl_denied_request_returns_forbidden() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.acl.rules.push(policy::HttpPolicyAclRule {
+            id: "deny-test-echo".to_string(),
+            enabled: true,
+            action: policy::HttpPolicyAclAction::Deny,
+            path: "/on/test/echo".to_string(),
+            method: vec!["POST".to_string()],
+            headers: HashMap::new(),
+        });
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
             .await
             .expect("Requesting should succeed");
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains("forbidden"),
+            "Forbidden response body should contain error marker"
+        );
+    }
+
+    #[tokio::test]
+    async fn policy_graphql_class_rate_limit_rejects_with_too_many_requests() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.graphql = policy::HttpPolicyClassLimit {
+            rps: 1,
+            burst: 1,
+            concurrency: 64,
+        };
+
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_tx_propagate_class_rate_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.tx_propagate =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .post(format!("http://{local_addr}/on/transactions/propagate"))
+            .body("tx")
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(format!("http://{local_addr}/on/transactions/propagate"))
+            .body("tx")
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[tokio::test]
+    async fn policy_non_rues_paths_use_other_http_limits() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_http =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let first = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::NOT_FOUND);
+
+        let second = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[tokio::test]
+    async fn configured_headers_are_added_to_policy_rejections() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let mut forbidden_policy = HttpPolicyConfig::default();
+        forbidden_policy.acl.rules.push(policy::HttpPolicyAclRule {
+            id: "deny-test-echo".to_string(),
+            enabled: true,
+            action: policy::HttpPolicyAclAction::Deny,
+            path: "/on/test/echo".to_string(),
+            method: vec!["POST".to_string()],
+            headers: HashMap::new(),
+        });
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    headers: headers.clone(),
+                    policy: forbidden_policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let forbidden = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+        assert_eq!(forbidden.status(), StatusCode::FORBIDDEN);
+        assert_eq!(response_header(&forbidden, "x-test-header"), "test-value");
+
+        let mut rate_limited_policy = HttpPolicyConfig::default();
+        rate_limited_policy.global_limits.classes.other_http =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    headers,
+                    policy: rate_limited_policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let first = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("First request should complete");
+        assert_eq!(first.status(), StatusCode::NOT_FOUND);
+
+        let second = client
+            .get(format!("http://{local_addr}/unknown"))
+            .send()
+            .await
+            .expect("Second request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(response_header(&second, "x-test-header"), "test-value");
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[tokio::test]
+    async fn policy_other_rues_concurrency_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.other_rues =
+            policy::HttpPolicyClassLimit {
+                rps: 2,
+                burst: 2,
+                concurrency: 1,
+            };
+
+        let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_options(
+                SlowRuesHandle {
+                    entered: entered.clone(),
+                    delay: std::time::Duration::from_millis(250),
+                },
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+
+        let first_client = client.clone();
+        let first_request = tokio::spawn(async move {
+            first_client
+                .post(format!("http://{local_addr}/on/test/slow"))
+                .body("first")
+                .send()
+                .await
+                .expect("First request should complete")
+        });
+
+        entered.notified().await;
+
+        let second = client
+            .post(format!("http://{local_addr}/on/test/slow"))
+            .body("second")
+            .send()
+            .await
+            .expect("Second request should complete");
+        let first = first_request
+            .await
+            .expect("First request task should complete");
+
+        assert_eq!(first.status(), StatusCode::OK);
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_contract_and_feeder_query_classes_use_distinct_limits() {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.contract_query =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+        policy.global_limits.classes.feeder_query =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_rusk_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let path = "http://{local_addr}/on/contracts:abcd/query";
+
+        let first_contract = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .body("query")
+            .send()
+            .await
+            .expect("First contract query should complete");
+        assert_eq!(first_contract.status(), StatusCode::OK);
+
+        let second_contract = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .body("query")
+            .send()
+            .await
+            .expect("Second contract query should complete");
+        assert_eq!(second_contract.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second_contract);
+
+        let first_feeder = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .header("Rusk-Feeder", "1")
+            .body("query")
+            .send()
+            .await
+            .expect("First feeder query should complete");
+        assert_eq!(first_feeder.status(), StatusCode::OK);
+
+        let second_feeder = client
+            .post(path.replace("{local_addr}", &local_addr.to_string()))
+            .header("Rusk-Feeder", "1")
+            .body("query")
+            .send()
+            .await
+            .expect("Second feeder query should complete");
+        assert_eq!(second_feeder.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second_feeder);
+    }
+
+    #[cfg(feature = "chain")]
+    #[tokio::test]
+    async fn policy_upload_driver_class_rate_limit_rejects_with_too_many_requests()
+     {
+        let mut policy = HttpPolicyConfig::default();
+        policy.global_limits.classes.upload_driver =
+            policy::HttpPolicyClassLimit {
+                rps: 1,
+                burst: 1,
+                concurrency: 64,
+            };
+
+        let mut services = HttpHandlers::default();
+        services.set_rusk_handler(TestHandle);
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions {
+                    policy,
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let path =
+            format!("http://{local_addr}/on/contract:abcd/upload_driver");
+
+        let first = client
+            .post(&path)
+            .body("driver")
+            .send()
+            .await
+            .expect("First upload request should complete");
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let second = client
+            .post(&path)
+            .body("driver")
+            .send()
+            .await
+            .expect("Second upload request should complete");
+        assert_eq!(second.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_retry_after_positive_integer(&second);
     }
 
     #[tokio::test]
@@ -1215,10 +1222,9 @@ mod tests {
             ))
             .body(oversized)
             .send()
-            .await
-            .expect("Requesting should succeed");
+            .await;
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_oversized_body_rejection(response).await;
     }
 
     #[tokio::test]
@@ -1266,6 +1272,123 @@ mod tests {
         .await;
     }
 
+    #[tokio::test]
+    async fn post_rues_on_without_path_rejected() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        // POST to /on (WS-only endpoint) is rejected by axum because
+        // the WebSocketUpgrade extractor requires an upgrade request.
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_utf8_payload_returns_unprocessable_entity() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body(vec![0xff, 0xfe])
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid utf8",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn request_parse_other_http_internal_is_sanitized() {
+        let response =
+            error::ApiError::from(HttpError::internal("sensitive details"))
+                .into_response();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should be readable");
+        let body = String::from_utf8(body.to_vec())
+            .expect("response body should be utf-8 json");
+
+        assert!(body.contains("Internal server error"));
+        assert!(!body.contains("sensitive details"));
+    }
+
+    #[tokio::test]
+    async fn post_rues_unsupported_route_returns_json_error() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_IMPLEMENTED,
+            "Unsupported operation",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_internal_handler_error_is_sanitized() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/internal-error"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_response_header_returns_unprocessable_entity() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/invalid-header"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid header",
+        )
+        .await;
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn get_delete_rues_strict_without_version_returns_bad_request() {
         let (_server, local_addr, _event_sender) =
@@ -1305,6 +1428,112 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn rues_session_and_path_validation_matrix() {
+        struct Case {
+            method: reqwest::Method,
+            path: String,
+            session_id: Option<&'static str>,
+            expected_status: StatusCode,
+            expected_error: &'static str,
+        }
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let contract_id_hex = hex::encode(ContractId::from_bytes([8; 32]));
+        let topic_path = format!("/on/contracts:{contract_id_hex}/topic");
+        let client = reqwest::Client::new();
+
+        let cases = vec![
+            Case {
+                method: reqwest::Method::GET,
+                path: topic_path.clone(),
+                session_id: None,
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            // Non-WS requests to /on (without subpath) are rejected by
+            // axum's WebSocketUpgrade extractor (400). Only /on/{*path}
+            // cases are validated here.
+            Case {
+                method: reqwest::Method::GET,
+                path: topic_path.clone(),
+                session_id: Some("invalid-session-id"),
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            Case {
+                method: reqwest::Method::DELETE,
+                path: topic_path,
+                session_id: Some("invalid-session-id"),
+                expected_status: StatusCode::FAILED_DEPENDENCY,
+                expected_error: "Session ID not provided or invalid",
+            },
+            // Non-WS requests to /on are rejected by axum's
+            // WebSocketUpgrade extractor (400 Bad Request). Tests for
+            // /on/{*path} method routing live in
+            // put_rues_returns_method_not_allowed.
+        ];
+
+        for case in cases {
+            let mut req = client.request(
+                case.method.clone(),
+                format!("http://{local_addr}{}", case.path),
+            );
+            if let Some(session_id) = case.session_id {
+                req = req.header("Rusk-Session-Id", session_id);
+            }
+            let response = req.send().await.expect("Requesting should succeed");
+            assert_status_contains(
+                response,
+                case.expected_status,
+                case.expected_error,
+            )
+            .await;
+        }
+    }
+
+    #[tokio::test]
+    async fn put_rues_returns_method_not_allowed() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        // Axum's method router rejects PUT at the routing layer — no WS
+        // session needed.
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([7; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+        let response = client
+            .put(path)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        let allow_header = response
+            .headers()
+            .get(ALLOW)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+
+        // Axum lists all registered methods for the route.
+        assert!(
+            allow_header.contains("DELETE"),
+            "Allow header should include DELETE: {allow_header}"
+        );
+        assert!(
+            allow_header.contains("GET"),
+            "Allow header should include GET: {allow_header}"
+        );
+        assert!(
+            allow_header.contains("POST"),
+            "Allow header should include POST: {allow_header}"
+        );
+    }
+
+    #[tokio::test]
     async fn https_query() {
         let provider =
             tokio_rustls::rustls::crypto::aws_lc_rs::default_provider();
@@ -1318,8 +1547,14 @@ mod tests {
             .expect("cert should be valid");
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server_with_tls(TestHandle, Some((cert_path, key_path)))
-                .await;
+            bind_test_server_with_options(
+                TestHandle,
+                TestServerOptions {
+                    cert_and_key: Some((cert_path, key_path)),
+                    ..Default::default()
+                },
+            )
+            .await;
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
@@ -1398,6 +1633,7 @@ mod tests {
                 target: SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [0; 32],
         });
@@ -1409,6 +1645,7 @@ mod tests {
                 target: MAYBE_SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [1; 32],
         });
@@ -1419,6 +1656,7 @@ mod tests {
                 target: NON_SUB_CONTRACT_ID,
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
+                reverted: false,
             },
             origin: [2; 32],
         });
@@ -1511,6 +1749,48 @@ mod tests {
             }
             Err(_) => {}
         }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_handshake_returns_switching_protocols_and_session_id()
+     {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, response) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
+        let upgrade = response
+            .headers()
+            .get("Upgrade")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        assert_eq!(upgrade, "websocket");
+        assert!(
+            response.headers().contains_key("Sec-WebSocket-Accept"),
+            "Handshake should contain Sec-WebSocket-Accept"
+        );
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid_text = first_message
+            .into_text()
+            .expect("Session ID should come in a text message");
+        assert_eq!(
+            sid_text.len(),
+            32,
+            "Session ID should be a 16-byte hex string"
+        );
+        assert!(
+            SessionId::parse(&sid_text).is_some(),
+            "Session ID should be parseable"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -1612,9 +1892,17 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "chain")]
     async fn legacy_graphql_query_still_works() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+
         let (_server, local_addr, _event_sender) =
-            bind_test_server(TestHandle).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1634,12 +1922,71 @@ mod tests {
 
     #[tokio::test]
     #[cfg(feature = "chain")]
-    async fn graphql_post_query() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+    async fn legacy_graphql_empty_body_returns_schema() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.text().await.expect("Response should have body");
+        assert_eq!(body, "schema");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn legacy_graphql_invalid_query_returns_errors() {
+        let mut services = HttpHandlers::default();
+        services.set_chain_handler(TestHandle);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .body("{ missing }")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert!(payload["errors"].is_array());
+        assert_eq!(payload["errors"][0]["message"], "missing field");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_post_query() {
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1661,11 +2008,15 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_oversized_body_returns_payload_too_large() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let oversized = vec![b'a'; MAX_GRAPHQL_REQUEST_BODY_BYTES + 1];
@@ -1674,20 +2025,23 @@ mod tests {
             .header("Content-Type", "application/json")
             .body(oversized)
             .send()
-            .await
-            .expect("Requesting should succeed");
+            .await;
 
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_oversized_body_rejection(response).await;
     }
 
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_invalid_query_returns_errors() {
-        let mut handler = DataSources::default();
-        handler.set_graphql_handler(TestGraphqlHandler);
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHandler);
 
         let (_server, local_addr, _event_sender) =
-            bind_test_server(handler).await;
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1705,6 +2059,236 @@ mod tests {
             .expect("Response should be JSON");
         assert!(payload["errors"].is_array());
         assert!(!payload["errors"].as_array().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_response_headers_from_handler_are_preserved() {
+        let mut services = HttpHandlers::default();
+        services.set_graphql_handler(TestGraphqlHttpHeaderHandler);
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_services(
+                services,
+                TestServerOptions::default(),
+            )
+            .await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let header = response
+            .headers()
+            .get("x-graphql-test-header")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(header, "set-by-handler");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_route_behavior_matrix() {
+        struct Case {
+            method: reqwest::Method,
+            path: &'static str,
+            configure_handler: bool,
+            request_body: Option<&'static str>,
+            expected_status: StatusCode,
+            expected_error: Option<&'static str>,
+            expected_allow: Option<&'static str>,
+            expect_ping: bool,
+        }
+
+        let cases = [
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql?query=%7Bping%7D",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::OK,
+                expected_error: None,
+                expected_allow: None,
+                expect_ping: true,
+            },
+            Case {
+                method: reqwest::Method::POST,
+                path: "/graphql/",
+                configure_handler: true,
+                request_body: Some(r#"{"query":"{ ping }"}"#),
+                expected_status: StatusCode::OK,
+                expected_error: None,
+                expected_allow: None,
+                expect_ping: true,
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::BAD_REQUEST,
+                expected_error: Some("require a query parameter"),
+                expected_allow: None,
+                expect_ping: false,
+            },
+            Case {
+                method: reqwest::Method::PUT,
+                path: "/graphql",
+                configure_handler: true,
+                request_body: None,
+                expected_status: StatusCode::METHOD_NOT_ALLOWED,
+                expected_error: None,
+                expected_allow: None,
+                expect_ping: false,
+            },
+            Case {
+                method: reqwest::Method::GET,
+                path: "/graphql?query=%7Bping%7D",
+                configure_handler: false,
+                request_body: None,
+                expected_status: StatusCode::NOT_FOUND,
+                expected_error: Some("GraphQL endpoint not configured"),
+                expected_allow: None,
+                expect_ping: false,
+            },
+        ];
+
+        let client = reqwest::Client::new();
+        for case in cases {
+            let mut services = HttpHandlers::default();
+            if case.configure_handler {
+                services.set_graphql_handler(TestGraphqlHandler);
+            }
+            let (_server, local_addr, _event_sender) =
+                bind_test_server_with_services(
+                    services,
+                    TestServerOptions::default(),
+                )
+                .await;
+
+            let mut request = client.request(
+                case.method.clone(),
+                format!("http://{local_addr}{}", case.path),
+            );
+            if let Some(body) = case.request_body {
+                request = request
+                    .header("Content-Type", "application/json")
+                    .body(body.to_string());
+            }
+            let response =
+                request.send().await.expect("Requesting should succeed");
+            let allow_header = response_header(&response, ALLOW.as_str());
+
+            if case.expect_ping {
+                assert_graphql_ping_response(response).await;
+            } else if let Some(expected_error) = case.expected_error {
+                assert_graphql_error_contains(
+                    response,
+                    case.expected_status,
+                    expected_error,
+                )
+                .await;
+            } else {
+                assert_eq!(response.status(), case.expected_status);
+            }
+
+            if let Some(expected_allow) = case.expected_allow {
+                assert_eq!(allow_header, expected_allow);
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "http-wasm")]
+    async fn http_wasm_paths_return_wasm_with_cache_headers() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let paths = [
+            "/static/drivers/wallet-core.wasm",
+            "/static/drivers/wallet-core-1.0.1.wasm",
+            "/static/drivers/wallet-core-1.3.0.wasm",
+            "/static/drivers/wallet-core-1.6.0.wasm",
+            "/static/drivers/wallet-core-1.6.1.wasm",
+        ];
+
+        let client = reqwest::Client::new();
+        for path in paths {
+            let response = client
+                .get(format!("http://{local_addr}{path}"))
+                .send()
+                .await
+                .expect("Requesting should succeed");
+            assert_wasm_response(response, path).await;
+        }
+    }
+
+    #[tokio::test]
+    async fn configured_headers_are_added_to_success_and_error_responses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-test-header", HeaderValue::from_static("test-value"));
+
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_headers(TestHandle, headers).await;
+
+        let client = reqwest::Client::new();
+        let success = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+        assert_eq!(success.status(), StatusCode::OK);
+        assert_eq!(response_header(&success, "x-test-header"), "test-value");
+
+        let error = client
+            .post(format!("http://{local_addr}/on/test/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response_header(&error, "x-test-header"), "test-value");
+
+        assert_status_contains(
+            error,
+            StatusCode::NOT_IMPLEMENTED,
+            "Unsupported operation",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_x_headers_are_reflected_case_insensitively() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .header("X-Trace-Id", "trace-123")
+            .header("Authorization", "secret")
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let trace_header = response
+            .headers()
+            .get("x-trace-id")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(trace_header, "trace-123");
+        assert!(
+            response.headers().get("authorization").is_none(),
+            "Non x-* headers should not be reflected"
+        );
     }
 
     fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
@@ -1746,7 +2330,22 @@ mod tests {
             .ok_or(anyhow::anyhow!("Content location is not a string"))?
             .to_string();
 
-        let uri = RuesEventUri::parse_from_path(&path)
+        let path = path
+            .strip_prefix(RUES_LOCATION_PREFIX)
+            .ok_or(anyhow::anyhow!("Invalid location prefix"))?;
+        let mut segments = path.split('/');
+        let _leading = segments.next();
+        let target = segments
+            .next()
+            .ok_or(anyhow::anyhow!("Missing target in location"))?;
+        let topic = segments
+            .next()
+            .filter(|segment| !segment.is_empty())
+            .ok_or(anyhow::anyhow!("Missing topic in location"))?;
+        if segments.next().is_some() {
+            return Err(anyhow::anyhow!("Invalid location"));
+        }
+        let uri = RuesEventUri::from_target_and_topic(target, topic)
             .ok_or(anyhow::anyhow!("Invalid location"))?;
 
         let data = data.to_vec().into();

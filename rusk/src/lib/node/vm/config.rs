@@ -7,7 +7,8 @@
 pub mod known;
 pub mod opt;
 
-use std::collections::{HashMap, hash_map::Iter};
+use std::collections::HashMap;
+use std::collections::hash_map::Iter;
 use std::time::Duration;
 
 use dusk_vm::{ExecutionConfig, FeatureActivation};
@@ -59,10 +60,13 @@ pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
     pub const FEATURE_HARDFORK_AEGIS: &str = "HARDFORK_AEGIS";
+    pub const FEATURE_HARDFORK_BOREAS: &str = "HARDFORK_BOREAS";
     pub const FEATURE_PLONK_V2: &str = "PLONK_V2";
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
     pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
+    pub const FEATURE_DISABLE_PHOENIX: &str = "DISABLE_PHOENIX";
+    pub const FEATURE_WASM_REFERENCE_TYPES: &str = "WASM_REFERENCE_TYPES";
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
     pub const HQ_SHA256: &str = "HQ_SHA256";
     pub const HQ_VERIFY_KZG_PROOF: &str = "HQ_VERIFY_KZG_PROOF";
@@ -127,30 +131,33 @@ impl Config {
 
     /// Create a new `Config` with the given parameters.
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
-        let with_public_sender: bool = self
-            .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
-        let with_blob = self
-            .feature(feature::FEATURE_BLOB)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+        let with_public_sender = self.feature_active_at(
+            feature::FEATURE_ABI_PUBLIC_SENDER,
+            block_height,
+        );
+        let with_blob =
+            self.feature_active_at(feature::FEATURE_BLOB, block_height);
         let disable_wasm64 = self
-            .feature(feature::FEATURE_DISABLE_WASM64)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_DISABLE_WASM64, block_height);
         let disable_wasm32 = self
-            .feature(feature::FEATURE_DISABLE_WASM32)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
-        let disable_3rd_party = self
-            .feature(feature::FEATURE_DISABLE_3RD_PARTY)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_DISABLE_WASM32, block_height);
+        let disable_3rd_party = self.feature_active_at(
+            feature::FEATURE_DISABLE_3RD_PARTY,
+            block_height,
+        );
+        let disable_phoenix = self
+            .feature_active_at(feature::FEATURE_DISABLE_PHOENIX, block_height);
+        let with_reference_types = self.feature_active_at(
+            feature::FEATURE_WASM_REFERENCE_TYPES,
+            block_height,
+        );
         let phoenix_refund_check = self
-            .feature(feature::FEATURE_HARDFORK_AEGIS)
-            .map(|activation| activation.is_active_at(block_height))
-            .unwrap_or_default();
+            .feature_active_at(feature::FEATURE_HARDFORK_AEGIS, block_height);
+        let boreas_active = self
+            .feature_active_at(feature::FEATURE_HARDFORK_BOREAS, block_height);
+        let deploy_remaining_gas_check = boreas_active;
+        let charge_init_gas = boreas_active;
+        let withdrawal_nullifier_check = boreas_active;
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -161,7 +168,12 @@ impl Config {
             disable_wasm64,
             disable_wasm32,
             disable_3rd_party,
+            disable_phoenix,
+            with_reference_types,
             phoenix_refund_check,
+            deploy_remaining_gas_check,
+            charge_init_gas,
+            withdrawal_nullifier_check,
         }
     }
 
@@ -174,6 +186,12 @@ impl Config {
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(feature))
             .map(|(_, v)| v)
+    }
+
+    pub fn feature_active_at(&self, feature: &str, block_height: u64) -> bool {
+        self.feature(feature)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 
     pub fn with_feature<S: Into<String>, F: Into<FeatureActivation>>(

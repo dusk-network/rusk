@@ -10,19 +10,74 @@
 
 [http]
 #listen = true
+#enable_docs = false
 #listen_address = '127.0.0.1:8080'
 #cert = <path_of_pem>
 #key = <path_of_key>
 
-# The default max cost for feeder calls is the maximum representable. Put in a
-# a string wrapped number up to u64::MAX
-#feeder_call_gas = "18446744073709551615" 
+# The default max cost for feeder calls is 3 billion.
+#feeder_call_gas = 3_000_000_000
 
 #ws_sub_channel_cap = 16,
 #ws_event_channel_cap = 1024,
 
 # Custom headers to put into every HTTP response. By default none are added.
 #headers = [["name1", "value1"], ["name2", "value2"]]
+
+# Endpoint policy for ACL and global endpoint-class limits.
+#[http.policy]
+#enabled = true
+
+#[http.policy.acl]
+#enabled = true
+#default_action = "allow"
+
+## Example deny rule. Rules are evaluated top-to-bottom (first match wins).
+##[[http.policy.acl.rules]]
+##id = "deny-contracts-upload"
+##enabled = true
+##action = "deny"
+##path = "/on/contract:*/upload_driver"
+##method = ["POST"]
+##headers = {}
+
+#[http.policy.global_limits]
+#enabled = true
+
+#[http.policy.global_limits.classes.contract_query]
+#rps = 180
+#burst = 360
+#concurrency = 12
+
+#[http.policy.global_limits.classes.feeder_query]
+#rps = 3
+#burst = 6
+#concurrency = 3
+
+#[http.policy.global_limits.classes.graphql]
+#rps = 1500
+#burst = 3000
+#concurrency = 64
+
+#[http.policy.global_limits.classes.tx_propagate]
+#rps = 400
+#burst = 800
+#concurrency = 32
+
+#[http.policy.global_limits.classes.upload_driver]
+#rps = 2
+#burst = 4
+#concurrency = 2
+
+#[http.policy.global_limits.classes.other_rues]
+#rps = 500
+#burst = 1000
+#concurrency = 64
+
+#[http.policy.global_limits.classes.other_http]
+#rps = 2000
+#burst = 4000
+#concurrency = 128
 
 [chain]
 #db_path = '/home/user/.dusk/rusk'

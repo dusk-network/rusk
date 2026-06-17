@@ -7,15 +7,24 @@
 mod config;
 pub mod feature;
 
-use blake2b_simd::Params;
-use dusk_core::abi::{CONTRACT_ID_BYTES, ContractError, ContractId, Metadata};
+pub use config::Config;
+use dusk_core::abi::{ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
-use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::data::{ContractBytecode, gen_contract_id};
+use dusk_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
 use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
-use piecrust::{CallReceipt, Error, Session};
+use piecrust::{CallReceipt, Session};
+use rkyv::Deserialize;
 use wasmparser::*;
 
-pub use config::Config;
+use crate::ExecutionError;
+
+const DEPLOY_FEATURE_VALIDATION_ERROR: &str =
+    "failed deployment: bytecode validation rejected";
+const PHOENIX_DISABLED_ERROR: &str = "phoenix is not enabled in the VM";
+const TRANSFER_WITHDRAWAL_FUNCTIONS: &[&str] = &["mint", "withdraw", "convert"];
 
 /// Executes a transaction in the provided session.
 ///
@@ -50,7 +59,10 @@ pub use config::Config;
 ///
 /// 4. Call the "refund" function on the transfer contract with unlimited gas.
 ///    The amount charged depends on the gas spent by the transaction, and the
-///    optional contract call in steps 2 or 3.
+///    optional contract call in steps 2 or 3. If this fails, a specific error
+///    `FailedRefund` is returned, then the tx should be considered
+///    unspendable/invalid, and the caller SHALL DO a re-execution of previous
+///    transactions.
 ///
 /// Note that deployment transaction will never be re-executed for reasons
 /// related to deployment, as it is either discarded or it charges the
@@ -68,13 +80,15 @@ pub fn execute(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    tx.phoenix_fee_check()
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, ExecutionError> {
+    if config.disable_phoenix && matches!(tx, Transaction::Phoenix(_)) {
+        return Err(ExecutionError::precondition(PHOENIX_DISABLED_ERROR));
+    }
+
+    tx.phoenix_fee_check()?;
 
     if config.phoenix_refund_check {
-        tx.phoenix_refund_check()
-            .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+        tx.phoenix_refund_check()?;
     }
 
     // Transaction will be discarded if it is a deployment transaction
@@ -83,43 +97,39 @@ pub fn execute(
         config.gas_per_deploy_byte,
         config.min_deploy_gas_price,
         config.min_deploy_points,
-    )
-    .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    )?;
 
     if let Some(contract_deploy) = tx.deploy() {
+        let is_wasm64 = is_wasm64(&contract_deploy.bytecode.bytes);
         match (config.disable_wasm32, config.disable_wasm64) {
-            (true, true) => Err(Error::Panic(
-                "contract deployment is not enabled in the VM".into(),
+            (true, true) => Err(ExecutionError::precondition(
+                "contract deployment is not enabled in the VM",
             )),
-            (true, false) if !is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("32-bit wasm is not enabled in the VM".into()))
-            }
-            (false, true) if is_wasm64(&contract_deploy.bytecode.bytes) => {
-                Err(Error::Panic("64-bit wasm is not enabled in the VM".into()))
-            }
+            (true, false) if !is_wasm64 => Err(ExecutionError::precondition(
+                "32-bit wasm is not enabled in the VM",
+            )),
+            (false, true) if is_wasm64 => Err(ExecutionError::precondition(
+                "64-bit wasm is not enabled in the VM",
+            )),
             _ => Ok(()),
         }?
     }
 
-    if config.disable_3rd_party {
-        if let Some(call) = tx.call() {
-            if call.contract != TRANSFER_CONTRACT
-                && call.contract != STAKE_CONTRACT
-            {
-                return Err(Error::Panic(
-                    "3rd party contracts are not enabled in the VM".into(),
-                ));
-            }
-        }
+    if config.disable_3rd_party
+        && let Some(call) = tx.call()
+        && call.contract != TRANSFER_CONTRACT
+        && call.contract != STAKE_CONTRACT
+    {
+        return Err(ExecutionError::precondition(
+            "3rd party contracts are not enabled in the VM",
+        ));
     }
 
-    let blob_min_charge = tx
-        .blob_check(config.gas_per_blob)
-        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    let blob_min_charge = tx.blob_check(config.gas_per_blob)?;
 
     if blob_min_charge.is_some() && !config.with_blob {
-        return Err(Error::Panic(
-            "Blob processing is not enabled in the VM".into(),
+        return Err(ExecutionError::precondition(
+            "Blob processing is not enabled in the VM",
         ));
     }
 
@@ -129,6 +139,37 @@ pub fn execute(
     }
 
     let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
+
+    // Register one combined call hook for VM execution invariants. Piecrust
+    // supports one active hook, so all hook-based checks must be chained here.
+    //
+    // The withdrawal-nullifier check enforces that Phoenix withdrawal replay
+    // tokens carry exactly the same number of nullifiers as the encapsulating
+    // transaction. This is a defense-in-depth measure against audit finding
+    // P1.6-3 (subset-vs-equality in mint_withdrawal).
+    //
+    // Gated behind the Boreas hard fork activation height.
+    if (config.disable_phoenix || config.withdrawal_nullifier_check)
+        && tx.call().is_some()
+    {
+        let disable_phoenix = config.disable_phoenix;
+        let withdrawal_nullifier_check = config.withdrawal_nullifier_check;
+        let tx_nullifier_count = tx.nullifiers().len();
+        session.set_call_hook(Box::new(move |callee, fn_name, fn_args| {
+            if disable_phoenix {
+                check_phoenix_disabled_call(callee, fn_name, fn_args)?;
+            }
+            if withdrawal_nullifier_check {
+                check_withdrawal_nullifiers(
+                    callee,
+                    fn_name,
+                    fn_args,
+                    tx_nullifier_count,
+                )?;
+            }
+            Ok(())
+        }));
+    }
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
@@ -141,17 +182,18 @@ pub fn execute(
         )
         .inspect_err(|_| {
             clear_session(session, config);
-        })?;
+        })
+        .map_err(ExecutionError::from_spend_and_execute)?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
 
     // If this is a blob transaction, ensure the gas spent is at least the
     // minimum charge.
-    if let Some(blob_min_charge) = blob_min_charge {
-        if receipt.gas_spent < blob_min_charge {
-            receipt.gas_spent = blob_min_charge;
-        }
+    if let Some(blob_min_charge) = blob_min_charge
+        && receipt.gas_spent < blob_min_charge
+    {
+        receipt.gas_spent = blob_min_charge;
     }
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -159,9 +201,9 @@ pub fn execute(
         receipt.gas_spent = receipt.gas_limit;
     }
 
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
+    // Refund the appropriate amount to the transaction. If this errors, the
+    // transaction must be discarded by the caller who is also responsible to
+    // revert the state applied during the spend_and_execute.
     let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
@@ -169,13 +211,55 @@ pub fn execute(
             &receipt.gas_spent,
             u64::MAX,
         )
-        .expect("Refunding must succeed");
+        .inspect_err(|_| {
+            clear_session(session, config);
+        })
+        .map_err(ExecutionError::FailedRefund)?;
 
     receipt.events.extend(refund_receipt.events);
 
     clear_session(session, config);
 
     Ok(receipt)
+}
+
+fn check_phoenix_disabled_call(
+    callee: &ContractId,
+    fn_name: &str,
+    fn_args: &[u8],
+) -> Result<(), String> {
+    if *callee != TRANSFER_CONTRACT
+        || !TRANSFER_WITHDRAWAL_FUNCTIONS.contains(&fn_name)
+    {
+        return Ok(());
+    }
+    if fn_name == "convert" {
+        // `convert` is the transfer contract's Phoenix/Moonlight bridge
+        // entrypoint. Phoenix-paid transactions are discarded before execution,
+        // so any `convert` that reaches this hook is Moonlight-paid and must
+        // still be rejected when Phoenix is disabled.
+        return Err(PHOENIX_DISABLED_ERROR.into());
+    }
+    let withdraw = deserialize_withdraw(fn_args)?;
+    if withdraw_uses_phoenix(&withdraw) {
+        return Err(PHOENIX_DISABLED_ERROR.into());
+    }
+    Ok(())
+}
+
+fn withdraw_uses_phoenix(withdraw: &Withdraw) -> bool {
+    matches!(withdraw.receiver(), WithdrawReceiver::Phoenix(_))
+        || matches!(withdraw.token(), WithdrawReplayToken::Phoenix(_))
+}
+
+fn deserialize_withdraw(fn_args: &[u8]) -> Result<Withdraw, String> {
+    let Ok(root) = rkyv::check_archived_root::<Withdraw>(fn_args) else {
+        return Err("failed to deserialize withdrawal arguments".into());
+    };
+    match root.deserialize(&mut rkyv::Infallible) {
+        Ok(w) => Ok(w),
+        Err(infallible) => match infallible {},
+    }
 }
 
 fn is_wasm64(bytecode: &[u8]) -> bool {
@@ -193,14 +277,44 @@ fn clear_session(session: &mut Session, config: &Config) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
     }
+    session.clear_call_hook();
+}
+
+/// Checks that a withdrawal's Phoenix replay token nullifier count matches the
+/// encapsulating transaction's nullifier count.
+///
+/// Returns `Err` when the nullifier count mismatches or the arguments
+/// cannot be deserialized (fail-closed). Returns `Ok(())` for non-withdrawal
+/// calls, Moonlight tokens, or matching counts.
+fn check_withdrawal_nullifiers(
+    callee: &ContractId,
+    fn_name: &str,
+    fn_args: &[u8],
+    tx_nullifier_count: usize,
+) -> Result<(), String> {
+    if *callee != TRANSFER_CONTRACT || fn_name != "withdraw" {
+        return Ok(());
+    }
+    let withdraw = deserialize_withdraw(fn_args)?;
+    if let WithdrawReplayToken::Phoenix(nullifiers) = withdraw.token()
+        && nullifiers.len() != tx_nullifier_count
+    {
+        return Err(format!(
+            "nullifier count mismatch: withdrawal has {}, transaction has {}",
+            nullifiers.len(),
+            tx_nullifier_count,
+        ));
+    }
+    Ok(())
 }
 
 // Contract deployment will fail and charge full gas limit in the
 // following cases:
-// 1) Transaction gas limit is smaller than deploy charge plus gas used for
-//    spending funds.
-// 2) Transaction's bytecode's bytes are not consistent with bytecode's hash.
-// 3) Deployment fails for deploy-specific reasons like e.g.:
+// 1) Pre-Boreas: transaction gas limit is smaller than deploy charge plus gas
+//    used for spending funds.
+// 2) Boreas+: remaining gas after spending funds is smaller than deploy charge.
+// 3) Transaction's bytecode's bytes are not consistent with bytecode's hash.
+// 4) Deployment fails for deploy-specific reasons like e.g.:
 //      - contract already deployed
 //      - corrupted bytecode
 //      - sufficient gas to spend funds yet insufficient for deployment
@@ -214,18 +328,37 @@ fn contract_deploy(
         let gas_per_deploy_byte = config.gas_per_deploy_byte;
         let min_deploy_points = config.min_deploy_points;
 
-        let gas_left = tx.gas_limit() - receipt.gas_spent;
         if receipt.data.is_ok() {
-            let deploy_charge =
-                tx.deploy_charge(gas_per_deploy_byte, min_deploy_points);
-            let min_gas_limit = receipt.gas_spent + deploy_charge;
-            if gas_left < min_gas_limit {
+            let Ok(deploy_charge) =
+                tx.deploy_charge(gas_per_deploy_byte, min_deploy_points)
+            else {
+                receipt.data =
+                    Err(ContractError::Panic("deploy charge overflow".into()));
+                return;
+            };
+            if !is_deploy_gas_sufficient(
+                tx.gas_limit(),
+                receipt.gas_spent,
+                deploy_charge,
+                config.deploy_remaining_gas_check,
+            ) {
                 receipt.data = Err(ContractError::OutOfGas);
             } else if !verify_bytecode_hash(&deploy.bytecode) {
                 receipt.data = Err(ContractError::Panic(
                     "failed bytecode hash check".into(),
                 ))
+            } else if let Err(err) = validate_deploy_bytecode_features(
+                &deploy.bytecode.bytes,
+                config.with_reference_types,
+            ) {
+                receipt.data = Err(ContractError::Panic(err.into()))
             } else {
+                let gas_left = tx.gas_limit().saturating_sub(receipt.gas_spent);
+                let init_budget = if config.charge_init_gas {
+                    gas_left.saturating_sub(deploy_charge)
+                } else {
+                    gas_left
+                };
                 let result = session.deploy_raw(
                     Some(gen_contract_id(
                         &deploy.bytecode.bytes,
@@ -235,11 +368,18 @@ fn contract_deploy(
                     deploy.bytecode.bytes.as_slice(),
                     deploy.init_args.clone(),
                     deploy.owner.clone(),
-                    gas_left,
+                    init_budget,
                 );
                 match result {
-                    // Should the gas spent by the INIT method charged too?
-                    Ok(_) => receipt.gas_spent += deploy_charge,
+                    Ok((_, init_receipt)) => {
+                        receipt.gas_spent =
+                            receipt.gas_spent.saturating_add(deploy_charge);
+                        apply_deploy_init_receipt(
+                            receipt,
+                            init_receipt,
+                            config.charge_init_gas,
+                        );
+                    }
                     Err(err) => {
                         let msg = format!("failed deployment: {err:?}");
                         receipt.data = Err(ContractError::Panic(msg))
@@ -250,6 +390,64 @@ fn contract_deploy(
     }
 }
 
+fn validate_deploy_bytecode_features(
+    bytecode: &[u8],
+    with_reference_types: bool,
+) -> Result<(), &'static str> {
+    if with_reference_types {
+        return Ok(());
+    }
+
+    Validator::new_with_features(pre_reference_types_deploy_features())
+        .validate_all(bytecode)
+        .map(|_| ())
+        .map_err(|_| DEPLOY_FEATURE_VALIDATION_ERROR)
+}
+
+fn pre_reference_types_deploy_features() -> WasmFeatures {
+    // Keep this independent from `WasmFeatures::default()`: that default is
+    // tied to the local wasmparser version and can grow when the dependency is
+    // bumped. This set mirrors dusk-wasmtime defaults before Piecrust enabled
+    // the `gc` feature, plus the explicit `wasm_memory64(true)` setting used by
+    // Piecrust.
+    WasmFeatures::WASM2
+        .difference(WasmFeatures::REFERENCE_TYPES)
+        .union(WasmFeatures::RELAXED_SIMD)
+        .union(WasmFeatures::MULTI_MEMORY)
+        .union(WasmFeatures::MEMORY64)
+}
+
+fn apply_deploy_init_receipt(
+    receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
+    init_receipt: Option<CallReceipt<Vec<u8>>>,
+    charge_init_gas: bool,
+) {
+    if let Some(init_receipt) = init_receipt {
+        if charge_init_gas {
+            receipt.gas_spent =
+                receipt.gas_spent.saturating_add(init_receipt.gas_spent);
+        }
+        receipt.events.extend(init_receipt.events);
+    }
+}
+
+fn is_deploy_gas_sufficient(
+    gas_limit: u64,
+    gas_spent: u64,
+    deploy_charge: u64,
+    deploy_remaining_gas_check: bool,
+) -> bool {
+    let gas_left = gas_limit.saturating_sub(gas_spent);
+
+    if deploy_remaining_gas_check {
+        gas_left >= deploy_charge
+    } else {
+        gas_spent
+            .checked_add(deploy_charge)
+            .is_some_and(|required| gas_left >= required)
+    }
+}
+
 // Verifies that the stored contract bytecode hash is correct.
 fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
     let computed: [u8; 32] = blake3::hash(bytecode.bytes.as_slice()).into();
@@ -257,51 +455,170 @@ fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
     bytecode.hash == computed
 }
 
-/// Generates a unique identifier for a smart contract.
-///
-/// # Arguments
-/// * 'bytes` - The contract bytecode.
-/// * `nonce` - A unique nonce.
-/// * `owner` - The contract-owner.
-///
-/// # Returns
-/// A unique [`ContractId`].
-///
-/// # Panics
-/// Panics if [blake2b-hasher] doesn't produce a [`CONTRACT_ID_BYTES`]
-/// bytes long hash.
-///
-/// [blake2b-hasher]: [`blake2b_simd::Params.finalize`]
-pub fn gen_contract_id(
-    bytes: impl AsRef<[u8]>,
-    nonce: u64,
-    owner: impl AsRef<[u8]>,
-) -> ContractId {
-    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
-    hasher.update(bytes.as_ref());
-    hasher.update(&nonce.to_le_bytes()[..]);
-    hasher.update(owner.as_ref());
-    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
-        .finalize()
-        .as_bytes()
-        .try_into()
-        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
-    ContractId::from_bytes(hash_bytes)
-}
-
 #[cfg(test)]
 mod tests {
     use alloc::vec;
 
-    // the `unused_crate_dependencies` lint complains for dev-dependencies that
-    // are only used in integration tests, so adding this work-around here
-    use ff as _;
-    use hex as _;
-    use once_cell as _;
+    use dusk_core::BlsScalar;
+    use dusk_core::abi::{ContractId, Event};
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
+    // Dev-dependencies only used in integration tests trigger the
+    // unused_crate_dependencies lint, so we re-import them here.
+    use {ff as _, hex as _, once_cell as _};
 
     use super::*;
+    use crate::CallTree;
+
+    #[test]
+    fn check_withdrawal_nullifiers_matching_count_passes() {
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let note_sk = dusk_core::signatures::schnorr::SecretKey::random(rng);
+        let note_pk = dusk_core::signatures::schnorr::PublicKey::from(&note_sk);
+        let address =
+            dusk_core::transfer::phoenix::StealthAddress::from_raw_unchecked(
+                *note_pk.as_ref(),
+                note_pk,
+            );
+
+        let nullifiers = vec![BlsScalar::from(1), BlsScalar::from(2)];
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &note_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Phoenix(address),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Phoenix(
+                nullifiers.clone(),
+            ),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        assert!(
+            check_withdrawal_nullifiers(
+                &TRANSFER_CONTRACT,
+                "withdraw",
+                &args,
+                nullifiers.len(),
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_mismatched_count_rejects() {
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let note_sk = dusk_core::signatures::schnorr::SecretKey::random(rng);
+        let note_pk = dusk_core::signatures::schnorr::PublicKey::from(&note_sk);
+        let address =
+            dusk_core::transfer::phoenix::StealthAddress::from_raw_unchecked(
+                *note_pk.as_ref(),
+                note_pk,
+            );
+
+        let nullifiers = vec![BlsScalar::from(1), BlsScalar::from(2)];
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &note_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Phoenix(address),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Phoenix(
+                nullifiers,
+            ),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        // Mismatched count: 2 nullifiers in token, but tx has 3
+        let err = check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &args,
+            3,
+        )
+        .unwrap_err();
+        assert!(
+            err.contains("nullifier count mismatch"),
+            "expected mismatch message, got: {err}"
+        );
+        assert!(err.contains("2") && err.contains("3"));
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_ignores_non_withdraw_calls() {
+        assert!(
+            check_withdrawal_nullifiers(&TRANSFER_CONTRACT, "refund", &[], 5,)
+                .is_ok()
+        );
+
+        assert!(
+            check_withdrawal_nullifiers(
+                &ContractId::from_bytes([0xAA; 32]),
+                "withdraw",
+                &[],
+                5,
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_rejects_garbage_args() {
+        // Garbage bytes that cannot be deserialized as a Withdraw must
+        // be rejected (fail-closed).
+        let err = check_withdrawal_nullifiers(
+            &TRANSFER_CONTRACT,
+            "withdraw",
+            &[0xDE, 0xAD, 0xBE, 0xEF],
+            2,
+        )
+        .unwrap_err();
+        assert!(err.contains("deserialize"));
+
+        // Empty args must also be rejected.
+        check_withdrawal_nullifiers(&TRANSFER_CONTRACT, "withdraw", &[], 1)
+            .unwrap_err();
+    }
+
+    #[test]
+    fn check_withdrawal_nullifiers_ignores_moonlight_token() {
+        let rng = &mut StdRng::seed_from_u64(0xdead);
+
+        let moonlight_sk = dusk_core::signatures::bls::SecretKey::random(rng);
+        let moonlight_pk =
+            dusk_core::signatures::bls::PublicKey::from(&moonlight_sk);
+
+        let withdraw = dusk_core::transfer::withdraw::Withdraw::new(
+            rng,
+            &moonlight_sk,
+            TRANSFER_CONTRACT,
+            100,
+            dusk_core::transfer::withdraw::WithdrawReceiver::Moonlight(
+                moonlight_pk,
+            ),
+            dusk_core::transfer::withdraw::WithdrawReplayToken::Moonlight(42),
+        );
+
+        let args =
+            rkyv::to_bytes::<_, 4096>(&withdraw).expect("should serialize");
+
+        // Moonlight token — should return Ok even with mismatched count
+        assert!(
+            check_withdrawal_nullifiers(
+                &TRANSFER_CONTRACT,
+                "withdraw",
+                &args,
+                999,
+            )
+            .is_ok()
+        );
+    }
 
     #[test]
     fn test_gen_contract_id() {
@@ -326,5 +643,143 @@ mod tests {
                 135, 74, 23, 224, 119, 133
             ]
         );
+    }
+
+    #[test]
+    fn deploy_gas_check_matches_prefork_and_boreas_rules() {
+        for (gas_limit, gas_spent, deploy_charge, boreas, expected) in [
+            (10_000_000, 3_000_000, 5_000_000, false, false),
+            (10_000_000, 3_000_000, 5_000_000, true, true),
+            (7_000_000, 3_000_000, 5_000_000, false, false),
+            (7_000_000, 3_000_000, 5_000_000, true, false),
+            (u64::MAX, u64::MAX, 1, false, false),
+        ] {
+            assert_eq!(
+                is_deploy_gas_sufficient(
+                    gas_limit,
+                    gas_spent,
+                    deploy_charge,
+                    boreas,
+                ),
+                expected,
+            );
+        }
+    }
+
+    #[test]
+    fn deploy_bytecode_reference_types_are_height_gated() {
+        const EMPTY_MODULE: &[u8] = b"\0asm\x01\0\0\0";
+        const FUNC_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x01, // type section
+            0x05, // section length
+            0x01, // type count
+            0x60, // function type
+            0x01, // one parameter
+            0x6f, // externref
+            0x00, // no results
+        ];
+        const TABLE_WITH_EXTERNREF_MODULE: &[u8] = &[
+            0x00, 0x61, 0x73, 0x6d, // magic
+            0x01, 0x00, 0x00, 0x00, // version
+            0x04, // table section
+            0x04, // section length
+            0x01, // table count
+            0x6f, // externref
+            0x00, // min-only limits
+            0x01, // minimum table size
+        ];
+
+        validate_deploy_bytecode_features(EMPTY_MODULE, false)
+            .expect("MVP bytecode should validate without reference-types");
+
+        let err = validate_deploy_bytecode_features(
+            FUNC_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types bytecode should fail before activation");
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
+
+        let err = validate_deploy_bytecode_features(
+            TABLE_WITH_EXTERNREF_MODULE,
+            false,
+        )
+        .expect_err("reference-types table should fail before activation");
+        assert_eq!(err, DEPLOY_FEATURE_VALIDATION_ERROR);
+
+        Validator::new_with_features(
+            pre_reference_types_deploy_features()
+                .union(WasmFeatures::REFERENCE_TYPES),
+        )
+        .validate_all(FUNC_WITH_EXTERNREF_MODULE)
+        .expect("reference-types bytecode should validate when enabled");
+    }
+
+    #[test]
+    fn pre_reference_types_deploy_features_are_pinned() {
+        let features = pre_reference_types_deploy_features();
+
+        assert!(!features.contains(WasmFeatures::REFERENCE_TYPES));
+        assert!(!features.contains(WasmFeatures::FUNCTION_REFERENCES));
+        assert!(!features.contains(WasmFeatures::GC));
+        assert!(!features.contains(WasmFeatures::THREADS));
+        assert!(!features.contains(WasmFeatures::TAIL_CALL));
+
+        assert!(features.contains(WasmFeatures::BULK_MEMORY));
+        assert!(features.contains(WasmFeatures::MULTI_VALUE));
+        assert!(features.contains(WasmFeatures::SIMD));
+        assert!(features.contains(WasmFeatures::RELAXED_SIMD));
+        assert!(features.contains(WasmFeatures::MULTI_MEMORY));
+        assert!(features.contains(WasmFeatures::MEMORY64));
+        assert!(!features.contains(WasmFeatures::EXCEPTIONS));
+        assert!(!features.contains(WasmFeatures::EXTENDED_CONST));
+    }
+
+    #[test]
+    fn deploy_init_events_are_preserved_before_and_after_boreas() {
+        let init_event = Event {
+            source: ContractId::from_bytes([7; 32]),
+            topic: "runtime_update".into(),
+            data: vec![1, 2, 3, 4],
+            reverted: false,
+        };
+        let build_init_receipt = || CallReceipt {
+            gas_spent: 123,
+            gas_limit: 999,
+            events: vec![init_event.clone()],
+            call_tree: CallTree::default(),
+            data: Vec::new(),
+        };
+
+        let mut prefork_receipt = CallReceipt {
+            gas_spent: 10,
+            gas_limit: 1000,
+            events: vec![],
+            call_tree: CallTree::default(),
+            data: Ok(Vec::new()),
+        };
+        apply_deploy_init_receipt(
+            &mut prefork_receipt,
+            Some(build_init_receipt()),
+            false,
+        );
+        assert_eq!(prefork_receipt.gas_spent, 10);
+        assert_eq!(prefork_receipt.events, vec![init_event.clone()]);
+
+        let mut boreas_receipt = CallReceipt {
+            gas_spent: 10,
+            gas_limit: 1000,
+            events: vec![],
+            call_tree: CallTree::default(),
+            data: Ok(Vec::new()),
+        };
+        apply_deploy_init_receipt(
+            &mut boreas_receipt,
+            Some(build_init_receipt()),
+            true,
+        );
+        assert_eq!(boreas_receipt.gas_spent, 133);
+        assert_eq!(boreas_receipt.events, vec![init_event]);
     }
 }

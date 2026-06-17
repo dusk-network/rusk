@@ -70,8 +70,8 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let mut session = vm.genesis_session(CHAIN_ID);
 
-    let contract_id = session
-        .deploy(
+    let (contract_id, _) = session
+        .deploy::<_, (), _>(
             bytecode,
             ContractData::builder().owner(get_owner().to_bytes()),
             POINT_LIMIT,
@@ -191,8 +191,11 @@ fn schnorr_signature() {
 fn bls_signature() {
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
-    let _hard_fork_guard = dusk_vm::host_queries::set_hard_fork(
-        dusk_vm::host_queries::HardFork::Aegis,
+    let _host_query_policy_guard = dusk_vm::host_queries::set_host_query_policy(
+        dusk_vm::host_queries::HostQueryPolicy::from_versions(
+            dusk_vm::host_queries::plonk_version(),
+            dusk_vm::host_queries::HardFork::Aegis,
+        ),
     );
 
     let message = b"some-message".to_vec();
@@ -226,8 +229,11 @@ fn bls_signature() {
 fn bls_multisig_signature() {
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
-    let _hard_fork_guard = dusk_vm::host_queries::set_hard_fork(
-        dusk_vm::host_queries::HardFork::Aegis,
+    let _host_query_policy_guard = dusk_vm::host_queries::set_host_query_policy(
+        dusk_vm::host_queries::HostQueryPolicy::from_versions(
+            dusk_vm::host_queries::plonk_version(),
+            dusk_vm::host_queries::HardFork::Aegis,
+        ),
     );
 
     let message = b"some-message".to_vec();
@@ -452,8 +458,11 @@ impl Circuit for PlonkTestCircuit {
 fn plonk_proof() {
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
-    let _plonk_version_guard = dusk_vm::host_queries::set_plonk_version(
-        dusk_core::plonk::PlonkVersion::current(),
+    let _host_query_policy_guard = dusk_vm::host_queries::set_host_query_policy(
+        dusk_vm::host_queries::HostQueryPolicy::from_versions(
+            dusk_core::plonk::PlonkVersion::current(),
+            dusk_vm::host_queries::hard_fork(),
+        ),
     );
 
     let pp = include_bytes!("./pp_test.bin");

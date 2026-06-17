@@ -6,84 +6,16 @@
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::fmt::{self, Display};
 
-use dusk_core::stake::STAKE_CONTRACT;
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
-use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
-use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
-use crate::io::{self};
+use crate::io::status;
 use crate::settings::Settings;
-
-#[derive(Debug, PartialEq)]
-pub struct TransactionHistory {
-    pub(crate) direction: TransactionDirection,
-    pub(crate) height: u64,
-    pub(crate) amount: f64,
-    pub(crate) fee: u64,
-    pub(crate) tx: Transaction,
-    pub(crate) id: String,
-    pub(crate) bal_type: BalanceType,
-}
-
-impl TransactionHistory {
-    pub fn header() -> String {
-        format!(
-            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}\n",
-            "BLOCK", "TX_ID", "ACTION", "AMOUNT", "FEE", "BALANCE_TYPE"
-        )
-    }
-
-    pub fn height(&self) -> u64 {
-        self.height
-    }
-
-    pub(crate) fn action(&self) -> &str {
-        if self.tx.deploy().is_some() {
-            "deploy"
-        } else if self.tx.blob().is_some() {
-            "blob"
-        } else {
-            match self.tx.call() {
-                Some(call)
-                    if call.contract == STAKE_CONTRACT
-                        && call.fn_name == "withdraw" =>
-                {
-                    "claim-rewards"
-                }
-                Some(call) => &call.fn_name,
-                None => "transfer",
-            }
-        }
-    }
-}
-
-impl Display for TransactionHistory {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dusk = self.amount / dusk(1.0) as f64;
-        let action = self.action();
-
-        let fee = match self.direction {
-            TransactionDirection::In => format!("{: >12.9}", ""),
-            TransactionDirection::Out => {
-                let fee: u64 = self.fee;
-                let fee = from_dusk(fee);
-                format!("{: >12.9}", -fee)
-            }
-        };
-
-        let tx_id = &self.id;
-        let height = self.height;
-        let bal_type = &self.bal_type;
-
-        writeln!(
-            f,
-            "{height: >9} | {tx_id} | {action: ^8} | {dusk: >+17.9} | {fee} | {bal_type}",
-        )
-    }
-}
+use crate::transaction_history::{
+    BalanceType, TransactionDirection, TransactionHistory,
+};
 
 pub(crate) async fn transaction_from_notes(
     settings: &Settings,
@@ -95,7 +27,7 @@ pub(crate) async fn transaction_from_notes(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        io::status::interactive,
+        status::wallet_headless,
     )?;
 
     let nullifiers = notes
@@ -201,17 +133,16 @@ pub(crate) async fn transaction_from_notes(
                 let note_creator = moonlight_history.json
                     .iter()
                     .find_map(|history_info| history_info.events.iter().find_map(|event| {
-                        if let BlockData::ConvertEvent(ref event) = event.data {
-                            if let WithdrawReceiver::Phoenix(receiver_address) = event.receiver {
-                                if decoded_note.note.stealth_address() == &receiver_address {
-                                    // The note is the output of a moonlight
-                                    // to phoenix conversion.
-                                    let tx = txs.iter().find(|block_tx| {
-                                        block_tx.id == history_info.origin
-                                    }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
-                                    return Some(tx);
-                                }
-                            }
+                        if let BlockData::ConvertEvent(ref event) = event.data
+                            && let WithdrawReceiver::Phoenix(receiver_address) = event.receiver
+                            && decoded_note.note.stealth_address() == &receiver_address
+                        {
+                            // The note is the output of a moonlight
+                            // to phoenix conversion.
+                            let tx = txs.iter().find(|block_tx| {
+                                block_tx.id == history_info.origin
+                            }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
+                            return Some(tx);
                         }
                         None
                     }))
@@ -239,7 +170,7 @@ pub(crate) async fn moonlight_history(
     let gql = GraphQL::new(
         settings.state.to_string(),
         settings.archiver.to_string(),
-        io::status::interactive,
+        status::wallet_headless,
     )?;
 
     let history = gql
@@ -374,25 +305,4 @@ pub(crate) async fn moonlight_history(
     }
 
     Ok(collected_history)
-}
-
-#[derive(PartialEq, Debug)]
-pub(crate) enum TransactionDirection {
-    In,
-    Out,
-}
-
-#[derive(PartialEq, Debug)]
-pub(crate) enum BalanceType {
-    Shielded,
-    Public,
-}
-
-impl Display for BalanceType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Shielded => write!(f, "shielded"),
-            Self::Public => write!(f, "public"),
-        }
-    }
 }

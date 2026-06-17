@@ -228,31 +228,31 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
     ) -> Result<StepOutcome, ConsensusError> {
-        if is_emergency_iter(msg.header.iteration) {
-            if let Payload::ValidationQuorum(vq) = msg.payload {
-                if !vq.result.vote().is_valid() {
-                    return Err(ConsensusError::InvalidMsgType);
-                };
+        if is_emergency_iter(msg.header.iteration)
+            && let Payload::ValidationQuorum(vq) = msg.payload
+        {
+            if !vq.result.vote().is_valid() {
+                return Err(ConsensusError::InvalidMsgType);
+            };
 
-                let vr = vq.result;
+            let vr = vq.result;
 
-                // Store ValidationResult
-                debug!(
-                  event = "Store ValidationResult",
-                  info = ?vq.header,
-                  src = "ValidationQuorum"
-                );
+            // Store ValidationResult
+            debug!(
+              event = "Store ValidationResult",
+              info = ?vq.header,
+              src = "ValidationQuorum"
+            );
 
-                self.db
-                    .lock()
-                    .await
-                    .store_validation_result(&vq.header, &vr)
-                    .await;
+            self.db
+                .lock()
+                .await
+                .store_validation_result(&vq.header, &vr)
+                .await;
 
-                // Extract the ValidationResult and return it as msg
-                let vr_msg = vr.into();
-                return Ok(StepOutcome::Ready(vr_msg));
-            }
+            // Extract the ValidationResult and return it as msg
+            let vr_msg = vr.into();
+            return Ok(StepOutcome::Ready(vr_msg));
         }
 
         let p = Self::unwrap_msg(msg)?;

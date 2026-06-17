@@ -14,20 +14,22 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::{
+    Block, CanonicalTransaction, Header, LedgerTransaction, SpentTransaction,
+};
 
 #[derive(Default)]
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn create_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = LedgerTransaction>>(
         &self,
         transition_data: &StateTransitionData,
         mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
-            Vec<Transaction>,
+            Vec<LedgerTransaction>,
             StateTransitionResult,
         ),
         StateTransitionError,
@@ -52,24 +54,24 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn finalize_state(
         &self,
-        commit: [u8; 32],
+        header: &Header,
         to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()>;
 
     fn preverify(
         &self,
-        tx: &Transaction,
+        tx: &CanonicalTransaction,
         tip_height: u64,
     ) -> anyhow::Result<PreverificationResult>;
 
     fn get_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Provisioners>;
 
     fn get_changed_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_header: &Header,
     ) -> anyhow::Result<Vec<(node_data::bls::PublicKey, Option<Stake>)>>;
 
     fn get_provisioner(
@@ -79,7 +81,7 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;
 
-    fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()>;
+    fn move_to_header(&self, header: &Header) -> anyhow::Result<()>;
 
     /// Returns last finalized state root
     fn get_finalized_state_root(&self) -> anyhow::Result<[u8; 32]>;
@@ -87,7 +89,7 @@ pub trait VMExecution: Send + Sync + 'static {
     /// Returns block gas limit
     fn get_block_gas_limit(&self) -> u64;
 
-    fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]>;
+    fn revert(&self, header: &Header) -> anyhow::Result<[u8; 32]>;
     fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]>;
 
     fn gas_per_deploy_byte(&self) -> u64;
@@ -106,6 +108,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn enable_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()>;
 }
 
+#[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum PreverificationResult {
     Valid,

@@ -9,7 +9,6 @@ use std::env;
 use std::net::TcpStream;
 use std::time::Duration;
 
-use inquire::Text;
 use rusk_wallet::GraphQL;
 use serde::Deserialize;
 use tempfile::{TempDir, tempdir};
@@ -18,8 +17,9 @@ use tracing_subscriber::EnvFilter;
 use url::Url;
 
 use super::*;
-use crate::command::history::TransactionDirection;
+use crate::frontend::OperationResult;
 use crate::settings::{LogLevel, Logging};
+use crate::transaction_history::{TransactionDirection, TransactionHistory};
 use crate::{LogFormat, connect, status};
 
 #[derive(Default)]
@@ -28,17 +28,12 @@ struct FakePrompter {
 }
 
 impl Prompt for FakePrompter {
-    fn create_new_password(
-        &self,
-    ) -> anyhow::Result<String, inquire::InquireError> {
+    fn create_new_password(&self) -> anyhow::Result<String> {
         Ok("password".to_string())
     }
 
-    fn prompt_text(
-        &self,
-        _text_prompt: Text,
-    ) -> inquire::error::InquireResult<String> {
-        return Ok(self.text_answer.clone());
+    fn prompt_text(&self, _message: &str) -> anyhow::Result<String> {
+        Ok(self.text_answer.clone())
     }
 }
 
@@ -82,6 +77,7 @@ fn node_address() -> String {
 fn wallet_settings(wallet_dir: &TempDir) -> Settings {
     let addr = format!("http://{}", node_address());
     Settings {
+        network_name: Some("test".to_string()),
         state: Url::parse(&addr).unwrap(),
         prover: Url::parse(&addr).unwrap(),
         archiver: Url::parse(&addr).unwrap(),
@@ -92,6 +88,7 @@ fn wallet_settings(wallet_dir: &TempDir) -> Settings {
         },
         wallet_dir: wallet_dir.path().to_path_buf(),
         password: None,
+        allow_insecure: true,
     }
 }
 
@@ -125,7 +122,9 @@ async fn faucet_wallet()
         let wallet =
             Command::run_restore_from_seed(&wallet_path, &prompter).unwrap();
         let settings = wallet_settings(&wallet_dir);
-        let wallet = connect(wallet, &settings, status::headless).await.unwrap();
+        let wallet = connect(wallet, &settings, status::wallet_headless)
+            .await
+            .unwrap();
         Ok(Mutex::new((wallet, settings)))
     }).await
 }
@@ -143,7 +142,9 @@ pub async fn create_wallet() -> anyhow::Result<(Wallet<WalletFile>, Settings)> {
     .unwrap();
     let settings = wallet_settings(&wallet_dir);
     Ok((
-        connect(wallet, &settings, status::headless).await.unwrap(),
+        connect(wallet, &settings, status::wallet_headless)
+            .await
+            .unwrap(),
         settings,
     ))
 }
@@ -166,7 +167,7 @@ pub async fn rcv_moonlight_from_faucet(
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     gql.wait_for(&id).await.unwrap();
@@ -179,7 +180,7 @@ async fn execute_tx_command(
     settings: &Settings,
 ) -> anyhow::Result<String> {
     let run_result = cmd.run(wallet, settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
+    let RunResult::Operation(OperationResult::Tx(tx_hash)) = run_result else {
         unreachable!()
     };
     Ok(hex::encode(&tx_hash.to_bytes()))
@@ -239,7 +240,7 @@ pub async fn rcv_phoenix_from_faucet(
     let gql = GraphQL::new(
         settings.state.clone(),
         settings.archiver.clone(),
-        status::headless,
+        status::wallet_headless,
     )
     .unwrap();
     gql.wait_for(&id).await.unwrap();

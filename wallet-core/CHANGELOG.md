@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-10
+
+### Added
+
+- Add FFI support for serializing contract deployment transaction data and deriving contract IDs.
+
+### Fixed
+
+- Prevent phoenix balance aggregation from wrapping on `u64` overflow by using saturating sums
+
+### Changed
+
+- Change FFI ABI to explicit use "C" repr
+- Delegate contract deployment assembly and contract-id derivation to the canonical `dusk-core` helpers
+- Serialize exported transaction bytes with the stable client network encoding instead of selecting hardfork-specific envelopes downstream
+
 ## [1.6.0] - 2026-02-27
 
 ### Changed
@@ -57,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3438]: https://github.com/dusk-network/rusk/issues/3438
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.6.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.7.0...HEAD
+[1.7.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.6.0...dusk-wallet-core-1.7.0
 [1.6.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.4.0...dusk-wallet-core-1.6.0
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.3.0...dusk-wallet-core-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.1.0...dusk-wallet-core-1.3.0
