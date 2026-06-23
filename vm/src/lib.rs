@@ -222,6 +222,23 @@ impl VM {
         chain_id: u8,
         block_height: u64,
     ) -> Result<Session, Error> {
+        let builder = self.session_builder(base, chain_id, block_height)?;
+        self.session_from_builder(builder)
+    }
+
+    /// Creates the default session data builder for transaction execution.
+    ///
+    /// Callers that need to customize session data can use this builder and
+    /// then pass it to [`VM::session_from_builder`].
+    ///
+    /// # Errors
+    /// If inserting default session metadata fails.
+    pub fn session_builder(
+        &self,
+        base: [u8; 32],
+        chain_id: u8,
+        block_height: u64,
+    ) -> Result<SessionDataBuilder, Error> {
         let mut builder = SessionData::builder()
             .base(base)
             .insert(Metadata::CHAIN_ID, chain_id)?
@@ -237,6 +254,18 @@ impl VM {
                 }
             }
         }
+        Ok(builder)
+    }
+
+    /// Creates a new session from session data previously configured by a
+    /// builder.
+    ///
+    /// # Errors
+    /// If base commit is provided but does not exist.
+    pub fn session_from_builder(
+        &self,
+        builder: SessionDataBuilder,
+    ) -> Result<Session, Error> {
         self.inner.session(builder)
     }
 

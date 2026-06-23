@@ -655,7 +655,13 @@ impl Rusk {
             tip.current.state_hash
         });
 
-        let session = self.vm.session(commit, self.chain_id, block_height)?;
+        let contain_hq_panics = /* determine if hq panics containment should be enabled */
+
+        let session_builder = self
+            .vm
+            .session_builder(commit, self.chain_id, block_height)?
+            .contain_hq_panics(contain_hq_panics);
+        let session = self.vm.session_from_builder(session_builder)?;
 
         Ok(session)
     }
