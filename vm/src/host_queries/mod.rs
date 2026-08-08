@@ -4,7 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! The host-queries registered on the Dusk VM
+//! Host queries registered on the Dusk VM.
+//!
+//! Several queries (`verify_bls`, `verify_bls_multisig`, PLONK verification,
+//! memoization keys) depend on a **thread-local** [`HostQueryPolicy`] (PLONK
+//! version + [`HardFork`]). The default is [`HardFork::PreFork`] with PLONK V2.
+//!
+//! A running Rusk node sets policy before block execution via the same public
+//! [`set_host_query_policy`] API. Contract tests that use [`VM::ephemeral`](crate::VM::ephemeral)
+//! must set policy explicitly when they need post-fork BLS semantics — see
+//! `vm/tests/vm.rs` (`bls_signature`, `bls_multisig_signature`).
 
 use alloc::vec::Vec;
 use std::sync::LazyLock;

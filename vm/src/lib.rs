@@ -117,6 +117,21 @@ impl VM {
     /// This method initializes a VM that operates in memory without persisting
     /// state. It is useful for testing or temporary computations.
     ///
+    /// **Host-query policy:** this does not change the thread-local
+    /// [`host_queries::HostQueryPolicy`](crate::host_queries::HostQueryPolicy).
+    /// BLS verification inside contract calls therefore defaults to
+    /// [`HardFork::PreFork`](crate::host_queries::HardFork::PreFork) until
+    /// [`set_host_query_policy`](crate::host_queries::set_host_query_policy)
+    /// is called on the same thread. That matches production safety defaults but
+    /// means `sign()`-produced signatures need an explicit policy such as
+    /// [`HardFork::Aegis`](crate::host_queries::HardFork::Aegis) or
+    /// [`HardFork::Boreas`](crate::host_queries::HardFork::Boreas). See
+    /// `vm/tests/vm.rs` (`bls_signature`).
+    ///
+    /// `session` / `genesis_session` `block_height` gates per-query activation
+    /// via [`with_hq_activation`](Self::with_hq_activation); it does **not** derive
+    /// hardfork policy from height.
+    ///
     /// # Returns
     /// A new ephemeral `VM` instance.
     ///
@@ -124,10 +139,20 @@ impl VM {
     /// If creating a temporary directory fails.
     ///
     /// # Examples
-    /// ```rust
-    /// use dusk_vm::VM;
+    /// ```rust,no_run
+    /// use dusk_vm::{
+    ///     host_queries::{
+    ///         HardFork, HostQueryPolicy, plonk_version, set_host_query_policy,
+    ///     },
+    ///     VM,
+    /// };
     ///
-    /// let vm = VM::ephemeral();
+    /// let vm = VM::ephemeral()?;
+    /// let _policy = set_host_query_policy(
+    ///     HostQueryPolicy::from_versions(plonk_version(), HardFork::Aegis),
+    /// );
+    /// let session = vm.genesis_session(0xCA);
+    /// # Ok::<(), dusk_vm::Error>(())
     /// ```
     pub fn ephemeral() -> Result<VM, Error> {
         let mut vm: Self = PiecrustVM::ephemeral()?.into();
@@ -188,7 +213,10 @@ impl VM {
     ///   session begins.
     /// * `chain_id` - The identifier of the network.
     /// * `block_height` - The current block height at which the session is
-    ///   created.
+    ///   created. This height is stored in session metadata and drives
+    ///   [`with_hq_activation`](Self::with_hq_activation) exclusions only; it does
+    ///   not set [`host_queries::HostQueryPolicy`](crate::host_queries::HostQueryPolicy)
+    ///   or BLS hardfork semantics.
     ///
     /// # Returns
     /// A `Result` containing a `Session` instance for executing transactions,

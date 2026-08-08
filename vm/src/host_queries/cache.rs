@@ -140,6 +140,11 @@ pub fn host_query_policy() -> HostQueryPolicy {
 /// Sets the current thread's host-query policy.
 ///
 /// The previous policy is restored when the returned guard is dropped.
+///
+/// Ephemeral contract tests should call this before executing contracts that
+/// invoke `verify_bls` / `verify_bls_multisig` if signatures were produced with
+/// the post-fork `sign()` / `sign_multisig()` APIs. Without an explicit policy,
+/// verification follows [`HardFork::PreFork`] (pre-fork BLS semantics only).
 pub fn set_host_query_policy(policy: HostQueryPolicy) -> HostQueryPolicyGuard {
     let prev = HOST_QUERY_POLICY.with(|m| {
         let prev = m.get();

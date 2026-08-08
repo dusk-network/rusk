@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Document that [`VM::ephemeral`](https://docs.rs/dusk-vm/latest/dusk_vm/struct.VM.html#method.ephemeral) leaves host-query policy at the thread-local default (`HardFork::PreFork`) and how downstream contract tests should call [`set_host_query_policy`](https://docs.rs/dusk-vm/latest/dusk_vm/host_queries/fn.set_host_query_policy.html) for post-fork BLS verification (`#4064`).
+
 ## [1.7.0] - 2026-06-10
 
 ### Added
