@@ -268,7 +268,7 @@ impl VM {
                 SessionData::builder()
                     .insert(Metadata::CHAIN_ID, chain_id)
                     .expect("Inserting chain ID in metadata should succeed")
-                    .insert(Metadata::BLOCK_HEIGHT, 0)
+                    .insert(Metadata::BLOCK_HEIGHT, 0u64)
                     .expect(
                         "Inserting block height in metadata should succeed",
                     ),
