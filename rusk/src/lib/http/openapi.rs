@@ -411,6 +411,16 @@ mod tests {
             graphql_legacy_request_types.contains("text/plain"),
             "The legacy GraphQL route should document raw text requests"
         );
+        let graphql_legacy_response_types =
+            response_content_types(graphql_legacy, "200");
+        assert!(
+            graphql_legacy_response_types.contains("application/json"),
+            "Legacy GraphQL query responses should be documented as JSON"
+        );
+        assert!(
+            graphql_legacy_response_types.contains("text/plain"),
+            "Legacy GraphQL schema responses should be documented as text"
+        );
 
         let contracts_post =
             operation(&spec, "/on/contracts:{entity}/{topic}", "post");

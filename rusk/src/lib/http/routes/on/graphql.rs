@@ -36,8 +36,10 @@ pub(crate) fn legacy_graphql_routes(
         (
             status = 200,
             description = "Legacy GraphQL response body or schema SDL",
-            body = crate::http::openapi::GraphqlHttpResponse,
-            content_type = "application/json"
+            content(
+                (crate::http::openapi::GraphqlHttpResponse = "application/json"),
+                (String = "text/plain")
+            )
         ),
         (status = 400, description = "Invalid legacy GraphQL request or version headers", body = crate::http::openapi::RuesErrorResponse),
         (status = 413, description = "Request body exceeds the default RUES size limit"),
@@ -51,11 +53,22 @@ async fn legacy_rues_graphql_post_route(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
+    let returns_schema = std::str::from_utf8(&body)
+        .unwrap_or_default()
+        .trim()
+        .is_empty();
     let request =
         rues::ParsedRuesRequest::component("graphql", "query", headers, body)?;
     let result = match state.services.chain_handler() {
         Some(chain) => chain.graphql_query(request.event()).await,
         None => Err(HttpError::Unsupported),
     };
+    let result = result.map(|response| {
+        if returns_schema {
+            response.with_header("content-type", "text/plain; charset=utf-8")
+        } else {
+            response
+        }
+    });
     request.into_response(result)
 }
