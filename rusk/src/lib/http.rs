@@ -1934,13 +1934,19 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        for request_body in ["", " \n"] {
-            let response = client
+        for (request_body, content_type) in [
+            (Vec::new(), None),
+            (b" \n".to_vec(), None),
+            (vec![0xff], Some("application/octet-stream")),
+        ] {
+            let mut request = client
                 .post(format!("http://{local_addr}/on/graphql/query"))
-                .body(request_body)
-                .send()
-                .await
-                .expect("Requesting should succeed");
+                .body(request_body);
+            if let Some(content_type) = content_type {
+                request = request.header(CONTENT_TYPE, content_type);
+            }
+            let response =
+                request.send().await.expect("Requesting should succeed");
 
             assert_eq!(response.status(), StatusCode::OK);
             assert_eq!(

@@ -37,8 +37,8 @@ pub(crate) fn legacy_graphql_routes(
             status = 200,
             description = "Legacy GraphQL response body or schema SDL",
             content(
-                ("application/json" = crate::http::openapi::GraphqlHttpResponse),
-                ("text/plain" = String)
+                (crate::http::openapi::GraphqlHttpResponse = "application/json"),
+                (String = "text/plain")
             )
         ),
         (status = 400, description = "Invalid legacy GraphQL request or version headers", body = crate::http::openapi::RuesErrorResponse),
@@ -54,7 +54,9 @@ async fn legacy_rues_graphql_post_route(
     body: Bytes,
 ) -> Result<Response<Body>, ApiError> {
     let returns_schema = std::str::from_utf8(&body)
-        .is_ok_and(|request_body| request_body.trim().is_empty());
+        .unwrap_or_default()
+        .trim()
+        .is_empty();
     let request =
         rues::ParsedRuesRequest::component("graphql", "query", headers, body)?;
     let result = match state.services.chain_handler() {
