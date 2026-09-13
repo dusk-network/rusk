@@ -1,0 +1,28 @@
+{
+  "description": "Non-zero seed (0x00..0x3f) so a seed handled as all-zero, truncated, or byte-reversed produces a different key.",
+  "encoding": {
+    "seed": "64 bytes, BIP39 seed",
+    "secretKey": "32 bytes, little-endian - Rust dusk_bls12_381 BlsScalar::to_bytes. NOT @noble/curves Fr.toBytes, whose order differs across major versions.",
+    "publicKey": "96 bytes, compressed G2 (Dusk uses the min-sig variant)",
+    "signature": "48 bytes, compressed G1",
+    "signedMessage": "SIG_TAG || digest, 55 bytes"
+  },
+  "params": {
+    "dst": "BLS_SIG_BLS12381G1_XMD:SHA-256_DUSK_V2",
+    "blsVersion": "V2",
+    "sigTag": "DUSK_TYPED_DATA_SIG_V1\u0000",
+    "sigTagHex": "0x4455534b5f54595045445f444154415f5349475f563100",
+    "rngTermination": "SK"
+  },
+  "input": {
+    "seedHex": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "profileIndex": 1,
+    "digestHex": "0xa5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5"
+  },
+  "expected": {
+    "secretKeyLeHex": "0x11f3aa4b161d6a586ac659a4940a42e896610f8b59815f142920efbb7a81a049",
+    "publicKeyG2Hex": "0xa785f187856defd1eb32c2dbc646833038a408ed21f3c5c0dbbc67e4f5b4e9dc175eae7a0da851f180377e197bee0c3207c19fb5c3b2c86450d155e823834473e3e9fa3f86f694f536ee1c6eb225f470108632b33daf63b8800e732c7c8bd447",
+    "signedMessageHex": "0x4455534b5f54595045445f444154415f5349475f563100a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+    "signatureG1Hex": "0x89a86a98edbadff3893e311e77e1c50c0780d845f19c965db2473dc3760cd104406229a7ea79d753df836aa6a58ac3e0"
+  }
+}

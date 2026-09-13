@@ -14,6 +14,14 @@
 #![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
 #![deny(unused_extern_crates)]
 
+// `serde_json` is a dev-dependency used only by the integration test in
+// `tests/bls_typed_data_vectors.rs`, which reads the shared JSON vector corpus.
+// `unused_crate_dependencies` above is evaluated per target, so without this the
+// lib test target denies it. Referencing it as `_` satisfies the lint without
+// importing anything.
+#[cfg(test)]
+use serde_json as _;
+
 #[cfg(target_family = "wasm")]
 #[global_allocator]
 static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;

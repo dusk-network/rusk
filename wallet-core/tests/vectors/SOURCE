@@ -1,0 +1,9 @@
+Vendored verbatim from dusk-network/typed-data.
+
+repository: https://github.com/dusk-network/typed-data
+commit:     913fd04e9f21650cce8bd69d592600b0da6a1188
+path:       vectors/bls-v1/
+
+Do not edit these files here. They are generated in that repository by
+scripts/generate-bls-vectors.ts and are byte-identical to the commit above.
+To change them, change them there and re-vendor.

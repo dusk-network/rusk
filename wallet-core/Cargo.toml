@@ -31,6 +31,7 @@ rand = { workspace = true, features = ["std_rng"] }
 hex = { workspace = true }
 num-bigint = { workspace = true }
 tiny-bip39 = { workspace = true }
+serde_json = { workspace = true }
 
 [features]
 debug = []

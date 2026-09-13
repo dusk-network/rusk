@@ -1,0 +1,28 @@
+{
+  "description": "Zero seed, profile index 0 - the lowest index a wallet uses.",
+  "encoding": {
+    "seed": "64 bytes, BIP39 seed",
+    "secretKey": "32 bytes, little-endian - Rust dusk_bls12_381 BlsScalar::to_bytes. NOT @noble/curves Fr.toBytes, whose order differs across major versions.",
+    "publicKey": "96 bytes, compressed G2 (Dusk uses the min-sig variant)",
+    "signature": "48 bytes, compressed G1",
+    "signedMessage": "SIG_TAG || digest, 55 bytes"
+  },
+  "params": {
+    "dst": "BLS_SIG_BLS12381G1_XMD:SHA-256_DUSK_V2",
+    "blsVersion": "V2",
+    "sigTag": "DUSK_TYPED_DATA_SIG_V1\u0000",
+    "sigTagHex": "0x4455534b5f54595045445f444154415f5349475f563100",
+    "rngTermination": "SK"
+  },
+  "input": {
+    "seedHex": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "profileIndex": 0,
+    "digestHex": "0x1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "expected": {
+    "secretKeyLeHex": "0x102f9b435fa96ff345ef2ec8ca68d5c4c5c85bcf00e4bc3a80cb3061e6ade82d",
+    "publicKeyG2Hex": "0x8d31d41cb190cb54fab965d3edba820a8e8fc5cdf5df2ef0b17ed7b318c290808564ec96651502cb086f4e2317de88441376dca3359fcf084a904343591c9c6d420dea1e576a957120af2ea4c46ef9d3bb1394ad3cbc92413c59b1ce518c0850",
+    "signedMessageHex": "0x4455534b5f54595045445f444154415f5349475f5631001111111111111111111111111111111111111111111111111111111111111111",
+    "signatureG1Hex": "0xa97e98a219ea9277b272cdd92885d95a9f7f8514b72e107680fbbf817db221e84234889eb4714e76b91e9e242fbcb0a2"
+  }
+}

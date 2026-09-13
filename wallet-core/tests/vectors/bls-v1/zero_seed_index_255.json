@@ -1,0 +1,28 @@
+{
+  "description": "Zero seed, profile index 255 - the highest value of the u8 index rusk casts to u64.",
+  "encoding": {
+    "seed": "64 bytes, BIP39 seed",
+    "secretKey": "32 bytes, little-endian - Rust dusk_bls12_381 BlsScalar::to_bytes. NOT @noble/curves Fr.toBytes, whose order differs across major versions.",
+    "publicKey": "96 bytes, compressed G2 (Dusk uses the min-sig variant)",
+    "signature": "48 bytes, compressed G1",
+    "signedMessage": "SIG_TAG || digest, 55 bytes"
+  },
+  "params": {
+    "dst": "BLS_SIG_BLS12381G1_XMD:SHA-256_DUSK_V2",
+    "blsVersion": "V2",
+    "sigTag": "DUSK_TYPED_DATA_SIG_V1\u0000",
+    "sigTagHex": "0x4455534b5f54595045445f444154415f5349475f563100",
+    "rngTermination": "SK"
+  },
+  "input": {
+    "seedHex": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "profileIndex": 255,
+    "digestHex": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "expected": {
+    "secretKeyLeHex": "0x0463f9d01df6ad7b3b80e2e3cce01f72652ea441cff2e352b8ef5e8f860c6e29",
+    "publicKeyG2Hex": "0x99db4b3131ac013ce835b88c075baf54c3d21775a16eb8a62037064f0620b37f7db1adbf441e3ea5d5de3bcb746e6b5d10602f615b44f06f2538f017add939462acc24f9285faab0fb2513b602731e54b9b6198fa2e546fe9da25d099a55024f",
+    "signedMessageHex": "0x4455534b5f54595045445f444154415f5349475f563100ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "signatureG1Hex": "0xb889e649e4cf893661eeef044bb25e967127972f7f4b641f3252ea78b13829aa6dbcfe017eda62366d66beb6b11a5197"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "description": "Rust anchor: zero seed, profile index 42. secretKeyLeHex is a value produced by rusk derive_bls_sk, not by this generator.",
+  "encoding": {
+    "seed": "64 bytes, BIP39 seed",
+    "secretKey": "32 bytes, little-endian - Rust dusk_bls12_381 BlsScalar::to_bytes. NOT @noble/curves Fr.toBytes, whose order differs across major versions.",
+    "publicKey": "96 bytes, compressed G2 (Dusk uses the min-sig variant)",
+    "signature": "48 bytes, compressed G1",
+    "signedMessage": "SIG_TAG || digest, 55 bytes"
+  },
+  "params": {
+    "dst": "BLS_SIG_BLS12381G1_XMD:SHA-256_DUSK_V2",
+    "blsVersion": "V2",
+    "sigTag": "DUSK_TYPED_DATA_SIG_V1\u0000",
+    "sigTagHex": "0x4455534b5f54595045445f444154415f5349475f563100",
+    "rngTermination": "SK"
+  },
+  "input": {
+    "seedHex": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "profileIndex": 42,
+    "digestHex": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "expected": {
+    "secretKeyLeHex": "0x5f23a7bf6aab479e9f27540184ee98eb9a05fa9effc34f5fc13a24bd0063e656",
+    "publicKeyG2Hex": "0x8edb61724d977ddaf3fb94872ca1b7e12ecd7e891d96549cff9f133704df96251b71062614ee3f4a7c81c418e66363530e08fc029a2fd1b465ebdc54ab567eb0615c6e7c79c4dea44aefe1b95bf94e31d265ba2cdf20bdbcae2f5960b0948397",
+    "signedMessageHex": "0x4455534b5f54595045445f444154415f5349475f5631000000000000000000000000000000000000000000000000000000000000000000",
+    "signatureG1Hex": "0x8b5b30e439f520227f2aaa2c30a713d661d38b2904f790e203703053f7b26f2d4e18be9b26f7ed5d20ce1047629ca66a"
+  }
+}
